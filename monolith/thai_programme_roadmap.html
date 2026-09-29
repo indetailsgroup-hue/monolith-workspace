@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>MONOLITH DAPH — Programme Roadmap S1–S58</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+@page{size:A4;margin:12mm 12mm 10mm 12mm}
+body{font-family:'Sarabun',sans-serif;font-size:9pt;line-height:1.5;color:#1a1a2e;background:#fff}
+:root{
+  --navy:#1f2d5a;--navy-l:#2e3f7a;
+  --gold:#c9a84c;--gold-l:#f0dfa0;--gold-bg:#fdfaf0;
+  --green:#2d7a4f;--green-l:#e8f5ee;
+  --blue:#2563eb;--blue-l:#eff6ff;
+  --amber:#d97706;--amber-l:#fef3c7;
+  --red:#c0392b;--red-l:#fdecea;
+  --gray:#6b7280;--gray-l:#f3f4f6;--gray-m:#e5e7eb;
+}
+
+/* ── HEADER ── */
+.doc-header{background:var(--navy);color:#fff;padding:10pt 14pt;display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8pt}
+.doc-header .brand{font-size:15pt;font-weight:800;letter-spacing:.5px}
+.doc-header .brand span{color:var(--gold)}
+.doc-header .doc-meta{text-align:right;font-size:7pt;color:rgba(255,255,255,.6);line-height:1.7}
+.doc-header .doc-meta strong{color:var(--gold-l);font-weight:600}
+
+/* ── STATUS BAND ── */
+.status-band{background:var(--green);color:#fff;font-size:8pt;font-weight:700;letter-spacing:1px;text-transform:uppercase;text-align:center;padding:4pt 0;margin-bottom:9pt}
+
+/* ── HERO STATS ── */
+.hero-stats{display:grid;grid-template-columns:repeat(6,1fr);gap:5pt;margin-bottom:9pt}
+.stat-card{background:var(--navy);color:#fff;border-radius:5pt;padding:7pt 5pt;text-align:center;border-bottom:3pt solid var(--gold)}
+.stat-card .val{font-size:16pt;font-weight:800;color:var(--gold);line-height:1.1}
+.stat-card .lbl{font-size:6.5pt;color:rgba(255,255,255,.75);margin-top:2pt;line-height:1.3}
+
+/* ── SECTION TITLE ── */
+.sec-title{background:var(--navy);color:#fff;font-size:9pt;font-weight:700;padding:4pt 9pt;border-radius:3pt 3pt 0 0;margin-bottom:0;display:flex;align-items:center;gap:6pt}
+.sec-title .dot{width:8pt;height:8pt;border-radius:50%;background:var(--gold);flex-shrink:0}
+
+/* ── HORIZONTAL TIMELINE ── */
+.timeline-wrap{border:1pt solid var(--gray-m);border-top:none;border-radius:0 0 4pt 4pt;padding:12pt 10pt 10pt;margin-bottom:9pt;background:#fff}
+.timeline{display:grid;grid-template-columns:1fr 32pt 1fr 32pt 1fr 32pt 1fr;align-items:start;gap:0}
+.tl-phase{border-radius:4pt;padding:8pt 7pt;position:relative}
+.tl-phase.p1{background:#eef2ff;border:1.5pt solid #c7d2fe}
+.tl-phase.p2{background:#eff6ff;border:1.5pt solid #bfdbfe}
+.tl-phase.p3{background:#f0fdf4;border:1.5pt solid #bbf7d0}
+.tl-phase.bau{background:var(--gold-bg);border:2pt solid var(--gold);box-shadow:0 0 0 2pt rgba(201,168,76,.15)}
+.tl-arrow{display:flex;align-items:center;justify-content:center;padding-top:20pt}
+.tl-arrow svg{width:20pt;height:12pt}
+.phase-badge{display:inline-block;font-size:6.5pt;font-weight:700;padding:2pt 6pt;border-radius:20pt;margin-bottom:5pt;text-transform:uppercase;letter-spacing:.5px}
+.p1 .phase-badge{background:#4f46e5;color:#fff}
+.p2 .phase-badge{background:#2563eb;color:#fff}
+.p3 .phase-badge{background:var(--green);color:#fff}
+.bau .phase-badge{background:var(--gold);color:var(--navy)}
+.tl-phase h3{font-size:8.5pt;font-weight:800;color:var(--navy);margin-bottom:4pt;line-height:1.3}
+.tl-phase .sections{font-size:6.5pt;color:var(--gray);margin-bottom:5pt}
+.tl-phase .cov-bar-wrap{background:rgba(0,0,0,.08);border-radius:20pt;height:7pt;margin-bottom:4pt;overflow:hidden}
+.tl-phase .cov-bar{height:100%;border-radius:20pt}
+.p1 .cov-bar{background:#4f46e5;width:68%}
+.p2 .cov-bar{background:#2563eb;width:80%}
+.p3 .cov-bar{background:var(--green);width:92%}
+.bau .cov-bar{background:var(--gold);width:92%}
+.tl-phase .cov-label{font-size:7pt;font-weight:700;color:var(--navy);margin-bottom:5pt}
+.kv-list{list-style:none;font-size:6.5pt;line-height:1.7;color:#374151}
+.kv-list li{display:flex;gap:3pt;align-items:baseline}
+.kv-list li .k{color:var(--gray);flex-shrink:0;width:50pt}
+.kv-list li .v{font-weight:600;color:var(--navy)}
+.complete-tag{display:inline-block;background:var(--green);color:#fff;font-size:5.5pt;font-weight:700;padding:1.5pt 5pt;border-radius:20pt;letter-spacing:.5px;margin-top:4pt}
+.active-tag{display:inline-block;background:var(--gold);color:var(--navy);font-size:5.5pt;font-weight:700;padding:1.5pt 5pt;border-radius:20pt;letter-spacing:.5px;margin-top:4pt}
+
+/* ── COVERAGE JOURNEY ── */
+.cov-journey{display:flex;align-items:stretch;gap:0;border:1pt solid var(--gray-m);border-radius:4pt;overflow:hidden;margin-bottom:9pt}
+.cj-node{flex:1;padding:8pt 6pt;text-align:center;position:relative}
+.cj-node.baseline{background:var(--gray-l);border-right:1pt solid var(--gray-m)}
+.cj-node.ph1{background:#eef2ff;border-right:1pt solid var(--gray-m)}
+.cj-node.ph2{background:#eff6ff;border-right:1pt solid var(--gray-m)}
+.cj-node.ph3{background:#f0fdf4;border-right:1pt solid var(--gray-m)}
+.cj-node.bau-n{background:var(--gold-bg)}
+.cj-node .pct{font-size:20pt;font-weight:800;line-height:1}
+.cj-node.baseline .pct{color:var(--gray)}
+.cj-node.ph1 .pct{color:#4f46e5}
+.cj-node.ph2 .pct{color:#2563eb}
+.cj-node.ph3 .pct{color:var(--green)}
+.cj-node.bau-n .pct{color:var(--gold)}
+.cj-node .phase-lbl{font-size:7pt;font-weight:700;margin-top:2pt;color:var(--navy)}
+.cj-node .delta{font-size:7pt;color:var(--green);font-weight:700;margin-top:2pt}
+.cj-arrow{display:flex;align-items:center;justify-content:center;width:22pt;flex-shrink:0;background:#fff;border-top:1pt solid var(--gray-m);border-bottom:1pt solid var(--gray-m);color:var(--gold);font-size:14pt;font-weight:700}
+
+/* ── SECTION MAP ── */
+.section-map-wrap{border:1pt solid var(--gray-m);border-top:none;border-radius:0 0 4pt 4pt;padding:10pt;margin-bottom:9pt}
+.phase-row{display:grid;grid-template-columns:72pt 1fr;gap:8pt;margin-bottom:7pt;align-items:start}
+.phase-row:last-child{margin-bottom:0}
+.phase-lbl-box{border-radius:4pt;padding:5pt 7pt;text-align:center}
+.phase-lbl-box.l1{background:#eef2ff;border:1pt solid #c7d2fe}
+.phase-lbl-box.l2{background:#eff6ff;border:1pt solid #bfdbfe}
+.phase-lbl-box.l3{background:#f0fdf4;border:1pt solid #bbf7d0}
+.phase-lbl-box.l4{background:var(--gold-bg);border:1pt solid var(--gold)}
+.phase-lbl-box .pl-name{font-size:8pt;font-weight:800;color:var(--navy)}
+.phase-lbl-box .pl-sub{font-size:6.5pt;color:var(--gray);line-height:1.4;margin-top:1pt}
+.phase-lbl-box .pl-budget{font-size:7.5pt;font-weight:700;margin-top:3pt}
+.l1 .pl-budget{color:#4f46e5}
+.l2 .pl-budget{color:#2563eb}
+.l3 .pl-budget{color:var(--green)}
+.l4 .pl-budget{color:var(--amber)}
+.sections-grid{display:flex;flex-wrap:wrap;gap:3pt;align-content:flex-start}
+.s-chip{font-size:6pt;padding:2pt 5pt;border-radius:3pt;font-weight:600;white-space:nowrap}
+.s-chip.s1{background:#e0e7ff;color:#3730a3}
+.s-chip.s2{background:#dbeafe;color:#1d4ed8}
+.s-chip.s3{background:#dcfce7;color:#15803d}
+.s-chip.s4{background:var(--gold-bg);color:#92400e;border:1pt solid var(--gold-l)}
+
+/* ── MILESTONE STRIP ── */
+.milestone-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:5pt;margin-bottom:9pt}
+.m-card{border-radius:4pt;padding:7pt;text-align:center;border:1.5pt solid}
+.m-card.done{background:#f0fdf4;border-color:#86efac}
+.m-card.active{background:var(--gold-bg);border-color:var(--gold)}
+.m-card .m-id{font-size:7pt;font-weight:700;color:var(--gray);margin-bottom:2pt}
+.m-card .m-name{font-size:7.5pt;font-weight:700;color:var(--navy);margin-bottom:3pt;line-height:1.3}
+.m-card .m-status{font-size:6pt;font-weight:700;text-transform:uppercase;padding:2pt 6pt;border-radius:20pt;display:inline-block}
+.m-card.done .m-status{background:var(--green);color:#fff}
+.m-card.active .m-status{background:var(--gold);color:var(--navy)}
+.m-card .m-val{font-size:7pt;color:var(--gray);margin-top:3pt}
+
+/* ── BAU GOVERNANCE ── */
+.bau-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5pt;margin-bottom:9pt}
+.bau-card{border-radius:4pt;padding:7pt;background:var(--navy);color:#fff;border-bottom:3pt solid var(--gold)}
+.bau-card .bc-id{font-size:6pt;color:rgba(255,255,255,.5);margin-bottom:2pt;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.bau-card .bc-name{font-size:8pt;font-weight:700;color:var(--gold);margin-bottom:3pt}
+.bau-card .bc-lead{font-size:6.5pt;color:rgba(255,255,255,.75);margin-bottom:2pt}
+.bau-card .bc-cycle{font-size:6.5pt;color:rgba(255,255,255,.6)}
+
+/* ── FORWARD ROADMAP ── */
+.fwd-table{width:100%;border-collapse:collapse;font-size:7.5pt;margin-bottom:9pt}
+.fwd-table th{background:var(--navy);color:#fff;padding:5pt 7pt;text-align:left;font-weight:600;font-size:7pt}
+.fwd-table td{padding:5pt 7pt;border-bottom:1pt solid var(--gray-m);vertical-align:top}
+.fwd-table tr:last-child td{border-bottom:none}
+.fwd-table tr:nth-child(even) td{background:var(--gray-l)}
+.tag-pill{display:inline-block;font-size:6pt;font-weight:700;padding:1.5pt 5pt;border-radius:20pt}
+.tp-active{background:var(--green);color:#fff}
+.tp-upcoming{background:#dbeafe;color:#1d4ed8}
+.tp-planned{background:var(--gray-l);color:var(--gray);border:1pt solid var(--gray-m)}
+
+/* ── FOOTER ── */
+.doc-footer{border-top:2pt solid var(--navy);margin-top:8pt;padding-top:5pt;display:flex;justify-content:space-between;align-items:flex-start}
+.doc-footer .fl{font-size:6.5pt;color:var(--gray);line-height:1.6}
+.doc-footer .fl strong{color:var(--navy)}
+.cert-box{background:var(--gold-bg);border:1.5pt solid var(--gold);border-radius:4pt;padding:5pt 9pt;font-size:7pt;text-align:center}
+.cert-box .cert-id{font-size:8pt;font-weight:800;color:var(--navy);letter-spacing:.5px}
+.cert-box .cert-sub{font-size:6.5pt;color:var(--gray);margin-top:1pt}
+
+.divider{height:1pt;background:var(--gray-m);margin:7pt 0}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="doc-header">
+  <div class="brand">MONOLITH <span>DAPH</span> — Programme Roadmap</div>
+  <div class="doc-meta">
+    <strong>MONOLITH-ROADMAP-S58 v1.0</strong><br/>
+    วันที่ออก: 4 กันยายน 2569 &nbsp;|&nbsp; สถานะ: BAU ACTIVE<br/>
+    จัดทำโดย: Programme Director &nbsp;|&nbsp; อนุมัติ: SC Chair
+  </div>
+</div>
+
+<!-- STATUS BAND -->
+<div class="status-band">✓ PROGRAMME COMPLETE — S1–S58 · 3 Phases · BAU Governance Active · THB 18.2M Delivered</div>
+
+<!-- HERO STATS -->
+<div class="hero-stats">
+  <div class="stat-card"><div class="val">58</div><div class="lbl">Sections<br/>S1–S58</div></div>
+  <div class="stat-card"><div class="val">92%</div><div class="lbl">AI Coverage<br/>สำเร็จแล้ว</div></div>
+  <div class="stat-card"><div class="val">28</div><div class="lbl">AI Agents<br/>ดำเนินการ</div></div>
+  <div class="stat-card"><div class="val">18.2M</div><div class="lbl">THB ทั้งหมด<br/>3 Phases</div></div>
+  <div class="stat-card"><div class="val">+36pp</div><div class="lbl">Coverage เพิ่ม<br/>56% → 92%</div></div>
+  <div class="stat-card"><div class="val">4</div><div class="lbl">BAU Committees<br/>SC/PGB/TAG/AOC</div></div>
+</div>
+
+<!-- COVERAGE JOURNEY -->
+<div class="sec-title"><div class="dot"></div>เส้นทาง AI Coverage — Baseline → BAU</div>
+<div class="cov-journey">
+  <div class="cj-node baseline">
+    <div class="pct">56%</div>
+    <div class="phase-lbl">Baseline</div>
+    <div class="delta">จุดเริ่มต้น</div>
+  </div>
+  <div class="cj-arrow">›</div>
+  <div class="cj-node ph1">
+    <div class="pct">68%</div>
+    <div class="phase-lbl">Phase 1 สำเร็จ</div>
+    <div class="delta">+12pp</div>
+  </div>
+  <div class="cj-arrow">›</div>
+  <div class="cj-node ph2">
+    <div class="pct">80%</div>
+    <div class="phase-lbl">Phase 2 สำเร็จ</div>
+    <div class="delta">+12pp</div>
+  </div>
+  <div class="cj-arrow">›</div>
+  <div class="cj-node ph3">
+    <div class="pct">92%</div>
+    <div class="phase-lbl">Phase 3 สำเร็จ</div>
+    <div class="delta">+12pp</div>
+  </div>
+  <div class="cj-arrow">›</div>
+  <div class="cj-node bau-n">
+    <div class="pct">92%</div>
+    <div class="phase-lbl">BAU Active</div>
+    <div class="delta">คงระดับ + พัฒนา</div>
+  </div>
+</div>
+
+<!-- PHASE TIMELINE -->
+<div class="sec-title"><div class="dot"></div>Phase Timeline — ภาพรวมทุก Phase</div>
+<div class="timeline-wrap">
+  <div class="timeline">
+
+    <!-- Phase 1 -->
+    <div class="tl-phase p1">
+      <span class="phase-badge">Phase 1</span>
+      <h3>Programme Foundation<br/>& GAP-01 to 08</h3>
+      <div class="sections">S1–S49 · 49 Sections</div>
+      <div class="cov-bar-wrap"><div class="cov-bar"></div></div>
+      <div class="cov-label">Coverage: 68%</div>
+      <ul class="kv-list">
+        <li><span class="k">งบประมาณ</span><span class="v">THB 5.2M</span></li>
+        <li><span class="k">GAP covered</span><span class="v">01/02/03/04/07/08</span></li>
+        <li><span class="k">Agents</span><span class="v">28 agents</span></li>
+        <li><span class="k">Milestone</span><span class="v">P1-M1–M4 CLOSED</span></li>
+        <li><span class="k">Cert</span><span class="v">S49 Phase 1 Gateway</span></li>
+      </ul>
+      <span class="complete-tag">✓ COMPLETE</span>
+    </div>
+
+    <!-- Arrow -->
+    <div class="tl-arrow">
+      <svg viewBox="0 0 20 12" fill="none"><path d="M0 6h16M11 1l5 5-5 5" stroke="#c9a84c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+
+    <!-- Phase 2 -->
+    <div class="tl-phase p2">
+      <span class="phase-badge">Phase 2</span>
+      <h3>AI Creative Engine<br/>& GAP-05 to 12</h3>
+      <div class="sections">S50–S53 · 4 Sections</div>
+      <div class="cov-bar-wrap"><div class="cov-bar"></div></div>
+      <div class="cov-label">Coverage: 80%</div>
+      <ul class="kv-list">
+        <li><span class="k">งบประมาณ</span><span class="v">THB 6.0M</span></li>
+        <li><span class="k">GAP covered</span><span class="v">05/06/09/10/11/12</span></li>
+        <li><span class="k">Vendor</span><span class="v">AIE-001–005</span></li>
+        <li><span class="k">Milestone</span><span class="v">P2-M1–M4 CLOSED</span></li>
+        <li><span class="k">Cert</span><span class="v">S53 Go-Live Locked</span></li>
+      </ul>
+      <span class="complete-tag">✓ COMPLETE</span>
+    </div>
+
+    <!-- Arrow -->
+    <div class="tl-arrow">
+      <svg viewBox="0 0 20 12" fill="none"><path d="M0 6h16M11 1l5 5-5 5" stroke="#c9a84c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+
+    <!-- Phase 3 -->
+    <div class="tl-phase p3">
+      <span class="phase-badge">Phase 3</span>
+      <h3>NPS / ESG / Drift<br/>& GAP-01/02/03/04/13–15</h3>
+      <div class="sections">S54–S57 · 4 Sections</div>
+      <div class="cov-bar-wrap"><div class="cov-bar"></div></div>
+      <div class="cov-label">Coverage: 92%</div>
+      <ul class="kv-list">
+        <li><span class="k">งบประมาณ</span><span class="v">THB 7.0M</span></li>
+        <li><span class="k">GAP covered</span><span class="v">01/02/03/04/13/14/15</span></li>
+        <li><span class="k">WS</span><span class="v">WS-A / WS-B / WS-C</span></li>
+        <li><span class="k">Milestone</span><span class="v">P3-M1–M4 CLOSED</span></li>
+        <li><span class="k">Gate</span><span class="v">P3-GL-CHK-10 PASSED</span></li>
+      </ul>
+      <span class="complete-tag">✓ COMPLETE</span>
+    </div>
+
+    <!-- Arrow -->
+    <div class="tl-arrow">
+      <svg viewBox="0 0 20 12" fill="none"><path d="M0 6h16M11 1l5 5-5 5" stroke="#c9a84c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+
+    <!-- BAU -->
+    <div class="tl-phase bau">
+      <span class="phase-badge">BAU</span>
+      <h3>Governance Charter<br/>MONOLITH-S58-BAUGOV-001</h3>
+      <div class="sections">S58 · 5 Sections</div>
+      <div class="cov-bar-wrap"><div class="cov-bar"></div></div>
+      <div class="cov-label">Coverage: 92% (คงระดับ)</div>
+      <ul class="kv-list">
+        <li><span class="k">Committees</span><span class="v">SC / PGB / TAG / AOC</span></li>
+        <li><span class="k">KPI Cycles</span><span class="v">5 รอบ (รายสัปดาห์–ปี)</span></li>
+        <li><span class="k">Cert</span><span class="v">CLOSECERT-001</span></li>
+        <li><span class="k">Audit</span><span class="v">T+30/60/90d + Annual</span></li>
+        <li><span class="k">Validity</span><span class="v">Permanent</span></li>
+      </ul>
+      <span class="active-tag">● ACTIVE</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- SECTION MAP -->
+<div class="sec-title"><div class="dot"></div>Section Map — S1 to S58 แยกตาม Phase</div>
+<div class="section-map-wrap">
+
+  <div class="phase-row">
+    <div class="phase-lbl-box l1">
+      <div class="pl-name">Phase 1</div>
+      <div class="pl-sub">S1–S49<br/>Foundation & GAP 01–08</div>
+      <div class="pl-budget">THB 5.2M</div>
+    </div>
+    <div class="sections-grid">
+      <span class="s-chip s1">S1 Programme Charter</span>
+      <span class="s-chip s1">S2 Stakeholder Map</span>
+      <span class="s-chip s1">S3 Risk Register</span>
+      <span class="s-chip s1">S4 Budget Framework</span>
+      <span class="s-chip s1">S5 Agent Roster</span>
+      <span class="s-chip s1">S6 SLA Policy</span>
+      <span class="s-chip s1">S7 Data Governance</span>
+      <span class="s-chip s1">S8 Security Protocol</span>
+      <span class="s-chip s1">S9 Change Management</span>
+      <span class="s-chip s1">S10 Training Plan</span>
+      <span class="s-chip s1">S11–S24 GAP Analysis</span>
+      <span class="s-chip s1">S25–S37 Operations</span>
+      <span class="s-chip s1">S38 AMD-004 PDD</span>
+      <span class="s-chip s1">S39 Biophilic SOP (GAP-01)</span>
+      <span class="s-chip s1">S40 Design Freeze (GAP-02)</span>
+      <span class="s-chip s1">S41 Sensory Commission (GAP-03)</span>
+      <span class="s-chip s1">S42 Post-Occupancy (GAP-04)</span>
+      <span class="s-chip s1">S43 SC Governance (GAP-07)</span>
+      <span class="s-chip s1">S44 GitHub Roadmap</span>
+      <span class="s-chip s1">S45 WS-B Tech + GAP-05</span>
+      <span class="s-chip s1">S46 WS-C Client + GAP-06</span>
+      <span class="s-chip s1">S47 KPI Dashboard (GAP-08)</span>
+      <span class="s-chip s1">S48 WS-E Human Capital</span>
+      <span class="s-chip s1">S49 Phase 1 Gateway</span>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="phase-row">
+    <div class="phase-lbl-box l2">
+      <div class="pl-name">Phase 2</div>
+      <div class="pl-sub">S50–S53<br/>AI Creative Engine</div>
+      <div class="pl-budget">THB 6.0M</div>
+    </div>
+    <div class="sections-grid">
+      <span class="s-chip s2">S50 Phase 2 PDD (GAP-05/06/09–12)</span>
+      <span class="s-chip s2">S51 P2 Procurement (RFP-GAP05-001)</span>
+      <span class="s-chip s2">S52 P2 Vendor Onboarding (V-CHK-01–12)</span>
+      <span class="s-chip s2">S53 P2 Go-Live (GL-CHK-01–10, ≥80%)</span>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="phase-row">
+    <div class="phase-lbl-box l3">
+      <div class="pl-name">Phase 3</div>
+      <div class="pl-sub">S54–S57<br/>NPS / ESG / Drift</div>
+      <div class="pl-budget">THB 7.0M</div>
+    </div>
+    <div class="sections-grid">
+      <span class="s-chip s3">S54 Phase 3 PDD (WS-A/B/C; P3-M1–M4)</span>
+      <span class="s-chip s3">S55 P3 RFP (RFP-P3-WSA/B/C; P3-VND-CHK-01–10)</span>
+      <span class="s-chip s3">S56 P3 Vendor Onboarding (P3-ONB-CHK-01–12)</span>
+      <span class="s-chip s3">S57 P3 Go-Live (P3-GL-CHK-01–10; 92%)</span>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="phase-row">
+    <div class="phase-lbl-box l4">
+      <div class="pl-name">BAU</div>
+      <div class="pl-sub">S58<br/>Governance Charter</div>
+      <div class="pl-budget" style="color:var(--amber)">ACTIVE</div>
+    </div>
+    <div class="sections-grid">
+      <span class="s-chip s4">S58.1 Overview & Purpose (BAUGOV-001)</span>
+      <span class="s-chip s4">S58.2 Committee Structure (SC/PGB/TAG/AOC)</span>
+      <span class="s-chip s4">S58.3 KPI Review Cadence (5 cycles)</span>
+      <span class="s-chip s4">S58.4 Programme Closure Certificate (CLOSECERT-001)</span>
+      <span class="s-chip s4">S58.5 Post-Programme Audit Plan (T+30/60/90d + Annual)</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- MILESTONES -->
+<div class="sec-title"><div class="dot"></div>Programme Milestones — P1-M4 · P2-M4 · P3-M4 · BAU</div>
+<div class="milestone-strip" style="margin-top:0;border:1pt solid var(--gray-m);border-top:none;border-radius:0 0 4pt 4pt;padding:8pt;margin-bottom:9pt">
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5pt">
+    <div class="m-card done">
+      <div class="m-id">P1-M4</div>
+      <div class="m-name">Phase 1 Programme Closure</div>
+      <span class="m-status">CLOSED</span>
+      <div class="m-val">68% · THB 5.2M · S49</div>
+    </div>
+    <div class="m-card done">
+      <div class="m-id">P2-M4</div>
+      <div class="m-name">Phase 2 Go-Live & Closure</div>
+      <span class="m-status">CLOSED</span>
+      <div class="m-val">80% · THB 6.0M · S53</div>
+    </div>
+    <div class="m-card done">
+      <div class="m-id">P3-M4</div>
+      <div class="m-name">Phase 3 Programme Delivery</div>
+      <span class="m-status">CLOSED</span>
+      <div class="m-val">92% · THB 7.0M · S57</div>
+    </div>
+    <div class="m-card active">
+      <div class="m-id">BAU-M1</div>
+      <div class="m-name">BAU Governance Activated</div>
+      <span class="m-status">ACTIVE</span>
+      <div class="m-val">CLOSECERT-001 · S58</div>
+    </div>
+  </div>
+</div>
+
+<!-- BAU GOVERNANCE COMMITTEES -->
+<div class="sec-title"><div class="dot"></div>BAU Governance — 4 Committees</div>
+<div style="border:1pt solid var(--gray-m);border-top:none;border-radius:0 0 4pt 4pt;padding:8pt;margin-bottom:9pt">
+  <div class="bau-grid">
+    <div class="bau-card">
+      <div class="bc-id">SC</div>
+      <div class="bc-name">Steering Committee</div>
+      <div class="bc-lead">SC Chair · Quorum 3/5</div>
+      <div class="bc-cycle">ประชุมทุกไตรมาส</div>
+    </div>
+    <div class="bau-card">
+      <div class="bc-id">PGB</div>
+      <div class="bc-name">Programme Governance Board</div>
+      <div class="bc-lead">Programme Director · Quorum 4/6</div>
+      <div class="bc-cycle">ประชุมทุกเดือน</div>
+    </div>
+    <div class="bau-card">
+      <div class="bc-id">TAG</div>
+      <div class="bc-name">Technology Advisory Group</div>
+      <div class="bc-lead">Technical Lead · Quorum 3/5</div>
+      <div class="bc-cycle">ประชุมทุก 2 เดือน</div>
+    </div>
+    <div class="bau-card">
+      <div class="bc-id">AOC</div>
+      <div class="bc-name">Agent Operations Committee</div>
+      <div class="bc-lead">Ops Manager · Quorum 2/3</div>
+      <div class="bc-cycle">ประชุมทุกสัปดาห์</div>
+    </div>
+  </div>
+</div>
+
+<!-- FORWARD ROADMAP -->
+<div class="sec-title"><div class="dot"></div>Forward Roadmap — ขั้นตอนต่อไปหลัง BAU Active</div>
+<table class="fwd-table" style="border-top:none">
+  <thead>
+    <tr>
+      <th style="width:60pt">ช่วงเวลา</th>
+      <th style="width:80pt">กิจกรรม</th>
+      <th>รายละเอียด</th>
+      <th style="width:55pt">ผู้รับผิดชอบ</th>
+      <th style="width:50pt">สถานะ</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>BAU Day 1–30</strong></td>
+      <td>Weekly SLA Review</td>
+      <td>AOC ตรวจ SLA breach threshold ≤5% · KPI-001–024 · 28 agents ทุกสัปดาห์</td>
+      <td>AOC / Ops Manager</td>
+      <td><span class="tag-pill tp-active">Active Now</span></td>
+    </tr>
+    <tr>
+      <td><strong>T+30 วัน</strong></td>
+      <td>Stability Audit</td>
+      <td>TAG + Project Manager ตรวจ system stability baseline · GAP-01/02/03/04/13/14/15</td>
+      <td>TAG + PM</td>
+      <td><span class="tag-pill tp-upcoming">Upcoming</span></td>
+    </tr>
+    <tr>
+      <td><strong>T+60 วัน</strong></td>
+      <td>Operational Efficiency Review</td>
+      <td>TAG + Operations Team ตรวจ operational efficiency · ปรับ model หาก drift &gt;threshold</td>
+      <td>TAG + Ops</td>
+      <td><span class="tag-pill tp-upcoming">Upcoming</span></td>
+    </tr>
+    <tr>
+      <td><strong>T+90 วัน</strong></td>
+      <td>Independent Compliance Audit</td>
+      <td>External Auditor + TAG + PGB · Full compliance vs. S1–S58 SOP · รายงาน SC</td>
+      <td>External + TAG + PGB</td>
+      <td><span class="tag-pill tp-planned">Planned</span></td>
+    </tr>
+    <tr>
+      <td><strong>ทุกเดือน</strong></td>
+      <td>Monthly KPI Dashboard</td>
+      <td>PGB รีวิว dashboard KPI-001–024 · coverage trend · agent performance · SLA vs. target</td>
+      <td>PGB</td>
+      <td><span class="tag-pill tp-active">Active Now</span></td>
+    </tr>
+    <tr>
+      <td><strong>ทุกไตรมาส</strong></td>
+      <td>SC Quarterly Review</td>
+      <td>SC Chair + SC รีวิว strategic performance vs. baseline 56% → ≥92% · budget tracking</td>
+      <td>SC Chair</td>
+      <td><span class="tag-pill tp-active">Active Now</span></td>
+    </tr>
+    <tr>
+      <td><strong>ทุก 6 เดือน</strong></td>
+      <td>Semi-Annual Benchmark</td>
+      <td>TAG recalibration trigger ±5% · model accuracy benchmark · SLA re-validation</td>
+      <td>TAG</td>
+      <td><span class="tag-pill tp-planned">Planned</span></td>
+    </tr>
+    <tr>
+      <td><strong>Year 1</strong></td>
+      <td>Full Programme Value Audit</td>
+      <td>External Firm + TAG · value realisation report · ROI vs. THB 18.2M investment · board report</td>
+      <td>External + TAG</td>
+      <td><span class="tag-pill tp-planned">Planned</span></td>
+    </tr>
+    <tr>
+      <td><strong>ประจำปี</strong></td>
+      <td>Annual Full Audit</td>
+      <td>External Auditor + PGB + TAG · Full SLA/accuracy re-certification · continuous improvement</td>
+      <td>External + PGB + TAG</td>
+      <td><span class="tag-pill tp-planned">Planned</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- FOOTER -->
+<div class="doc-footer">
+  <div class="fl">
+    <strong>MONOLITH DAPH Decor AI Agent Programme</strong><br/>
+    Document ref: MONOLITH-ROADMAP-S58 v1.0 &nbsp;|&nbsp; Status: BAU ACTIVE<br/>
+    58 Sections · 3 Phases Complete · 28 Agents · THB 18.2M · Coverage 56%→92%<br/>
+    Cert: MONOLITH-S58-CLOSECERT-001 · Activated by P3-GL-CHK-10 + P3-M4
+  </div>
+  <div class="cert-box">
+    <div class="cert-id">MONOLITH-S58-CLOSECERT-001</div>
+    <div class="cert-sub">Programme Closure Certificate · Active<br/>SC Chair Approved · S58 BAU Governance</div>
+  </div>
+</div>
+
+</body>
+</html>

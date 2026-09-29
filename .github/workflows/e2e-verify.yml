@@ -25,15 +25,18 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   e2e-smoke:
     name: playwright @smoke (Designer critical path)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: npm
@@ -45,9 +48,23 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run e2e @smoke (playwright auto-starts vite dev server)
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: smoke-report.json
         run: |
           set -o pipefail
-          npx playwright test --grep @smoke --reporter=list 2>&1 | tee e2e.out
+          npx playwright test --config playwright.e2e.config.ts --grep @smoke --reporter=list,json 2>&1 | tee e2e.out
+
+      - name: Enforce @smoke never skips
+        if: always()
+        run: |
+          node -e "
+          const fs=require('fs'); let r; try { r=JSON.parse(fs.readFileSync('smoke-report.json','utf8')); } catch { console.error('::error::no smoke report produced'); process.exit(1); }
+          let pass=0, skip=0, fail=0; const skipped=[];
+          const walk=s=>{ for(const sp of s.specs||[]) for(const t of sp.tests||[]) { if(t.status==='skipped'){skip++;skipped.push(sp.title);} else if(t.status==='expected'||t.status==='flaky') pass++; else fail++; } for(const c of s.suites||[]) walk(c); };
+          for(const s of r.suites||[]) walk(s);
+          console.log('@smoke: pass='+pass+' skip='+skip+' fail='+fail);
+          if(fail>0||skip>0||pass===0){ console.error('::error::@smoke must have real passes, zero failures, and zero skips. Skipped: '+skipped.join(' | ')); process.exit(1); }
+          "
 
       - name: Assemble evidence
         if: always()
@@ -74,11 +91,13 @@ jobs:
 
       - name: Upload e2e evidence + report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: e2e-evidence-${{ github.sha }}
           path: |
             e2e-evidence.json
             e2e.out
+            smoke-report.json
             playwright-report/
+            test-results/
           retention-days: 90

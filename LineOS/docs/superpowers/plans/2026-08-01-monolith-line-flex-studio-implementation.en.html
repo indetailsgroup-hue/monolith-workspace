@@ -1,0 +1,2291 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>MONOLITH LINE Flex Studio Implementation Plan</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1>MONOLITH LINE Flex Studio Implementation Plan</h1>
+<blockquote><p><strong>For agentic workers:</strong> REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox syntax for tracking.</p></blockquote>
+<p><strong>Goal:</strong> Build a bilingual, production-shaped standalone Flex Message Studio in LineOS with five presets, real-time preview/JSON/validation, a safe Mock LIFF journey, a truthful demo receipt, board-grade research and exact installation guidance.</p>
+<p><strong>Architecture:</strong> A dependency-free browser application reads immutable preset data into one canonical FlexDraft. Pure modules derive Flex JSON, validation decisions, exact-action demo transactions and SHA-256 demo receipts; a thin DOM controller renders the Studio Console without network requests. The nested product repository remains untouched and is only a reference for future integration.</p>
+<p><strong>Tech Stack:</strong> Semantic HTML5, CSS custom properties, browser-native ES modules, Web Crypto, Node.js built-in test runner, repository-native tools/render_docs.py, local browser verification.</p>
+<h2>Global Constraints</h2>
+<ul>
+<li>Work only in the parent root <strong>C:\Users\thai3\determined-williams (2)</strong>.</li>
+<li>Use Node.js <strong>22.20.0 or newer</strong>; planning environment observed <strong>v22.21.1</strong> with npm <strong>11.6.2</strong>.</li>
+<li>Do not modify the nested product repository <strong>determined-williams/</strong>.</li>
+<li>Recheck Git status in both roots before every task; preserve all pre-existing changes.</li>
+<li>Starting parent commit observed during planning: <strong>f846044736c3</strong> on <strong>guardrails/claim-linters</strong> with 202 status entries.</li>
+<li>Starting nested commit observed during planning: <strong>a1e9006add32</strong> on <strong>fix/dxf-truth-chain</strong> with 67 status entries.</li>
+<li>Runtime must make zero external network requests and contain no LINE/Supabase credentials or live-send path.</li>
+<li>Customer-facing branding is tenant-first with <strong>Secured by MONOLITH</strong>; internal shell is MONOLITH-first with explicit tenant context.</li>
+<li>Flex tap is never business approval. High-risk action always opens Mock LIFF and production guidance always requires Trust Kernel step-up.</li>
+<li>Receipt name is <strong>Verification Receipt — Demo</strong> and must display <strong>DEMO — NOT A PRODUCTION SIGNATURE</strong>.</li>
+<li>Support exactly one bubble and five approved presets in v1. Carousel/video authoring, raw JSON editing and production integration remain out of scope.</li>
+<li>UI and project documents must exist in Thai and English.</li>
+<li>Every Markdown project deliverable must have a matching standalone HTML file.</li>
+<li>Use official LINE sources for technical constraints; label MONOLITH recommendations as best practice.</li>
+<li>Apply test-driven development: write each behavior test, run it and observe the expected failure, then write the minimum production code.</li>
+<li>Stage and commit only exact files named by the current task.</li>
+</ul>
+<hr>
+<h2>File map</h2>
+<h3>Runtime and core modules</h3>
+<div class="tablewrap"><table><thead><tr><th>File</th><th>Responsibility</th></tr></thead><tbody>
+<tr><td><strong>LineOS/package.json</strong></td><td>Dependency-free scripts for unit and contract tests</td></tr>
+<tr><td><strong>LineOS/line-flex-studio.html</strong></td><td>Semantic Studio Console shell, tabs, dialogs and live regions</td></tr>
+<tr><td><strong>LineOS/line-flex-studio.css</strong></td><td>Trust Concierge tokens, three-column layout, responsive tabs, focus and reduced motion</td></tr>
+<tr><td><strong>LineOS/line-flex-studio.mjs</strong></td><td>State reducer, safe DOM binding, preview/JSON/validation rendering, copy/download/reset and dialog flow</td></tr>
+<tr><td><strong>LineOS/line-flex-model.mjs</strong></td><td>FlexDraft creation, cloning, immutable path updates and canonicalization</td></tr>
+<tr><td><strong>LineOS/line-flex-presets.mjs</strong></td><td>Five frozen bilingual presets</td></tr>
+<tr><td><strong>LineOS/line-flex-json.mjs</strong></td><td>Supported-subset Flex JSON generation and UTF-8 byte count</td></tr>
+<tr><td><strong>LineOS/line-flex-validator.mjs</strong></td><td>Source-labelled validation registry and evaluator</td></tr>
+<tr><td><strong>LineOS/line-flex-actions.mjs</strong></td><td>Action selection, risk guard and expiring demo transaction</td></tr>
+<tr><td><strong>LineOS/line-flex-receipt.mjs</strong></td><td>Canonical receipt payload and SHA-256 digest</td></tr>
+</tbody></table></div>
+<h3>Local visual assets</h3>
+<div class="tablewrap"><table><thead><tr><th>File</th><th>Responsibility</th></tr></thead><tbody>
+<tr><td><strong>LineOS/assets/line-flex-studio/design-approval-hero.svg</strong></td><td>Warm premium design-review visual</td></tr>
+<tr><td><strong>LineOS/assets/line-flex-studio/quote-order-hero.svg</strong></td><td>Quote/order visual</td></tr>
+<tr><td><strong>LineOS/assets/line-flex-studio/sla-escalation-hero.svg</strong></td><td>Time/SLA visual</td></tr>
+<tr><td><strong>LineOS/assets/line-flex-studio/site-update-hero.svg</strong></td><td>Curated site-progress visual</td></tr>
+<tr><td><strong>LineOS/assets/line-flex-studio/issue-evidence-hero.svg</strong></td><td>Issue/evidence visual</td></tr>
+</tbody></table></div>
+<h3>Tests</h3>
+<div class="tablewrap"><table><thead><tr><th>File</th><th>Responsibility</th></tr></thead><tbody>
+<tr><td><strong>LineOS/tests/line-flex-model.test.mjs</strong></td><td>Draft isolation, immutable updates and preset contracts</td></tr>
+<tr><td><strong>LineOS/tests/line-flex-json-validator.test.mjs</strong></td><td>Deterministic JSON, source rules and size/action limits</td></tr>
+<tr><td><strong>LineOS/tests/line-flex-actions-receipt.test.mjs</strong></td><td>Risk routing, transaction binding, expiry and digest</td></tr>
+<tr><td><strong>LineOS/tests/line-flex-structure.test.mjs</strong></td><td>Semantic HTML, local assets, no remote runtime dependencies</td></tr>
+<tr><td><strong>LineOS/tests/line-flex-studio-state.test.mjs</strong></td><td>State reducer, language/preset/block changes and export gating</td></tr>
+<tr><td><strong>LineOS/tests/docs-contract.test.mjs</strong></td><td>Bilingual Markdown/HTML pairing and status/claim constraints</td></tr>
+</tbody></table></div>
+<h3>Documents</h3>
+<div class="tablewrap"><table><thead><tr><th>File family</th><th>Responsibility</th></tr></thead><tbody>
+<tr><td><strong>LineOS/docs/research/2026-08-01-monolith-line-human-surface-deep-research.{en,th}.{md,html}</strong></td><td>Executive deep-research decision report</td></tr>
+<tr><td><strong>LineOS/docs/guides/line-flex-studio-user-guide.{en,th}.{md,html}</strong></td><td>Studio operating guide</td></tr>
+<tr><td><strong>LineOS/docs/guides/line-developer-console-installation.{en,th}.{md,html}</strong></td><td>OA, Messaging API and LIFF installation guide</td></tr>
+<tr><td><strong>LineOS/docs/guides/line-flex-action-vs-liff-decision-guide.{en,th}.{md,html}</strong></td><td>Action selection and anti-pattern guide</td></tr>
+<tr><td><strong>LineOS/docs/guides/line-flex-performance-rendering-checklist.{en,th}.{md,html}</strong></td><td>Performance/device/accessibility checklist</td></tr>
+<tr><td><strong>LineOS/docs/reports/2026-08-01-line-flex-studio-implementation-report.{en,th}.{md,html}</strong></td><td>Final evidence and residual-risk report</td></tr>
+<tr><td><strong>LineOS/artifacts/line-flex-studio/</strong></td><td>Local desktop/mobile screenshots and machine-readable verification summary</td></tr>
+</tbody></table></div>
+<hr>
+<h3>Task 1: Immutable FlexDraft and five preset contracts</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Create: <strong>LineOS/package.json</strong></li>
+<li>Create: <strong>LineOS/line-flex-model.mjs</strong></li>
+<li>Create: <strong>LineOS/line-flex-presets.mjs</strong></li>
+<li>Test: <strong>LineOS/tests/line-flex-model.test.mjs</strong></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul>
+<li>Produces: <strong>deepFreeze(value)</strong>, <strong>cloneDraft(value)</strong>, <strong>createDraft(preset, language)</strong>, <strong>updateDraftAtPath(draft, path, value)</strong>, <strong>canonicalize(value)</strong>.</li>
+<li>Produces: <strong>PRESET_IDS</strong>, <strong>PRESETS</strong>, <strong>getPreset(id)</strong>.</li>
+<li>Every preset contains context, header, hero, body, footer, intent and evidence seed fields from the approved design.</li>
+<li>Later tasks consume only cloned drafts; no consumer mutates <strong>PRESETS</strong>.</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 1: Add a dependency-free test command and write the failing model test</strong></li>
+</ul>
+<p>Create <strong>LineOS/package.json</strong>:</p>
+<pre><code class="language-json">{
+  "name": "monolith-line-flex-studio",
+  "private": true,
+  "type": "module",
+  "engines": { "node": "&gt;=22.20.0" },
+  "scripts": {
+    "test": "node --test",
+    "test:core": "node --test tests/line-flex-model.test.mjs tests/line-flex-json-validator.test.mjs tests/line-flex-actions-receipt.test.mjs tests/line-flex-studio-state.test.mjs",
+    "test:contracts": "node --test tests/line-flex-structure.test.mjs tests/docs-contract.test.mjs"
+  }
+}</code></pre>
+<p>Create <strong>LineOS/tests/line-flex-model.test.mjs</strong> with these tests:</p>
+<pre><code class="language-js">import test from "node:test";
+import assert from "node:assert/strict";
+import { createDraft, updateDraftAtPath, canonicalize } from "../line-flex-model.mjs";
+import { PRESET_IDS, PRESETS, getPreset } from "../line-flex-presets.mjs";
+
+test("ships exactly the five approved immutable presets", () =&gt; {
+  assert.deepEqual(PRESET_IDS, [
+    "design-approval",
+    "quote-order",
+    "sla-escalation",
+    "site-update",
+    "issue-evidence"
+  ]);
+  assert.equal(Object.isFrozen(PRESETS), true);
+  for (const id of PRESET_IDS) assert.equal(Object.isFrozen(getPreset(id)), true);
+});
+
+test("creates isolated bilingual drafts", () =&gt; {
+  const th = createDraft(getPreset("design-approval"), "th");
+  const en = createDraft(getPreset("design-approval"), "en");
+  th.body.project = "changed outside the source";
+  assert.notEqual(th.body.project, en.body.project);
+  assert.notEqual(th.body.project, getPreset("design-approval").copy.th.body.project);
+});
+
+test("updates a nested field without mutating the previous draft", () =&gt; {
+  const before = createDraft(getPreset("design-approval"), "th");
+  const after = updateDraftAtPath(before, ["body", "revision"], "D-08");
+  assert.equal(before.body.revision, "D-07");
+  assert.equal(after.body.revision, "D-08");
+  assert.notEqual(after, before);
+});
+
+test("canonicalize sorts object keys recursively", () =&gt; {
+  assert.equal(canonicalize({ z: 1, a: { y: 2, b: 3 } }),
+    '{"a":{"b":3,"y":2},"z":1}');
+});</code></pre>
+<ul>
+<li>[ ] <strong>Step 2: Run the model test and observe RED</strong></li>
+</ul>
+<p>Run:</p>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- --test-name-pattern "approved immutable|isolated bilingual|nested field|canonicalize"</code></pre>
+<p>Expected: FAIL because <strong>line-flex-model.mjs</strong> and <strong>line-flex-presets.mjs</strong> do not exist.</p>
+<ul>
+<li>[ ] <strong>Step 3: Implement the minimum immutable model</strong></li>
+</ul>
+<p>Create <strong>LineOS/line-flex-model.mjs</strong>:</p>
+<pre><code class="language-js">export function deepFreeze(value) {
+  if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
+  Object.freeze(value);
+  for (const child of Object.values(value)) deepFreeze(child);
+  return value;
+}
+
+export function cloneDraft(value) {
+  return structuredClone(value);
+}
+
+export function createDraft(preset, language) {
+  if (!preset?.copy?.[language]) throw new Error("unsupported_language");
+  return cloneDraft({
+    ...preset.base,
+    language,
+    presetId: preset.id,
+    ...preset.copy[language]
+  });
+}
+
+export function updateDraftAtPath(draft, path, value) {
+  const next = cloneDraft(draft);
+  let cursor = next;
+  for (let index = 0; index &lt; path.length - 1; index += 1) {
+    cursor = cursor[path[index]];
+  }
+  cursor[path.at(-1)] = value;
+  return next;
+}
+
+export function canonicalize(value) {
+  if (Array.isArray(value)) return "[" + value.map(canonicalize).join(",") + "]";
+  if (value &amp;&amp; typeof value === "object") {
+    const keys = Object.keys(value).sort();
+    return "{" + keys.map((key) =&gt;
+      JSON.stringify(key) + ":" + canonicalize(value[key])
+    ).join(",") + "}";
+  }
+  return JSON.stringify(value);
+}</code></pre>
+<ul>
+<li>[ ] <strong>Step 4: Implement all five frozen bilingual presets</strong></li>
+</ul>
+<p>Create <strong>LineOS/line-flex-presets.mjs</strong> with the complete five-preset data set:</p>
+<pre><code class="language-js">import { deepFreeze } from "./line-flex-model.mjs";
+
+export const PRESET_IDS = deepFreeze([
+  "design-approval", "quote-order", "sla-escalation", "site-update", "issue-evidence"
+]);
+
+const sharedContext = {
+  version: 1,
+  tenantId: "tenant_daph_demo",
+  tenantName: "Daph Studio",
+  platformMark: "Secured by MONOLITH",
+  demoStatus: "standalone_demo",
+  recipientRef: "customer_demo_001"
+};
+
+const makePreset = ({
+  id, audience, asset, canonicalAction, risk, requestedActionType,
+  targetRef, expiresInMinutes, correlationPrefix, description, th, en
+}) =&gt; ({
+  id,
+  base: {
+    context: { ...sharedContext, audience },
+    hero: {
+      localAsset: "./assets/line-flex-studio/" + asset,
+      exportUrl: "https://example.com/monolith/" + asset.replace(".svg", ".png"),
+      aspectRatio: "20:13",
+      aspectMode: "cover",
+      description
+    },
+    intent: {
+      canonicalAction, risk, requestedActionType, targetRef, expiresInMinutes
+    },
+    evidence: { correlationPrefix }
+  },
+  copy: { th, en }
+});
+
+const entries = [
+  makePreset({
+    id: "design-approval",
+    audience: "customer",
+    asset: "design-approval-hero.svg",
+    canonicalAction: "design.approve_revision",
+    risk: "high",
+    requestedActionType: "liff_uri",
+    targetRef: "project_s49_main_kitchen",
+    expiresInMinutes: 1440,
+    correlationPrefix: "LFS-APPROVAL",
+    description: "Warm kitchen design preview",
+    th: {
+      header: { eyebrow: "DAPH STUDIO", title: "แบบพร้อมอนุมัติ", status: "REV D-07" },
+      body: {
+        project: "บ้านสุขุมวิท 49 · ครัวหลัก", revision: "D-07",
+        requester: "พิม · Senior Designer", amount: "฿486,000",
+        deadline: "3 ส.ค. 2026 · 18:00",
+        summary: "ตรวจ revision และผลกระทบก่อนยืนยัน",
+        trustNote: "ระบบจะไม่เปลี่ยนสถานะจนกว่าคุณยืนยันในพื้นที่ส่วนตัว"
+      },
+      footer: { primaryLabel: "เปิดดูแบบและยืนยัน", secondaryLabel: "" },
+      altText: "แบบครัว revision D-07 พร้อมให้ตรวจและยืนยัน"
+    },
+    en: {
+      header: { eyebrow: "DAPH STUDIO", title: "Design ready for review", status: "REV D-07" },
+      body: {
+        project: "Sukhumvit 49 Residence · Main Kitchen", revision: "D-07",
+        requester: "Pim · Senior Designer", amount: "THB 486,000",
+        deadline: "3 Aug 2026 · 18:00",
+        summary: "Review the revision and consequences before confirming",
+        trustNote: "No business state changes until you confirm in the private review"
+      },
+      footer: { primaryLabel: "Review and confirm", secondaryLabel: "" },
+      altText: "Kitchen design revision D-07 is ready for review"
+    }
+  }),
+  makePreset({
+    id: "quote-order",
+    audience: "customer",
+    asset: "quote-order-hero.svg",
+    canonicalAction: "commerce.submit_order_intent",
+    risk: "high",
+    requestedActionType: "liff_uri",
+    targetRef: "quote_q-2026-081",
+    expiresInMinutes: 2880,
+    correlationPrefix: "LFS-ORDER",
+    description: "Material cards and quote document",
+    th: {
+      header: { eyebrow: "DAPH STUDIO", title: "ใบเสนอราคาพร้อมตรวจ", status: "QUOTE Q-2026-081" },
+      body: {
+        project: "บ้านสุขุมวิท 49 · Built-in package", revision: "Q-03",
+        requester: "เมย์ · Sales Consultant", amount: "฿1,280,000",
+        deadline: "5 ส.ค. 2026 · 18:00",
+        summary: "ตรวจราคา ขอบเขต ตัวเลือก และเงื่อนไขก่อนส่งคำสั่งซื้อ",
+        trustNote: "ข้อความในแชตไม่ถือเป็น order จนกว่าคุณยืนยันข้อมูลแบบมีโครงสร้าง"
+      },
+      footer: { primaryLabel: "ตรวจราคาและสั่งซื้อ", secondaryLabel: "ให้ Sale ติดต่อ" },
+      altText: "ใบเสนอราคา Q-2026-081 พร้อมให้ตรวจ"
+    },
+    en: {
+      header: { eyebrow: "DAPH STUDIO", title: "Quote ready for review", status: "QUOTE Q-2026-081" },
+      body: {
+        project: "Sukhumvit 49 Residence · Built-in package", revision: "Q-03",
+        requester: "May · Sales Consultant", amount: "THB 1,280,000",
+        deadline: "5 Aug 2026 · 18:00",
+        summary: "Review price, scope, options and terms before submitting an order",
+        trustNote: "Chat text is not an order until structured details are confirmed"
+      },
+      footer: { primaryLabel: "Review quote and order", secondaryLabel: "Ask Sales to contact me" },
+      altText: "Quote Q-2026-081 is ready for review"
+    }
+  }),
+  makePreset({
+    id: "sla-escalation",
+    audience: "internal",
+    asset: "sla-escalation-hero.svg",
+    canonicalAction: "workflow.acknowledge_sla",
+    risk: "low",
+    requestedActionType: "postback",
+    targetRef: "work_item_314",
+    expiresInMinutes: 240,
+    correlationPrefix: "LFS-SLA",
+    description: "Calm SLA clock and workflow lane",
+    th: {
+      header: { eyebrow: "MONOLITH · DAPH STUDIO", title: "งานใกล้เกิน SLA", status: "47 นาที" },
+      body: {
+        project: "งาน #314 · อนุมัติสั่งฮาร์ดแวร์", revision: "WORK-314",
+        requester: "Procurement Queue", amount: "วงเงิน ฿32,800",
+        deadline: "วันนี้ · 21:00",
+        summary: "รับทราบได้จากการ์ด; การอนุมัติวงเงินต้องเปิดงานและยืนยันสิทธิ์",
+        trustNote: "Acknowledgement ไม่เปลี่ยน workflow state"
+      },
+      footer: { primaryLabel: "รับทราบ SLA", secondaryLabel: "เปิดงาน" },
+      altText: "งาน 314 เหลือ 47 นาทีก่อนเกิน SLA"
+    },
+    en: {
+      header: { eyebrow: "MONOLITH · DAPH STUDIO", title: "Work item nearing SLA", status: "47 MIN" },
+      body: {
+        project: "Work #314 · Hardware purchase approval", revision: "WORK-314",
+        requester: "Procurement Queue", amount: "Limit THB 32,800",
+        deadline: "Today · 21:00",
+        summary: "Acknowledge here; open the work item to approve the amount",
+        trustNote: "Acknowledgement does not change workflow state"
+      },
+      footer: { primaryLabel: "Acknowledge SLA", secondaryLabel: "Open work item" },
+      altText: "Work item 314 has 47 minutes before SLA breach"
+    }
+  }),
+  makePreset({
+    id: "site-update",
+    audience: "customer_group",
+    asset: "site-update-hero.svg",
+    canonicalAction: "field.view_curated_update",
+    risk: "low",
+    requestedActionType: "uri",
+    targetRef: "site_update_2026-08-01",
+    expiresInMinutes: 10080,
+    correlationPrefix: "LFS-SITE",
+    description: "Curated site progress frames",
+    th: {
+      header: { eyebrow: "DAPH STUDIO", title: "อัปเดตหน้างานที่คัดแล้ว", status: "68% COMPLETE" },
+      body: {
+        project: "บ้านสุขุมวิท 49 · ชั้น 1", revision: "SITE-2026-08-01",
+        requester: "นัท · Site Lead", amount: "เสร็จ 11 จาก 16 เลน",
+        deadline: "อัปเดตถัดไป 2 ส.ค. · 17:00",
+        summary: "รูปชุดนี้ผ่านการคัดสำหรับกลุ่มลูกค้าแล้ว",
+        trustNote: "ระบบไม่ส่งต่อรูปจากกลุ่มทีมโดยอัตโนมัติ"
+      },
+      footer: { primaryLabel: "ดูความคืบหน้าที่คัดแล้ว", secondaryLabel: "" },
+      altText: "อัปเดตหน้างานชั้น 1 ที่คัดแล้ว เสร็จ 68 เปอร์เซ็นต์"
+    },
+    en: {
+      header: { eyebrow: "DAPH STUDIO", title: "Curated site update", status: "68% COMPLETE" },
+      body: {
+        project: "Sukhumvit 49 Residence · Level 1", revision: "SITE-2026-08-01",
+        requester: "Nut · Site Lead", amount: "11 of 16 lanes complete",
+        deadline: "Next update 2 Aug · 17:00",
+        summary: "This evidence set has been curated for the customer group",
+        trustNote: "Internal team photos are never forwarded automatically"
+      },
+      footer: { primaryLabel: "View curated progress", secondaryLabel: "" },
+      altText: "Curated Level 1 site update, 68 percent complete"
+    }
+  }),
+  makePreset({
+    id: "issue-evidence",
+    audience: "internal_group",
+    asset: "issue-evidence-hero.svg",
+    canonicalAction: "evidence.acknowledge_issue",
+    risk: "low",
+    requestedActionType: "postback",
+    targetRef: "issue_042",
+    expiresInMinutes: 1440,
+    correlationPrefix: "LFS-ISSUE",
+    description: "Evidence frame and quarantine boundary",
+    th: {
+      header: { eyebrow: "MONOLITH · DAPH STUDIO", title: "รับหลักฐานปัญหาแล้ว", status: "QUARANTINE" },
+      body: {
+        project: "บ้านสุขุมวิท 49 · ห้องครัว", revision: "ISS-042",
+        requester: "LINE Group · ผู้ส่งยังไม่ผูกตัวตน", amount: "ระดับ P2 · รอตรวจ",
+        deadline: "Review ภายใน 2 ชม.",
+        summary: "รูปถูกเก็บพร้อม source และ provenance แต่ยังไม่เปลี่ยน workflow",
+        trustNote: "มนุษย์ต้อง promote หรือ reject หลังยืนยัน actor และ project"
+      },
+      footer: { primaryLabel: "รับเรื่องและเปิดคิวตรวจ", secondaryLabel: "" },
+      altText: "หลักฐานปัญหา ISS-042 อยู่ใน quarantine รอตรวจ"
+    },
+    en: {
+      header: { eyebrow: "MONOLITH · DAPH STUDIO", title: "Issue evidence received", status: "QUARANTINE" },
+      body: {
+        project: "Sukhumvit 49 Residence · Kitchen", revision: "ISS-042",
+        requester: "LINE Group · Unbound sender", amount: "P2 · Review required",
+        deadline: "Review within 2 hours",
+        summary: "Evidence is stored with provenance but has not changed workflow",
+        trustNote: "A human must promote or reject after actor and project verification"
+      },
+      footer: { primaryLabel: "Acknowledge and review", secondaryLabel: "" },
+      altText: "Issue evidence ISS-042 is quarantined for review"
+    }
+  })
+];
+
+export const PRESETS = deepFreeze(Object.fromEntries(entries.map((item) =&gt; [item.id, item])));
+
+export function getPreset(id) {
+  const preset = PRESETS[id];
+  if (!preset) throw new Error("unknown_preset");
+  return preset;
+}</code></pre>
+<ul>
+<li>[ ] <strong>Step 5: Run the model tests and observe GREEN</strong></li>
+</ul>
+<p>Run:</p>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-flex-model.test.mjs</code></pre>
+<p>Expected: PASS, 4 tests, 0 failures.</p>
+<ul>
+<li>[ ] <strong>Step 6: Commit Task 1</strong></li>
+</ul>
+<pre><code class="language-powershell">git add -- LineOS/package.json LineOS/line-flex-model.mjs LineOS/line-flex-presets.mjs LineOS/tests/line-flex-model.test.mjs
+git commit -m "feat(lineos): add immutable Flex Studio presets"</code></pre>
+<hr>
+<h3>Task 2: Deterministic Flex JSON and source-labelled validation</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Create: <strong>LineOS/line-flex-json.mjs</strong></li>
+<li>Create: <strong>LineOS/line-flex-validator.mjs</strong></li>
+<li>Test: <strong>LineOS/tests/line-flex-json-validator.test.mjs</strong></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul>
+<li>Consumes: FlexDraft from Task 1.</li>
+<li>Produces: <strong>buildFlexMessage(draft)</strong> returning a Flex message envelope.</li>
+<li>Produces: <strong>measureUtf8Bytes(value)</strong>.</li>
+<li>Produces: <strong>VALIDATION_RULES</strong> and <strong>validateDraft(draft, message)</strong> returning ordered findings.</li>
+<li>Finding shape: <strong>{ ruleId, severity, block, field, classification, sourceUrl, title, explanation, remediation }</strong>.</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 1: Write failing JSON and validation tests</strong></li>
+</ul>
+<p>Create <strong>LineOS/tests/line-flex-json-validator.test.mjs</strong>:</p>
+<pre><code class="language-js">import test from "node:test";
+import assert from "node:assert/strict";
+import { createDraft, updateDraftAtPath } from "../line-flex-model.mjs";
+import { getPreset } from "../line-flex-presets.mjs";
+import { buildFlexMessage, measureUtf8Bytes } from "../line-flex-json.mjs";
+import { validateDraft } from "../line-flex-validator.mjs";
+
+const draft = () =&gt; createDraft(getPreset("design-approval"), "th");
+
+test("builds deterministic Header Hero Body Footer JSON", () =&gt; {
+  const first = buildFlexMessage(draft());
+  const second = buildFlexMessage(draft());
+  assert.deepEqual(first, second);
+  assert.equal(first.type, "flex");
+  assert.equal(first.contents.type, "bubble");
+  assert.deepEqual(
+    ["header", "hero", "body", "footer"].filter((key) =&gt; first.contents[key]),
+    ["header", "hero", "body", "footer"]
+  );
+});
+
+test("measures the bubble as UTF-8 and accepts the approved preset", () =&gt; {
+  const message = buildFlexMessage(draft());
+  assert.ok(measureUtf8Bytes(message.contents) &lt; 24 * 1024);
+  assert.equal(validateDraft(draft(), message).some((f) =&gt; f.severity === "error"), false);
+});
+
+test("blocks a high-risk postback and cites it as MONOLITH best practice", () =&gt; {
+  const unsafe = updateDraftAtPath(draft(), ["intent", "requestedActionType"], "postback");
+  const findings = validateDraft(unsafe, buildFlexMessage(unsafe));
+  const finding = findings.find((item) =&gt; item.ruleId === "MON-ACT-001");
+  assert.equal(finding.severity, "error");
+  assert.equal(finding.classification, "monolith_best_practice");
+});
+
+test("blocks official alt text, URL and label limits", () =&gt; {
+  let invalid = updateDraftAtPath(draft(), ["altText"], "x".repeat(1501));
+  invalid = updateDraftAtPath(invalid, ["hero", "exportUrl"], "http://unsafe.test/image.png");
+  invalid = updateDraftAtPath(invalid, ["footer", "primaryLabel"], "x".repeat(41));
+  const ids = validateDraft(invalid, buildFlexMessage(invalid)).map((f) =&gt; f.ruleId);
+  assert.ok(ids.includes("LINE-ALT-002"));
+  assert.ok(ids.includes("LINE-IMG-001"));
+  assert.ok(ids.includes("LINE-BTN-001"));
+});
+
+test("warns at the 24 KB MONOLITH soft budget and errors at the 30 KB official ceiling", () =&gt; {
+  const message = buildFlexMessage(draft());
+  const soft = structuredClone(message);
+  soft.contents.body.contents.push({ type: "text", text: "x".repeat(25000), wrap: true });
+  const hard = structuredClone(message);
+  hard.contents.body.contents.push({ type: "text", text: "x".repeat(33000), wrap: true });
+  assert.ok(validateDraft(draft(), soft).some((f) =&gt; f.ruleId === "MON-SIZE-001"));
+  assert.ok(validateDraft(draft(), hard).some((f) =&gt; f.ruleId === "LINE-SIZE-001"));
+});</code></pre>
+<ul>
+<li>[ ] <strong>Step 2: Run the tests and observe RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-flex-json-validator.test.mjs</code></pre>
+<p>Expected: FAIL because JSON and validator modules do not exist.</p>
+<ul>
+<li>[ ] <strong>Step 3: Implement the supported Flex JSON subset</strong></li>
+</ul>
+<p>Create <strong>LineOS/line-flex-json.mjs</strong> with:</p>
+<pre><code class="language-js">const actionFor = (draft) =&gt; {
+  const type = draft.intent.requestedActionType;
+  if (type === "postback") {
+    return { type: "postback", label: draft.footer.primaryLabel,
+      data: "intent=" + encodeURIComponent(draft.presetId) };
+  }
+  if (type === "message") {
+    return { type: "message", label: draft.footer.primaryLabel,
+      text: draft.footer.primaryLabel };
+  }
+  return { type: "uri", label: draft.footer.primaryLabel,
+    uri: "https://example.com/monolith/demo/" + encodeURIComponent(draft.presetId) };
+};
+
+const factRow = (label, value) =&gt; ({
+  type: "box",
+  layout: "horizontal",
+  contents: [
+    { type: "text", text: label, size: "sm", color: "#667871", flex: 2 },
+    { type: "text", text: value, size: "sm", color: "#173B35",
+      weight: "bold", wrap: true, align: "end", flex: 3 }
+  ]
+});
+
+export function buildFlexMessage(draft) {
+  return {
+    type: "flex",
+    altText: draft.altText,
+    contents: {
+      type: "bubble",
+      size: "mega",
+      header: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          { type: "text", text: draft.header.eyebrow, size: "xs", color: "#69817B" },
+          { type: "text", text: draft.header.title, weight: "bold", size: "lg", wrap: true },
+          { type: "text", text: draft.header.status, size: "xs", color: "#0E6B5B" }
+        ]
+      },
+      hero: {
+        type: "image",
+        url: draft.hero.exportUrl,
+        size: "full",
+        aspectRatio: draft.hero.aspectRatio,
+        aspectMode: draft.hero.aspectMode
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "md",
+        contents: [
+          { type: "text", text: draft.body.project, weight: "bold", size: "xl", wrap: true },
+          factRow(draft.language === "th" ? "Revision" : "Revision", draft.body.revision),
+          factRow(draft.language === "th" ? "ผู้ส่ง" : "Requested by", draft.body.requester),
+          factRow(draft.language === "th" ? "มูลค่า/ขอบเขต" : "Amount / scope", draft.body.amount),
+          factRow(draft.language === "th" ? "ภายใน" : "Due", draft.body.deadline),
+          { type: "text", text: draft.body.summary, wrap: true, color: "#526862" },
+          { type: "text", text: draft.body.trustNote, wrap: true, size: "xs", color: "#756743" }
+        ]
+      },
+      footer: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          { type: "button", style: "primary", color: "#0E6B5B", action: actionFor(draft) }
+        ]
+      }
+    }
+  };
+}
+
+export function measureUtf8Bytes(value) {
+  return new TextEncoder().encode(JSON.stringify(value)).byteLength;
+}</code></pre>
+<ul>
+<li>[ ] <strong>Step 4: Implement the validation registry</strong></li>
+</ul>
+<p>Create <strong>LineOS/line-flex-validator.mjs</strong> with an immutable registry for these exact rules:</p>
+<div class="tablewrap"><table><thead><tr><th>Rule ID</th><th>Severity</th><th>Classification</th><th>Condition</th></tr></thead><tbody>
+<tr><td>LINE-ALT-001</td><td>error</td><td>official_constraint</td><td>altText empty</td></tr>
+<tr><td>LINE-ALT-002</td><td>error</td><td>official_constraint</td><td>altText over 1,500 UTF-16 code units</td></tr>
+<tr><td>LINE-SIZE-001</td><td>error</td><td>official_constraint</td><td>bubble JSON over 30 KB UTF-8</td></tr>
+<tr><td>LINE-IMG-001</td><td>error</td><td>official_constraint</td><td>image URL not HTTPS</td></tr>
+<tr><td>LINE-IMG-002</td><td>error</td><td>official_constraint</td><td>image URL over 2,000 characters</td></tr>
+<tr><td>LINE-BTN-001</td><td>error</td><td>official_constraint</td><td>button label empty or over 40 characters</td></tr>
+<tr><td>LINE-POSTBACK-001</td><td>error</td><td>official_constraint</td><td>postback data over 300 characters</td></tr>
+<tr><td>LINE-MESSAGE-001</td><td>error</td><td>official_constraint</td><td>message text over 300 characters</td></tr>
+<tr><td>LINE-URI-001</td><td>error</td><td>official_constraint</td><td>URI over 1,000 characters</td></tr>
+<tr><td>MON-SIZE-001</td><td>warning</td><td>monolith_best_practice</td><td>bubble JSON over 24 KB and at most 30 KB</td></tr>
+<tr><td>MON-ACT-001</td><td>error</td><td>monolith_best_practice</td><td>high-risk action requests postback or message</td></tr>
+<tr><td>MON-CTA-001</td><td>warning</td><td>monolith_best_practice</td><td>more than one dominant CTA</td></tr>
+<tr><td>MON-TRUST-001</td><td>warning</td><td>monolith_best_practice</td><td>revision, deadline, requester, audience or trust note absent</td></tr>
+<tr><td>MON-MEDIA-001</td><td>guidance</td><td>monolith_best_practice</td><td>remote export URL is not fetched by the standalone preview</td></tr>
+<tr><td>MON-PROD-001</td><td>guidance</td><td>monolith_best_practice</td><td>production action requires Trust Kernel</td></tr>
+</tbody></table></div>
+<p>Use these official source URLs in registry metadata:</p>
+<ul>
+<li>https://developers.line.biz/en/reference/messaging-api/</li>
+<li>https://developers.line.biz/en/docs/messaging-api/flex-message-elements/</li>
+<li>https://developers.line.biz/en/docs/messaging-api/actions/</li>
+</ul>
+<p>The evaluator must translate title, explanation and remediation from rule copy in <strong>th</strong> and <strong>en</strong>, sort errors before warnings before guidance, then by rule ID.</p>
+<p>Use this complete evaluator shape so every rule remains source-labelled and deterministic:</p>
+<pre><code class="language-js">import { deepFreeze } from "./line-flex-model.mjs";
+import { measureUtf8Bytes } from "./line-flex-json.mjs";
+
+const LINE_REFERENCE = "https://developers.line.biz/en/reference/messaging-api/";
+const FLEX_REFERENCE = "https://developers.line.biz/en/docs/messaging-api/flex-message-elements/";
+const ACTION_REFERENCE = "https://developers.line.biz/en/docs/messaging-api/actions/";
+const MONOLITH_REFERENCE =
+  "./docs/superpowers/specs/2026-08-01-monolith-line-flex-studio-design.en.html";
+
+const isBlank = (value) =&gt; typeof value !== "string" || value.trim() === "";
+const primaryAction = (message) =&gt; message.contents.footer.contents[0].action;
+const missingTrustField = (draft) =&gt; [
+  draft.body.revision, draft.body.deadline, draft.body.requester,
+  draft.context.audience, draft.body.trustNote
+].some(isBlank);
+
+const rule = (ruleId, severity, classification, block, field, sourceUrl, when) =&gt; ({
+  ruleId, severity, classification, block, field, sourceUrl, when
+});
+
+export const VALIDATION_RULES = deepFreeze([
+  rule("LINE-ALT-001", "error", "official_constraint", "header", "altText", LINE_REFERENCE,
+    (draft) =&gt; isBlank(draft.altText)),
+  rule("LINE-ALT-002", "error", "official_constraint", "header", "altText", LINE_REFERENCE,
+    (draft) =&gt; draft.altText.length &gt; 1500),
+  rule("LINE-SIZE-001", "error", "official_constraint", "body", "body.summary", FLEX_REFERENCE,
+    (_draft, message) =&gt; measureUtf8Bytes(message.contents) &gt; 30 * 1024),
+  rule("LINE-IMG-001", "error", "official_constraint", "hero", "hero.exportUrl", FLEX_REFERENCE,
+    (draft) =&gt; !/^https:\/\//i.test(draft.hero.exportUrl)),
+  rule("LINE-IMG-002", "error", "official_constraint", "hero", "hero.exportUrl", FLEX_REFERENCE,
+    (draft) =&gt; draft.hero.exportUrl.length &gt; 2000),
+  rule("LINE-BTN-001", "error", "official_constraint", "footer", "footer.primaryLabel", FLEX_REFERENCE,
+    (draft) =&gt; isBlank(draft.footer.primaryLabel) || draft.footer.primaryLabel.length &gt; 40),
+  rule("LINE-POSTBACK-001", "error", "official_constraint", "footer", "action.data", ACTION_REFERENCE,
+    (_draft, message) =&gt; primaryAction(message).type === "postback" &amp;&amp;
+      primaryAction(message).data.length &gt; 300),
+  rule("LINE-MESSAGE-001", "error", "official_constraint", "footer", "action.text", ACTION_REFERENCE,
+    (_draft, message) =&gt; primaryAction(message).type === "message" &amp;&amp;
+      primaryAction(message).text.length &gt; 300),
+  rule("LINE-URI-001", "error", "official_constraint", "footer", "action.uri", ACTION_REFERENCE,
+    (_draft, message) =&gt; primaryAction(message).type === "uri" &amp;&amp;
+      primaryAction(message).uri.length &gt; 1000),
+  rule("MON-SIZE-001", "warning", "monolith_best_practice", "body", "body.summary",
+    MONOLITH_REFERENCE, (_draft, message) =&gt; {
+      const bytes = measureUtf8Bytes(message.contents);
+      return bytes &gt; 24 * 1024 &amp;&amp; bytes &lt;= 30 * 1024;
+    }),
+  rule("MON-ACT-001", "error", "monolith_best_practice", "footer", "intent.requestedActionType",
+    MONOLITH_REFERENCE, (draft) =&gt; draft.intent.risk === "high" &amp;&amp;
+      ["postback", "message"].includes(draft.intent.requestedActionType)),
+  rule("MON-CTA-001", "warning", "monolith_best_practice", "footer", "footer.secondaryLabel",
+    MONOLITH_REFERENCE, (draft) =&gt; !isBlank(draft.footer.secondaryLabel)),
+  rule("MON-TRUST-001", "warning", "monolith_best_practice", "body", "body.trustNote",
+    MONOLITH_REFERENCE, missingTrustField),
+  rule("MON-MEDIA-001", "guidance", "monolith_best_practice", "hero", "localAsset",
+    MONOLITH_REFERENCE, (draft) =&gt; !isBlank(draft.hero.localAsset)),
+  rule("MON-PROD-001", "guidance", "monolith_best_practice", "footer", "canonicalAction",
+    MONOLITH_REFERENCE, (draft) =&gt; draft.intent.risk === "high")
+]);
+
+const TITLES = deepFreeze({
+  en: {
+    "LINE-ALT-001": "Alt text is required", "LINE-ALT-002": "Alt text exceeds 1,500 characters",
+    "LINE-SIZE-001": "Flex bubble exceeds 30 KB", "LINE-IMG-001": "Hero URL must use HTTPS",
+    "LINE-IMG-002": "Hero URL exceeds 2,000 characters", "LINE-BTN-001": "Button label is invalid",
+    "LINE-POSTBACK-001": "Postback data exceeds 300 characters",
+    "LINE-MESSAGE-001": "Message action text exceeds 300 characters",
+    "LINE-URI-001": "URI action exceeds 1,000 characters",
+    "MON-SIZE-001": "Payload exceeds the MONOLITH 24 KB budget",
+    "MON-ACT-001": "Consequential action cannot use chat or postback",
+    "MON-CTA-001": "The card has more than one dominant CTA",
+    "MON-TRUST-001": "Required trust context is incomplete",
+    "MON-MEDIA-001": "Preview uses a local hero substitute",
+    "MON-PROD-001": "Production confirmation requires the Trust Kernel"
+  },
+  th: {
+    "LINE-ALT-001": "ต้องมีข้อความสำรอง", "LINE-ALT-002": "ข้อความสำรองเกิน 1,500 ตัวอักษร",
+    "LINE-SIZE-001": "Flex bubble เกิน 30 KB", "LINE-IMG-001": "URL ภาพ Hero ต้องใช้ HTTPS",
+    "LINE-IMG-002": "URL ภาพ Hero เกิน 2,000 ตัวอักษร", "LINE-BTN-001": "ข้อความบนปุ่มไม่ถูกต้อง",
+    "LINE-POSTBACK-001": "ข้อมูล postback เกิน 300 ตัวอักษร",
+    "LINE-MESSAGE-001": "ข้อความของ message action เกิน 300 ตัวอักษร",
+    "LINE-URI-001": "URI action เกิน 1,000 ตัวอักษร",
+    "MON-SIZE-001": "Payload เกินงบ 24 KB ของ MONOLITH",
+    "MON-ACT-001": "Action ที่มีผลต่อธุรกิจห้ามยืนยันผ่านแชตหรือ postback",
+    "MON-CTA-001": "การ์ดมีปุ่มหลักมากกว่าหนึ่งปุ่ม",
+    "MON-TRUST-001": "บริบทเพื่อความน่าเชื่อถือยังไม่ครบ",
+    "MON-MEDIA-001": "Preview ใช้ภาพ Hero ภายในเครื่องแทน",
+    "MON-PROD-001": "การยืนยันจริงต้องผ่าน Trust Kernel"
+  }
+});
+
+const EXPLANATION = deepFreeze({
+  en: {
+    official_constraint: "The generated payload violates a documented LINE Messaging API constraint.",
+    monolith_best_practice: "The configuration violates an approved MONOLITH safety or usability rule."
+  },
+  th: {
+    official_constraint: "Payload ที่สร้างขึ้นขัดกับข้อจำกัดในเอกสาร LINE Messaging API",
+    monolith_best_practice: "การตั้งค่านี้ขัดกับกติกาความปลอดภัยหรือการใช้งานของ MONOLITH ที่อนุมัติแล้ว"
+  }
+});
+
+const REMEDIATION = deepFreeze({
+  en: {
+    official_constraint: "Edit the named field until it is inside the documented limit.",
+    monolith_best_practice: "Use the recommended MONOLITH route or restore the required context."
+  },
+  th: {
+    official_constraint: "แก้ฟิลด์ที่ระบุให้อยู่ภายในขีดจำกัดตามเอกสาร",
+    monolith_best_practice: "ใช้เส้นทางที่ MONOLITH แนะนำหรือเติมบริบทที่จำเป็นให้ครบ"
+  }
+});
+
+export function validateDraft(draft, message) {
+  const language = draft.language === "en" ? "en" : "th";
+  const rank = { error: 0, warning: 1, guidance: 2 };
+  return VALIDATION_RULES
+    .filter((item) =&gt; item.when(draft, message))
+    .map(({ when: _when, ...item }) =&gt; ({
+      ...item,
+      title: TITLES[language][item.ruleId],
+      explanation: EXPLANATION[language][item.classification],
+      remediation: REMEDIATION[language][item.classification]
+    }))
+    .sort((left, right) =&gt; rank[left.severity] - rank[right.severity] ||
+      left.ruleId.localeCompare(right.ruleId));
+}</code></pre>
+<ul>
+<li>[ ] <strong>Step 5: Run the focused and full tests</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-flex-json-validator.test.mjs
+npm.cmd --prefix LineOS run test</code></pre>
+<p>Expected: focused suite PASS 5/5; full suite PASS with 0 failures.</p>
+<ul>
+<li>[ ] <strong>Step 6: Commit Task 2</strong></li>
+</ul>
+<pre><code class="language-powershell">git add -- LineOS/line-flex-json.mjs LineOS/line-flex-validator.mjs LineOS/tests/line-flex-json-validator.test.mjs
+git commit -m "feat(lineos): generate and validate Flex JSON"</code></pre>
+<hr>
+<h3>Task 3: Risk-aware actions, bound demo transactions and truthful receipts</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Create: <strong>LineOS/line-flex-actions.mjs</strong></li>
+<li>Create: <strong>LineOS/line-flex-receipt.mjs</strong></li>
+<li>Test: <strong>LineOS/tests/line-flex-actions-receipt.test.mjs</strong></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul>
+<li>Consumes: canonical FlexDraft from Task 1.</li>
+<li>Produces: <strong>selectActionMode(intent)</strong> returning message, postback, uri or liff_uri.</li>
+<li>Produces: <strong>createDemoTransaction(draft, options)</strong>.</li>
+<li>Produces: <strong>confirmDemoTransaction(transaction, currentDraft, now)</strong>.</li>
+<li>Produces: <strong>createDemoReceipt(transaction, confirmation)</strong> returning a digest-bearing demo receipt.</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 1: Write the failing action and receipt tests</strong></li>
+</ul>
+<p>Create <strong>LineOS/tests/line-flex-actions-receipt.test.mjs</strong>:</p>
+<pre><code class="language-js">import test from "node:test";
+import assert from "node:assert/strict";
+import { createDraft, updateDraftAtPath } from "../line-flex-model.mjs";
+import { getPreset } from "../line-flex-presets.mjs";
+import {
+  selectActionMode, createDemoTransaction, confirmDemoTransaction
+} from "../line-flex-actions.mjs";
+import { createDemoReceipt } from "../line-flex-receipt.mjs";
+
+const approval = () =&gt; createDraft(getPreset("design-approval"), "th");
+
+test("routes every consequential action through LIFF URI", () =&gt; {
+  assert.equal(selectActionMode({ risk: "high", requestedActionType: "postback" }), "liff_uri");
+  assert.equal(selectActionMode({ risk: "high", requestedActionType: "message" }), "liff_uri");
+});
+
+test("allows low-risk acknowledgement postback", () =&gt; {
+  assert.equal(selectActionMode({ risk: "low", requestedActionType: "postback" }), "postback");
+});
+
+test("binds tenant recipient revision action and expiry", () =&gt; {
+  const tx = createDemoTransaction(approval(), {
+    id: "tx_demo_001",
+    now: "2026-08-01T10:00:00.000Z"
+  });
+  assert.equal(tx.tenantId, "tenant_daph_demo");
+  assert.equal(tx.recipientRef, "customer_demo_001");
+  assert.equal(tx.revision, "D-07");
+  assert.equal(tx.canonicalAction, "design.approve_revision");
+  assert.equal(tx.expiresAt, "2026-08-02T10:00:00.000Z");
+});
+
+test("fails closed when revision changes or transaction expires", () =&gt; {
+  const tx = createDemoTransaction(approval(), {
+    id: "tx_demo_002",
+    now: "2026-08-01T10:00:00.000Z"
+  });
+  const changed = updateDraftAtPath(approval(), ["body", "revision"], "D-08");
+  assert.throws(() =&gt; confirmDemoTransaction(tx, changed, "2026-08-01T11:00:00.000Z"),
+    /bound_value_changed/);
+  assert.throws(() =&gt; confirmDemoTransaction(tx, approval(), "2026-08-02T10:00:01.000Z"),
+    /transaction_expired/);
+});
+
+test("creates a labelled deterministic digest and changes on bound input", async () =&gt; {
+  const tx = createDemoTransaction(approval(), {
+    id: "tx_demo_003",
+    now: "2026-08-01T10:00:00.000Z"
+  });
+  const confirmed = confirmDemoTransaction(tx, approval(), "2026-08-01T11:00:00.000Z");
+  const first = await createDemoReceipt(tx, confirmed);
+  const second = await createDemoReceipt(tx, confirmed);
+  assert.equal(first.digest, second.digest);
+  assert.equal(first.label, "DEMO — NOT A PRODUCTION SIGNATURE");
+  const changed = { ...confirmed, recipientRef: "customer_demo_002" };
+  assert.notEqual(first.digest, (await createDemoReceipt(tx, changed)).digest);
+});</code></pre>
+<ul>
+<li>[ ] <strong>Step 2: Run the tests and observe RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-flex-actions-receipt.test.mjs</code></pre>
+<p>Expected: FAIL because action and receipt modules do not exist.</p>
+<ul>
+<li>[ ] <strong>Step 3: Implement action selection and bound transaction checks</strong></li>
+</ul>
+<p>Create <strong>LineOS/line-flex-actions.mjs</strong>:</p>
+<pre><code class="language-js">import { canonicalize } from "./line-flex-model.mjs";
+
+export function selectActionMode(intent) {
+  if (intent.risk === "high") return "liff_uri";
+  return intent.requestedActionType;
+}
+
+const digestInputFor = (draft) =&gt; ({
+  tenantId: draft.context.tenantId,
+  recipientRef: draft.context.recipientRef,
+  targetRef: draft.intent.targetRef,
+  revision: draft.body.revision,
+  canonicalAction: draft.intent.canonicalAction,
+  amount: draft.body.amount,
+  deadline: draft.body.deadline
+});
+
+export function createDemoTransaction(draft, options = {}) {
+  const createdAt = options.now ?? new Date().toISOString();
+  const ttl = draft.intent.expiresInMinutes;
+  const expiresAt = new Date(Date.parse(createdAt) + ttl * 60_000).toISOString();
+  const input = digestInputFor(draft);
+  return {
+    id: options.id ?? crypto.randomUUID(),
+    ...input,
+    actionMode: selectActionMode(draft.intent),
+    createdAt,
+    expiresAt,
+    boundPayload: canonicalize(input)
+  };
+}
+
+export function confirmDemoTransaction(transaction, currentDraft, now = new Date().toISOString()) {
+  if (Date.parse(now) &gt; Date.parse(transaction.expiresAt)) {
+    throw new Error("transaction_expired");
+  }
+  const current = canonicalize(digestInputFor(currentDraft));
+  if (current !== transaction.boundPayload) throw new Error("bound_value_changed");
+  return {
+    transactionId: transaction.id,
+    tenantId: transaction.tenantId,
+    recipientRef: transaction.recipientRef,
+    targetRef: transaction.targetRef,
+    revision: transaction.revision,
+    canonicalAction: transaction.canonicalAction,
+    confirmedAt: now,
+    outcome: "confirmed_demo"
+  };
+}</code></pre>
+<ul>
+<li>[ ] <strong>Step 4: Implement deterministic SHA-256 demo receipts</strong></li>
+</ul>
+<p>Create <strong>LineOS/line-flex-receipt.mjs</strong>:</p>
+<pre><code class="language-js">import { canonicalize } from "./line-flex-model.mjs";
+
+const toHex = (bytes) =&gt;
+  Array.from(bytes, (byte) =&gt; byte.toString(16).padStart(2, "0")).join("");
+
+export async function createDemoReceipt(transaction, confirmation) {
+  const payload = {
+    receiptVersion: 1,
+    transactionId: transaction.id,
+    tenantId: confirmation.tenantId,
+    recipientRef: confirmation.recipientRef,
+    targetRef: confirmation.targetRef,
+    revision: confirmation.revision,
+    canonicalAction: confirmation.canonicalAction,
+    createdAt: transaction.createdAt,
+    confirmedAt: confirmation.confirmedAt,
+    outcome: confirmation.outcome
+  };
+  const bytes = new TextEncoder().encode(canonicalize(payload));
+  const digest = toHex(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)));
+  return {
+    label: "DEMO — NOT A PRODUCTION SIGNATURE",
+    platform: "MONOLITH",
+    ...payload,
+    digest,
+    productionNotice: "Production signing and audit require the MONOLITH Trust Kernel."
+  };
+}</code></pre>
+<ul>
+<li>[ ] <strong>Step 5: Run focused and full tests</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-flex-actions-receipt.test.mjs
+npm.cmd --prefix LineOS run test</code></pre>
+<p>Expected: focused suite PASS 5/5; full suite PASS with 0 failures.</p>
+<ul>
+<li>[ ] <strong>Step 6: Commit Task 3</strong></li>
+</ul>
+<pre><code class="language-powershell">git add -- LineOS/line-flex-actions.mjs LineOS/line-flex-receipt.mjs LineOS/tests/line-flex-actions-receipt.test.mjs
+git commit -m "feat(lineos): add safe demo approval receipts"</code></pre>
+<hr>
+<h3>Task 4: Semantic Studio Console shell and local Trust Concierge assets</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Create: <strong>LineOS/line-flex-studio.html</strong></li>
+<li>Create: <strong>LineOS/line-flex-studio.css</strong></li>
+<li>Create: <strong>LineOS/assets/line-flex-studio/design-approval-hero.svg</strong></li>
+<li>Create: <strong>LineOS/assets/line-flex-studio/quote-order-hero.svg</strong></li>
+<li>Create: <strong>LineOS/assets/line-flex-studio/sla-escalation-hero.svg</strong></li>
+<li>Create: <strong>LineOS/assets/line-flex-studio/site-update-hero.svg</strong></li>
+<li>Create: <strong>LineOS/assets/line-flex-studio/issue-evidence-hero.svg</strong></li>
+<li>Test: <strong>LineOS/tests/line-flex-structure.test.mjs</strong></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul>
+<li>HTML exposes stable IDs used by Task 5: <strong>language-toggle</strong>, <strong>tenant-context</strong>, <strong>preset-list</strong>, <strong>block-tabs</strong>, <strong>field-panel</strong>, <strong>phone-preview</strong>, <strong>json-output</strong>, <strong>validation-list</strong>, <strong>payload-count</strong>, <strong>copy-json</strong>, <strong>download-json</strong>, <strong>reset-draft</strong>, <strong>run-journey</strong>, <strong>liff-dialog</strong>, <strong>receipt-dialog</strong>, <strong>toast-live</strong>.</li>
+<li>All SVGs are local, text-free visual assets with no external references.</li>
+<li>HTML loads only <strong>line-flex-studio.css</strong> and <strong>line-flex-studio.mjs</strong> from local relative paths.</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 1: Write the failing structural contract test</strong></li>
+</ul>
+<p>Create <strong>LineOS/tests/line-flex-structure.test.mjs</strong>:</p>
+<pre><code class="language-js">import test from "node:test";
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
+
+const root = resolve(import.meta.dirname, "..");
+const read = (path) =&gt; readFile(resolve(root, path), "utf8");
+
+test("Studio shell exposes semantic controls and dialogs", async () =&gt; {
+  const html = await read("line-flex-studio.html");
+  for (const id of [
+    "language-toggle", "tenant-context", "preset-list", "block-tabs", "field-panel",
+    "phone-preview", "json-output", "validation-list", "payload-count",
+    "copy-json", "download-json", "reset-draft", "run-journey",
+    "liff-dialog", "receipt-dialog", "toast-live"
+  ]) assert.match(html, new RegExp('id="' + id + '"'));
+  assert.match(html, /&lt;main/);
+  assert.match(html, /aria-live="polite"/);
+  assert.match(html, /&lt;dialog[^&gt;]+id="liff-dialog"/);
+  assert.match(html, /&lt;script type="module" src="\.\/line-flex-studio\.mjs"/);
+});
+
+test("runtime shell has no remote scripts styles fonts or tracking", async () =&gt; {
+  const html = await read("line-flex-studio.html");
+  const css = await read("line-flex-studio.css");
+  assert.doesNotMatch(html, /https?:\/\//i);
+  assert.doesNotMatch(html, /analytics|segment|pixel|gtag/i);
+  assert.doesNotMatch(css, /@import|url\(["']?https?:\/\//i);
+});
+
+test("all five local SVG assets are self-contained", async () =&gt; {
+  for (const name of [
+    "design-approval-hero.svg", "quote-order-hero.svg", "sla-escalation-hero.svg",
+    "site-update-hero.svg", "issue-evidence-hero.svg"
+  ]) {
+    const svg = await read("assets/line-flex-studio/" + name);
+    assert.match(svg, /^&lt;svg/);
+    assert.doesNotMatch(svg, /https?:\/\/|&lt;script|foreignObject/i);
+    assert.match(svg, /aria-hidden="true"/);
+  }
+});</code></pre>
+<ul>
+<li>[ ] <strong>Step 2: Run the structural test and observe RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-flex-structure.test.mjs</code></pre>
+<p>Expected: FAIL because the HTML, CSS and assets do not exist.</p>
+<ul>
+<li>[ ] <strong>Step 3: Create the semantic application shell</strong></li>
+</ul>
+<p>Create <strong>LineOS/line-flex-studio.html</strong> with this hierarchy:</p>
+<pre><code class="language-html">&lt;!doctype html&gt;
+&lt;html lang="th"&gt;
+&lt;head&gt;
+  &lt;meta charset="utf-8"&gt;
+  &lt;meta name="viewport" content="width=device-width,initial-scale=1"&gt;
+  &lt;meta name="color-scheme" content="light"&gt;
+  &lt;title&gt;MONOLITH · LINE Flex Studio&lt;/title&gt;
+  &lt;link rel="stylesheet" href="./line-flex-studio.css"&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;a class="skip-link" href="#studio-main"&gt;ข้ามไปพื้นที่ทำงาน&lt;/a&gt;
+  &lt;header class="app-header"&gt;
+    &lt;div class="platform-brand"&gt;&lt;span class="platform-mark"&gt;M&lt;/span&gt;
+      &lt;span&gt;&lt;b&gt;MONOLITH&lt;/b&gt;&lt;small&gt;LINE Flex Studio&lt;/small&gt;&lt;/span&gt;&lt;/div&gt;
+    &lt;div id="tenant-context" class="tenant-context" aria-label="Current tenant"&gt;&lt;/div&gt;
+    &lt;button id="language-toggle" type="button" aria-pressed="false"&gt;TH / EN&lt;/button&gt;
+  &lt;/header&gt;
+  &lt;main id="studio-main" class="studio-grid"&gt;
+    &lt;section class="editor-pane" aria-labelledby="editor-title"&gt;
+      &lt;h1 id="editor-title"&gt;Flex Message Studio&lt;/h1&gt;
+      &lt;div id="preset-list" role="list" aria-label="Message presets"&gt;&lt;/div&gt;
+      &lt;div id="block-tabs" role="tablist" aria-label="Flex blocks"&gt;&lt;/div&gt;
+      &lt;form id="field-panel" novalidate&gt;&lt;/form&gt;
+    &lt;/section&gt;
+    &lt;section class="preview-pane" aria-labelledby="preview-title"&gt;
+      &lt;div class="pane-title"&gt;&lt;h2 id="preview-title"&gt;LINE Preview&lt;/h2&gt;
+        &lt;div id="viewport-switcher" role="group" aria-label="Preview width"&gt;&lt;/div&gt;&lt;/div&gt;
+      &lt;div class="phone-frame"&gt;&lt;div id="phone-preview"&gt;&lt;/div&gt;&lt;/div&gt;
+      &lt;button id="run-journey" type="button"&gt;Run Journey&lt;/button&gt;
+    &lt;/section&gt;
+    &lt;section class="code-pane" aria-labelledby="json-title"&gt;
+      &lt;div class="pane-title"&gt;&lt;h2 id="json-title"&gt;JSON Preview&lt;/h2&gt;
+        &lt;output id="payload-count"&gt;&lt;/output&gt;&lt;/div&gt;
+      &lt;pre&gt;&lt;code id="json-output"&gt;&lt;/code&gt;&lt;/pre&gt;
+      &lt;div class="button-row"&gt;
+        &lt;button id="copy-json" type="button"&gt;Copy JSON&lt;/button&gt;
+        &lt;button id="download-json" type="button"&gt;Download JSON&lt;/button&gt;
+        &lt;button id="reset-draft" type="button"&gt;Reset&lt;/button&gt;
+      &lt;/div&gt;
+      &lt;h2&gt;Validation&lt;/h2&gt;
+      &lt;ol id="validation-list"&gt;&lt;/ol&gt;
+    &lt;/section&gt;
+  &lt;/main&gt;
+  &lt;dialog id="liff-dialog" aria-labelledby="liff-title"&gt;
+    &lt;h2 id="liff-title"&gt;Private review · Demo&lt;/h2&gt;
+    &lt;div data-liff-review&gt;&lt;/div&gt;
+    &lt;div class="button-row"&gt;&lt;button value="cancel"&gt;Cancel&lt;/button&gt;
+      &lt;button data-confirm-demo value="confirm"&gt;Confirm demo intent&lt;/button&gt;&lt;/div&gt;
+  &lt;/dialog&gt;
+  &lt;dialog id="receipt-dialog" aria-labelledby="receipt-title"&gt;
+    &lt;h2 id="receipt-title"&gt;Verification Receipt — Demo&lt;/h2&gt;
+    &lt;div data-receipt&gt;&lt;/div&gt;&lt;button data-close-receipt&gt;Close&lt;/button&gt;
+  &lt;/dialog&gt;
+  &lt;p id="toast-live" class="sr-only" aria-live="polite"&gt;&lt;/p&gt;
+  &lt;script type="module" src="./line-flex-studio.mjs"&gt;&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+<ul>
+<li>[ ] <strong>Step 4: Implement Trust Concierge layout and responsive behavior</strong></li>
+</ul>
+<p>Create <strong>LineOS/line-flex-studio.css</strong> with exact token intent:</p>
+<pre><code class="language-css">:root{
+  --ink:#173b35;--muted:#667871;--platform:#123f37;--action:#0e6b5b;
+  --action-hover:#0a594d;--warm:#f4efe7;--attention:#c6942d;
+  --surface:#ffffff;--canvas:#eef4f1;--border:#d6e3de;--danger:#a33f34;
+  --radius:14px;--shadow:0 18px 48px rgba(22,61,52,.14);
+  font-family:Inter,"Noto Sans Thai","Segoe UI",Tahoma,sans-serif;
+  color:var(--ink);background:var(--canvas)
+}
+*{box-sizing:border-box}
+body{margin:0;min-width:320px;background:var(--canvas)}
+button,input,textarea,select{font:inherit}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,
+[role=tab]:focus-visible{outline:3px solid #f0b94d;outline-offset:2px}
+.skip-link{position:fixed;left:1rem;top:-5rem;z-index:100;background:#fff;padding:.7rem}
+.skip-link:focus{top:1rem}
+.app-header{min-height:68px;padding:12px 18px;background:var(--platform);color:#fff;
+  display:flex;align-items:center;gap:18px;justify-content:space-between}
+.platform-brand{display:flex;gap:10px;align-items:center}.platform-brand small{display:block;opacity:.7}
+.platform-mark{width:38px;height:38px;border-radius:12px;background:#fff;color:var(--platform);
+  display:grid;place-items:center;font-weight:900}
+.studio-grid{display:grid;grid-template-columns:minmax(260px,1fr) minmax(320px,.85fr)
+  minmax(300px,1.1fr);gap:10px;padding:10px;min-height:calc(100vh - 68px)}
+.studio-grid&gt;section{background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:16px;min-width:0}
+.preview-pane{background:#dfe9e5!important;display:flex;flex-direction:column;align-items:center}
+.phone-frame{width:min(360px,100%);background:#1d2723;border-radius:34px;padding:10px;
+  box-shadow:var(--shadow)}#phone-preview{min-height:610px;background:#fff;border-radius:25px;overflow:hidden}
+.code-pane pre{max-height:52vh;overflow:auto;background:#16221d;color:#cbe7df;
+  border-radius:10px;padding:14px;white-space:pre-wrap;word-break:break-word}
+.button-row{display:flex;gap:8px;flex-wrap:wrap}
+button{min-height:44px;border:1px solid var(--border);border-radius:10px;padding:8px 12px;background:#fff}
+#run-journey,[data-confirm-demo]{background:var(--action);color:#fff;border-color:var(--action)}
+dialog{width:min(620px,calc(100% - 28px));border:0;border-radius:18px;box-shadow:var(--shadow)}
+dialog::backdrop{background:rgba(10,25,21,.62)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:1000px){.studio-grid{grid-template-columns:1fr 1fr}.code-pane{grid-column:1/-1}}
+@media(max-width:720px){.studio-grid{display:block}.studio-grid&gt;section{margin-bottom:10px}
+  .app-header{align-items:flex-start;flex-wrap:wrap}.phone-frame{width:360px;max-width:100%}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;
+  animation-duration:.01ms!important;transition-duration:.01ms!important}}</code></pre>
+<p>Continue the same file with these component and state styles:</p>
+<pre><code class="language-css">#preset-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0}
+.preset-card{text-align:left;border:1px solid var(--border);background:#fbfdfc;padding:12px}
+.preset-card[aria-pressed=true]{border-color:var(--action);box-shadow:0 0 0 2px rgba(14,107,91,.16)}
+.preset-card small{display:block;color:var(--muted);margin-top:4px}
+#block-tabs,[data-mobile-tabs]{display:flex;gap:6px;overflow-x:auto;padding:3px 0 10px}
+[role=tab]{white-space:nowrap}[role=tab][aria-selected=true]{background:var(--platform);color:#fff}
+.field-grid{display:grid;gap:12px}.field-control{display:grid;gap:5px}
+.field-control label{font-weight:700}.field-control small{color:var(--muted)}
+.field-control input,.field-control textarea,.field-control select{width:100%;border:1px solid var(--border);
+  border-radius:9px;padding:10px;background:#fff;color:var(--ink)}
+.field-control textarea{min-height:88px;resize:vertical}.field-control [aria-invalid=true]{border-color:var(--danger)}
+.pane-title{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.phone-message{padding:18px 12px;background:#e6f0ec;min-height:610px}
+.flex-card{overflow:hidden;background:#fff;border-radius:17px;box-shadow:0 8px 24px rgba(20,58,50,.13)}
+.flex-header,.flex-body,.flex-footer{padding:14px}.flex-header{border-bottom:1px solid #edf2f0}
+.flex-eyebrow,.flex-status,.flex-fact-label,.trust-note{font-size:.78rem;color:var(--muted)}
+.flex-title,.flex-project{font-size:1.13rem;font-weight:800}.flex-status{color:var(--action);font-weight:700}
+.flex-hero{aspect-ratio:20/13;background:var(--warm);overflow:hidden}.flex-hero img{width:100%;height:100%;object-fit:cover}
+.flex-body{display:grid;gap:10px}.flex-fact{display:grid;grid-template-columns:2fr 3fr;gap:10px}
+.flex-fact-value{text-align:right;font-weight:700}.trust-note{color:#756743}
+.flex-primary{width:100%;background:var(--action);border-color:var(--action);color:#fff;font-weight:800}
+#validation-list{padding:0;list-style:none;display:grid;gap:8px}
+.finding{border-left:4px solid var(--border);border-radius:9px;background:#f7faf9;padding:10px}
+.finding[data-severity=error]{border-color:var(--danger)}.finding[data-severity=warning]{border-color:var(--attention)}
+.finding[data-severity=guidance]{border-color:var(--action)}.finding-meta{font-size:.76rem;color:var(--muted)}
+.demo-ribbon{background:var(--warm);border:1px solid #decfae;border-radius:9px;padding:8px;font-weight:800}
+.receipt-digest{font-family:ui-monospace,Consolas,monospace;overflow-wrap:anywhere;background:#eef4f1;padding:10px}
+button:not(:disabled):hover{border-color:var(--action)}button:disabled{opacity:.48;cursor:not-allowed}
+[hidden]{display:none!important}[data-mobile-tabs]{display:none}
+@media(max-width:720px){#preset-list{grid-template-columns:1fr}[data-mobile-tabs]{display:flex;position:sticky;
+  top:0;z-index:10;background:var(--canvas);padding:8px 0}.studio-grid&gt;section[hidden]{display:none!important}}
+@media print{.app-header,.editor-pane,.preview-pane,.button-row,[data-mobile-tabs]{display:none!important}
+  .studio-grid{display:block;padding:0}.code-pane{border:0!important}.code-pane pre{max-height:none;color:#000;background:#fff}}</code></pre>
+<ul>
+<li>[ ] <strong>Step 5: Create five self-contained SVG hero assets</strong></li>
+</ul>
+<p>Each SVG must use a <strong>viewBox="0 0 1200 780"</strong>, <strong>aria-hidden="true"</strong>, no text, no embedded bitmap and no external reference. Use the Trust Concierge palette. The exact visual subjects are:</p>
+<div class="tablewrap"><table><thead><tr><th>Asset</th><th>Visual construction</th></tr></thead><tbody>
+<tr><td>design-approval</td><td>Warm isometric kitchen cabinetry, island, one green material plane</td></tr>
+<tr><td>quote-order</td><td>Layered material/finish cards, document plane and restrained gold total marker</td></tr>
+<tr><td>sla-escalation</td><td>Calm clock arc, workflow lane and one attention marker; no alarm red flood</td></tr>
+<tr><td>site-update</td><td>Room outline, three curated photo frames and progress check marks</td></tr>
+<tr><td>issue-evidence</td><td>Evidence frame, provenance nodes and amber quarantine boundary</td></tr>
+</tbody></table></div>
+<p>Create the five files with these exact self-contained vectors; color may be tuned only through the approved palette tokens:</p>
+<p><strong>design-approval-hero.svg</strong></p>
+<pre><code class="language-svg">&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 780" aria-hidden="true"&gt;
+&lt;rect width="1200" height="780" fill="#f4efe7"/&gt;&lt;path d="M90 590 450 390l360 205-360 128z" fill="#d8e5df"/&gt;
+&lt;path d="M160 208h410v320H160z" fill="#fff"/&gt;&lt;path d="M185 235h170v258H185zm194 0h166v258H379z" fill="#e7ded0"/&gt;
+&lt;path d="m610 428 280-154 235 134-282 159z" fill="#fff"/&gt;&lt;path d="m638 430 202 115v112L638 542z" fill="#0e6b5b"/&gt;
+&lt;circle cx="978" cy="185" r="62" fill="#c6942d" opacity=".55"/&gt;&lt;path d="M70 640h1060" stroke="#173b35" stroke-width="12"/&gt;
+&lt;/svg&gt;</code></pre>
+<p><strong>quote-order-hero.svg</strong></p>
+<pre><code class="language-svg">&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 780" aria-hidden="true"&gt;
+&lt;rect width="1200" height="780" fill="#eef4f1"/&gt;&lt;rect x="160" y="115" width="510" height="535" rx="28" fill="#fff"/&gt;
+&lt;path d="M225 205h375M225 270h300M225 335h345M225 510h375" stroke="#9bb2aa" stroke-width="20" stroke-linecap="round"/&gt;
+&lt;rect x="710" y="180" width="270" height="180" rx="24" fill="#173b35" transform="rotate(8 845 270)"/&gt;
+&lt;rect x="760" y="350" width="270" height="180" rx="24" fill="#c9b89c" transform="rotate(-7 895 440)"/&gt;
+&lt;circle cx="905" cy="584" r="72" fill="#c6942d"/&gt;&lt;path d="M864 584h82" stroke="#fff" stroke-width="18"/&gt;
+&lt;/svg&gt;</code></pre>
+<p><strong>sla-escalation-hero.svg</strong></p>
+<pre><code class="language-svg">&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 780" aria-hidden="true"&gt;
+&lt;rect width="1200" height="780" fill="#eef4f1"/&gt;&lt;circle cx="380" cy="390" r="220" fill="#fff" stroke="#d6e3de" stroke-width="28"/&gt;
+&lt;path d="M380 390V245m0 145 112 66" stroke="#0e6b5b" stroke-width="28" stroke-linecap="round"/&gt;
+&lt;path d="M160 390a220 220 0 0 1 376-156" fill="none" stroke="#c6942d" stroke-width="32" stroke-linecap="round"/&gt;
+&lt;path d="M660 250h360M660 390h260M660 530h360" stroke="#9bb2aa" stroke-width="30" stroke-linecap="round"/&gt;
+&lt;circle cx="960" cy="390" r="38" fill="#c6942d"/&gt;&lt;circle cx="1040" cy="530" r="38" fill="#0e6b5b"/&gt;
+&lt;/svg&gt;</code></pre>
+<p><strong>site-update-hero.svg</strong></p>
+<pre><code class="language-svg">&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 780" aria-hidden="true"&gt;
+&lt;rect width="1200" height="780" fill="#f4efe7"/&gt;&lt;path d="M110 630V195h980v435" fill="none" stroke="#173b35" stroke-width="22"/&gt;
+&lt;rect x="170" y="260" width="250" height="220" rx="18" fill="#fff"/&gt;&lt;path d="m195 438 82-92 58 53 61-78" fill="none" stroke="#0e6b5b" stroke-width="20"/&gt;
+&lt;rect x="475" y="260" width="250" height="220" rx="18" fill="#fff"/&gt;&lt;path d="m500 438 78-120 70 84 52-48" fill="none" stroke="#8aa69c" stroke-width="20"/&gt;
+&lt;rect x="780" y="260" width="250" height="220" rx="18" fill="#fff"/&gt;&lt;path d="m805 438 86-105 61 71 54-88" fill="none" stroke="#c6942d" stroke-width="20"/&gt;
+&lt;path d="m250 560 28 28 58-68m220 40 28 28 58-68m220 40 28 28 58-68" fill="none" stroke="#0e6b5b" stroke-width="20"/&gt;
+&lt;/svg&gt;</code></pre>
+<p><strong>issue-evidence-hero.svg</strong></p>
+<pre><code class="language-svg">&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 780" aria-hidden="true"&gt;
+&lt;rect width="1200" height="780" fill="#eef4f1"/&gt;&lt;rect x="145" y="120" width="540" height="510" rx="28" fill="#fff"/&gt;
+&lt;path d="m205 530 120-155 94 86 126-184 80 91" fill="none" stroke="#0e6b5b" stroke-width="26"/&gt;
+&lt;circle cx="270" cy="240" r="48" fill="#c6942d"/&gt;&lt;path d="M760 230h250M760 390h250M760 550h250" stroke="#173b35" stroke-width="18"/&gt;
+&lt;circle cx="760" cy="230" r="34" fill="#0e6b5b"/&gt;&lt;circle cx="760" cy="390" r="34" fill="#0e6b5b"/&gt;&lt;circle cx="760" cy="550" r="34" fill="#c6942d"/&gt;
+&lt;rect x="105" y="80" width="990" height="620" rx="42" fill="none" stroke="#c6942d" stroke-width="18" stroke-dasharray="28 22"/&gt;
+&lt;/svg&gt;</code></pre>
+<ul>
+<li>[ ] <strong>Step 6: Run the structural and full tests</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-flex-structure.test.mjs
+npm.cmd --prefix LineOS run test</code></pre>
+<p>Expected: structure suite PASS 3/3; full suite PASS with 0 failures.</p>
+<ul>
+<li>[ ] <strong>Step 7: Commit Task 4</strong></li>
+</ul>
+<pre><code class="language-powershell">git add -- LineOS/line-flex-studio.html LineOS/line-flex-studio.css LineOS/assets/line-flex-studio LineOS/tests/line-flex-structure.test.mjs
+git commit -m "feat(lineos): add Trust Concierge Studio shell"</code></pre>
+<hr>
+<h3>Task 5: Real-time Studio controller, safe Mock LIFF and responsive interactions</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Create: <strong>LineOS/line-flex-studio.mjs</strong></li>
+<li>Modify: <strong>LineOS/line-flex-json.mjs</strong></li>
+<li>Modify: <strong>LineOS/line-flex-studio.html</strong></li>
+<li>Modify: <strong>LineOS/line-flex-studio.css</strong></li>
+<li>Test: <strong>LineOS/tests/line-flex-studio-state.test.mjs</strong></li>
+<li>Test: <strong>LineOS/tests/line-flex-actions-receipt.test.mjs</strong></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul>
+<li>Consumes all pure modules from Tasks 1–3.</li>
+<li>Produces: <strong>createInitialStudioState()</strong>, <strong>reduceStudioState(state, event)</strong>, <strong>deriveStudioView(state)</strong> and <strong>bindStudio(document)</strong>.</li>
+<li>DOM rendering uses element creation and <strong>textContent</strong> for user-controlled data; it does not inject draft strings through <strong>innerHTML</strong>.</li>
+<li>Export, Run Journey and confirmation are gated by current validation and bound transaction checks.</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 1: Write the failing state tests</strong></li>
+</ul>
+<p>Create <strong>LineOS/tests/line-flex-studio-state.test.mjs</strong>:</p>
+<pre><code class="language-js">import test from "node:test";
+import assert from "node:assert/strict";
+import {
+  createInitialStudioState, reduceStudioState, deriveStudioView
+} from "../line-flex-studio.mjs";
+
+test("starts with the Thai design approval preset", () =&gt; {
+  const state = createInitialStudioState();
+  assert.equal(state.language, "th");
+  assert.equal(state.presetId, "design-approval");
+  assert.equal(state.activeBlock, "header");
+});
+
+test("language and preset changes create fresh valid views", () =&gt; {
+  let state = createInitialStudioState();
+  state = reduceStudioState(state, { type: "language.changed", language: "en" });
+  state = reduceStudioState(state, { type: "preset.changed", presetId: "quote-order" });
+  const view = deriveStudioView(state);
+  assert.equal(view.draft.language, "en");
+  assert.equal(view.draft.presetId, "quote-order");
+  assert.equal(view.hasBlockingErrors, false);
+});
+
+test("field changes update preview JSON and validation from one draft", () =&gt; {
+  const state = reduceStudioState(createInitialStudioState(), {
+    type: "field.changed", path: ["body", "revision"], value: "D-08"
+  });
+  const view = deriveStudioView(state);
+  assert.equal(view.draft.body.revision, "D-08");
+  assert.match(view.jsonText, /D-08/);
+  assert.match(view.preview.body.revision, /D-08/);
+});
+
+test("blocking errors disable copy download and journey", () =&gt; {
+  const state = reduceStudioState(createInitialStudioState(), {
+    type: "field.changed", path: ["altText"], value: ""
+  });
+  const view = deriveStudioView(state);
+  assert.equal(view.hasBlockingErrors, true);
+  assert.equal(view.canExport, false);
+  assert.equal(view.canRunJourney, false);
+});</code></pre>
+<ul>
+<li>[ ] <strong>Step 2: Run the state test and observe RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-flex-studio-state.test.mjs</code></pre>
+<p>Expected: FAIL because <strong>line-flex-studio.mjs</strong> does not exist.</p>
+<ul>
+<li>[ ] <strong>Step 3: Implement the pure state reducer and derived view</strong></li>
+</ul>
+<p>Create the pure section of <strong>LineOS/line-flex-studio.mjs</strong>:</p>
+<pre><code class="language-js">import { createDraft, updateDraftAtPath } from "./line-flex-model.mjs";
+import { PRESET_IDS, getPreset } from "./line-flex-presets.mjs";
+import { buildFlexMessage, measureUtf8Bytes } from "./line-flex-json.mjs";
+import { validateDraft } from "./line-flex-validator.mjs";
+import {
+  createDemoTransaction, confirmDemoTransaction, selectActionMode
+} from "./line-flex-actions.mjs";
+import { createDemoReceipt } from "./line-flex-receipt.mjs";
+
+export function createInitialStudioState() {
+  const language = "th";
+  const presetId = "design-approval";
+  return { language, presetId, activeBlock: "header",
+    draft: createDraft(getPreset(presetId), language), transaction: null, receipt: null };
+}
+
+export function reduceStudioState(state, event) {
+  if (event.type === "language.changed") {
+    return { ...state, language: event.language,
+      draft: createDraft(getPreset(state.presetId), event.language),
+      transaction: null, receipt: null };
+  }
+  if (event.type === "preset.changed") {
+    return { ...state, presetId: event.presetId,
+      draft: createDraft(getPreset(event.presetId), state.language),
+      transaction: null, receipt: null };
+  }
+  if (event.type === "block.changed") return { ...state, activeBlock: event.block };
+  if (event.type === "field.changed") {
+    return { ...state, draft: updateDraftAtPath(state.draft, event.path, event.value),
+      transaction: null, receipt: null };
+  }
+  if (event.type === "draft.reset") {
+    return { ...state, draft: createDraft(getPreset(state.presetId), state.language),
+      transaction: null, receipt: null };
+  }
+  return state;
+}
+
+export function deriveStudioView(state) {
+  const message = buildFlexMessage(state.draft);
+  const findings = validateDraft(state.draft, message);
+  const hasBlockingErrors = findings.some((finding) =&gt; finding.severity === "error");
+  return {
+    ...state,
+    message,
+    jsonText: JSON.stringify(message, null, 2),
+    payloadBytes: measureUtf8Bytes(message.contents),
+    findings,
+    hasBlockingErrors,
+    canExport: !hasBlockingErrors,
+    canRunJourney: !hasBlockingErrors,
+    preview: state.draft
+  };
+}</code></pre>
+<ul>
+<li>[ ] <strong>Step 4: Integrate risk-aware action selection into JSON generation</strong></li>
+</ul>
+<p>Modify <strong>LineOS/line-flex-json.mjs</strong> so <strong>actionFor(draft)</strong> calls <strong>selectActionMode(draft.intent)</strong>. A selected <strong>liff_uri</strong> produces a URI action to the non-secret demo route. High-risk presets can therefore never export a postback button even if requested incorrectly; the validator still reports the attempted unsafe configuration.</p>
+<pre><code class="language-js">import { selectActionMode } from "./line-flex-actions.mjs";
+
+const actionFor = (draft) =&gt; {
+  const mode = selectActionMode(draft.intent);
+  if (mode === "postback") return {
+    type: "postback", label: draft.footer.primaryLabel,
+    data: "intent=" + encodeURIComponent(draft.presetId)
+  };
+  if (mode === "message") return {
+    type: "message", label: draft.footer.primaryLabel,
+    text: draft.footer.primaryLabel
+  };
+  return {
+    type: "uri", label: draft.footer.primaryLabel,
+    uri: "https://example.com/monolith/demo/" + encodeURIComponent(draft.presetId)
+  };
+};</code></pre>
+<p>Add a regression test asserting that a high-risk draft requesting postback exports a URI action while still producing <strong>MON-ACT-001</strong>.</p>
+<ul>
+<li>[ ] <strong>Step 5: Bind the DOM safely</strong></li>
+</ul>
+<p>Implement <strong>bindStudio(document)</strong> and invoke it only when <strong>document</strong> exists. The binding must:</p>
+<ol>
+<li>render five preset buttons and four block tabs;</li>
+<li>render labelled controls for all fields in the active block;</li>
+<li>dispatch reducer events on input without debounce;</li>
+<li>render the phone preview with <strong>createElement</strong>, <strong>replaceChildren</strong> and <strong>textContent</strong>;</li>
+<li>render JSON through <strong>jsonOutput.textContent</strong>;</li>
+<li>render validation findings with severity, classification and source link;</li>
+<li>show byte count and 24 KB/30 KB state;</li>
+<li>disable Copy, Download and Run Journey when errors exist;</li>
+<li>copy through <strong>navigator.clipboard.writeText</strong> with a clear failure message;</li>
+<li>download through a local Blob and revoke the object URL;</li>
+<li>request confirmation before resetting a changed draft;</li>
+<li>use <strong>aria-pressed</strong>, <strong>aria-selected</strong>, <strong>aria-controls</strong> and visible focus correctly;</li>
+<li>switch document language and all control copy between Thai and English;</li>
+<li>announce copy/download/reset/error/receipt results through <strong>toast-live</strong>.</li>
+</ol>
+<p>Append this browser controller after the pure exports in <strong>line-flex-studio.mjs</strong>. It is the normative DOM pattern: user-controlled values enter the page only through <strong>textContent</strong>, <strong>value</strong> or attribute APIs, never through <strong>innerHTML</strong>.</p>
+<pre><code class="language-js">const BLOCKS = ["header", "hero", "body", "footer"];
+const FIELDS = {
+  header: [
+    ["header.eyebrow", "Eyebrow", "คิ้วหัวเรื่อง"], ["header.title", "Title", "หัวเรื่อง"],
+    ["header.status", "Status", "สถานะ"], ["altText", "Alt text", "ข้อความสำรอง"]
+  ],
+  hero: [
+    ["hero.exportUrl", "Export HTTPS URL", "URL HTTPS สำหรับส่งจริง"],
+    ["hero.aspectRatio", "Aspect ratio", "อัตราส่วนภาพ"],
+    ["hero.aspectMode", "Aspect mode", "รูปแบบการครอบภาพ"]
+  ],
+  body: [
+    ["body.project", "Project", "โครงการ"], ["body.revision", "Revision", "Revision"],
+    ["body.requester", "Requested by", "ผู้ส่งคำขอ"], ["body.amount", "Amount / scope", "มูลค่า / ขอบเขต"],
+    ["body.deadline", "Due", "กำหนดเวลา"], ["body.summary", "Summary", "สรุป"],
+    ["body.trustNote", "Trust note", "ข้อความยืนยันความน่าเชื่อถือ"]
+  ],
+  footer: [
+    ["footer.primaryLabel", "Primary CTA", "ปุ่มหลัก"],
+    ["footer.secondaryLabel", "Secondary CTA", "ปุ่มรอง"],
+    ["intent.requestedActionType", "Requested action", "Action ที่ร้องขอ"]
+  ]
+};
+
+const COPY = {
+  en: { blocks: ["Header", "Hero", "Body", "Footer"], bytes: "bubble bytes",
+    run: "Run Journey", copyJson: "Copy JSON", downloadJson: "Download JSON", resetDraft: "Reset",
+    copied: "JSON copied", downloaded: "JSON downloaded", reset: "Draft reset",
+    copyFailed: "Copy failed. Select the JSON and copy manually.", fix: "Fix" },
+  th: { blocks: ["ส่วนหัว", "ภาพหลัก", "เนื้อหา", "ส่วนท้าย"], bytes: "ไบต์ของ bubble",
+    run: "ทดลอง Journey", copyJson: "คัดลอก JSON", downloadJson: "ดาวน์โหลด JSON", resetDraft: "คืนค่า",
+    copied: "คัดลอก JSON แล้ว", downloaded: "ดาวน์โหลด JSON แล้ว", reset: "คืนค่าแบบร่างแล้ว",
+    copyFailed: "คัดลอกไม่สำเร็จ โปรดเลือก JSON แล้วคัดลอกด้วยตนเอง", fix: "แก้ไข" }
+};
+
+const pathParts = (path) =&gt; path.split(".");
+const valueAt = (value, path) =&gt; pathParts(path).reduce((cursor, part) =&gt; cursor[part], value);
+const make = (doc, tag, options = {}) =&gt; {
+  const element = doc.createElement(tag);
+  if (options.className) element.className = options.className;
+  if (options.text !== undefined) element.textContent = options.text;
+  for (const [name, value] of Object.entries(options.attributes ?? {})) {
+    element.setAttribute(name, String(value));
+  }
+  return element;
+};
+
+const addText = (doc, parent, className, text) =&gt;
+  parent.append(make(doc, "div", { className, text }));
+
+function renderPreview(doc, container, draft) {
+  const message = make(doc, "div", { className: "phone-message" });
+  const card = make(doc, "article", { className: "flex-card" });
+  const header = make(doc, "header", { className: "flex-header" });
+  addText(doc, header, "flex-eyebrow", draft.header.eyebrow);
+  addText(doc, header, "flex-title", draft.header.title);
+  addText(doc, header, "flex-status", draft.header.status);
+  const hero = make(doc, "div", { className: "flex-hero" });
+  const image = make(doc, "img", { attributes: { src: draft.hero.localAsset, alt: "" } });
+  image.addEventListener("error", () =&gt; image.remove());
+  hero.append(image);
+  const body = make(doc, "div", { className: "flex-body" });
+  addText(doc, body, "flex-project", draft.body.project);
+  for (const [label, value] of [
+    ["Revision", draft.body.revision],
+    [draft.language === "th" ? "ผู้ส่ง" : "Requested by", draft.body.requester],
+    [draft.language === "th" ? "มูลค่า / ขอบเขต" : "Amount / scope", draft.body.amount],
+    [draft.language === "th" ? "ภายใน" : "Due", draft.body.deadline]
+  ]) {
+    const row = make(doc, "div", { className: "flex-fact" });
+    addText(doc, row, "flex-fact-label", label);
+    addText(doc, row, "flex-fact-value", value);
+    body.append(row);
+  }
+  addText(doc, body, "flex-summary", draft.body.summary);
+  addText(doc, body, "trust-note", draft.body.trustNote);
+  const footer = make(doc, "footer", { className: "flex-footer" });
+  footer.append(make(doc, "button", { className: "flex-primary", text: draft.footer.primaryLabel,
+    attributes: { type: "button", tabindex: "-1" } }));
+  card.append(header, hero, body, footer);
+  message.append(card);
+  container.replaceChildren(message);
+}
+
+export function bindStudio(doc) {
+  let state = createInitialStudioState();
+  let dirty = false;
+  const byId = (id) =&gt; doc.getElementById(id);
+  const nodes = {
+    language: byId("language-toggle"), tenant: byId("tenant-context"),
+    presets: byId("preset-list"), blocks: byId("block-tabs"), fields: byId("field-panel"),
+    preview: byId("phone-preview"), json: byId("json-output"), findings: byId("validation-list"),
+    count: byId("payload-count"), copy: byId("copy-json"), download: byId("download-json"),
+    reset: byId("reset-draft"), run: byId("run-journey"), toast: byId("toast-live")
+  };
+  const announce = (message) =&gt; { nodes.toast.textContent = ""; doc.defaultView.setTimeout(() =&gt; {
+    nodes.toast.textContent = message;
+  }, 0); };
+  const dispatch = (event, marksDirty = true) =&gt; {
+    state = reduceStudioState(state, event);
+    if (marksDirty) dirty = true;
+    render(event.type !== "field.changed");
+  };
+
+  function renderPresets() {
+    const buttons = PRESET_IDS.map((id) =&gt; {
+      const item = createDraft(getPreset(id), state.language);
+      const button = make(doc, "button", { className: "preset-card", text: item.header.title,
+        attributes: { type: "button", "aria-pressed": id === state.presetId } });
+      button.append(make(doc, "small", { text: item.context.audience }));
+      button.addEventListener("click", () =&gt; {
+        dirty = false;
+        dispatch({ type: "preset.changed", presetId: id }, false);
+      });
+      return button;
+    });
+    nodes.presets.replaceChildren(...buttons);
+  }
+
+  function renderBlocks() {
+    nodes.blocks.replaceChildren(...BLOCKS.map((block, index) =&gt; {
+      const selected = block === state.activeBlock;
+      const button = make(doc, "button", { className: "block-tab", text: COPY[state.language].blocks[index],
+        attributes: { type: "button", role: "tab", id: "block-tab-" + block,
+          "aria-selected": selected, "aria-controls": "field-panel", tabindex: selected ? "0" : "-1" } });
+      button.addEventListener("click", () =&gt; dispatch({ type: "block.changed", block }, false));
+      return button;
+    }));
+  }
+
+  function renderFields() {
+    const controls = FIELDS[state.activeBlock].map(([path, en, th]) =&gt; {
+      const wrapper = make(doc, "div", { className: "field-control" });
+      const id = "field-" + path.replaceAll(".", "-");
+      const label = make(doc, "label", { text: state.language === "th" ? th : en,
+        attributes: { for: id } });
+      const multiline = ["summary", "trustNote", "altText"].some((name) =&gt; path.endsWith(name));
+      const control = make(doc, multiline ? "textarea" : "input", {
+        attributes: { id, name: path, "data-path": path }
+      });
+      control.value = valueAt(state.draft, path);
+      control.addEventListener("input", () =&gt; dispatch({ type: "field.changed",
+        path: pathParts(path), value: control.value }));
+      wrapper.append(label, control);
+      return wrapper;
+    });
+    const grid = make(doc, "div", { className: "field-grid" });
+    grid.append(...controls);
+    nodes.fields.replaceChildren(grid);
+  }
+
+  function renderFindings(view) {
+    nodes.findings.replaceChildren(...view.findings.map((finding) =&gt; {
+      const item = make(doc, "li", { className: "finding",
+        attributes: { "data-severity": finding.severity } });
+      addText(doc, item, "finding-title", finding.title);
+      addText(doc, item, "finding-meta", finding.ruleId + " · " + finding.classification);
+      addText(doc, item, "finding-copy", finding.explanation + " " + finding.remediation);
+      const source = make(doc, "a", { text: "Source", attributes: {
+        href: finding.sourceUrl, target: "_blank", rel: "noreferrer" } });
+      item.append(source);
+      if (finding.severity === "error") {
+        const fix = make(doc, "button", { text: COPY[state.language].fix,
+          attributes: { type: "button" } });
+        fix.addEventListener("click", () =&gt; {
+          dispatch({ type: "block.changed", block: finding.block }, false);
+          doc.querySelector('[data-path="' + finding.field + '"]')?.focus();
+        });
+        item.append(fix);
+      }
+      return item;
+    }));
+  }
+
+  function render(rebuildControls = true) {
+    const view = deriveStudioView(state);
+    doc.documentElement.lang = state.language;
+    nodes.language.textContent = state.language === "th" ? "TH / EN" : "EN / TH";
+    nodes.language.setAttribute("aria-pressed", String(state.language === "en"));
+    nodes.tenant.textContent = state.draft.context.tenantName + " · " + state.draft.context.platformMark;
+    if (rebuildControls) { renderPresets(); renderBlocks(); renderFields(); }
+    renderPreview(doc, nodes.preview, state.draft);
+    nodes.json.textContent = view.jsonText;
+    nodes.count.textContent = view.payloadBytes.toLocaleString() + " " + COPY[state.language].bytes;
+    renderFindings(view);
+    for (const control of nodes.fields.querySelectorAll("[data-path]")) {
+      control.setAttribute("aria-invalid", String(view.findings.some((finding) =&gt;
+        finding.severity === "error" &amp;&amp; finding.field === control.dataset.path)));
+    }
+    nodes.run.textContent = COPY[state.language].run;
+    nodes.copy.textContent = COPY[state.language].copyJson;
+    nodes.download.textContent = COPY[state.language].downloadJson;
+    nodes.reset.textContent = COPY[state.language].resetDraft;
+    for (const tab of doc.querySelectorAll("[data-mobile-tabs] [role=tab]")) {
+      tab.textContent = state.language === "th" ? tab.dataset.labelTh : tab.dataset.labelEn;
+    }
+    for (const button of [nodes.copy, nodes.download, nodes.run]) button.disabled = view.hasBlockingErrors;
+    return view;
+  }
+
+  nodes.language.addEventListener("click", () =&gt; {
+    dirty = false;
+    dispatch({ type: "language.changed", language: state.language === "th" ? "en" : "th" }, false);
+  });
+  nodes.copy.addEventListener("click", async () =&gt; {
+    try { await doc.defaultView.navigator.clipboard.writeText(deriveStudioView(state).jsonText);
+      announce(COPY[state.language].copied); }
+    catch { announce(COPY[state.language].copyFailed); }
+  });
+  nodes.download.addEventListener("click", () =&gt; {
+    const blob = new Blob([deriveStudioView(state).jsonText], { type: "application/json" });
+    const url = doc.defaultView.URL.createObjectURL(blob);
+    const anchor = make(doc, "a", { attributes: { href: url,
+      download: "monolith-" + state.presetId + ".json" } });
+    anchor.click(); doc.defaultView.URL.revokeObjectURL(url);
+    announce(COPY[state.language].downloaded);
+  });
+  nodes.reset.addEventListener("click", () =&gt; {
+    if (dirty &amp;&amp; !doc.defaultView.confirm(state.language === "th" ?
+      "คืนค่าการแก้ไขทั้งหมดหรือไม่" : "Reset all edits?")) return;
+    dirty = false; dispatch({ type: "draft.reset" }, false); announce(COPY[state.language].reset);
+  });
+
+  const controller = { getState: () =&gt; state, dispatch, render, announce, nodes };
+  installJourney(doc, controller);
+  installResponsiveTabs(doc);
+  render();
+  return controller;
+}</code></pre>
+<p>The browser-only call is:</p>
+<pre><code class="language-js">if (typeof document !== "undefined") bindStudio(document);</code></pre>
+<ul>
+<li>[ ] <strong>Step 6: Implement Mock LIFF and receipt dialogs</strong></li>
+</ul>
+<p>Run Journey must:</p>
+<ol>
+<li>create a transaction using current draft;</li>
+<li>display tenant, recipient, project, revision, action, consequence and expiry in <strong>liff-dialog</strong>;</li>
+<li>show <strong>PRIVATE REVIEW — DEMO</strong> and the current action mode;</li>
+<li>confirm only through the explicit confirmation button;</li>
+<li>call <strong>confirmDemoTransaction</strong> against the current draft;</li>
+<li>fail closed if the draft changed or expired;</li>
+<li>call <strong>createDemoReceipt</strong>;</li>
+<li>display the receipt and wrapped digest in <strong>receipt-dialog</strong>;</li>
+<li>show <strong>DEMO — NOT A PRODUCTION SIGNATURE</strong> above the outcome;</li>
+<li>return focus to Run Journey when the dialog closes.</li>
+</ol>
+<p>Do not persist the transaction or receipt to local storage. Refresh begins a fresh demo state.</p>
+<p>Add the exact dialog controller below. The transaction deliberately remains open while the current draft can change so <strong>confirmDemoTransaction</strong> proves fail-closed revision binding.</p>
+<pre><code class="language-js">function appendPair(doc, target, label, value) {
+  const row = make(doc, "div", { className: "review-pair" });
+  row.append(make(doc, "strong", { text: label }), make(doc, "span", { text: String(value) }));
+  target.append(row);
+}
+
+function installJourney(doc, controller) {
+  const liff = doc.getElementById("liff-dialog");
+  const receiptDialog = doc.getElementById("receipt-dialog");
+  const review = liff.querySelector("[data-liff-review]");
+  const receiptTarget = receiptDialog.querySelector("[data-receipt]");
+  const confirm = liff.querySelector("[data-confirm-demo]");
+  const cancel = liff.querySelector('button[value="cancel"]');
+  const closeReceipt = receiptDialog.querySelector("[data-close-receipt]");
+  let transaction = null;
+
+  controller.nodes.run.addEventListener("click", () =&gt; {
+    const draft = controller.getState().draft;
+    transaction = createDemoTransaction(draft);
+    review.replaceChildren(make(doc, "p", { className: "demo-ribbon",
+      text: "PRIVATE REVIEW — DEMO" }));
+    for (const [label, value] of [
+      ["Tenant", draft.context.tenantName], ["Recipient", transaction.recipientRef],
+      ["Project", draft.body.project], ["Revision", transaction.revision],
+      ["Action", transaction.canonicalAction], ["Consequence", draft.body.trustNote],
+      ["Action mode", transaction.actionMode], ["Expires", transaction.expiresAt]
+    ]) appendPair(doc, review, label, value);
+    liff.showModal();
+  });
+
+  cancel.addEventListener("click", () =&gt; liff.close("cancel"));
+  liff.addEventListener("close", () =&gt; controller.nodes.run.focus());
+  confirm.addEventListener("click", async () =&gt; {
+    try {
+      const confirmation = confirmDemoTransaction(transaction, controller.getState().draft);
+      const receipt = await createDemoReceipt(transaction, confirmation);
+      receiptTarget.replaceChildren(make(doc, "p", { className: "demo-ribbon", text: receipt.label }));
+      for (const [label, value] of [
+        ["Transaction", receipt.transactionId], ["Tenant", receipt.tenantId],
+        ["Recipient", receipt.recipientRef], ["Revision", receipt.revision],
+        ["Action", receipt.canonicalAction], ["Outcome", receipt.outcome],
+        ["Confirmed", receipt.confirmedAt]
+      ]) appendPair(doc, receiptTarget, label, value);
+      receiptTarget.append(make(doc, "p", { className: "receipt-digest", text: receipt.digest }));
+      receiptTarget.append(make(doc, "p", { text: receipt.productionNotice }));
+      liff.close("confirmed"); receiptDialog.showModal();
+      controller.announce("Verification Receipt — Demo");
+    } catch (error) {
+      controller.announce(error.message === "transaction_expired" ?
+        "Review expired. Start again." : "Bound values changed. Start review again.");
+      liff.close("rejected");
+    }
+  });
+  closeReceipt.addEventListener("click", () =&gt; receiptDialog.close());
+  receiptDialog.addEventListener("close", () =&gt; controller.nodes.run.focus());
+}</code></pre>
+<ul>
+<li>[ ] <strong>Step 7: Add responsive pane tabs and accessible error summary</strong></li>
+</ul>
+<p>At widths at or below 720 pixels, expose Editor, Preview and JSON &amp; Validation as a tablist while keeping all panes in the DOM. The active tab controls visibility with <strong>hidden</strong> and updates <strong>aria-selected</strong>. At wider widths, remove <strong>hidden</strong> and show the three-column or two-row layout.</p>
+<p>The first blocking validation item must have a <strong>Fix</strong> button that activates the correct block and focuses its field.</p>
+<p>Create the mobile pane tablist once and drive visibility from <strong>matchMedia</strong>; never remove a pane from the DOM:</p>
+<pre><code class="language-js">function installResponsiveTabs(doc) {
+  const panes = [
+    ["editor", doc.querySelector(".editor-pane"), "Editor", "แก้ไข"],
+    ["preview", doc.querySelector(".preview-pane"), "Preview", "ตัวอย่าง"],
+    ["code", doc.querySelector(".code-pane"), "JSON &amp; Validation", "JSON และตรวจสอบ"]
+  ];
+  let active = "editor";
+  const tabs = make(doc, "nav", { attributes: { "data-mobile-tabs": "", role: "tablist",
+    "aria-label": "Studio panes" } });
+  const media = doc.defaultView.matchMedia("(max-width: 720px)");
+  const apply = () =&gt; {
+    const mobile = media.matches;
+    for (const [id, pane] of panes) pane.hidden = mobile &amp;&amp; id !== active;
+    for (const button of tabs.querySelectorAll("[role=tab]")) {
+      const selected = button.dataset.pane === active;
+      button.setAttribute("aria-selected", String(selected));
+      button.tabIndex = selected ? 0 : -1;
+    }
+  };
+  for (const [id, pane, en, th] of panes) {
+    pane.id ||= "pane-" + id;
+    pane.tabIndex = -1;
+    const button = make(doc, "button", { text: doc.documentElement.lang === "th" ? th : en,
+      attributes: { type: "button", role: "tab", "data-pane": id,
+        "data-label-en": en, "data-label-th": th,
+        "aria-controls": pane.id, "aria-selected": id === active } });
+    button.addEventListener("click", () =&gt; { active = id; apply(); pane.focus({ preventScroll: true }); });
+    tabs.append(button);
+  }
+  doc.getElementById("studio-main").before(tabs);
+  media.addEventListener("change", apply);
+  apply();
+}</code></pre>
+<ul>
+<li>[ ] <strong>Step 8: Run focused and full tests</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-flex-studio-state.test.mjs tests/line-flex-actions-receipt.test.mjs
+npm.cmd --prefix LineOS run test</code></pre>
+<p>Expected: focused suites PASS; all current tests PASS with 0 failures.</p>
+<ul>
+<li>[ ] <strong>Step 9: Serve locally and perform the first browser smoke check</strong></li>
+</ul>
+<p>Run from the parent root:</p>
+<pre><code class="language-powershell">python -m http.server 4177 --directory LineOS</code></pre>
+<p>Open <strong>http://localhost:4177/line-flex-studio.html</strong> and verify:</p>
+<ul>
+<li>approval preset appears in Thai;</li>
+<li>editing revision changes preview and JSON;</li>
+<li>empty alt text disables export and journey;</li>
+<li>language/preset changes do not leak old values;</li>
+<li>Run Journey shows exact review and demo receipt;</li>
+<li>browser network panel shows only localhost requests.</li>
+</ul>
+<p>Stop the local server after the check.</p>
+<ul>
+<li>[ ] <strong>Step 10: Commit Task 5</strong></li>
+</ul>
+<pre><code class="language-powershell">git add -- LineOS/line-flex-studio.mjs LineOS/line-flex-json.mjs LineOS/line-flex-studio.html LineOS/line-flex-studio.css LineOS/tests/line-flex-studio-state.test.mjs LineOS/tests/line-flex-actions-receipt.test.mjs
+git commit -m "feat(lineos): make Flex Studio interactive"</code></pre>
+<hr>
+<h3>Task 6: Board-grade bilingual Deep Research Report</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Create: <strong>LineOS/tests/docs-contract.test.mjs</strong></li>
+<li>Create: <strong>LineOS/docs/research/2026-08-01-monolith-line-human-surface-deep-research.en.md</strong></li>
+<li>Create: <strong>LineOS/docs/research/2026-08-01-monolith-line-human-surface-deep-research.th.md</strong></li>
+<li>Generate: matching <strong>.en.html</strong> and <strong>.th.html</strong></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul>
+<li>Consumes: approved written design, local two-root evidence and the three completed Perplexity Deep Research tracks.</li>
+<li>Produces: the executive source of record for external research conclusions.</li>
+<li>Every technical claim uses a primary source; every local implementation claim names its Git root and file.</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 1: Write the failing research-document contract</strong></li>
+</ul>
+<p>Create <strong>LineOS/tests/docs-contract.test.mjs</strong>:</p>
+<pre><code class="language-js">import test from "node:test";
+import assert from "node:assert/strict";
+import { readFile, access } from "node:fs/promises";
+import { resolve } from "node:path";
+
+const root = resolve(import.meta.dirname, "..");
+const research = "docs/research/2026-08-01-monolith-line-human-surface-deep-research";
+const read = (path) =&gt; readFile(resolve(root, path), "utf8");
+
+test("deep research exists in bilingual Markdown and standalone HTML", async () =&gt; {
+  for (const suffix of [".en.md", ".th.md", ".en.html", ".th.html"]) {
+    await access(resolve(root, research + suffix));
+  }
+  const enHtml = await read(research + ".en.html");
+  const thHtml = await read(research + ".th.html");
+  assert.match(enHtml, /^&lt;!doctype html&gt;/);
+  assert.match(enHtml, /&lt;html lang="en"&gt;/);
+  assert.match(thHtml, /^&lt;!doctype html&gt;/);
+  assert.match(thHtml, /&lt;html lang="th"&gt;/);
+});
+
+test("research preserves the board stop rule and tenant boundary", async () =&gt; {
+  const en = await read(research + ".en.md");
+  const th = await read(research + ".th.md");
+  assert.match(en, /NO-GO for broader customer messaging/);
+  assert.match(en, /Daph is one pilot tenant/);
+  assert.match(th, /NO-GO/);
+  assert.match(th, /Daph.*tenant/);
+});
+
+test("research labels evidence and cites primary technical sources", async () =&gt; {
+  const en = await read(research + ".en.md");
+  for (const text of [
+    "Official constraint", "Verified local fact", "Inference", "Proposal", "Unknown",
+    "https://developers.line.biz/en/docs/messaging-api/",
+    "https://www.rfc-editor.org/rfc/rfc9700.html",
+    "https://csrc.nist.gov/pubs/sp/800/207/final",
+    "https://www.w3.org/TR/WCAG22/"
+  ]) assert.match(en, new RegExp(text.replace(/[.*+?^()|[\]{}]/g, "\\$&amp;")));
+});</code></pre>
+<ul>
+<li>[ ] <strong>Step 2: Run the docs contract and observe RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/docs-contract.test.mjs</code></pre>
+<p>Expected: FAIL because the research files do not exist.</p>
+<ul>
+<li>[ ] <strong>Step 3: Write the English executive deep-research report</strong></li>
+</ul>
+<p>Create the English Markdown with these exact sections and conclusions:</p>
+<ol>
+<li><strong>Board decision:</strong> NO-GO for broader customer messaging; conditional local prototype approval only.</li>
+<li><strong>Research method:</strong> three Perplexity tracks, local source inspection, official-source verification and evidence labels.</li>
+<li><strong>Two-root current state:</strong> parent governance versus nested runtime; dirty-tree and non-production caveats.</li>
+<li><strong>LINE Human Surface operating model:</strong> OA 1:1, personal push and groups; what returns to MONOLITH.</li>
+<li><strong>Flex and LIFF technical findings:</strong> message envelope, one-bubble 30 KB and carousel 50 KB limits, 12-bubble carousel maximum, alt text, media/action constraints, LIFF through URI.</li>
+<li><strong>Developer Console and delivery lifecycle:</strong> correct channel/provider/LIFF relationship, webhook verification, redelivery, retry and observability.</li>
+<li><strong>Trust Kernel analysis:</strong> tenant, principal, resource, revision, grants, delegation, risk and assurance; PERMIT/DENY/STEP_UP/QUARANTINE.</li>
+<li><strong>P0–P3 gap ledger:</strong> P0 trust foundation; P1 governed experience; P2 lifecycle intelligence; P3 controlled scale.</li>
+<li><strong>Threat model:</strong> cross-tenant routing, forged/replayed webhook, link forwarding, stale revision, unknown group actor, wrong audience, duplicate send, unknown-after-send, audit tampering and notification abuse.</li>
+<li><strong>Human factors and ethical retention:</strong> quiet hours, notification fatigue, accessibility, service recovery, portability and dark-pattern prohibitions.</li>
+<li><strong>Interior-design lifecycle:</strong> lead through warranty/referral with the correct surface and system-of-record fields at each stage.</li>
+<li><strong>Product and configuration matrix:</strong> base, wall, tall/larder, vanity, wardrobe, media, office and custom; dimensions remain sourced parameters rather than a universal standard.</li>
+<li><strong>Materials, hardware and toolchain:</strong> supplier provenance, appliance constraints, CAD/BIM/CAM/CNC, survey, QA and installation evidence.</li>
+<li><strong>Role scorecard:</strong> executive, sales, designer, estimator, procurement, factory, QA, logistics, installer, finance, partner, customer and customer-of-customer.</li>
+<li><strong>Capability matrix:</strong> current local evidence, gap, owner, dependency, risk and measurable outcome.</li>
+<li><strong>KPI hypotheses:</strong> conversion, approval latency, rework, notification opt-out, quarantine age, SLA breach, delivery reliability, service recovery and adoption; label each as a hypothesis until baselined.</li>
+<li><strong>Phased roadmap:</strong> P0 Trust closure → bounded Daph pilot → five governed journeys → Tenant-2 shadow → controlled scale.</li>
+<li><strong>Board go/no-go scorecard:</strong> mandatory gates, owner, evidence, failure response and rollback.</li>
+<li><strong>Evidence ledger:</strong> URL, publisher, date, classification, supported claim and caveat.</li>
+<li><strong>Limitations:</strong> no deployment proof, no real-machine qualification, no legal opinion, no universal cabinet standard and no production receipt signature.</li>
+</ol>
+<p>The executive conclusion must state:</p>
+<blockquote><p>MONOLITH should be a multi-tenant, revision-controlled project and product operating system. LINE is a replaceable Human Surface. Daph is one pilot tenant. Broader customer messaging remains NO-GO until every Trust P0 gate passes with fresh evidence.</p></blockquote>
+<ul>
+<li>[ ] <strong>Step 4: Write the aligned Thai report</strong></li>
+</ul>
+<p>Create the Thai Markdown with the same 20 sections, tables, evidence labels, source URLs, decision, numbers and caveats. Translate the explanation, not identifiers, API names, rule IDs or evidence classifications used for cross-file traceability.</p>
+<ul>
+<li>[ ] <strong>Step 5: Render standalone HTML</strong></li>
+</ul>
+<p>From the parent root:</p>
+<pre><code class="language-powershell">python tools\render_docs.py "LineOS\docs\research\2026-08-01-monolith-line-human-surface-deep-research.en.md" "LineOS\docs\research\2026-08-01-monolith-line-human-surface-deep-research.th.md"</code></pre>
+<p>Expected: two HTML files created beside the Markdown sources.</p>
+<ul>
+<li>[ ] <strong>Step 6: Run the docs contract and claim lint</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/docs-contract.test.mjs
+python tools\lint_claims.py "LineOS\docs\research\2026-08-01-monolith-line-human-surface-deep-research.en.md" "LineOS\docs\research\2026-08-01-monolith-line-human-surface-deep-research.th.md"</code></pre>
+<p>Expected: docs contract PASS 3/3; claim lint exit 0.</p>
+<ul>
+<li>[ ] <strong>Step 7: Commit Task 6</strong></li>
+</ul>
+<pre><code class="language-powershell">git add -- LineOS/tests/docs-contract.test.mjs LineOS/docs/research/2026-08-01-monolith-line-human-surface-deep-research.en.md LineOS/docs/research/2026-08-01-monolith-line-human-surface-deep-research.th.md LineOS/docs/research/2026-08-01-monolith-line-human-surface-deep-research.en.html LineOS/docs/research/2026-08-01-monolith-line-human-surface-deep-research.th.html
+git commit -m "docs(lineos): add LINE Human Surface deep research"</code></pre>
+<hr>
+<h3>Task 7: Bilingual user, installation, action and performance guides</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Create eight Markdown guide files under <strong>LineOS/docs/guides/</strong></li>
+<li>Generate eight matching HTML files</li>
+<li>Modify: <strong>LineOS/tests/docs-contract.test.mjs</strong></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul>
+<li>Consumes runtime behavior from Tasks 1–5 and evidence from Task 6.</li>
+<li>Produces operator-ready instructions without exposing production secrets.</li>
+<li>Installation guide corrects the misconception that Flex JSON is installed in Developer Console.</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 1: Extend the docs contract before creating guides</strong></li>
+</ul>
+<p>Add a test that declares these four guide stems:</p>
+<pre><code class="language-js">const guideStems = [
+  "docs/guides/line-flex-studio-user-guide",
+  "docs/guides/line-developer-console-installation",
+  "docs/guides/line-flex-action-vs-liff-decision-guide",
+  "docs/guides/line-flex-performance-rendering-checklist"
+];
+
+test("every guide has English and Thai Markdown and HTML", async () =&gt; {
+  for (const stem of guideStems) {
+    for (const suffix of [".en.md", ".th.md", ".en.html", ".th.html"]) {
+      await access(resolve(root, stem + suffix));
+    }
+  }
+});</code></pre>
+<p>Add a second test requiring the installation guide to contain <strong>Flex Message Simulator</strong>, <strong>Messaging API</strong>, <strong>Use webhook</strong>, <strong>Webhook redelivery</strong>, <strong>LIFF</strong>, <strong>state</strong>, <strong>nonce</strong>, <strong>no production token</strong>, and the statement <strong>Flex JSON is not installed in Developer Console</strong>.</p>
+<ul>
+<li>[ ] <strong>Step 2: Run the contract and observe RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/docs-contract.test.mjs</code></pre>
+<p>Expected: FAIL because the guide families do not exist.</p>
+<ul>
+<li>[ ] <strong>Step 3: Write the Flex Studio User Guide in English and Thai</strong></li>
+</ul>
+<p>Both language editions must contain:</p>
+<ol>
+<li>purpose and standalone safety boundary;</li>
+<li>quick start using a local static server;</li>
+<li>Studio Console map;</li>
+<li>how to choose each of the five presets;</li>
+<li>how to edit Header, Hero, Body and Footer;</li>
+<li>preview widths and bilingual wrapping;</li>
+<li>JSON copy/download and why errors block export;</li>
+<li>validation severity and source labels;</li>
+<li>Mock LIFF exact-action review;</li>
+<li>Verification Receipt — Demo interpretation;</li>
+<li>keyboard operation;</li>
+<li>clearing demo state;</li>
+<li>troubleshooting empty preview, broken hero, invalid URL, over-budget payload and clipboard denial;</li>
+<li>explicit statement that no message was sent and no business state changed.</li>
+</ol>
+<ul>
+<li>[ ] <strong>Step 4: Write the Developer Console Installation Guide in English and Thai</strong></li>
+</ul>
+<p>Use exact, current setup order:</p>
+<ol>
+<li>Register LINE Business ID and create/select the LINE Official Account.</li>
+<li>In Official Account Manager, enable Messaging API; do not claim a Messaging API channel is created directly in Developer Console.</li>
+<li>Choose the provider deliberately; keep Messaging API and LINE Login/LIFF channels under the same provider when provider-scoped user identity must align.</li>
+<li>Confirm the Messaging API channel and record the channel ID.</li>
+<li>Treat channel secret and access token as production secrets; never put them in Flex JSON, LIFF client code, screenshots or the standalone Studio.</li>
+<li>Configure a public HTTPS webhook, click Verify, accept an empty-event verification request with HTTP 200, enable Use webhook, Webhook redelivery and webhook error statistics.</li>
+<li>Create a LINE Login channel under the intended provider.</li>
+<li>Add a LIFF app from the LINE Login channel LIFF tab.</li>
+<li>Configure name, Compact/Tall/Full size, HTTPS endpoint without fragment and only required scopes.</li>
+<li>Use <strong>openid</strong> for ID token, <strong>profile</strong> only when needed, and <strong>chat_message.write</strong> only when sendMessages is truly required.</li>
+<li>Record LIFF ID/URL per development, review and production environment.</li>
+<li>Implement server-side state and nonce transaction verification, exact redirect URI, expiry and one-time consumption before binding identity.</li>
+<li>Configure the Flex button as a URI action to the approved LIFF URL; LIFF is not a distinct Flex action type.</li>
+<li>Paste exported JSON into the official Flex Message Simulator for official-client prototyping; explain that JSON is not installed into Developer Console.</li>
+<li>Test on real LINE clients and verify fallbacks before any controlled send.</li>
+<li>Keep live customer delivery disabled until MONOLITH Trust P0 gates pass.</li>
+<li>Provide rollback: disable Use webhook/new LIFF entry point, stop workers, retain audit/evidence and never delete unexplained delivery state.</li>
+</ol>
+<p>Include screenshots only when captured from the current official UI during execution; every screenshot must state its capture date and hide identifiers and secrets. Do not insert a simulated console image.</p>
+<ul>
+<li>[ ] <strong>Step 5: Write the Action vs LIFF Decision Guide in English and Thai</strong></li>
+</ul>
+<p>Include the exact matrix:</p>
+<div class="tablewrap"><table><thead><tr><th>Need</th><th>Action</th></tr></thead><tbody>
+<tr><td>Visible conversational text</td><td>Message</td></tr>
+<tr><td>Low-risk reversible choice, reauthorized server-side</td><td>Postback with opaque intent ID</td></tr>
+<tr><td>Read-only web/tel/LINE scheme</td><td>URI</td></tr>
+<tr><td>Form, identity, sensitive detail, comparison or explicit confirmation</td><td>URI opening LIFF</td></tr>
+<tr><td>Money, access, release, policy, scope or hard-to-reverse change</td><td>LIFF plus MONOLITH step-up</td></tr>
+</tbody></table></div>
+<p>Include examples for all five presets, duplicate/replay behavior, why a webhook signature proves transport rather than authorization, and anti-patterns: tenant/amount/role in postback data, free-text order truth, one-tap approval, bearer tokens in URLs and group membership as permission.</p>
+<ul>
+<li>[ ] <strong>Step 6: Write the Performance and Rendering Checklist in English and Thai</strong></li>
+</ul>
+<p>Include:</p>
+<ul>
+<li>30 KB one-bubble and 50 KB carousel definition ceilings;</li>
+<li>maximum 12 carousel bubbles, while v1 Studio authors one bubble only;</li>
+<li>alt text 1,500-character ceiling;</li>
+<li>HTTPS JPEG/PNG image requirements, 1024×1024 and 10 MB acceptance ceilings;</li>
+<li>24 KB MONOLITH soft budget;</li>
+<li>no base64, remote fonts or third-party runtime;</li>
+<li>local preview versus exported HTTPS URL behavior;</li>
+<li>320/360/390 widths, Thai/English/emoji/long-name/large-font checks;</li>
+<li>cover cropping, safe visual area and text-outside-image rules;</li>
+<li>shallow layout, wrap tolerance and fixed-height prohibition;</li>
+<li>primary CTA clarity;</li>
+<li>keyboard, focus, contrast, semantic labels and reduced motion;</li>
+<li>real-device matrix across current iOS/Android/desktop LINE versions;</li>
+<li>media/CDN guidance clearly labelled for future production;</li>
+<li>failure checks for unavailable image, LINE API 4xx/429/5xx, duplicate delivery and unknown-after-send.</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 7: Render all eight guide HTML files</strong></li>
+</ul>
+<pre><code class="language-powershell">$guideFiles = Get-ChildItem -LiteralPath "LineOS\docs\guides" -Filter "*.md" -File | Select-Object -ExpandProperty FullName
+python tools\render_docs.py $guideFiles</code></pre>
+<p>Expected: one HTML file beside every Markdown guide.</p>
+<ul>
+<li>[ ] <strong>Step 8: Run docs contracts and claim lint</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/docs-contract.test.mjs
+python tools\lint_claims.py LineOS\docs\guides</code></pre>
+<p>Expected: docs contract PASS; claim lint exit 0.</p>
+<ul>
+<li>[ ] <strong>Step 9: Commit Task 7</strong></li>
+</ul>
+<pre><code class="language-powershell">git add -- LineOS/tests/docs-contract.test.mjs LineOS/docs/guides
+git commit -m "docs(lineos): add Flex and LIFF operating guides"</code></pre>
+<hr>
+<h3>Task 8: Cross-document integrity, standalone HTML and claim verification</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Modify: <strong>LineOS/tests/docs-contract.test.mjs</strong></li>
+<li>Regenerate: all Markdown companions under <strong>LineOS/docs/</strong></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul>
+<li>Consumes all spec, plan, research and guide Markdown.</li>
+<li>Produces a single executable document contract that prevents missing editions, broken standalone HTML, unfilled template markers and unsafe readiness claims.</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 1: Add failing integrity checks</strong></li>
+</ul>
+<p>Extend <strong>LineOS/tests/docs-contract.test.mjs</strong>:</p>
+<pre><code class="language-js">test("project documents contain no unfilled template markers or replacement characters", async () =&gt; {
+  const files = [
+    research + ".en.md", research + ".th.md",
+    ...guideStems.flatMap((stem) =&gt; [stem + ".en.md", stem + ".th.md"])
+  ];
+  for (const file of files) {
+    const text = await read(file);
+    assert.doesNotMatch(text, /\b(TBD|TODO|FIXME|implement later|fill in details)\b/i);
+    assert.doesNotMatch(text, /\uFFFD/);
+  }
+});
+
+test("HTML editions are standalone and language-correct", async () =&gt; {
+  const stems = [research, ...guideStems];
+  for (const stem of stems) {
+    const en = await read(stem + ".en.html");
+    const th = await read(stem + ".th.html");
+    assert.match(en, /^&lt;!doctype html&gt;/);
+    assert.match(en, /&lt;meta name="viewport"/);
+    assert.match(en, /&lt;html lang="en"&gt;/);
+    assert.match(th, /^&lt;!doctype html&gt;/);
+    assert.match(th, /&lt;meta name="viewport"/);
+    assert.match(th, /&lt;html lang="th"&gt;/);
+  }
+});
+
+test("no document promotes source presence to production readiness", async () =&gt; {
+  const en = await read(research + ".en.md");
+  assert.match(en, /Source presence does not prove deployment or production readiness/);
+  assert.doesNotMatch(en, /production[- ]ready because|tests exist, therefore production/i);
+});</code></pre>
+<p>Temporarily rename one HTML companion with the exact fail-safe sequence below, prove the pairing test fails, and always restore the file before continuing:</p>
+<pre><code class="language-powershell">$source = "LineOS\docs\guides\line-developer-console-installation.en.html"
+$held = "LineOS\docs\guides\line-developer-console-installation.en.html.hold"
+Move-Item -LiteralPath $source -Destination $held
+try {
+  npm.cmd --prefix LineOS run test -- tests/docs-contract.test.mjs
+  if ($LASTEXITCODE -eq 0) { throw "Expected the missing-companion contract to fail" }
+}
+finally {
+  Move-Item -LiteralPath $held -Destination $source
+}
+npm.cmd --prefix LineOS run test -- tests/docs-contract.test.mjs
+if ($LASTEXITCODE -ne 0) { throw "Document contract did not recover after restoration" }</code></pre>
+<ul>
+<li>[ ] <strong>Step 2: Run the contract and observe the intended RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/docs-contract.test.mjs</code></pre>
+<p>Expected during the temporary rename: FAIL naming the missing companion. Restore the file and rerun.</p>
+<ul>
+<li>[ ] <strong>Step 3: Regenerate all HTML from current Markdown</strong></li>
+</ul>
+<pre><code class="language-powershell">$docFiles = Get-ChildItem -LiteralPath "LineOS\docs" -Recurse -Filter "*.md" -File | Select-Object -ExpandProperty FullName
+python tools\render_docs.py $docFiles</code></pre>
+<p>Expected: every Markdown source has an updated HTML companion.</p>
+<ul>
+<li>[ ] <strong>Step 4: Run complete documentation verification</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test:contracts
+python tools\lint_claims.py LineOS\docs
+git diff --check -- LineOS</code></pre>
+<p>Expected: contract tests PASS, claim lint exit 0, diff check produces no output.</p>
+<ul>
+<li>[ ] <strong>Step 5: Commit Task 8</strong></li>
+</ul>
+<pre><code class="language-powershell">git add -- LineOS/tests/docs-contract.test.mjs LineOS/docs
+git commit -m "test(lineos): enforce bilingual document contracts"</code></pre>
+<hr>
+<h3>Task 9: Browser evidence, final verification and bilingual implementation report</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Create: <strong>LineOS/artifacts/line-flex-studio/desktop-1440.png</strong></li>
+<li>Create: <strong>LineOS/artifacts/line-flex-studio/mobile-390.png</strong></li>
+<li>Create: <strong>LineOS/artifacts/line-flex-studio/verification-summary.json</strong></li>
+<li>Create: <strong>LineOS/docs/reports/2026-08-01-line-flex-studio-implementation-report.en.md</strong></li>
+<li>Create: <strong>LineOS/docs/reports/2026-08-01-line-flex-studio-implementation-report.th.md</strong></li>
+<li>Generate: matching <strong>.en.html</strong> and <strong>.th.html</strong></li>
+<li>Modify: <strong>LineOS/tests/docs-contract.test.mjs</strong></li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul>
+<li>Consumes the completed app, tests and documents.</li>
+<li>Produces fresh evidence for the exact commit and environment.</li>
+<li>Does not send a LINE message or log in to a production console.</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 1: Extend the document contract for the implementation report</strong></li>
+</ul>
+<p>Add the report stem and require TH/EN Markdown/HTML. Require these headings in both languages: scope, commits, automated tests, browser checks, network evidence, acceptance-gate matrix, residual risk, NO-GO statement and next decision.</p>
+<ul>
+<li>[ ] <strong>Step 2: Run the report contract and observe RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/docs-contract.test.mjs</code></pre>
+<p>Expected: FAIL because the implementation report files do not exist.</p>
+<ul>
+<li>[ ] <strong>Step 3: Run the complete automated suite with fresh output</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test</code></pre>
+<p>Expected: every named suite passes with 0 failures. Capture the full start-to-summary output; truncated output is not PASS evidence.</p>
+<ul>
+<li>[ ] <strong>Step 4: Start the local static server</strong></li>
+</ul>
+<pre><code class="language-powershell">python -m http.server 4177 --directory LineOS</code></pre>
+<p>Use browser testing against <strong>http://localhost:4177/line-flex-studio.html</strong>. Do not use a file URL because ES module behavior differs.</p>
+<ul>
+<li>[ ] <strong>Step 5: Verify all five journeys in Thai and English</strong></li>
+</ul>
+<p>For each preset:</p>
+<ol>
+<li>choose preset;</li>
+<li>inspect correct local hero, tenant/audience and action;</li>
+<li>edit at least one Header, Hero, Body and Footer field;</li>
+<li>verify preview, JSON and validation update;</li>
+<li>induce and fix one blocking validation error;</li>
+<li>copy and download valid JSON;</li>
+<li>run journey;</li>
+<li>verify exact-action review;</li>
+<li>confirm and inspect demo receipt;</li>
+<li>switch language and confirm no prior-language field leaks.</li>
+</ol>
+<p>For design approval, change revision after opening Mock LIFF and verify confirmation fails closed.</p>
+<ul>
+<li>[ ] <strong>Step 6: Verify responsive, accessibility and network behavior</strong></li>
+</ul>
+<p>Check:</p>
+<ul>
+<li>1440 desktop three-column layout;</li>
+<li>1024 two-row layout;</li>
+<li>768 transition;</li>
+<li>390, 360 and 320 mobile tabs;</li>
+<li>keyboard-only completion;</li>
+<li>visible focus;</li>
+<li>dialog focus return;</li>
+<li>reduced motion;</li>
+<li>Thai long text, English long text, emoji and missing hero fallback;</li>
+<li>no horizontal page overflow;</li>
+<li>network log contains localhost resources only and zero LINE/Supabase/analytics requests.</li>
+</ul>
+<p>Capture <strong>desktop-1440.png</strong> and <strong>mobile-390.png</strong> after the approval preset is valid and before confirmation.</p>
+<ul>
+<li>[ ] <strong>Step 7: Write machine-readable verification evidence</strong></li>
+</ul>
+<p>Create <strong>verification-summary.json</strong> only after collecting the observed values below:</p>
+<pre><code class="language-powershell">Get-Date -AsUTC -Format "o"
+git rev-parse HEAD
+git branch --show-current
+node --version</code></pre>
+<p>Record the browser name and version from the browser-test session and the pass count from the complete, untruncated test summary. Use <strong>apply_patch</strong> to create the JSON; do not generate evidence before the checks run.</p>
+<div class="tablewrap"><table><thead><tr><th>JSON pointer</th><th>Type or fixed value</th><th>Evidence source</th></tr></thead><tbody>
+<tr><td>/schemaVersion</td><td>integer <strong>1</strong></td><td>contract</td></tr>
+<tr><td>/generatedAt</td><td>ISO-8601 UTC string</td><td>first command above</td></tr>
+<tr><td>/repository/root</td><td>string <strong>parent</strong></td><td>repository routing</td></tr>
+<tr><td>/repository/commit</td><td>40-character lowercase Git hash</td><td>second command above</td></tr>
+<tr><td>/repository/branch</td><td>non-empty string</td><td>third command above</td></tr>
+<tr><td>/runtime/node</td><td>semantic version string beginning <strong>v</strong></td><td>fourth command above</td></tr>
+<tr><td>/runtime/browser</td><td>non-empty browser name and full version</td><td>browser session</td></tr>
+<tr><td>/runtime/url</td><td><strong>http://localhost:4177/line-flex-studio.html</strong></td><td>served target</td></tr>
+<tr><td>/automated/command</td><td><strong>npm.cmd --prefix LineOS run test</strong></td><td>executed command</td></tr>
+<tr><td>/automated/exitCode</td><td>integer <strong>0</strong></td><td>completed process</td></tr>
+<tr><td>/automated/tests</td><td>positive integer</td><td>complete test summary</td></tr>
+<tr><td>/automated/failures</td><td>integer <strong>0</strong></td><td>complete test summary</td></tr>
+<tr><td>/browser/presetsChecked</td><td>integer <strong>5</strong></td><td>journey matrix</td></tr>
+<tr><td>/browser/languagesChecked</td><td>array <strong>["th","en"]</strong></td><td>journey matrix</td></tr>
+<tr><td>/browser/widthsChecked</td><td>array <strong>[1440,1024,768,390,360,320]</strong></td><td>responsive matrix</td></tr>
+<tr><td>/browser/externalRequests</td><td>integer <strong>0</strong></td><td>captured request log</td></tr>
+<tr><td>/acceptanceGates</td><td>array of exactly ten objects with integer <strong>id</strong>, <strong>PASS</strong> status and a real artifact/test reference</td><td>acceptance matrix</td></tr>
+<tr><td>/liveLineMessageSent</td><td>boolean <strong>false</strong></td><td>scope boundary</td></tr>
+<tr><td>/productionSignatureCreated</td><td>boolean <strong>false</strong></td><td>receipt truth boundary</td></tr>
+<tr><td>/broaderCustomerMessagingDecision</td><td><strong>NO-GO_PENDING_TRUST_P0</strong></td><td>release decision</td></tr>
+</tbody></table></div>
+<p>Extend <strong>docs-contract.test.mjs</strong> to parse this file and reject a non-40-character commit, an empty browser string, a non-positive test count, any acceptance-gate count other than ten, any gate status other than <strong>PASS</strong>, or any evidence value that does not point to a named test, screenshot or network record.</p>
+<ul>
+<li>[ ] <strong>Step 8: Write the aligned implementation reports</strong></li>
+</ul>
+<p>Both reports must name:</p>
+<ul>
+<li>exact parent and nested commits observed at final verification;</li>
+<li>pre-existing dirty-tree caveat and files placed in scope;</li>
+<li>every created/modified file family;</li>
+<li>complete test command and pass/fail count;</li>
+<li>browser widths, presets, languages and screenshots;</li>
+<li>external request count;</li>
+<li>acceptance-gate matrix with evidence;</li>
+<li>what was not tested: live LINE send, production credentials, real identity, production signature, deployment and Tenant-2 proof;</li>
+<li>residual risks;</li>
+<li>explicit <strong>NO-GO for broader customer messaging until Trust P0 passes</strong>;</li>
+<li>recommended next decision: either retain standalone prototype or authorize a separate sandbox-integration design cycle.</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 9: Render reports and rerun complete verification</strong></li>
+</ul>
+<pre><code class="language-powershell">python tools\render_docs.py "LineOS\docs\reports\2026-08-01-line-flex-studio-implementation-report.en.md" "LineOS\docs\reports\2026-08-01-line-flex-studio-implementation-report.th.md"
+npm.cmd --prefix LineOS run test
+python tools\lint_claims.py LineOS\docs
+git diff --check -- LineOS</code></pre>
+<p>Expected: HTML rendered; all tests PASS with 0 failures; claim lint exit 0; diff check no output.</p>
+<ul>
+<li>[ ] <strong>Step 10: Stop the static server and commit Task 9</strong></li>
+</ul>
+<p>Stop only the verified local server process. Then:</p>
+<pre><code class="language-powershell">git add -- LineOS/artifacts/line-flex-studio LineOS/docs/reports LineOS/tests/docs-contract.test.mjs
+git commit -m "docs(lineos): record Flex Studio verification evidence"</code></pre>
+<ul>
+<li>[ ] <strong>Step 11: Run the final post-commit gate</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test
+git status --short --branch
+git log -10 --oneline --decorate</code></pre>
+<p>Expected: tests PASS with complete summary; status preserves unrelated pre-existing changes; the last task commits are visible. Do not call the repository clean unless the full status is actually clean.</p>
+<hr>
+<h2>Plan self-review checklist</h2>
+<ul>
+<li>[ ] Every requirement in the approved design maps to at least one task.</li>
+<li>[ ] All files remain under <strong>LineOS/</strong>.</li>
+<li>[ ] No task modifies the nested product repository.</li>
+<li>[ ] Every production module has a failing test before implementation.</li>
+<li>[ ] Thai/English Markdown and HTML pairing is enforced.</li>
+<li>[ ] Flex action versus LIFF behavior is tested, not merely documented.</li>
+<li>[ ] Receipt wording cannot be mistaken for production signing.</li>
+<li>[ ] No external network or live-send path is introduced.</li>
+<li>[ ] Browser evidence covers five presets, two languages and six widths.</li>
+<li>[ ] The final report preserves the Trust P0 NO-GO decision.</li>
+</ul>
+<h2>Execution handoff</h2>
+<p>Plan complete. Two execution options:</p>
+<ol>
+<li><strong>Subagent-Driven</strong> — dispatch a fresh task-scoped agent with review gates between tasks. Use only if the user explicitly authorizes subagents.</li>
+<li><strong>Inline Execution</strong> — execute this plan in the current session with superpowers:executing-plans and explicit checkpoints.</li>
+</ol>
+<p>The implementation must not start until the user chooses an execution option.</p>
+</main></body>
+</html>

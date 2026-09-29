@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>LINE Developer Console Installation and Controlled Handoff</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1>LINE Developer Console Installation and Controlled Handoff</h1>
+<ul>
+<li>Status: operator runbook; production activation remains gated</li>
+<li>Edition: English</li>
+<li>Platform facts rechecked against official LINE documentation on 2026-08-02</li>
+</ul>
+<h2>Read this first</h2>
+<p><strong>Flex JSON is not installed in Developer Console.</strong> The console configures channels, webhooks and LIFF app registrations. Flex JSON is a message payload: prototype it in the official <strong>Flex Message Simulator</strong>, validate it, then hand it to a server-side <strong>Messaging API</strong> integration under MONOLITH control.</p>
+<p>This guide records configuration order without production credentials. It authorizes neither a live send nor customer delivery. Apply <strong>no production token</strong> to the standalone Studio, Flex JSON, LIFF client code, screenshots, source control or URLs.</p>
+<p>Current platform note: official LINE documentation recommends LINE MINI App for new app creation as LIFF and LINE MINI App converge. This runbook implements the approved LIFF scope; re-evaluate the platform choice at the production architecture gate.</p>
+<h2>Roles and evidence before starting</h2>
+<div class="tablewrap"><table><thead><tr><th>Role</th><th>Responsibility</th></tr></thead><tbody>
+<tr><td>LINE Official Account owner</td><td>Business ID, account ownership and Manager access</td></tr>
+<tr><td>Provider/channel admin</td><td>Provider choice, channel membership and configuration evidence</td></tr>
+<tr><td>Security owner</td><td>Secrets, redirect allowlist, LIFF identity verification, MONOLITH transaction reference, OAuth/OIDC controls and step-up</td></tr>
+<tr><td>Platform operator</td><td>Webhook endpoint, workers, idempotency, monitoring and rollback</td></tr>
+<tr><td>Product owner</td><td>Trust P0 go/no-go and approved customer journey</td></tr>
+</tbody></table></div>
+<p>Record environment (<code>development</code>, <code>review</code>, <code>production</code>), accountable owner, change ticket, intended provider and rollback owner before configuration. Never reuse development identifiers as assumed production identifiers.</p>
+<h2>Exact setup order</h2>
+<h3>1. Register Business ID and create/select the Official Account</h3>
+<p>Register a LINE Business ID, create the LINE Official Account if needed, and confirm it in LINE Official Account Manager. Use the organization-controlled account and least-privilege admin membership; do not create a personal shadow owner.</p>
+<p>Evidence: account display name, accountable owner and environment—without customer identifiers or secrets.</p>
+<h3>2. Enable Messaging API in Official Account Manager</h3>
+<p>In LINE Official Account Manager, open the intended account and enable <strong>Messaging API</strong>. Since 2024-09-04, a Messaging API channel is not created directly in LINE Developers Console; enabling Messaging API for the Official Account creates it. Do not instruct an operator to use “Create a Messaging API channel” in Developers Console.</p>
+<h3>3. Choose the provider deliberately</h3>
+<p>Select the provider that should own the service. LINE states that this provider assignment cannot later be changed or removed. When provider-scoped user identity must align, keep the Messaging API channel and LINE Login/LIFF channel under the same provider. A user receives different user IDs under different providers; provider selection is therefore an identity and tenancy decision, not a cosmetic folder choice.</p>
+<p>Stop if the intended provider is missing or the operator lacks Admin role. Escalate ownership rather than creating a duplicate provider.</p>
+<h3>4. Confirm the Messaging API channel</h3>
+<p>Open LINE Developers Console, select the provider chosen in step 3, confirm the channel created for the Official Account, and record its channel ID in the controlled environment registry. Verify account/provider/channel mapping with two-person review. A channel ID is an identifier, not a secret, but still avoid uncontrolled screenshots.</p>
+<h3>4A. Close or govern Official Account default-message paths</h3>
+<p>Immediately open LINE Official Account Manager and inspect the Messaging API response settings. LINE documents that both settings are Enabled by default when the channel is created and can send outside MONOLITH workers.</p>
+<div class="tablewrap"><table><thead><tr><th>Setting</th><th>Required state for a closed environment</th><th>Evidence</th></tr></thead><tbody>
+<tr><td>Greeting messages</td><td>Disabled</td><td>Dated, redacted Official Account Manager evidence</td></tr>
+<tr><td>Auto-reply messages</td><td>Disabled</td><td>Dated, redacted Official Account Manager evidence</td></tr>
+</tbody></table></div>
+<p><strong>Every environment claiming delivery closed must keep both settings Disabled.</strong> Record environment, operator, timestamp and redacted setting view. If an approved operating model intentionally enables either setting, explicitly govern <strong>ownership, content, audience, approval, and rollback</strong>, test duplicate/conflicting responses, and <strong>remove the absolute closed-delivery claim</strong> for that environment.</p>
+<h3>5. Establish the secret boundary</h3>
+<p>Treat the channel secret and every channel access token as production secrets:</p>
+<ul>
+<li>store them only in the approved server-side secret manager;</li>
+<li>restrict read/rotate/revoke permissions and record rotation evidence;</li>
+<li>never put them in Flex JSON, LIFF client code, frontend environment variables, URLs, logs, screenshots, tickets or the standalone Studio;</li>
+<li>never send them to the browser;</li>
+<li>use separate credentials and identifiers per environment.</li>
+</ul>
+<p>The phrase <strong>no production token</strong> is a release condition for every standalone artifact.</p>
+<h3>6. Configure and verify the webhook</h3>
+<ol>
+<li>Deploy a public HTTPS endpoint with the approved TLS configuration.</li>
+<li>Preserve the raw request body and verify <code>x-line-signature</code> with HMAC-SHA256 and the channel secret before parsing. A valid signature proves transport origin/integrity, not business authorization.</li>
+<li>Accept LINE’s verification POST containing <code>events: []</code> and return HTTP <code>200</code>.</li>
+<li>In the Messaging API tab, enter the Webhook URL and click <strong>Verify</strong>.</li>
+<li>Enable <strong>Use webhook</strong>.</li>
+<li>Enable <strong>Webhook redelivery</strong> only after idempotent ingestion keyed by <code>webhookEventId</code> exists. Redelivery can duplicate and reorder events and is not a delivery guarantee.</li>
+<li>Enable/monitor webhook error statistics and test alert routing. Acknowledge quickly, then process asynchronously.</li>
+</ol>
+<p>Keep the worker’s business mutation path disabled during connectivity verification.</p>
+<h3>7. Create the LINE Login channel</h3>
+<p>Under the intended provider, create/select a LINE Login channel for the approved environment. Confirm provider, region, service identity, admin/tester membership and callback policy. Do not add a LIFF app to the Messaging API channel; LIFF apps belong to a LINE Login channel under this runbook.</p>
+<h3>8. Add the LIFF app</h3>
+<p>Open the LINE Login channel’s <strong>LIFF</strong> tab and select <strong>Add</strong>. The official UI then creates a LIFF ID and LIFF URL. Record the configuration evidence without secrets or personal user IDs.</p>
+<h3>9. Configure LIFF name, size and endpoint</h3>
+<p>Set:</p>
+<ul>
+<li>a service-specific app name;</li>
+<li>size <code>Compact</code>, <code>Tall</code> or <code>Full</code> based on the review task;</li>
+<li>a public HTTPS Endpoint URL with no URL fragment;</li>
+<li>only required scopes and options.</li>
+</ul>
+<p>The endpoint must be stable for its environment. Do not hide tenant, amount, revision, bearer token or authority in the endpoint or LIFF URL.</p>
+<h3>10. Minimize LIFF scopes</h3>
+<div class="tablewrap"><table><thead><tr><th>Scope</th><th>Select only when</th></tr></thead><tbody>
+<tr><td><code>openid</code></td><td>The server needs an ID token; required for <code>liff.getIDToken()</code> / decoded token.</td></tr>
+<tr><td><code>profile</code></td><td>The UI genuinely needs <code>liff.getProfile()</code> or friendship data. It is not permission to mutate MONOLITH.</td></tr>
+<tr><td><code>chat_message.write</code></td><td><code>liff.sendMessages()</code> is an approved requirement. It is not required for an approval form and should otherwise stay off.</td></tr>
+</tbody></table></div>
+<p>Do not request email or other optional scopes without a defined purpose, privacy basis, retention rule and review.</p>
+<h3>11. Register environment-specific LIFF identifiers</h3>
+<p>Record LIFF ID and LIFF URL separately for <code>development</code>, <code>review</code> and <code>production</code>, with channel ID, provider, endpoint, scopes, owner, capture date and approval status. Treat the registry as configuration evidence. Never silently reuse a review LIFF URL in a production Flex Message.</p>
+<h3>12. Implement the supported LIFF identity path and separate transaction verification</h3>
+<p>Use this supported LIFF identity path before binding a LINE identity to a MONOLITH principal:</p>
+<ol>
+<li>Execute <code>liff.init()</code> at the registered endpoint (and again after the documented external-browser redirect). In an external browser or LINE in-app browser, use <code>liff.login()</code> when login is required; LIFF browser login is handled through initialization.</li>
+<li>After initialization/login, send the <strong>raw <code>liff.getIDToken()</code> ID token or access token</strong> to the server over HTTPS. Do not send a decoded profile as identity proof.</li>
+<li>On the server, <strong>verify using LINE's documented server flow</strong>: verify the ID token with the expected LINE Login channel ID and documented issuer/audience/expiry/signature checks, or verify the access token and retrieve the profile from LINE as documented.</li>
+<li>Map only the verified LINE subject to the stored MONOLITH principal binding, then perform tenant/resource authorization separately.</li>
+</ol>
+<p><strong>Direct LINE Login authorization requests inside the LIFF browser are not guaranteed</strong>; LINE instructs LIFF apps to use <code>liff.login()</code> for the in-app/external-browser LIFF login path. The documented <code>liff.login()</code> input exposes <code>redirectUri</code>, not an application-supplied OAuth <code>state</code> or OIDC <code>nonce</code> parameter.</p>
+<p>Keep the four concepts separate:</p>
+<div class="tablewrap"><table><thead><tr><th>Concept</th><th>Meaning and required handling</th></tr></thead><tbody>
+<tr><td>MONOLITH transaction reference</td><td>A server-created, server-stored, high-entropy opaque reference with CSRF/session binding; bound to tenant, principal/audience, resource, revision, action, expiry and exact return target; one-time consumed atomically. It is not an ID-token nonce.</td></tr>
+<tr><td>LINE-managed liff.state</td><td>Additional LIFF URL information carried by LINE; untrusted routing input; not OAuth state, not permission and not the MONOLITH transaction reference. Process routing only after <code>liff.init()</code> resolves.</td></tr>
+<tr><td>OAuth state</td><td>CSRF correlation for a separate supported authorization flow; created and stored by that flow; not liff.state and not business permission.</td></tr>
+<tr><td>OIDC nonce</td><td>ID-token replay/correlation input; compare only when a separate supported authorization flow lets MONOLITH supply it and LINE returns the claim. Omit the expected nonce when that flow supplied none.</td></tr>
+</tbody></table></div>
+<p>For the approved LIFF path, create the MONOLITH transaction reference in the server session before showing the exact-action review. Bind it to the verified principal/audience and all business values above, require the exact allowlisted return target, recheck authorization and revision freshness, and atomically consume it with the command/audit result. Forwarded URLs and <code>liff.state</code> can select a proposed route only; they never grant permission or select authoritative tenant/resource state.</p>
+<h3>13. Configure the Flex button correctly</h3>
+<p>The button in Flex JSON uses a standard URI action:</p>
+<pre><code class="language-json">{
+  "type": "uri",
+  "label": "Review and confirm",
+  "uri": "https://liff.line.me/{environment-specific-liff-id}"
+}</code></pre>
+<p>LIFF is not a distinct Flex action type. The action is <code>uri</code>; the approved LIFF URL is its destination. Do not place bearer tokens, tenant authority, amounts, roles or reusable command IDs in the URI.</p>
+<p>The v1 standalone Studio emits an <code>https://example.com/monolith/demo/...</code> action as a deliberate demo placeholder. It is not a LIFF deployment target and must never be sent to customers. The governed server-side builder must replace it with the environment-approved LIFF entry point after Trust P0 and configuration review.</p>
+<h3>14. Use Flex Message Simulator for official prototyping</h3>
+<p>Copy the Studio export only after it has no blocking error. Open the official <strong>Flex Message Simulator</strong>, paste the exported JSON into its JSON workflow and inspect the official simulator preview. If the current simulator editor requests only a container, use the exported <code>contents</code> bubble and retain <code>type: flex</code> plus <code>altText</code> for the Messaging API message envelope.</p>
+<p>The simulator helps prototype layout without sending. It does not deploy the message, register a template or authorize a send. Again: <strong>Flex JSON is not installed in Developer Console.</strong></p>
+<h3>15. Test real LINE clients and fallbacks</h3>
+<p>Before any controlled send, test the approved test account matrix on current LINE for iOS, Android and desktop. Verify Thai/English wrapping, large fonts, image failure behavior, compact/tall/full LIFF, external-browser login, cancellation, expiry, stale revision, forwarded link, duplicate tap, replay, offline/timeout and a safe customer-support fallback. Record app/OS versions and date.</p>
+<p>Do not treat the Studio preview or Flex Message Simulator as real-client equivalence.</p>
+<h3>16. Keep customer delivery closed until Trust P0</h3>
+<p>Live customer delivery remains disabled only when both Official Account default-message settings are Disabled and every MONOLITH Trust P0 gate has fresh evidence: tenant/principal/resource authorization, webhook signature verification before parse, replay/idempotency, secure identity binding, revision freshness, step-up for consequential action, one-time command execution, durable audit, consent/preferences, delivery reconciliation, monitoring and tested rollback. Product approval alone cannot waive a failed gate.</p>
+<h3>17. Roll back safely</h3>
+<p>For an unsafe release, compromise, ambiguous delivery or uncontrolled error rate:</p>
+<ol>
+<li>In Official Account Manager, set <strong>Greeting messages</strong> and <strong>Auto-reply messages</strong> to Disabled and retain dated, redacted evidence; if either intentionally remains enabled, execute its approved owner/content/audience rollback and remove the closed-delivery claim.</li>
+<li>Disable the affected command policy and new LIFF entry point.</li>
+<li>Disable <strong>Use webhook</strong> when reception itself must stop; otherwise keep ingestion quarantined while stopping business workers.</li>
+<li>Stop outbound and command workers without discarding the durable queue.</li>
+<li>Revoke/rotate affected secrets when compromise is suspected.</li>
+<li>Retain audit, raw evidence, request/retry identifiers and unknown-after-send state.</li>
+<li>Reconcile accepted, failed, duplicate and ambiguous outcomes. Never blind resend and never delete unexplained delivery state.</li>
+<li>Route users to the approved authenticated web/operator fallback.</li>
+<li>Require a new Trust P0 evidence set before restoration.</li>
+</ol>
+<p>Deleting the LIFF registration or event history is not the first response: preservation and reconciliation come before retirement cleanup.</p>
+<h2>Screenshot policy</h2>
+<p>This edition contains no screenshot because no current official console screen was captured during execution. Add screenshots only when captured from the current official UI during the governed change. Every image must state capture date and environment and must redact provider/channel identifiers, user IDs, webhook paths, secrets and tokens. Never insert a simulated console image.</p>
+<h2>Operator sign-off</h2>
+<div class="tablewrap"><table><thead><tr><th>Gate</th><th>Evidence</th><th>Owner</th><th>Result</th></tr></thead><tbody>
+<tr><td>Provider/channel mapping reviewed</td><td>Registry entry and second reviewer</td><td>Channel admin</td><td>Pass/Fail</td></tr>
+<tr><td>Greeting messages</td><td>Disabled plus dated, redacted Official Account Manager evidence; or approved governed exception with closed claim removed</td><td>OA owner</td><td>Pass/Fail</td></tr>
+<tr><td>Auto-reply messages</td><td>Disabled plus dated, redacted Official Account Manager evidence; or approved governed exception with closed claim removed</td><td>OA owner</td><td>Pass/Fail</td></tr>
+<tr><td>Webhook verify + empty-event 200</td><td>Timestamped non-secret test result</td><td>Platform</td><td>Pass/Fail</td></tr>
+<tr><td>Signature-before-parse + idempotency</td><td>Test evidence</td><td>Security/Platform</td><td>Pass/Fail</td></tr>
+<tr><td>LIFF scopes and endpoint minimized</td><td>Configuration export/redacted capture</td><td>Security</td><td>Pass/Fail</td></tr>
+<tr><td>LIFF identity flow</td><td><code>liff.init()</code> / <code>liff.login()</code> plus raw-token server-verification evidence</td><td>Security</td><td>Pass/Fail</td></tr>
+<tr><td>MONOLITH transaction reference</td><td>CSRF/session binding, exact values/return target and one-time-consume adversarial evidence</td><td>Security</td><td>Pass/Fail</td></tr>
+<tr><td>OAuth state / OIDC nonce</td><td>Applied only to a separately documented supported flow that supplies them</td><td>Security</td><td>Pass/Fail</td></tr>
+<tr><td>Real-client/fallback matrix</td><td>Device evidence</td><td>QA</td><td>Pass/Fail</td></tr>
+<tr><td>Trust P0</td><td>Signed gate record</td><td>Product + Security</td><td>Pass/Fail</td></tr>
+<tr><td>Rollback drill</td><td>Drill record and reconciliation result</td><td>Incident owner</td><td>Pass/Fail</td></tr>
+</tbody></table></div>
+<p>Any Fail means NO-GO for live customer delivery.</p>
+<h2>Official sources</h2>
+<p>Retrieved 2026-08-02:</p>
+<ul>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/getting-started/" target="_blank" rel="noopener">Get started with the Messaging API</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/building-bot/" target="_blank" rel="noopener">Build a bot and configure webhook</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/verify-webhook-url/" target="_blank" rel="noopener">Verify webhook URL</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/receiving-messages/" target="_blank" rel="noopener">Receive messages and Webhook redelivery</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/verify-webhook-signature/" target="_blank" rel="noopener">Verify webhook signature</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/check-webhook-error-statistics/" target="_blank" rel="noopener">Webhook error statistics</a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/registering-liff-apps/" target="_blank" rel="noopener">Adding a LIFF app and scopes</a></li>
+<li><a href="https://developers.line.biz/en/reference/liff/" target="_blank" rel="noopener">LIFF API reference: initialization and login</a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/developing-liff-apps/" target="_blank" rel="noopener">Developing a LIFF app</a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/opening-liff-app/" target="_blank" rel="noopener">Opening a LIFF app and <code>liff.state</code></a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/using-user-profile/" target="_blank" rel="noopener">Using user profile information safely</a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/development-guidelines/" target="_blank" rel="noopener">LIFF development guidelines</a></li>
+<li><a href="https://developers.line.biz/en/reference/line-login/" target="_blank" rel="noopener">LINE Login API: server token verification and conditional ID-token nonce</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/using-flex-message-simulator/" target="_blank" rel="noopener">Flex Message Simulator tutorial</a></li>
+</ul>
+</main></body>
+</html>

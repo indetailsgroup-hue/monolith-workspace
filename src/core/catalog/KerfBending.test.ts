@@ -15,6 +15,10 @@ import {
   calculateKerfDepth,
   calculateKerfBending,
   getMinimumBendRadius,
+  lookupMinBendRadius,
+  kEffFromTool,
+  MATERIAL_CONSTANTS,
+  R_MIN_CATALOG,
   generateStraightKerfPattern,
   generateLivingHingePattern,
   assessFaceting,
@@ -24,7 +28,7 @@ import {
   calculateRequiredKerfParams,
   WEB_THICKNESS_LIMITS,
 } from './KerfBending'
-import type { KerfBendingParams } from './KerfBending'
+import type { KerfBendingParams, KerfToolProfile } from './KerfBending'
 
 describe('KerfBending', () => {
   // ============================================
@@ -150,8 +154,8 @@ describe('KerfBending', () => {
       expect(getMinimumBendRadius(18, 'PLYWOOD')).toBe(108)
     })
 
-    it('should calculate particle board minimum radius (12x thickness)', () => {
-      expect(getMinimumBendRadius(18, 'PARTICLE_BOARD')).toBe(216)
+    it('should throw G12_MATERIAL_DATA_MISSING for PARTICLE_BOARD (pending task 4.3)', () => {
+      expect(() => getMinimumBendRadius(18, 'PARTICLE_BOARD')).toThrow('G12_MATERIAL_DATA_MISSING')
     })
   })
 
@@ -196,15 +200,15 @@ describe('KerfBending', () => {
       expect(result.safetyFactor).toBeCloseTo(150 / expectedMinRadius, 2)
     })
 
-    it('should add warning for tight bend radius', () => {
+    it('should add G12_RADIUS_BELOW_MIN error for bend radius below R_min (BLOCKER)', () => {
       const tightBendParams: KerfBendingParams = {
         ...standardParams,
-        bendRadius: 100, // Below minimum for 18mm MDF (144mm)
+        bendRadius: 100, // Below R_min=144mm for 18mm MDF
       }
 
       const result = calculateKerfBending(tightBendParams)
-      expect(result.warnings.length).toBeGreaterThan(0)
-      expect(result.warnings[0]).toContain('below minimum')
+      // G12_RADIUS_BELOW_MIN is a BLOCKER, must appear in errors[] not warnings[]
+      expect(result.errors).toContain('G12_RADIUS_BELOW_MIN')
     })
 
     it('should include CNC parameters', () => {
@@ -235,11 +239,11 @@ describe('KerfBending', () => {
       expect(result.webThickness).toBe(3)
     })
 
-    it('should throw error for invalid kerf depth', () => {
+    it('should throw error for invalid kerf depth (web > panel thickness)', () => {
       const invalidParams: KerfBendingParams = {
         ...standardParams,
-        panelThickness: 2,
-        webThickness: 3, // More than thickness
+        panelThickness: 18,
+        webThickness: 20, // 20 > 18 → D_kerf = -2 → throws
       }
 
       expect(() => calculateKerfBending(invalidParams)).toThrow()
@@ -450,6 +454,188 @@ describe('KerfBending', () => {
       expect(WEB_THICKNESS_LIMITS.PARTICLE_BOARD.min).toBeGreaterThan(
         WEB_THICKNESS_LIMITS.PLYWOOD.min
       )
+    })
+  })
+
+  // ============================================
+  // PHASE 0 — TOOL MODEL (spec §1.3)
+  // ============================================
+
+  describe('kEffFromTool', () => {
+    it('should return bitDiameter for ROUTER when kEff is absent', () => {
+      const tool: KerfToolProfile = { kind: 'ROUTER', bitDiameter: 6 }
+      expect(kEffFromTool(tool)).toBe(6)
+    })
+
+    it('should return calibrated kEff for ROUTER when provided', () => {
+      const tool: KerfToolProfile = { kind: 'ROUTER', bitDiameter: 6, kEff: 6.15 }
+      expect(kEffFromTool(tool)).toBe(6.15)
+    })
+
+    it('should return bladeKerf for SAW when kEff is absent', () => {
+      const tool: KerfToolProfile = { kind: 'SAW', bladeKerf: 3.2 }
+      expect(kEffFromTool(tool)).toBe(3.2)
+    })
+
+    it('should return calibrated kEff for SAW when provided', () => {
+      const tool: KerfToolProfile = { kind: 'SAW', bladeKerf: 3.2, kEff: 3.35 }
+      expect(kEffFromTool(tool)).toBe(3.35)
+    })
+  })
+
+  // ============================================
+  // PHASE 0 — MATERIAL CONSTANTS (spec §2.1, §2.6)
+  // ============================================
+
+  describe('MATERIAL_CONSTANTS', () => {
+    it('should have c_mat and springback_gamma for every material', () => {
+      const materials = ['MDF', 'PLYWOOD', 'PARTICLE_BOARD', 'HMR'] as const
+      materials.forEach((m) => {
+        expect(MATERIAL_CONSTANTS[m].c_mat).toBeGreaterThan(0)
+        expect(MATERIAL_CONSTANTS[m].springback_gamma).toBeGreaterThan(0)
+      })
+    })
+
+    it('should have PLYWOOD c_mat > MDF c_mat (more flexible)', () => {
+      expect(MATERIAL_CONSTANTS.PLYWOOD.c_mat).toBeGreaterThan(MATERIAL_CONSTANTS.MDF.c_mat)
+    })
+
+    it('should have PARTICLE_BOARD c_mat < MDF c_mat (more conservative)', () => {
+      expect(MATERIAL_CONSTANTS.PARTICLE_BOARD.c_mat).toBeLessThan(MATERIAL_CONSTANTS.MDF.c_mat)
+    })
+
+    it('should have spring-back gamma in 10-15% range for MDF/PLYWOOD', () => {
+      expect(MATERIAL_CONSTANTS.MDF.springback_gamma).toBeGreaterThanOrEqual(0.10)
+      expect(MATERIAL_CONSTANTS.MDF.springback_gamma).toBeLessThanOrEqual(0.15)
+      expect(MATERIAL_CONSTANTS.PLYWOOD.springback_gamma).toBeGreaterThanOrEqual(0.10)
+      expect(MATERIAL_CONSTANTS.PLYWOOD.springback_gamma).toBeLessThanOrEqual(0.15)
+    })
+  })
+
+  // ============================================
+  // PHASE 0 — R_MIN CATALOG (spec §2.7)
+  // ============================================
+
+  describe('lookupMinBendRadius', () => {
+    it('should return 144mm for 18mm MDF', () => {
+      expect(lookupMinBendRadius(18, 'MDF')).toBe(144)
+    })
+
+    it('should return 108mm for 18mm PLYWOOD', () => {
+      expect(lookupMinBendRadius(18, 'PLYWOOD')).toBe(108)
+    })
+
+    it('should return 72mm for 9mm HMR', () => {
+      expect(lookupMinBendRadius(9, 'HMR')).toBe(72)
+    })
+
+    it('should throw G12_MATERIAL_DATA_MISSING for PARTICLE_BOARD 18mm (null entry)', () => {
+      expect(() => lookupMinBendRadius(18, 'PARTICLE_BOARD')).toThrow('G12_MATERIAL_DATA_MISSING')
+    })
+
+    it('should throw G12_MATERIAL_DATA_MISSING for thickness not in catalog', () => {
+      // 15mm MDF is not in R_MIN_CATALOG
+      expect(() => lookupMinBendRadius(15, 'MDF')).toThrow('G12_MATERIAL_DATA_MISSING')
+    })
+
+    it('should have R_MIN_CATALOG null entries for PARTICLE_BOARD (pending task 4.3)', () => {
+      expect(R_MIN_CATALOG.PARTICLE_BOARD?.[16]).toBeNull()
+      expect(R_MIN_CATALOG.PARTICLE_BOARD?.[18]).toBeNull()
+    })
+  })
+
+  // ============================================
+  // PHASE 0 — calculateKerfBending new fields
+  // ============================================
+
+  describe('calculateKerfBending Phase 0 additions', () => {
+    const standardParams: KerfBendingParams = {
+      panelThickness: 18,
+      panelWidth: 600,
+      panelLength: 1200,
+      bendRadius: 150,
+      bendAngle: 90,
+      material: 'MDF',
+      profile: 'STRAIGHT',
+      kerfWidth: 3.2,
+    }
+
+    it('should return errors[] array on every successful result', () => {
+      const result = calculateKerfBending(standardParams)
+      expect(Array.isArray(result.errors)).toBe(true)
+    })
+
+    it('should include springBackFactor = gamma for MDF', () => {
+      const result = calculateKerfBending(standardParams)
+      expect(result.springBackFactor).toBeCloseTo(MATERIAL_CONSTANTS.MDF.springback_gamma, 5)
+    })
+
+    it('should compute designRadius = R / (1 + gamma)', () => {
+      const result = calculateKerfBending(standardParams)
+      const expected = 150 / (1 + MATERIAL_CONSTANTS.MDF.springback_gamma)
+      expect(result.designRadius).toBeCloseTo(expected, 1)
+    })
+
+    it('should have designRadius < bendRadius (spring-back compensation)', () => {
+      const result = calculateKerfBending(standardParams)
+      expect(result.designRadius).toBeLessThan(150)
+    })
+
+    it('should use k_eff from ROUTER tool profile as toolDiameter', () => {
+      const params: KerfBendingParams = {
+        ...standardParams,
+        tool: { kind: 'ROUTER', bitDiameter: 6 },
+      }
+      const result = calculateKerfBending(params)
+      expect(result.cncParams.toolDiameter).toBe(6)
+    })
+
+    it('should use calibrated kEff from SAW tool profile as toolDiameter', () => {
+      const params: KerfBendingParams = {
+        ...standardParams,
+        tool: { kind: 'SAW', bladeKerf: 3.2, kEff: 3.5 },
+      }
+      const result = calculateKerfBending(params)
+      expect(result.cncParams.toolDiameter).toBe(3.5)
+    })
+
+    it('should return G12_MATERIAL_DATA_MISSING and zero values for PARTICLE_BOARD', () => {
+      const pbParams: KerfBendingParams = {
+        ...standardParams,
+        material: 'PARTICLE_BOARD',
+        panelThickness: 18,
+      }
+      const result = calculateKerfBending(pbParams)
+      expect(result.errors).toContain('G12_MATERIAL_DATA_MISSING')
+      expect(result.kerfCount).toBe(0)
+    })
+
+    it('should return G12_KERF_DEPTH_UNSAFE when web is below 15% of thickness', () => {
+      const params: KerfBendingParams = {
+        ...standardParams,
+        webThickness: 1.0,  // 1.0 < 15% of 18mm = 2.7mm
+      }
+      const result = calculateKerfBending(params)
+      expect(result.errors).toContain('G12_KERF_DEPTH_UNSAFE')
+    })
+
+    it('should have no errors for a valid standard MDF bend', () => {
+      const result = calculateKerfBending(standardParams)
+      // R=150 >= R_min=144, web auto-calc is well above 15% → no blockers
+      expect(result.errors).not.toContain('G12_MATERIAL_DATA_MISSING')
+      expect(result.errors).not.toContain('G12_KERF_DEPTH_UNSAFE')
+    })
+
+    it('variable p(s) — spacing should be clamped to max 25mm for large radii', () => {
+      // Large R → large p before clamp → clamp to 25
+      const result = calculateKerfBending({ ...standardParams, bendRadius: 500 })
+      expect(result.kerfSpacing).toBeLessThanOrEqual(25)
+    })
+
+    it('variable p(s) — spacing should respect p_min = max(1.8×k_eff, 5)', () => {
+      const result = calculateKerfBending(standardParams)
+      const p_min = Math.max(1.8 * 3.2, 5)  // 5.76mm
+      expect(result.kerfSpacing).toBeGreaterThanOrEqual(p_min)
     })
   })
 })

@@ -1,0 +1,733 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-03T09:02:54.1601997Z",
+  "decision": "NO-GO_RUNTIME_INTEGRATION",
+  "scope": {
+    "sandboxOnly": true,
+    "runtimeIntegration": false,
+    "productionCredentialsUsed": false,
+    "liveLineMessageSent": false,
+    "databaseWritePerformed": false,
+    "nestedProductModifiedByA1": false
+  },
+  "provenance": {
+    "parent": {
+      "rootKind": "governance-bootstrap-isolated-worktree",
+      "path": "C:\\tmp\\monolith-lineos-design-approval-a1",
+      "capturedBranch": "codex/lineos-design-approval-a1",
+      "baseCommitAtCapture": "a816bf8d3ddc2f98c9c8e9ef42238df0593f2a8e",
+      "captureSemantics": "immutable evidence-time snapshot; valid across a checkpoint descendant",
+      "statusCommand": "git status --porcelain=v1 --untracked-files=all",
+      "capturedStatusEntries": [
+        " M LineOS/tests/docs-contract.test.mjs",
+        "?? LineOS/artifacts/line-design-approval-a1/browser-observed.json",
+        "?? LineOS/artifacts/line-design-approval-a1/desktop-1440.png",
+        "?? LineOS/artifacts/line-design-approval-a1/full-suite.junit.xml",
+        "?? LineOS/artifacts/line-design-approval-a1/mobile-390.png",
+        "?? LineOS/artifacts/line-design-approval-a1/verification-summary.json",
+        "?? LineOS/docs/reports/2026-08-02-line-design-approval-port-a1-implementation-report.en.html",
+        "?? LineOS/docs/reports/2026-08-02-line-design-approval-port-a1-implementation-report.en.md",
+        "?? LineOS/docs/reports/2026-08-02-line-design-approval-port-a1-implementation-report.th.html",
+        "?? LineOS/docs/reports/2026-08-02-line-design-approval-port-a1-implementation-report.th.md",
+        "?? LineOS/tests/line-design-approval-browser-evidence.py"
+      ],
+      "capturedStatusSha256": "2EE67628F4974E75167AE349D98BE680BC389DA8513D72BD45AEDE778D988157"
+    },
+    "nested": {
+      "rootKind": "active-product-nested-repository",
+      "path": "C:\\Users\\thai3\\determined-williams (2)\\determined-williams",
+      "capturedBranch": "fix/dxf-truth-chain",
+      "commitAtCapture": "a1e9006add32fe3ce5346eb6ca94e8bdce1d13ab",
+      "captureSemantics": "immutable evidence-time snapshot; live gate checks only A1/LineOS targeted paths",
+      "statusCommand": "git status --porcelain=v1 --untracked-files=all",
+      "capturedStatusEntryCount": 67,
+      "capturedStatusEntries": [
+        " M daph-second-brain/_inventory.json",
+        " M daph-second-brain/_knowledge-export.json",
+        " M daph-second-brain/_move-log.md",
+        " D dist/assets/App-DNtULMIt.js",
+        " D dist/assets/CommandPalette-C2bPw50F.js",
+        " D dist/assets/ExportPanel-Chrj5kjG.js",
+        " D dist/assets/FactoryApp-D11sHhiR.js",
+        " D dist/assets/HardwareContextMenu-DURNT97k.js",
+        " D dist/assets/PanelOverrideModal-CR5-azKs.js",
+        " D dist/assets/RadialMenu-Cj9QUWz2.js",
+        " D dist/assets/SafetyGatePage-CneWIDOU.js",
+        " D dist/assets/ShortcutOverlay-DhPDG3Ah.js",
+        " D dist/assets/index-D36nxq0R.css",
+        " D dist/assets/index-DN5bhAX9.js",
+        " D dist/assets/index-YOnSM6bJ.js",
+        " M dist/index.html",
+        " M supabase/functions/_shared/order-adapter.ts",
+        " M tests/line-oa-commerce/ts/orderNormalization.property.test.ts",
+        "?? daph-second-brain/03-Resources/Other-desktop.md",
+        "?? dist/assets/App-CzDgneYB.js",
+        "?? dist/assets/CommandPalette-hDKW4v7p.js",
+        "?? dist/assets/ExportPanel-Cnsg7MxF.js",
+        "?? dist/assets/FactoryApp-BF_UaXU6.js",
+        "?? dist/assets/HardwareContextMenu-Bqr2xvLb.js",
+        "?? dist/assets/PanelOverrideModal-hnbkriHe.js",
+        "?? dist/assets/RadialMenu-DW_ww3eQ.js",
+        "?? dist/assets/SafetyGatePage-BXhJrzdv.js",
+        "?? dist/assets/ShortcutOverlay-DsKec3HT.js",
+        "?? dist/assets/index-BH8ck8pe.css",
+        "?? dist/assets/index-BdGwm4a5.js",
+        "?? dist/assets/index-CPnZVXo5.js",
+        "?? tests/line-oa-commerce/py/__pycache__/conftest.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/harness.cpython-312.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_access_control_config_smoke.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_ai_action_audit_property.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_audit_completeness_property.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_audit_immutability_property.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_audit_query_scoping_property.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_channel_resolution_unit.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_conversation_routing_property.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_customer_identity_row_shape_unit.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_failure_handling_property.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_forecast_selection_property.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_forecasting_invocation_integration.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_harness_smoke.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_idempotent_processing_property.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_identity_binding_uniqueness_property.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_identity_merge_below_threshold_property.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_lifecycle_site_gating_property.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_match_confidence_range_property.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_merge_evaluation_audit_property.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_no_auto_merge_guardrail_property.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_order_stamping_property.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_outbound_status_recording_property.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_reply_push_fallback_property.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_rls_read_scoping_property.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_schema_structure_smoke.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_secret_non_exposure_property.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_session_timeout_sweep_property.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_signature_verification_property.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_site_resolution_property.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_strict_consistency_property.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_unauthorized_mutation_denial_property.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/__pycache__/test_verified_ingestion_receipt_property.cpython-312-pytest-8.4.2.pyc",
+        "?? tests/line-oa-commerce/py/mocks/__pycache__/__init__.cpython-312.pyc",
+        "?? tests/line-oa-commerce/py/mocks/__pycache__/line_messaging_api.cpython-312.pyc",
+        "?? tests/line-oa-commerce/py/mocks/__pycache__/record_input_sync.cpython-312.pyc"
+      ],
+      "capturedStatusSha256": "7612E07AEBC75AB1269A60106976BCB0BEE1B424A42176D2A4BFCC4EA51B2998",
+      "a1TargetedStatusEntries": []
+    }
+  },
+  "runtime": {
+    "node": "v22.21.1",
+    "npm": "11.6.2",
+    "browser": "Chromium 149.0.7827.55"
+  },
+  "automated": {
+    "initialRedContract": {
+      "command": "npm.cmd --prefix LineOS run test -- tests/docs-contract.test.mjs",
+      "exitCode": 1,
+      "tests": 87,
+      "passed": 82,
+      "failures": 5,
+      "skipped": 0,
+      "cancelled": 0,
+      "todo": 0,
+      "reason": "Expected missing evidence and report editions"
+    },
+    "reviewFixRedContract": {
+      "command": "npm.cmd --prefix LineOS run test -- tests/docs-contract.test.mjs",
+      "exitCode": 1,
+      "tests": 89,
+      "passed": 86,
+      "failures": 3,
+      "skipped": 0,
+      "cancelled": 0,
+      "todo": 0,
+      "reason": "Expected schema-2 provenance and visible-report contract failures before implementation"
+    },
+    "producerSafetyRedContract": {
+      "command": "npm.cmd --prefix LineOS run test -- tests/docs-contract.test.mjs",
+      "exitCode": 1,
+      "tests": 90,
+      "passed": 88,
+      "failures": 2,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "reason": "Canonical evidence was stale and --help executed a capture before argparse isolation"
+    },
+    "transactionalPublishRedContract": {
+      "command": "npm.cmd --prefix LineOS run test -- tests/docs-contract.test.mjs",
+      "exitCode": 1,
+      "tests": 90,
+      "passed": 86,
+      "failures": 4,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "reason": "Expected missing transactional publish safety and explicit Gate 1 closure model before implementation"
+    },
+    "transactionalPublishRegression": {
+      "command": "node --test --test-name-pattern=browser evidence producer help tests/docs-contract.test.mjs",
+      "exitCode": 0,
+      "tests": 1,
+      "passed": 1,
+      "failures": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "canonicalLfPortabilityRedContract": {
+      "command": "node --test tests/docs-contract.test.mjs",
+      "exitCode": 1,
+      "tests": 91,
+      "passed": 89,
+      "failures": 2,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "reason": "Expected missing canonical-LF evidence schema and stale report bindings before implementation"
+    },
+    "canonicalLfPortabilityGreen": {
+      "command": "node --test tests/docs-contract.test.mjs",
+      "exitCode": 0,
+      "tests": 91,
+      "passed": 91,
+      "failures": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "fullSuite": {
+      "command": "npm.cmd --prefix LineOS run test",
+      "exitCode": 0,
+      "tests": 351,
+      "passed": 351,
+      "failures": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "todo": 0,
+      "junit": {
+        "path": "artifacts/line-design-approval-a1/full-suite.junit.xml",
+        "normalization": "canonical-lf",
+        "canonicalLfSha256": "8A7384801EACA8795BC8451BFA0609108087AE0E307578D4454E31E9C2198469",
+        "canonicalLfBytes": 38260,
+        "testcaseElements": 336,
+        "nodeSummary": {
+          "tests": 351,
+          "passed": 351,
+          "failures": 0,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0
+        }
+      }
+    },
+    "postReviewGreen": {
+      "command": "npm.cmd --prefix LineOS run test",
+      "exitCode": 0,
+      "tests": 351,
+      "passed": 351,
+      "failures": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "latestLogicalRevalidation": {
+      "command": "npm.cmd --prefix LineOS run test",
+      "exitCode": 0,
+      "tests": 351,
+      "passed": 351,
+      "failures": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "artifactPolicy": "temporary timing-only JUnit XML is not retained; durable observed JUnit remains authoritative"
+    },
+    "claimLint": {
+      "command": "python tools/lint_claims.py LineOS/docs",
+      "exitCode": 0,
+      "newDebtCount": 0
+    },
+    "diffCheck": {
+      "command": "git diff --check",
+      "exitCode": 0,
+      "output": ""
+    }
+  },
+  "browser": {
+    "serverUrl": "http://localhost:4179/line-flex-studio.html",
+    "engine": "Chromium 149.0.7827.55",
+    "headless": true,
+    "waitCondition": "networkidle",
+    "widths": [
+      1440,
+      390
+    ],
+    "languages": [
+      "en",
+      "th"
+    ],
+    "matrix": [
+      {
+        "language": "en",
+        "width": 1440,
+        "uiJourneys": {
+          "success": {
+            "status": "PASS",
+            "outcome": "sandbox_recorded",
+            "receiptTitle": "Sandbox Verification Record — Demo · No Business Effect"
+          },
+          "cancel": {
+            "status": "PASS",
+            "outcome": "cancelled_locally",
+            "focusReturned": true
+          },
+          "legacy_preset": {
+            "status": "PASS",
+            "outcome": "legacy_demo_receipt",
+            "receiptTitle": "Verification Receipt — Demo"
+          }
+        },
+        "portContractProbes": {
+          "replay": {
+            "status": "PASS",
+            "outcome": "sandbox_replayed",
+            "errorCode": null
+          },
+          "stale_revision": {
+            "status": "PASS",
+            "outcome": "stale_revision",
+            "errorCode": "stale_revision"
+          },
+          "expired": {
+            "status": "PASS",
+            "outcome": "expired",
+            "errorCode": "expired"
+          }
+        },
+        "horizontalOverflowPixels": 0,
+        "copyReadability": "PASS",
+        "focusReturnAfterSuccess": true,
+        "focusReturnAfterCancel": true,
+        "recordRowCount": 18,
+        "reducedMotion": {
+          "animationDuration": "1e-05s",
+          "transitionDuration": "1e-05s",
+          "animationDurationMs": 0.01,
+          "transitionDurationMs": 0.01
+        }
+      },
+      {
+        "language": "en",
+        "width": 390,
+        "uiJourneys": {
+          "success": {
+            "status": "PASS",
+            "outcome": "sandbox_recorded",
+            "receiptTitle": "Sandbox Verification Record — Demo · No Business Effect"
+          },
+          "cancel": {
+            "status": "PASS",
+            "outcome": "cancelled_locally",
+            "focusReturned": true
+          },
+          "legacy_preset": {
+            "status": "PASS",
+            "outcome": "legacy_demo_receipt",
+            "receiptTitle": "Verification Receipt — Demo"
+          }
+        },
+        "portContractProbes": {
+          "replay": {
+            "status": "PASS",
+            "outcome": "sandbox_replayed",
+            "errorCode": null
+          },
+          "stale_revision": {
+            "status": "PASS",
+            "outcome": "stale_revision",
+            "errorCode": "stale_revision"
+          },
+          "expired": {
+            "status": "PASS",
+            "outcome": "expired",
+            "errorCode": "expired"
+          }
+        },
+        "horizontalOverflowPixels": 0,
+        "copyReadability": "PASS",
+        "focusReturnAfterSuccess": true,
+        "focusReturnAfterCancel": true,
+        "recordRowCount": 18,
+        "reducedMotion": {
+          "animationDuration": "1e-05s",
+          "transitionDuration": "1e-05s",
+          "animationDurationMs": 0.01,
+          "transitionDurationMs": 0.01
+        }
+      },
+      {
+        "language": "th",
+        "width": 1440,
+        "uiJourneys": {
+          "success": {
+            "status": "PASS",
+            "outcome": "sandbox_recorded",
+            "receiptTitle": "Sandbox Verification Record — Demo · No Business Effect"
+          },
+          "cancel": {
+            "status": "PASS",
+            "outcome": "cancelled_locally",
+            "focusReturned": true
+          },
+          "legacy_preset": {
+            "status": "PASS",
+            "outcome": "legacy_demo_receipt",
+            "receiptTitle": "หลักฐานการยืนยัน — Demo · Verification Receipt — Demo"
+          }
+        },
+        "portContractProbes": {
+          "replay": {
+            "status": "PASS",
+            "outcome": "sandbox_replayed",
+            "errorCode": null
+          },
+          "stale_revision": {
+            "status": "PASS",
+            "outcome": "stale_revision",
+            "errorCode": "stale_revision"
+          },
+          "expired": {
+            "status": "PASS",
+            "outcome": "expired",
+            "errorCode": "expired"
+          }
+        },
+        "horizontalOverflowPixels": 0,
+        "copyReadability": "PASS",
+        "focusReturnAfterSuccess": true,
+        "focusReturnAfterCancel": true,
+        "recordRowCount": 18,
+        "reducedMotion": {
+          "animationDuration": "1e-05s",
+          "transitionDuration": "1e-05s",
+          "animationDurationMs": 0.01,
+          "transitionDurationMs": 0.01
+        }
+      },
+      {
+        "language": "th",
+        "width": 390,
+        "uiJourneys": {
+          "success": {
+            "status": "PASS",
+            "outcome": "sandbox_recorded",
+            "receiptTitle": "Sandbox Verification Record — Demo · No Business Effect"
+          },
+          "cancel": {
+            "status": "PASS",
+            "outcome": "cancelled_locally",
+            "focusReturned": true
+          },
+          "legacy_preset": {
+            "status": "PASS",
+            "outcome": "legacy_demo_receipt",
+            "receiptTitle": "หลักฐานการยืนยัน — Demo · Verification Receipt — Demo"
+          }
+        },
+        "portContractProbes": {
+          "replay": {
+            "status": "PASS",
+            "outcome": "sandbox_replayed",
+            "errorCode": null
+          },
+          "stale_revision": {
+            "status": "PASS",
+            "outcome": "stale_revision",
+            "errorCode": "stale_revision"
+          },
+          "expired": {
+            "status": "PASS",
+            "outcome": "expired",
+            "errorCode": "expired"
+          }
+        },
+        "horizontalOverflowPixels": 0,
+        "copyReadability": "PASS",
+        "focusReturnAfterSuccess": true,
+        "focusReturnAfterCancel": true,
+        "recordRowCount": 18,
+        "reducedMotion": {
+          "animationDuration": "1e-05s",
+          "transitionDuration": "1e-05s",
+          "animationDurationMs": 0.01,
+          "transitionDurationMs": 0.01
+        }
+      }
+    ],
+    "keyboard": {
+      "completion": "PASS",
+      "focusReturnedToRunJourney": true,
+      "journey": "en:1440 UI-driven success and receipt close"
+    },
+    "reducedMotion": {
+      "status": "PASS",
+      "animationDurationMs": 0.01,
+      "transitionDurationMs": 0.01
+    },
+    "network": {
+      "requestCount": 56,
+      "allowedHosts": [
+        "localhost"
+      ],
+      "externalRequestCount": 0,
+      "failedRequestCount": 0,
+      "httpErrorCount": 0,
+      "consoleErrorCount": 0,
+      "pageErrorCount": 0,
+      "localResourcePaths": [
+        "/assets/line-flex-studio/design-approval-hero.svg",
+        "/assets/line-flex-studio/quote-order-hero.svg",
+        "/line-design-approval-contract.mjs",
+        "/line-design-approval-record.mjs",
+        "/line-design-approval-sandbox.mjs",
+        "/line-flex-actions.mjs",
+        "/line-flex-json.mjs",
+        "/line-flex-model.mjs",
+        "/line-flex-presets.mjs",
+        "/line-flex-receipt.mjs",
+        "/line-flex-studio.css",
+        "/line-flex-studio.html",
+        "/line-flex-studio.mjs",
+        "/line-flex-validator.mjs"
+      ]
+    },
+    "observation": {
+      "path": "artifacts/line-design-approval-a1/browser-observed.json",
+      "normalization": "canonical-lf",
+      "canonicalLfBytes": 20439,
+      "canonicalLfSha256": "B0DFF5533024445A613169A18A1BA864F0335789A55A483AF32B4DE937E008CC",
+      "producer": {
+        "path": "tests/line-design-approval-browser-evidence.py",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 31785,
+        "canonicalLfSha256": "8BDEA0AD16721A222E02BEA52939FA26E59681C4380FBC09B5B2009FAF9AB160"
+      }
+    },
+    "screenshots": {
+      "desktop1440": {
+        "path": "artifacts/line-design-approval-a1/desktop-1440.png",
+        "sha256": "C1E35E86FDE474203F89393F1B6584FF728E3B519E939E766A0A9C3B780C4CB3",
+        "width": 1440,
+        "height": 1000,
+        "sourceSnapshotCanonicalLfSha256": "B1289E1BF03136CA4BE362B711786590B844249DBE5CAAF5C06D5F6D060D8DC4",
+        "baseCommitAtCapture": "d0d2db69c66d850871633bb62cde9ad3ee7d3964",
+        "visualInspection": "PASS"
+      },
+      "mobile390": {
+        "path": "artifacts/line-design-approval-a1/mobile-390.png",
+        "sha256": "7499CED9BCA4A24DB15961D4491CE23E4CE1D3D973CEC8BC2CCAA42CF61E9BD7",
+        "width": 390,
+        "height": 844,
+        "sourceSnapshotCanonicalLfSha256": "B1289E1BF03136CA4BE362B711786590B844249DBE5CAAF5C06D5F6D060D8DC4",
+        "baseCommitAtCapture": "d0d2db69c66d850871633bb62cde9ad3ee7d3964",
+        "visualInspection": "PASS"
+      }
+    }
+  },
+  "sourceSnapshot": {
+    "algorithm": "SHA-256",
+    "normalization": "canonical-lf",
+    "baseCommitAtCapture": "d0d2db69c66d850871633bb62cde9ad3ee7d3964",
+    "canonicalLfSha256": "B1289E1BF03136CA4BE362B711786590B844249DBE5CAAF5C06D5F6D060D8DC4",
+    "files": [
+      {
+        "path": "assets/line-flex-studio/design-approval-hero.svg",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 548,
+        "canonicalLfSha256": "460FB55418C0C102F5B92437D74BB7A38A17525A6EB0A862970959E24D4C0DF2"
+      },
+      {
+        "path": "assets/line-flex-studio/quote-order-hero.svg",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 636,
+        "canonicalLfSha256": "127A91E454776DFA7B01AD77D312102B61F63285F8112EC423FD01EEBAC0C48E"
+      },
+      {
+        "path": "line-design-approval-contract.mjs",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 5766,
+        "canonicalLfSha256": "2C84F8DCE9472A4B9B83946998AAF9B5D9AD8B7627D241ABEB9F7685660B61BF"
+      },
+      {
+        "path": "line-design-approval-record.mjs",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 7063,
+        "canonicalLfSha256": "2A244FF64844517154B64ED584EB65338ED446F01F88619733B74F0D7F7EBD4C"
+      },
+      {
+        "path": "line-design-approval-sandbox.mjs",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 22092,
+        "canonicalLfSha256": "633E1B390F7324A4E2059D9CB6634B9A12C501E58E7C18D3A2D2B99A7FF53F0D"
+      },
+      {
+        "path": "line-flex-actions.mjs",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 5508,
+        "canonicalLfSha256": "5C030C3064C89A9C57167A0D61E3E1F28F62C354B8C52C783903CA4F8FFC0DF9"
+      },
+      {
+        "path": "line-flex-json.mjs",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 2879,
+        "canonicalLfSha256": "04575581CD9B8B7D5F6DACBEBC418871ABD85B57DBB1976D8A91D08DA23023D5"
+      },
+      {
+        "path": "line-flex-model.mjs",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 1760,
+        "canonicalLfSha256": "87B1E968D7550400C5E4FE8C6D0481988B56380892E3FD03C5D9009D4A25A36A"
+      },
+      {
+        "path": "line-flex-presets.mjs",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 11280,
+        "canonicalLfSha256": "091B79D06B619E15A7A10D89F09AE480189CACA744E31C173D551C5CD7278A14"
+      },
+      {
+        "path": "line-flex-receipt.mjs",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 1263,
+        "canonicalLfSha256": "20A34348F29E26833D013C47780094E69B39F50927B12423D7ADEC768F4DAB76"
+      },
+      {
+        "path": "line-flex-studio.css",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 9787,
+        "canonicalLfSha256": "3FBF6138A8DD2B69BC27A2A52F74853FC71E5A227F50D051721A8096209AD9B7"
+      },
+      {
+        "path": "line-flex-studio.html",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 5492,
+        "canonicalLfSha256": "A0FF1165A4DF205E54F3247C01025FBB1AF1923D95873C0DDC153149B014AC7B"
+      },
+      {
+        "path": "line-flex-studio.mjs",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 54525,
+        "canonicalLfSha256": "175B690175F0A4E14EC61AB17EE8EBE5F7E6A6C214ECDD8853BC394429A258F5"
+      },
+      {
+        "path": "line-flex-validator.mjs",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 8139,
+        "canonicalLfSha256": "78D4F1319E54409380539ADCF54BA6139CD1B29CC5E9641C98A5942F983C1D5E"
+      }
+    ]
+  },
+  "recordForbiddenFieldScan": {
+    "fields": [
+      "tenant",
+      "tenantid",
+      "tenantassertion",
+      "customer",
+      "customerid",
+      "customeridentity",
+      "role",
+      "recipient",
+      "project",
+      "projectid",
+      "projectowner",
+      "approvalstatus",
+      "approved",
+      "signature",
+      "signaturestatus",
+      "keyid",
+      "privatekey",
+      "publickey",
+      "signingkey",
+      "secret",
+      "lineidtoken",
+      "accesstoken"
+    ],
+    "occurrences": 0,
+    "matches": [],
+    "recordKeys": [
+      "title",
+      "recordVersion",
+      "mode",
+      "businessEffect",
+      "recordId",
+      "correlationId",
+      "reviewSessionId",
+      "providerContext",
+      "scopeContext",
+      "workItemRef",
+      "approvalRequestRef",
+      "revisionLabel",
+      "revisionId",
+      "artifactManifestSha256",
+      "requestedCanonicalAction",
+      "outcome",
+      "createdAt",
+      "confirmedAt",
+      "digestAlgorithm",
+      "canonicalizationVersion",
+      "recordDigest"
+    ],
+    "recordDigest": "98aa18f7ac400d7739ba66b9c9dc876f5df3ffbc9a6aae582e0fb10b8b046861",
+    "status": "PASS"
+  },
+  "a2PromotionGates": [
+    {
+      "order": 1,
+      "name": "A1 contract and browser evidence",
+      "status": "CLOSED",
+      "satisfaction": "SATISFIED"
+    },
+    {
+      "order": 2,
+      "name": "canonical server-owned revision source",
+      "status": "OPEN",
+      "satisfaction": "UNSATISFIED"
+    },
+    {
+      "order": 3,
+      "name": "tenant–organization–site mapping",
+      "status": "OPEN",
+      "satisfaction": "UNSATISFIED"
+    },
+    {
+      "order": 4,
+      "name": "customer-design-view database contract tests",
+      "status": "OPEN",
+      "satisfaction": "UNSATISFIED"
+    },
+    {
+      "order": 5,
+      "name": "narrow LIFF confirmation transport design",
+      "status": "OPEN",
+      "satisfaction": "UNSATISFIED"
+    },
+    {
+      "order": 6,
+      "name": "rollback, idempotency, audit, and error semantics",
+      "status": "OPEN",
+      "satisfaction": "UNSATISFIED"
+    },
+    {
+      "order": 7,
+      "name": "local environment and secret-handling authority",
+      "status": "OPEN",
+      "satisfaction": "UNSATISFIED"
+    }
+  ],
+  "a2Blockers": [
+    "canonical server-owned revision source",
+    "tenant–organization–site mapping",
+    "customer-design-view database contract tests",
+    "narrow LIFF confirmation transport design",
+    "rollback, idempotency, audit, and error semantics",
+    "local environment and secret-handling authority"
+  ]
+}

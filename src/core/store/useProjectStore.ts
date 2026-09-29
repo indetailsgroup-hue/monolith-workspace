@@ -15,6 +15,7 @@
  *
  * ## Storage Keys
  * - `monolith-current-project`: Active project data
+ * - `monolith-project:<id>`: Saved data for each project
  * - `monolith-projects-list`: Recent projects list (max 20)
  *
  * ## Usage
@@ -39,17 +40,15 @@ import { create } from 'zustand';
 import { useCabinetStore } from './useCabinetStore';
 import {
   parseAndValidateSafe,
-  validateExternalStateSafe,
-  type ValidationIssue,
 } from '../gate/validateExternalState';
 import { ProjectDataSchema, ImportedProjectSchema, SavedProjectsListSchema } from '../schema/project.schema';
 import {
   readString,
   writeJson,
-  writeRaw,
   remove,
 } from '../persistence/unsafeStorage';
 import { getMinifixFullConfigForThickness } from '../manufacturing/hardware/minifixDefaults';
+import type { Cabinet } from '../types/Cabinet';
 
 // ============================================
 // TYPES
@@ -91,13 +90,19 @@ export interface ProjectMetadata {
  *
  * Contains metadata, active cabinet, and scene layout information.
  */
+type SerializedCabinet = Omit<Cabinet, 'materials'> & {
+  materials: Omit<Cabinet['materials'], 'overrides'> & {
+    overrides: Record<string, string>;
+  };
+};
+
 export interface ProjectData {
   /** Project identification and tracking */
   metadata: ProjectMetadata;
   /** Active cabinet state from useCabinetStore */
-  cabinet: any;
+  cabinet: SerializedCabinet;
   /** All cabinets with scene positions/rotations */
-  cabinets?: any[];
+  cabinets?: SerializedCabinet[];
 }
 
 /**
@@ -122,6 +127,19 @@ const STORAGE_KEY = 'monolith-current-project';
 const PROJECTS_LIST_KEY = 'monolith-projects-list';
 const AUTO_SAVE_DELAY = 2000; // 2 seconds
 
+const projectStorageKey = (id: string) => `monolith-project:${id}`;
+
+// Keep the previous current-only save when first writing the new per-ID format.
+// The original payload is retained; there is no bulk migration or deletion.
+function preservePreviousCurrent(nextId: string): void {
+  const stored = readString(STORAGE_KEY);
+  if (!stored) return;
+  const validation = parseAndValidateSafe(stored, ImportedProjectSchema, 'localStorage-legacy');
+  if (!validation.ok || !validation.data.metadata.id || validation.data.metadata.id === nextId) return;
+  const key = projectStorageKey(validation.data.metadata.id);
+  if (readString(key) === null) writeJson(key, JSON.parse(stored));
+}
+
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
@@ -139,6 +157,79 @@ function createDefaultMetadata(name: string = 'Untitled Project'): ProjectMetada
     createdAt: now,
     updatedAt: now,
   };
+}
+
+function serializeCabinet(cabinet: Cabinet): SerializedCabinet {
+  return {
+    ...cabinet,
+    materials: {
+      ...cabinet.materials,
+      overrides: Object.fromEntries(cabinet.materials.overrides),
+    },
+  };
+}
+
+function deserializeCabinet(cabinet: SerializedCabinet): Cabinet {
+  return {
+    ...cabinet,
+    materials: {
+      ...cabinet.materials,
+      overrides: new Map(Object.entries(cabinet.materials.overrides ?? {})),
+    },
+  };
+}
+
+function serializeScene(cabinet: Cabinet, cabinets: Cabinet[]): SerializedCabinet[] {
+  const scene = cabinets.some((candidate) => candidate.id === cabinet.id)
+    ? cabinets.map((candidate) => candidate.id === cabinet.id ? {
+      ...cabinet,
+      // Move/rotate actions update the scene entry independently of cabinet.
+      scenePosition: candidate.scenePosition ?? cabinet.scenePosition,
+      sceneRotation: candidate.sceneRotation ?? cabinet.sceneRotation,
+    } : candidate)
+    : [...cabinets, cabinet];
+  return scene.map((candidate) => serializeCabinet({
+    ...candidate,
+    scenePosition: candidate.scenePosition ?? [0, 0, 0],
+    sceneRotation: candidate.sceneRotation ?? [0, 0, 0],
+  }));
+}
+
+function restoreScene(projectData: ProjectData): Cabinet[] {
+  const active = projectData.cabinet;
+  const saved = projectData.cabinets?.length ? projectData.cabinets : [active];
+  if (![active, ...saved].every((cabinet) => typeof cabinet?.id === 'string' && cabinet.id.trim())) {
+    throw new Error('Invalid project scene: each cabinet requires an identity');
+  }
+  if (new Set(saved.map((cabinet) => cabinet.id)).size !== saved.length) {
+    throw new Error('Invalid project scene: duplicate cabinet identities');
+  }
+  // Older files may omit the active cabinet from the optional scene array.
+  const scene = saved.some((candidate) => candidate.id === active.id) ? saved : [...saved, active];
+  return scene.map((candidate) => {
+    const cabinet = deserializeCabinet(candidate.id === active.id ? {
+      ...active,
+      scenePosition: candidate.scenePosition ?? active.scenePosition,
+      sceneRotation: candidate.sceneRotation ?? active.sceneRotation,
+    } : candidate);
+    const restored = {
+      ...cabinet,
+      scenePosition: cabinet.scenePosition ?? [0, 0, 0] as [number, number, number],
+      sceneRotation: cabinet.sceneRotation ?? [0, 0, 0] as [number, number, number],
+    };
+    if (restored.hardware?.minifixConfig) return restored;
+    // Preserve the existing v4.1 hardware migration for legacy cabinets.
+    const coreId = restored.materials?.defaultCore || 'core-pb-18';
+    const thickness = coreId.includes('16') ? 16 : coreId.includes('19') ? 19 : 18;
+    return {
+      ...restored,
+      hardware: {
+        ...restored.hardware,
+        minifixConfig: getMinifixFullConfigForThickness(thickness),
+        minifixPresetId: `builtin_minifix_${thickness}mm`,
+      },
+    };
+  });
 }
 
 // ============================================
@@ -199,6 +290,7 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
     
     // Create new cabinet
     useCabinetStore.getState().createCabinet('BASE', name);
+    useCabinetStore.setState({ selectedPanelId: null });
     
     set({
       metadata,
@@ -211,7 +303,7 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
   },
   
   saveProject: () => {
-    const { metadata, autoSaveEnabled, isDirty } = get();
+    const { metadata, isDirty } = get();
     const cabinetStore = useCabinetStore.getState();
     const cabinet = cabinetStore.cabinet;
     const cabinets = cabinetStore.cabinets;
@@ -231,33 +323,19 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
     };
 
     // Serialize cabinets with scenePosition/sceneRotation
-    const serializedCabinets = cabinets.map((c: any) => ({
-      id: c.id,
-      name: c.name,
-      category: c.category,
-      dimensions: c.dimensions,
-      scenePosition: c.scenePosition || [0, 0, 0],
-      sceneRotation: c.sceneRotation || [0, 0, 0],
-    }));
+    const serializedCabinets = serializeScene(cabinet, cabinets);
 
     // Create project data
     const projectData: ProjectData = {
       metadata: updatedMetadata,
-      cabinet: {
-        ...cabinet,
-        // Convert Map to object for JSON serialization
-        materials: {
-          ...cabinet.materials,
-          overrides: cabinet.materials.overrides
-            ? Object.fromEntries(cabinet.materials.overrides)
-            : {},
-        },
-      },
+      cabinet: serializeCabinet(cabinet),
       cabinets: serializedCabinets,
     };
     
     // Save to localStorage via G9 boundary
     try {
+      preservePreviousCurrent(metadata.id);
+      writeJson(projectStorageKey(metadata.id), projectData);
       writeJson(STORAGE_KEY, projectData);
 
       // Update projects list
@@ -283,7 +361,8 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
   loadProject: (projectId?: string) => {
     try {
       // If no projectId, load current project (via G9 boundary)
-      const stored = readString(STORAGE_KEY);
+      const stored = (projectId ? readString(projectStorageKey(projectId)) : null)
+        ?? readString(STORAGE_KEY);
       if (!stored) {
         return false;
       }
@@ -305,67 +384,35 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
       // Parse again for actual use (since we validated)
       const projectData: ProjectData = JSON.parse(stored);
 
+      if (!projectData.cabinet?.materials) {
+        console.error('[Project] Invalid project data: missing cabinet materials');
+        return false;
+      }
+
       // If projectId specified but doesn't match, return false
       if (projectId && projectData.metadata.id !== projectId) {
         return false;
       }
 
-      // Restore cabinet state - convert overrides back to Map
-      const cabinet = {
-        ...projectData.cabinet,
-        materials: {
-          ...projectData.cabinet.materials,
-          overrides: new Map(Object.entries(projectData.cabinet.materials?.overrides || {})),
-        },
-      };
-
-      // Restore cabinets array with scenePosition/sceneRotation
-      let cabinetsToRestore = [cabinet];
-      if (projectData.cabinets && projectData.cabinets.length > 0) {
-        // Merge saved scene positions into cabinets
-        cabinetsToRestore = projectData.cabinets.map((savedCab: any) => {
-          // For the active cabinet, merge with full cabinet data
-          if (savedCab.id === cabinet.id) {
-            return {
-              ...cabinet,
-              scenePosition: savedCab.scenePosition || [0, 0, 0],
-              sceneRotation: savedCab.sceneRotation || [0, 0, 0],
-            };
-          }
-          // For other cabinets, use saved data with defaults
-          return {
-            ...savedCab,
-            scenePosition: savedCab.scenePosition || [0, 0, 0],
-            sceneRotation: savedCab.sceneRotation || [0, 0, 0],
-          };
-        });
+      const cabinetsToRestore = restoreScene(projectData);
+      // Explicit selection must persist the current snapshot before switching
+      // memory. Startup recovery reads the current snapshot without requiring
+      // a redundant write (e.g. a readable store whose quota is exhausted).
+      if (projectId) {
+        preservePreviousCurrent(projectData.metadata.id);
+        writeJson(STORAGE_KEY, projectData);
       }
-
-      // v4.1 Migration: Auto-apply hardware config to cabinets that don't have one
-      // This ensures legacy projects get Minifix S200 + Dowel hardware automatically
-      cabinetsToRestore = cabinetsToRestore.map((cab: any) => {
-        if (!cab.hardware?.minifixConfig) {
-          // Determine wood thickness from core material (default 18mm)
-          const coreId = cab.materials?.defaultCore || 'core-pb-18';
-          const woodThickness = coreId.includes('16') ? 16 : coreId.includes('19') ? 19 : 18;
-          const minifixConfig = getMinifixFullConfigForThickness(woodThickness);
-          return {
-            ...cab,
-            hardware: {
-              ...cab.hardware,
-              minifixConfig,
-              minifixPresetId: `builtin_minifix_${woodThickness}mm`,
-            },
-          };
-        }
-        return cab;
-      });
+      if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+        autoSaveTimer = null;
+      }
 
       // Set cabinet and also sync to cabinets array
       useCabinetStore.setState({
-        cabinet: cabinetsToRestore.find((c: any) => c.id === cabinet.id) || cabinet,
+        cabinet: cabinetsToRestore.find((candidate) => candidate.id === projectData.cabinet.id)!,
         cabinets: cabinetsToRestore,
-        activeCabinetId: cabinet.id
+        activeCabinetId: projectData.cabinet.id,
+        selectedPanelId: null,
       });
       
       set({
@@ -386,10 +433,21 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
     // Remove from list (via G9 boundary)
     const updatedList = savedProjects.filter(p => p.id !== projectId);
     writeJson(PROJECTS_LIST_KEY, updatedList);
+    remove(projectStorageKey(projectId));
 
     // If deleting current project, clear it
     if (metadata?.id === projectId) {
       remove(STORAGE_KEY);
+      if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+        autoSaveTimer = null;
+      }
+      useCabinetStore.setState({
+        cabinet: null,
+        cabinets: [],
+        activeCabinetId: null,
+        selectedPanelId: null,
+      });
       set({
         metadata: null,
         isDirty: false,
@@ -430,15 +488,8 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
     
     const projectData: ProjectData = {
       metadata,
-      cabinet: {
-        ...cabinet,
-        materials: {
-          ...cabinet.materials,
-          overrides: cabinet.materials.overrides 
-            ? Object.fromEntries(cabinet.materials.overrides)
-            : {},
-        },
-      },
+      cabinet: serializeCabinet(cabinet),
+      cabinets: serializeScene(cabinet, useCabinetStore.getState().cabinets),
     };
     
     return JSON.stringify(projectData, null, 2);
@@ -475,16 +526,17 @@ export const useProjectStore = create<ProjectStore>()((set, get) => ({
         updatedAt: Date.now(),
       };
 
-      // Restore cabinet
-      const cabinet = {
-        ...projectData.cabinet,
-        materials: {
-          ...projectData.cabinet.materials,
-          overrides: new Map(Object.entries(projectData.cabinet.materials?.overrides || {})),
-        },
-      };
-
-      useCabinetStore.setState({ cabinet });
+      const cabinets = restoreScene(projectData);
+      if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+        autoSaveTimer = null;
+      }
+      useCabinetStore.setState({
+        cabinet: cabinets.find((candidate) => candidate.id === projectData.cabinet.id)!,
+        cabinets,
+        activeCabinetId: projectData.cabinet.id,
+        selectedPanelId: null,
+      });
 
       set({
         metadata: newMetadata,

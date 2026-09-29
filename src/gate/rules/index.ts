@@ -55,3 +55,25 @@ export {
   type ConnectorAuditIssue,
   type ConnectorAuditResult,
 } from './gateG11_connectorAudit';
+
+// G12: Curved Panel Manufacturability
+export {
+  ruleG12_RadiusBelowMin,
+  ruleG12_KerfSpacingTooTight,
+  ruleG12_KerfDepthUnsafe,
+  ruleG12_FittingInKerfZone,
+  ruleG12_MaterialDataMissing,
+  ruleG12_SlotEdgeInsufficient,
+  ruleG12_SlotPairMismatch,
+  ruleG12_SlotOverlapsKerf,
+  ruleG12_SCurveTransitionShort,
+  ruleG12_GrainParallelToBend,
+  runG12Rules,
+  DEFAULT_G12_POLICY,
+  type G12Policy,
+  type G12Input,
+  type G12PanelInput,
+  type G12PatternInput,
+  type G12DrillPoint,
+  type G12SlotInput,
+} from './gateG12_curveManufacturability';

@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://monolith-workspace/docs/specs/schemas/boq-draft.schema.json",
+  "title": "boq_draft",
+  "description": "VS-01 BOQ Draft — ผลิตจาก evidence draft + FR-03-BOQ prompt",
+  "version": "1.0",
+  "type": "object",
+  "required": ["boq_id", "evidence_id", "status", "line_items", "overall_confidence", "review_required"],
+  "properties": {
+    "boq_id": { "type": "string", "format": "uuid" },
+    "evidence_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "FK → structured_evidence_draft.evidence_id"
+    },
+    "project_id": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["DRAFT", "HUMAN_REVIEW", "APPROVED", "REJECTED"],
+      "description": "APPROVED ได้เฉพาะหลัง human review เท่านั้น"
+    },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "model": {
+      "type": "object",
+      "properties": {
+        "prompt_id": { "type": "string", "enum": ["FR-03-BOQ"] },
+        "prompt_version": { "type": "string" },
+        "model_id": { "type": "string" }
+      }
+    },
+    "line_items": {
+      "type": "array",
+      "description": "BOQ line items — ไม่มี pricing/cost ใน VS-01",
+      "items": {
+        "type": "object",
+        "required": ["item_id", "cabinet_id", "description", "quantity", "unit", "dimensions", "confidence", "provenance", "flags"],
+        "properties": {
+          "item_id": { "type": "string" },
+          "cabinet_id": { "type": "string", "description": "FK → evidence_draft.cabinets[].cabinet_id" },
+          "description": { "type": "string" },
+          "quantity": { "type": "number" },
+          "unit": { "type": "string", "enum": ["pcs", "m", "m2", "set"] },
+          "material_code": { "type": "string", "description": "Material catalog code — null ถ้ายังไม่ identified" },
+          "dimensions": {
+            "type": "object",
+            "properties": {
+              "width_mm": { "type": "number" },
+              "height_mm": { "type": "number" },
+              "depth_mm": { "type": "number" }
+            }
+          },
+          "confidence": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+          "provenance": {
+            "type": "string",
+            "description": "อ้างอิงกลับไปยัง drawing element ที่เป็นที่มา"
+          },
+          "flags": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["NEEDS_REVIEW", "CONFLICT", "INFERRED"] }
+          }
+        }
+      }
+    },
+    "overall_confidence": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+    "review_required": { "type": "boolean" },
+    "reviewer": {
+      "type": "object",
+      "description": "เติมหลัง human review",
+      "properties": {
+        "user_id": { "type": "string" },
+        "role": { "type": "string", "enum": ["designer", "factory", "pm"] },
+        "reviewed_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "review_notes": { "type": "string" },
+    "approved_at": { "type": "string", "format": "date-time", "description": "Set เมื่อ status = APPROVED" },
+    "rejection_reason": { "type": "string", "description": "Set เมื่อ status = REJECTED" }
+  }
+}

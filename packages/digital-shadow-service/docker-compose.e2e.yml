@@ -1,0 +1,18 @@
+##
+## Docker Compose — E2E Test Environment
+## Only infrastructure services (Redis). Minimal footprint for CI.
+##
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: monolith-e2e-redis
+    ports:
+      - "6399:6379"
+    command: redis-server --appendonly no --save ""
+    tmpfs:
+      - /data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 2s
+      retries: 10

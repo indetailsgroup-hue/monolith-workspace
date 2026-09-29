@@ -1,0 +1,332 @@
+{
+  "_schema_version": "1.0.0",
+  "_comment": "MONOLITH Platform — Client Configuration File — Swift Logistics",
+  "_generated": "2026-Q3",
+  "_platform": "MONOLITH",
+  "client_id": "swift",
+  "client_name": "Swift Logistics",
+  "client_name_th": "สวิฟท์ โลจิสติกส์",
+  "domain": "logistics_delivery",
+  "language": "th",
+  "timezone": "Asia/Bangkok",
+  "line": {
+    "channel_access_token": "<swift_channel_access_token>",
+    "channel_secret": "<swift_channel_secret>",
+    "messaging_api_endpoint": "https://api.line.me/v2/bot/message",
+    "webhook_url": "https://api.monolith.app/clients/swift/webhook/line",
+    "liff_ids": {
+      "tracking": "2345678901-aaaaaaaa",
+      "pod": "2345678901-bbbbbbbb",
+      "review": "2345678901-cccccccc",
+      "status": "liff.swift.status.xxxxxxxx",
+      "schedule": "liff.swift.schedule.xxxxxxxx",
+      "gallery": "liff.swift.gallery.xxxxxxxx",
+      "approval": "liff.swift.approval.xxxxxxxx"
+    },
+    "rich_menu_ids": {
+      "default": "richmenu-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "tracking": "richmenu-yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+      "project": "richmenu-swift-project-xxxxxxxx",
+      "approval": "richmenu-swift-approval-xxxxxxxx",
+      "install": "richmenu-swift-delivery-xxxxxxxx",
+      "complete": "richmenu-swift-complete-xxxxxxxx"
+    }
+  },
+  "supabase": {
+    "url": "https://<swift-project>.supabase.co",
+    "anon_key": "<swift_anon_key>",
+    "service_role_key": "<swift_service_role_key>",
+    "db_schema": "public",
+    "tables": {
+      "shipments": "shipments",
+      "pfmea_risks": "pfmea_risk_rows",
+      "driver_jobs": "driver_jobs",
+      "messages": "line_messages"
+    }
+  },
+  "agents": [
+    {
+      "id": "dispatch_agent",
+      "name": "Dispatch Agent",
+      "role": "รับคำสั่งส่งพัสดุ, assign driver, จัดเส้นทาง",
+      "enabled": true,
+      "tools": [
+        "create_shipment",
+        "assign_driver",
+        "optimize_route",
+        "send_pickup_notification",
+        "trigger_mcp_event"
+      ],
+      "kpis": {
+        "dispatch_max_minutes": 15,
+        "driver_utilization_min_pct": 85
+      },
+      "mcp_events": [
+        "new_inquiry",
+        "job_scheduled",
+        "status_update"
+      ]
+    },
+    {
+      "id": "cs_agent",
+      "name": "CS Agent",
+      "role": "ตอบลูกค้า, track shipment, escalate complaint",
+      "enabled": true,
+      "tools": [
+        "send_line_message",
+        "get_shipment_status",
+        "escalate_complaint",
+        "send_flex_message",
+        "send_tracking_update"
+      ],
+      "kpis": {
+        "first_response_max_hours": 1,
+        "satisfaction_min_pct": 90
+      },
+      "mcp_events": [
+        "first_response_4h",
+        "status_update",
+        "halt_alert"
+      ]
+    },
+    {
+      "id": "driver_agent",
+      "name": "Driver Agent",
+      "role": "GPS check-in, update status, capture POD, report damage",
+      "enabled": true,
+      "tools": [
+        "gps_checkin",
+        "update_delivery_status",
+        "capture_pod",
+        "report_damage",
+        "sign_off_delivery"
+      ],
+      "kpis": {
+        "on_time_delivery_min_pct": 95,
+        "pod_capture_rate_pct": 100
+      },
+      "mcp_events": [
+        "status_update",
+        "job_complete",
+        "halt_alert"
+      ],
+      "critical_test_cases": [
+        "TC-DRIVER-01",
+        "TC-DRIVER-03"
+      ]
+    },
+    {
+      "id": "warehouse_agent",
+      "name": "Warehouse Agent",
+      "role": "รับพัสดุเข้า, จัดเรียง, scan out, inventory",
+      "enabled": true,
+      "tools": [
+        "scan_inbound",
+        "scan_outbound",
+        "update_inventory",
+        "stock_alert",
+        "label_package"
+      ],
+      "kpis": {
+        "scan_accuracy_pct": 99.9,
+        "processing_max_minutes": 30
+      },
+      "mcp_events": [
+        "bom_received",
+        "stock_alert",
+        "job_scheduled"
+      ]
+    },
+    {
+      "id": "qc_agent",
+      "name": "QC Agent",
+      "role": "ตรวจสอบสภาพพัสดุ, capture damage, ออก claim report",
+      "enabled": true,
+      "tools": [
+        "capture_damage_photo",
+        "create_claim_report",
+        "qc_checkpoint",
+        "escalate_damage",
+        "send_qc_notification"
+      ],
+      "kpis": {
+        "damage_detection_rate_pct": 100,
+        "claim_processing_max_hours": 24
+      },
+      "mcp_events": [
+        "qc_checkpoint",
+        "halt_alert",
+        "status_update"
+      ]
+    }
+  ],
+  "pfmea": {
+    "kb_file": "swift_pfmea_risk_rows.json",
+    "total_rows": 35,
+    "critical_sev_threshold": 8,
+    "critical_test_cases": [
+      {
+        "id": "TC-DRIVER-01",
+        "description": "พัสดุเสียหายระหว่างการขนส่ง ไม่มีการบันทึกภาพ POD",
+        "score": 4,
+        "severity": "CRITICAL",
+        "agent": "driver_agent"
+      },
+      {
+        "id": "TC-DRIVER-03",
+        "description": "ส่งพัสดุผิดที่อยู่โดยไม่มีการยืนยัน GPS",
+        "score": 4,
+        "severity": "CRITICAL",
+        "agent": "driver_agent"
+      }
+    ],
+    "agent_step_mapping": {
+      "Pickup Request": "dispatch_agent",
+      "Dispatch": "dispatch_agent",
+      "GPS Pickup": "driver_agent",
+      "In Transit": "driver_agent",
+      "Out for Delivery": "driver_agent",
+      "POD Capture": "driver_agent",
+      "Warehouse Inbound": "warehouse_agent",
+      "Warehouse Outbound": "warehouse_agent",
+      "QC Inspection": "qc_agent",
+      "Customer Service": "cs_agent"
+    },
+    "row_counts_by_agent": {
+      "dispatch_agent": 8,
+      "cs_agent": 5,
+      "driver_agent": 12,
+      "warehouse_agent": 5,
+      "qc_agent": 5
+    },
+    "severity_summary": {
+      "sev_9_critical": 4,
+      "sev_8_high": 16,
+      "requires_human_review": 30
+    }
+  },
+  "field_app": {
+    "app_type": "pwa_driver_app",
+    "accent_color": "#e65c00",
+    "mcp_endpoint": "https://api.monolith.app/clients/swift/mcp",
+    "gps_required": true,
+    "offline_mode": true,
+    "checklist_items": [
+      {
+        "id": "CHK-D01",
+        "label": "GPS check-in ณ จุดรับพัสดุ",
+        "required": true
+      },
+      {
+        "id": "CHK-D02",
+        "label": "สแกน barcode พัสดุก่อนรับ",
+        "required": true
+      },
+      {
+        "id": "CHK-D03",
+        "label": "ตรวจสอบสภาพพัสดุ (ถ่ายภาพก่อนรับ)",
+        "required": true
+      },
+      {
+        "id": "CHK-D04",
+        "label": "ยืนยันที่อยู่ปลายทางถูกต้อง",
+        "required": true
+      },
+      {
+        "id": "CHK-D05",
+        "label": "อัปเดตสถานะ In Transit",
+        "required": true
+      },
+      {
+        "id": "CHK-D06",
+        "label": "GPS check-in ณ ที่อยู่ลูกค้า",
+        "required": true
+      },
+      {
+        "id": "CHK-D07",
+        "label": "ถ่ายภาพ POD (Proof of Delivery)",
+        "required": true
+      },
+      {
+        "id": "CHK-D08",
+        "label": "รับ signature ลูกค้า",
+        "required": true
+      },
+      {
+        "id": "CHK-D09",
+        "label": "บันทึกความเสียหาย (ถ้ามี)",
+        "required": false
+      },
+      {
+        "id": "CHK-D10",
+        "label": "ส่ง job_complete event ผ่าน MCP",
+        "required": true
+      }
+    ]
+  },
+  "branding": {
+    "primary_color": "#1f2d5a",
+    "accent_color": "#e65c00",
+    "secondary_color": "#c9a84c",
+    "font_family": "Sarabun",
+    "font_cdn": "https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap",
+    "logo_url": "https://assets.monolith.app/clients/swift/logo.png",
+    "brand_name_th": "สวิฟท์ โลจิสติกส์",
+    "brand_name_en": "Swift Logistics"
+  },
+  "customer_journey": {
+    "stages": 7,
+    "channel": "LINE OA",
+    "flow": [
+      {
+        "stage": 1,
+        "name": "Pickup Request",
+        "mcp_event": "new_inquiry",
+        "agent": "dispatch_agent",
+        "line_action": "Pickup Confirmation Flex"
+      },
+      {
+        "stage": 2,
+        "name": "Dispatch",
+        "mcp_event": "job_scheduled",
+        "agent": "dispatch_agent",
+        "line_action": "Driver Assigned Flex"
+      },
+      {
+        "stage": 3,
+        "name": "GPS Pickup Check-in",
+        "mcp_event": "status_update",
+        "agent": "driver_agent",
+        "line_action": "Pickup Confirmed + Map"
+      },
+      {
+        "stage": 4,
+        "name": "In Transit",
+        "mcp_event": "status_update",
+        "agent": "driver_agent",
+        "line_action": "Live Status Updates"
+      },
+      {
+        "stage": 5,
+        "name": "Out for Delivery",
+        "mcp_event": "status_update",
+        "agent": "driver_agent",
+        "line_action": "Arrival ETA Flex"
+      },
+      {
+        "stage": 6,
+        "name": "POD Capture",
+        "mcp_event": "job_complete",
+        "agent": "driver_agent",
+        "line_action": "POD + Signature LIFF"
+      },
+      {
+        "stage": 7,
+        "name": "Review",
+        "mcp_event": "first_response_4h",
+        "agent": "cs_agent",
+        "line_action": "Review Request LIFF"
+      }
+    ]
+  }
+}

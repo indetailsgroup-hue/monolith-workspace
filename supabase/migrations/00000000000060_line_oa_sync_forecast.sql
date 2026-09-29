@@ -73,13 +73,11 @@
 --
 -- Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 12.5
 
--- This function references the shipped A1/C12 helpers and the forecasting
--- pipeline contract (public.record_input_sync, public.sync_source,
--- public.sync_status), which may not exist at migration-build time in a bare
--- environment (they are platform / earlier-module prerequisites). Disable body
--- validation so the migration applies cleanly; the body is validated at first
--- call (matching the earlier line_oa RPC migrations).
-set check_function_bodies = off;
+-- The forecasting contract is owned by another module and may be installed
+-- after this migration. Its invocation is therefore dependency-guarded and
+-- dynamic: the RPC remains lintable on a clean database, fails explicitly when
+-- the module is absent, and starts using the canonical typed contract as soon
+-- as that module is installed.
 
 -- gen_random_uuid() lives in pgcrypto; created by the schema migration. Idempotent.
 create extension if not exists pgcrypto;
@@ -220,13 +218,25 @@ begin
   -- migration neither creates nor alters any forecasting object -- it calls the
   -- contract exactly as published.
   -- -------------------------------------------------------------------------
-  v_sync_log_id := public.record_input_sync(
-    v_site_code,
-    'line'::public.sync_source,
-    v_status::public.sync_status,
-    v_record_count,
-    v_error_jsonb
-  );
+  if to_regtype('public.sync_source') is null
+     or to_regtype('public.sync_status') is null then
+    raise exception 'line_oa: forecasting pipeline types are not installed'
+      using errcode = '55000';
+  end if;
+
+  if to_regprocedure(
+    'public.record_input_sync(text,public.sync_source,public.sync_status,integer,jsonb)'
+  ) is null then
+    raise exception 'line_oa: forecasting pipeline function is not installed'
+      using errcode = '55000';
+  end if;
+
+  execute format(
+    'select public.record_input_sync($1, $2::%I.%I, $3::%I.%I, $4, $5)',
+    'public', 'sync_source', 'public', 'sync_status'
+  )
+    into v_sync_log_id
+    using v_site_code, 'line', v_status, v_record_count, v_error_jsonb;
 
   -- -------------------------------------------------------------------------
   -- Audit: EXACTLY ONE entry recording the synchronization (Req 13.1). entity_ref
@@ -279,6 +289,3 @@ begin
   end if;
 end;
 $$;
-
--- Re-enable body validation for any subsequent statements / later migrations.
-set check_function_bodies = on;

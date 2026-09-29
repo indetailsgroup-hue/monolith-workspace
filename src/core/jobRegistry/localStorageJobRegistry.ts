@@ -14,6 +14,7 @@
 import { z } from 'zod';
 import type { JobRegistryStore } from './jobRegistryStore';
 import { parseAndValidateSafe } from '../gate/validateExternalState';
+import { readRaw, writeJson } from '../persistence/unsafeStorage';
 
 // ============================================
 // CONSTANTS
@@ -37,7 +38,7 @@ const JobRegistrySchema = z.array(JobIdSchema);
 
 function readRegistry(): string[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = readRaw(STORAGE_KEY);
     if (!raw) return [];
 
     // G9: Validate with Zod schema
@@ -54,7 +55,7 @@ function readRegistry(): string[] {
 }
 
 function writeRegistry(ids: string[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
+  writeJson(STORAGE_KEY, ids);
 }
 
 // ============================================

@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MONOLITH API Reference — Agent Tools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{--navy:#1f2d5a;--gold:#c9a84c;--green:#2d7a4f;--purple:#5b4fcf;--orange:#e65c00;--bg:#f0f4fa;--white:#fff;--border:#d1d5db;--muted:#64748b;--red:#c0392b}
+    body{font-family:'Inter','Sarabun',sans-serif;background:var(--bg);color:var(--navy);min-height:100vh}
+    /* HEADER */
+    .header{background:linear-gradient(135deg,#1f2d5a,#2d4a8a);color:#fff;padding:24px 32px 20px;box-shadow:0 2px 12px rgba(0,0,0,.2)}
+    .header-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+    .header-title{font-size:22px;font-weight:700;display:flex;align-items:center;gap:10px}
+    .header-sub{font-size:13px;opacity:.75;margin-top:4px}
+    .badge{font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px}
+    .badge-v{background:var(--gold);color:#1f2d5a}
+    /* SEARCH BAR */
+    .search-bar{background:var(--white);border-bottom:1px solid var(--border);padding:14px 32px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:20;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+    .search-input{flex:1;min-width:220px;padding:8px 14px 8px 36px;border:1.5px solid var(--border);border-radius:8px;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--navy);outline:none;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.156a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z'/%3E%3C/svg%3E") no-repeat 10px center}
+    .search-input:focus{border-color:var(--navy)}
+    .client-tabs{display:flex;gap:6px}
+    .ct{padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:2px solid transparent;transition:all .15s}
+    .ct.all{background:#e2e8f0;color:var(--navy)}
+    .ct.all.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+    .ct.daph{background:#ede9ff;color:var(--purple)}
+    .ct.daph.active{background:var(--purple);color:#fff;border-color:var(--purple)}
+    .ct.swift{background:#fff0e6;color:var(--orange)}
+    .ct.swift.active{background:var(--orange);color:#fff;border-color:var(--orange)}
+    .result-count{font-size:12px;color:var(--muted);margin-left:auto;font-weight:600;white-space:nowrap}
+    /* LAYOUT */
+    .layout{display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - 160px)}
+    /* SIDEBAR */
+    .sidebar{background:var(--white);border-right:1px solid var(--border);padding:16px 0;overflow-y:auto;position:sticky;top:53px;height:calc(100vh - 160px)}
+    .sidebar-section{padding:8px 16px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+    .sidebar-item{padding:8px 20px;font-size:12px;cursor:pointer;border-left:3px solid transparent;transition:all .1s;display:flex;align-items:center;gap:8px;color:var(--navy)}
+    .sidebar-item:hover{background:#f8fafc;border-left-color:var(--navy)}
+    .sidebar-item.active{background:#ede9ff;border-left-color:var(--purple);color:var(--purple);font-weight:600}
+    .sidebar-item.active.swift{background:#fff0e6;border-left-color:var(--orange);color:var(--orange)}
+    .sidebar-icon{font-size:14px}
+    .sidebar-count{margin-left:auto;background:#e2e8f0;border-radius:20px;font-size:9px;padding:1px 6px;font-weight:700;color:var(--muted)}
+    /* MAIN CONTENT */
+    .main-content{padding:24px 32px;overflow-y:auto}
+    /* AGENT SECTION */
+    .agent-section{margin-bottom:40px;scroll-margin-top:70px}
+    .agent-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid var(--border)}
+    .agent-icon-lg{font-size:28px}
+    .agent-name{font-size:18px;font-weight:700;color:var(--navy)}
+    .agent-client-badge{font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px}
+    .badge-daph{background:#ede9ff;color:var(--purple);border:1px solid #ddd6fe}
+    .badge-swift{background:#fff0e6;color:var(--orange);border:1px solid #fed7aa}
+    .agent-role{font-size:12px;color:var(--muted);margin-top:2px}
+    .agent-kpi{font-size:11px;background:#f8fafc;border:1px solid var(--border);border-radius:6px;padding:6px 12px;color:var(--navy);margin-bottom:16px;display:inline-flex;gap:16px;flex-wrap:wrap}
+    .kpi-item{display:flex;align-items:center;gap:4px}
+    .kpi-label{color:var(--muted);font-size:10px}
+    /* TOOL CARD */
+    .tool-card{background:var(--white);border-radius:10px;border:1px solid var(--border);margin-bottom:14px;overflow:hidden;transition:box-shadow .15s}
+    .tool-card:hover{box-shadow:0 3px 12px rgba(0,0,0,.08)}
+    .tool-header{padding:12px 16px;background:#f8fafc;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+    .tool-method{font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:#dbeafe;color:#1e40af;font-family:monospace}
+    .tool-name{font-size:13px;font-weight:700;color:var(--navy);font-family:monospace}
+    .tool-desc{font-size:12px;color:var(--muted);margin-left:auto;text-align:right;max-width:300px}
+    .tool-toggle{font-size:12px;color:var(--muted);margin-left:6px}
+    .tool-body{padding:16px;display:none}
+    .tool-body.open{display:block}
+    .section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;margin-top:14px}
+    .section-label:first-child{margin-top:0}
+    .params-table{width:100%;border-collapse:collapse;font-size:12px}
+    .params-table th{background:#f1f5f9;padding:6px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);border-bottom:1px solid var(--border)}
+    .params-table td{padding:7px 10px;border-bottom:1px solid #f1f5f9;vertical-align:top}
+    .params-table tr:last-child td{border-bottom:none}
+    .param-name{font-family:monospace;font-size:11px;color:var(--navy);font-weight:600}
+    .param-type{font-size:10px;background:#f0fdf4;color:var(--green);border:1px solid #bbf7d0;border-radius:4px;padding:1px 6px;font-family:monospace;white-space:nowrap}
+    .param-req{font-size:10px;background:#fef2f2;color:var(--red);border:1px solid #fecaca;border-radius:4px;padding:1px 6px;font-weight:700}
+    .param-opt{font-size:10px;background:#f1f5f9;color:var(--muted);border:1px solid #e2e8f0;border-radius:4px;padding:1px 6px}
+    .returns-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:10px 14px;font-size:11px;color:#065f46;font-family:monospace}
+    .code-ex{background:#1e293b;border-radius:8px;padding:14px 16px;font-family:monospace;font-size:11px;color:#94a3b8;overflow-x:auto;line-height:1.6}
+    .code-ex .k{color:#c792ea}.code-ex .s{color:#80cbc4}.code-ex .v{color:#f78c6c}.code-ex .c{color:#546e7a}
+    .mcp-events{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .mcp-tag{font-size:10px;font-family:monospace;padding:3px 8px;border-radius:4px;background:#fffbeb;color:#92400e;border:1px solid #fde68a;font-weight:600}
+    /* EMPTY */
+    #no-result{padding:60px;text-align:center;color:var(--muted);font-size:14px;display:none}
+    @media(max-width:700px){.layout{grid-template-columns:1fr}.sidebar{display:none}}
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="header-title">📚 MONOLITH API Reference <span class="badge badge-v">v1.0</span></div>
+      <div class="header-sub">Agent Tools Documentation — Daph Decor (6 agents · 30 tools) + Swift Logistics (5 agents · 25 tools)</div>
+    </div>
+    <div style="font-size:11px;opacity:.6">n:169 · 2026-Q3 · MONOLITH Platform</div>
+  </div>
+</div>
+
+<!-- SEARCH + FILTER -->
+<div class="search-bar">
+  <input class="search-input" id="search" type="text" placeholder="ค้นหา tool name หรือ parameter..." oninput="applySearch()"/>
+  <div class="client-tabs">
+    <span class="ct all active" onclick="filterClient(this,'all')">🔍 ทั้งหมด</span>
+    <span class="ct daph" onclick="filterClient(this,'daph')">🏠 Daph</span>
+    <span class="ct swift" onclick="filterClient(this,'swift')">🚚 Swift</span>
+  </div>
+  <span class="result-count" id="result-count">11 agents · 55 tools</span>
+</div>
+
+<div class="layout">
+
+<!-- SIDEBAR NAV -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-section">🏠 Daph Decor</div>
+  <div class="sidebar-item daph" data-target="sale-agent" onclick="scrollTo('sale-agent')"><span class="sidebar-icon">💼</span>Sale Agent<span class="sidebar-count">5</span></div>
+  <div class="sidebar-item daph" data-target="designer-agent" onclick="scrollTo('designer-agent')"><span class="sidebar-icon">🎨</span>Designer Agent<span class="sidebar-count">5</span></div>
+  <div class="sidebar-item daph" data-target="factory-agent" onclick="scrollTo('factory-agent')"><span class="sidebar-icon">🏭</span>Factory Agent<span class="sidebar-count">5</span></div>
+  <div class="sidebar-item daph" data-target="install-agent" onclick="scrollTo('install-agent')"><span class="sidebar-icon">🔧</span>Install Agent<span class="sidebar-count">5</span></div>
+  <div class="sidebar-item daph" data-target="pm-agent" onclick="scrollTo('pm-agent')"><span class="sidebar-icon">📊</span>PM Agent<span class="sidebar-count">5</span></div>
+  <div class="sidebar-item daph" data-target="procurement-agent" onclick="scrollTo('procurement-agent')"><span class="sidebar-icon">📦</span>Procurement Agent<span class="sidebar-count">5</span></div>
+  <div class="sidebar-section" style="margin-top:12px">🚚 Swift Logistics</div>
+  <div class="sidebar-item swift" data-target="dispatch-agent" onclick="scrollTo('dispatch-agent')"><span class="sidebar-icon">🗺️</span>Dispatch Agent<span class="sidebar-count">5</span></div>
+  <div class="sidebar-item swift" data-target="cs-agent" onclick="scrollTo('cs-agent')"><span class="sidebar-icon">💬</span>CS Agent<span class="sidebar-count">5</span></div>
+  <div class="sidebar-item swift" data-target="driver-agent" onclick="scrollTo('driver-agent')"><span class="sidebar-icon">🚛</span>Driver Agent<span class="sidebar-count">5</span></div>
+  <div class="sidebar-item swift" data-target="warehouse-agent" onclick="scrollTo('warehouse-agent')"><span class="sidebar-icon">🏪</span>Warehouse Agent<span class="sidebar-count">5</span></div>
+  <div class="sidebar-item swift" data-target="qc-agent-swift" onclick="scrollTo('qc-agent-swift')"><span class="sidebar-icon">🔍</span>QC Agent<span class="sidebar-count">5</span></div>
+</nav>
+
+<!-- MAIN DOCS -->
+<div class="main-content" id="main-content">
+
+<!-- ══════════ DAPH: SALE AGENT ══════════ -->
+<div class="agent-section" id="sale-agent" data-client="daph">
+  <div class="agent-header">
+    <span class="agent-icon-lg">💼</span>
+    <div><div class="agent-name">Sale Agent <span class="agent-client-badge badge-daph">Daph</span></div><div class="agent-role">รับ inquiry ผ่าน LINE · ส่ง quotation · follow-up ลูกค้า</div></div>
+  </div>
+  <div class="agent-kpi"><span class="kpi-item"><span class="kpi-label">First Response:</span> ≤ 4h</span><span class="kpi-item"><span class="kpi-label">Conversion:</span> ≥ 30%</span><span class="kpi-item"><span class="kpi-label">MCP Events:</span> new_inquiry · brief_received · project_created</span></div>
+
+  <!-- send_line_message -->
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">send_line_message</span><span class="tool-desc">ส่งข้อความ text ไปยัง LINE user</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><div class="section-label">Parameters</div>
+  <table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">user_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>LINE User ID (Uxxxxxxxx)</td></tr>
+  <tr><td class="param-name">message</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>ข้อความที่ต้องการส่ง</td></tr>
+  <tr><td class="param-name">client_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>"daph"</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "success": true, "message_id": "mid_xxx", "timestamp": "ISO8601" }</div>
+  <div class="section-label">Example</div><div class="code-ex"><span class="c">// Sale Agent ส่งข้อความยืนยัน</span><br>{ <span class="k">"user_id"</span>: <span class="s">"U4b3a2c1d0"</span>, <span class="k">"message"</span>: <span class="s">"ขอบคุณที่ติดต่อ Daph ครับ สนใจสินค้าอะไรเป็นพิเศษ?"</span>, <span class="k">"client_id"</span>: <span class="s">"daph"</span> }</div>
+  </div></div>
+
+  <!-- create_project -->
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">create_project</span><span class="tool-desc">สร้าง project record ใหม่ใน Supabase</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><div class="section-label">Parameters</div>
+  <table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">customer_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>LINE User ID ของลูกค้า</td></tr>
+  <tr><td class="param-name">project_name</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>ชื่อโปรเจคหรือ brief ย่อ</td></tr>
+  <tr><td class="param-name">requirements</td><td><span class="param-type">object</span></td><td><span class="param-opt">optional</span></td><td>รายละเอียด brief เบื้องต้น</td></tr>
+  <tr><td class="param-name">budget_thb</td><td><span class="param-type">number</span></td><td><span class="param-opt">optional</span></td><td>งบประมาณ (บาท)</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "project_id": "PRJ-2026-0042", "status": "created", "mcp_event": "project_created" }</div>
+  <div class="section-label">Example</div><div class="code-ex">{ <span class="k">"customer_id"</span>: <span class="s">"U4b3a2c1d0"</span>, <span class="k">"project_name"</span>: <span class="s">"ห้องครัวบ้านคุณสมชาย"</span>, <span class="k">"budget_thb"</span>: <span class="v">150000</span> }</div>
+  </div></div>
+
+  <!-- send_quotation -->
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">send_quotation</span><span class="tool-desc">ส่งใบเสนอราคาผ่าน Flex Message + PDF link</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><div class="section-label">Parameters</div>
+  <table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">project_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Project ID</td></tr>
+  <tr><td class="param-name">items</td><td><span class="param-type">array</span></td><td><span class="param-req">required</span></td><td>[{name, qty, unit_price}]</td></tr>
+  <tr><td class="param-name">discount_pct</td><td><span class="param-type">number</span></td><td><span class="param-opt">optional</span></td><td>ส่วนลด %</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "quotation_id": "QT-2026-0042", "pdf_url": "https://...", "sent": true }</div>
+  <div class="section-label">Example</div><div class="code-ex">{ <span class="k">"project_id"</span>: <span class="s">"PRJ-2026-0042"</span>, <span class="k">"items"</span>: [{ <span class="k">"name"</span>:<span class="s">"ชุดครัว HPL"</span>, <span class="k">"qty"</span>:<span class="v">1</span>, <span class="k">"unit_price"</span>:<span class="v">125000</span> }] }</div>
+  </div></div>
+
+  <!-- follow_up_customer -->
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">follow_up_customer</span><span class="tool-desc">ส่ง follow-up อัตโนมัติตาม schedule</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><div class="section-label">Parameters</div>
+  <table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">project_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Project ID</td></tr>
+  <tr><td class="param-name">delay_hours</td><td><span class="param-type">number</span></td><td><span class="param-opt">optional</span></td><td>ส่งหลังจาก N ชั่วโมง (default: 24)</td></tr>
+  <tr><td class="param-name">message_template</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>template key: "quotation_followup" | "design_ready"</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "scheduled_at": "ISO8601", "job_id": "FOLLOWUP-xxx" }</div>
+  </div></div>
+
+  <!-- send_flex_message -->
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">send_flex_message</span><span class="tool-desc">ส่ง LINE Flex Message bubble ที่กำหนดเอง</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><div class="section-label">Parameters</div>
+  <table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">user_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>LINE User ID</td></tr>
+  <tr><td class="param-name">flex_template</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>template key: "welcome"|"quotation"|"status"|"review"</td></tr>
+  <tr><td class="param-name">data</td><td><span class="param-type">object</span></td><td><span class="param-req">required</span></td><td>ข้อมูลที่ inject เข้า template</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "success": true, "message_id": "mid_xxx" }</div>
+  </div></div>
+</div>
+
+<!-- ══════════ DAPH: DESIGNER AGENT ══════════ -->
+<div class="agent-section" id="designer-agent" data-client="daph">
+  <div class="agent-header">
+    <span class="agent-icon-lg">🎨</span>
+    <div><div class="agent-name">Designer Agent <span class="agent-client-badge badge-daph">Daph</span></div><div class="agent-role">วัดพื้นที่ · สร้าง 3D design · ส่งขออนุมัติแบบ</div></div>
+  </div>
+  <div class="agent-kpi"><span class="kpi-item"><span class="kpi-label">Design Delivery:</span> ≤ 48h</span><span class="kpi-item"><span class="kpi-label">Approval Rate:</span> ≥ 80%</span><span class="kpi-item"><span class="kpi-label">MCP Events:</span> approval_request</span></div>
+
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">upload_design</span><span class="tool-desc">อัปโหลดไฟล์ 3D design ไปยัง storage</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">project_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Project ID</td></tr>
+  <tr><td class="param-name">file_url</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>URL ไฟล์ design (3D / PDF / image)</td></tr>
+  <tr><td class="param-name">version</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>"v1"|"v2"|"final" (default: "v1")</td></tr>
+  <tr><td class="param-name">notes</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>หมายเหตุของ designer</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "design_id": "DSN-2026-0042", "storage_url": "https://...", "version": "v1" }</div>
+  </div></div>
+
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">request_approval</span><span class="tool-desc">ส่ง approval request ผ่าน LIFF ให้ลูกค้าอนุมัติ</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">project_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Project ID</td></tr>
+  <tr><td class="param-name">approval_type</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>"design_3d"|"final_quotation"|"production_start"</td></tr>
+  <tr><td class="param-name">deadline_hours</td><td><span class="param-type">number</span></td><td><span class="param-opt">optional</span></td><td>เวลาหมดอายุ (default: 72)</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "approval_id": "APR-xxx", "liff_url": "https://liff.line.me/...", "mcp_event": "approval_request" }</div>
+  </div></div>
+
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">send_flex_approval</span><span class="tool-desc">ส่ง Flex Message พร้อมปุ่ม Approve / Reject</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">approval_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Approval ID จาก request_approval</td></tr>
+  <tr><td class="param-name">design_thumbnail_url</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>URL รูป preview 3D</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "success": true, "message_id": "mid_xxx" }</div>
+  </div></div>
+
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">create_3d_design</span><span class="tool-desc">สร้าง 3D design job ใน design queue</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">project_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Project ID</td></tr>
+  <tr><td class="param-name">area_sqm</td><td><span class="param-type">number</span></td><td><span class="param-req">required</span></td><td>พื้นที่ (ตร.ม.)</td></tr>
+  <tr><td class="param-name">style</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>"modern"|"classic"|"minimalist"</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "design_job_id": "DJB-xxx", "estimated_hours": 24, "assigned_designer": "designer_01" }</div>
+  </div></div>
+
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">measure_area</span><span class="tool-desc">บันทึกผลการวัดพื้นที่จาก site visit</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">project_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Project ID</td></tr>
+  <tr><td class="param-name">measurements</td><td><span class="param-type">object</span></td><td><span class="param-req">required</span></td><td>{width_cm, height_cm, depth_cm, notes}</td></tr>
+  <tr><td class="param-name">photos</td><td><span class="param-type">array</span></td><td><span class="param-opt">optional</span></td><td>[url, ...] ภาพประกอบ</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "measurement_id": "MSR-xxx", "status": "saved", "floor_plan_url": "https://..." }</div>
+  </div></div>
+</div>
+
+<!-- ══════════ DAPH: FACTORY AGENT ══════════ -->
+<div class="agent-section" id="factory-agent" data-client="daph">
+  <div class="agent-header">
+    <span class="agent-icon-lg">🏭</span>
+    <div><div class="agent-name">Factory Agent <span class="agent-client-badge badge-daph">Daph</span></div><div class="agent-role">รับ BOM · แจ้งสถานะผลิต · QC checkpoint</div></div>
+  </div>
+  <div class="agent-kpi"><span class="kpi-item"><span class="kpi-label">On-time Production:</span> ≥ 95%</span><span class="kpi-item"><span class="kpi-label">QC Pass Rate:</span> ≥ 99%</span><span class="kpi-item"><span class="kpi-label">MCP Events:</span> bom_received · qc_checkpoint · stock_alert</span></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">update_production_status</span><span class="tool-desc">อัปเดตสถานะขั้นตอนผลิต</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">project_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Project ID</td></tr>
+  <tr><td class="param-name">stage</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>"Laminate HPL"|"Cutting"|"Edging"|"CNC"|"Assembly"|"Packing"</td></tr>
+  <tr><td class="param-name">pct_complete</td><td><span class="param-type">number</span></td><td><span class="param-req">required</span></td><td>0–100</td></tr>
+  <tr><td class="param-name">eta_date</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>วันที่คาดว่าจะเสร็จ (YYYY-MM-DD)</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "updated": true, "mcp_event": "status_update", "next_stage": "Edging" }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">qc_checkpoint</span><span class="tool-desc">บันทึกผล QC checkpoint</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">job_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Production Job ID</td></tr>
+  <tr><td class="param-name">checkpoint_name</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>ชื่อ checkpoint</td></tr>
+  <tr><td class="param-name">passed</td><td><span class="param-type">boolean</span></td><td><span class="param-req">required</span></td><td>true = ผ่าน</td></tr>
+  <tr><td class="param-name">defects</td><td><span class="param-type">array</span></td><td><span class="param-opt">optional</span></td><td>[{type, description, photo_url}]</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "qc_id": "QC-xxx", "passed": true, "mcp_event": "qc_checkpoint" }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">stock_alert</span><span class="tool-desc">แจ้งเตือนวัตถุดิบใกล้หมด</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">item_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Material/Item ID</td></tr>
+  <tr><td class="param-name">current_qty</td><td><span class="param-type">number</span></td><td><span class="param-req">required</span></td><td>จำนวนคงเหลือ</td></tr>
+  <tr><td class="param-name">min_qty</td><td><span class="param-type">number</span></td><td><span class="param-req">required</span></td><td>จำนวนขั้นต่ำ</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "alert_id": "STK-xxx", "mcp_event": "stock_alert", "procurement_triggered": true }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">receive_bom</span><span class="tool-desc">รับ Bill of Materials จาก Designer/PM</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">project_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Project ID</td></tr>
+  <tr><td class="param-name">bom_items</td><td><span class="param-type">array</span></td><td><span class="param-req">required</span></td><td>[{material_id, name, qty, unit}]</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "bom_id": "BOM-xxx", "mcp_event": "bom_received", "production_start": "YYYY-MM-DD" }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">send_production_update</span><span class="tool-desc">ส่ง LINE notification อัปเดตสถานะผลิตให้ลูกค้า</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">project_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Project ID</td></tr>
+  <tr><td class="param-name">update_text</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>ข้อความอัปเดต</td></tr>
+  <tr><td class="param-name">eta_date</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>วันส่งมอบ (YYYY-MM-DD)</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "success": true, "message_id": "mid_xxx" }</div>
+  </div></div>
+</div>
+
+<!-- ══════════ DAPH: INSTALL AGENT ══════════ -->
+<div class="agent-section" id="install-agent" data-client="daph">
+  <div class="agent-header">
+    <span class="agent-icon-lg">🔧</span>
+    <div><div class="agent-name">Install Agent <span class="agent-client-badge badge-daph">Daph</span></div><div class="agent-role">นัดติดตั้ง · GPS check-in · capture defect · sign-off</div></div>
+  </div>
+  <div class="agent-kpi"><span class="kpi-item"><span class="kpi-label">Site Accuracy:</span> ≤ 2mm</span><span class="kpi-item"><span class="kpi-label">Sign-off Rate:</span> 100%</span><span class="kpi-item"><span class="kpi-label">Critical TCs:</span> TC-INSTALL-02 · TC-INSTALL-05</span></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">capture_defect</span><span class="tool-desc">บันทึก defect พร้อมภาพถ่าย — HALT ถ้า Sev ≥ 9</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">job_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Installation Job ID</td></tr>
+  <tr><td class="param-name">defect_type</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>"dimension_mismatch"|"surface_damage"|"alignment_error"|"hardware_fail"</td></tr>
+  <tr><td class="param-name">severity</td><td><span class="param-type">number</span></td><td><span class="param-req">required</span></td><td>1–9 (PFMEA scale)</td></tr>
+  <tr><td class="param-name">photo_urls</td><td><span class="param-type">array</span></td><td><span class="param-req">required</span></td><td>[url, ...] ภาพ defect</td></tr>
+  <tr><td class="param-name">description</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>รายละเอียดเพิ่มเติม</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "defect_id": "DFT-xxx", "halt_triggered": false, "mcp_event": "qc_checkpoint" }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">gps_checkin</span><span class="tool-desc">บันทึก GPS location ณ สถานที่ติดตั้ง</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">job_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Installation Job ID</td></tr>
+  <tr><td class="param-name">lat</td><td><span class="param-type">number</span></td><td><span class="param-req">required</span></td><td>Latitude</td></tr>
+  <tr><td class="param-name">lng</td><td><span class="param-type">number</span></td><td><span class="param-req">required</span></td><td>Longitude</td></tr>
+  <tr><td class="param-name">accuracy_m</td><td><span class="param-type">number</span></td><td><span class="param-opt">optional</span></td><td>GPS accuracy (meters)</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "checkin_id": "GPS-xxx", "verified": true, "distance_from_site_m": 8 }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">update_installation_status</span><span class="tool-desc">อัปเดตขั้นตอนการติดตั้ง</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">job_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Job ID</td></tr>
+  <tr><td class="param-name">status</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>"arrived"|"in_progress"|"qc_pending"|"complete"|"halted"</td></tr>
+  <tr><td class="param-name">notes</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>หมายเหตุ</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "updated": true, "mcp_event": "status_update" }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">trigger_qc_inspection</span><span class="tool-desc">เรียก QC inspection ณ สถานที่ติดตั้ง</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">job_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Job ID</td></tr>
+  <tr><td class="param-name">checklist_completed</td><td><span class="param-type">array</span></td><td><span class="param-req">required</span></td><td>["CHK-01","CHK-02",...] รายการที่เสร็จแล้ว</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "inspection_id": "INS-xxx", "ready_for_signoff": true }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">sign_off_job</span><span class="tool-desc">รับ sign-off จากลูกค้า + ส่ง job_complete event</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">job_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Job ID</td></tr>
+  <tr><td class="param-name">customer_signature_url</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>URL ลายเซ็น (base64 image)</td></tr>
+  <tr><td class="param-name">after_photos</td><td><span class="param-type">array</span></td><td><span class="param-req">required</span></td><td>[url, ...] ภาพหลังติดตั้ง</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "job_complete_id": "JC-xxx", "mcp_event": "job_complete", "review_liff_sent": true }</div>
+  </div></div>
+</div>
+
+<!-- ══════════ DAPH: PM AGENT ══════════ -->
+<div class="agent-section" id="pm-agent" data-client="daph">
+  <div class="agent-header">
+    <span class="agent-icon-lg">📊</span>
+    <div><div class="agent-name">PM Agent <span class="agent-client-badge badge-daph">Daph</span></div><div class="agent-role">ดู dashboard โปรเจค · ประสาน team · escalate halt</div></div>
+  </div>
+  <div class="agent-kpi"><span class="kpi-item"><span class="kpi-label">Halt Resolution:</span> ≤ 2h</span><span class="kpi-item"><span class="kpi-label">Dashboard Accuracy:</span> 100%</span></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">get_project_status</span><span class="tool-desc">ดึง status ปัจจุบันของ project</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">project_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Project ID</td></tr>
+  <tr><td class="param-name">include_timeline</td><td><span class="param-type">boolean</span></td><td><span class="param-opt">optional</span></td><td>รวม event timeline (default: false)</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "project_id": "...", "stage": "Production", "pct_complete": 65, "timeline": [...] }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">escalate_halt</span><span class="tool-desc">Escalate halt_alert ไปยัง human PM ทันที</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">halt_event_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>halt_alert Event ID</td></tr>
+  <tr><td class="param-name">escalation_reason</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>สาเหตุที่ต้อง escalate</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "escalated": true, "ticket_id": "ESC-xxx", "notified_human": true }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">update_project</span><span class="tool-desc">แก้ไขข้อมูล project</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">project_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Project ID</td></tr>
+  <tr><td class="param-name">fields</td><td><span class="param-type">object</span></td><td><span class="param-req">required</span></td><td>fields ที่ต้องการแก้ไข</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "updated": true, "fields_changed": ["install_date"] }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">send_status_report</span><span class="tool-desc">ส่งรายงานสถานะโปรเจครายสัปดาห์</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">recipient_user_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>LINE User ID ผู้รับ</td></tr>
+  <tr><td class="param-name">report_type</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>"weekly"|"milestone"|"completion" (default: "weekly")</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "success": true, "message_id": "mid_xxx" }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">assign_task</span><span class="tool-desc">Assign งานไปยัง agent หรือ human team member</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">task_description</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>รายละเอียดงาน</td></tr>
+  <tr><td class="param-name">assignee_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>agent ID หรือ human user ID</td></tr>
+  <tr><td class="param-name">due_date</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>วันครบกำหนด (YYYY-MM-DD)</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "task_id": "TSK-xxx", "assigned": true }</div>
+  </div></div>
+</div>
+
+<!-- ══════════ DAPH: PROCUREMENT AGENT ══════════ -->
+<div class="agent-section" id="procurement-agent" data-client="daph">
+  <div class="agent-header">
+    <span class="agent-icon-lg">📦</span>
+    <div><div class="agent-name">Procurement Agent <span class="agent-client-badge badge-daph">Daph</span></div><div class="agent-role">สั่งซื้อ materials · track delivery · stock alert</div></div>
+  </div>
+  <div class="agent-kpi"><span class="kpi-item"><span class="kpi-label">On-time Procurement:</span> ≥ 98%</span><span class="kpi-item"><span class="kpi-label">Stock-out:</span> 0</span></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">create_purchase_order</span><span class="tool-desc">สร้าง PO สำหรับ supplier</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">supplier_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Supplier ID</td></tr>
+  <tr><td class="param-name">items</td><td><span class="param-type">array</span></td><td><span class="param-req">required</span></td><td>[{material_id, qty, unit_price}]</td></tr>
+  <tr><td class="param-name">delivery_date</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>วันที่ต้องการรับวัตถุดิบ (YYYY-MM-DD)</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "po_id": "PO-2026-0099", "total_thb": 45000, "eta": "YYYY-MM-DD" }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">track_delivery</span><span class="tool-desc">ติดตามสถานะการจัดส่งวัตถุดิบ</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">po_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Purchase Order ID</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "po_id": "PO-xxx", "status": "in_transit", "eta": "YYYY-MM-DD", "tracking_url": "https://..." }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">receive_materials</span><span class="tool-desc">บันทึกการรับวัตถุดิบเข้าคลัง</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">po_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>PO ID</td></tr>
+  <tr><td class="param-name">received_items</td><td><span class="param-type">array</span></td><td><span class="param-req">required</span></td><td>[{material_id, received_qty, condition}]</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "receipt_id": "REC-xxx", "mcp_event": "bom_received", "discrepancies": [] }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">update_inventory</span><span class="tool-desc">อัปเดต inventory ใน Supabase</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">item_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Material/Item ID</td></tr>
+  <tr><td class="param-name">delta_qty</td><td><span class="param-type">number</span></td><td><span class="param-req">required</span></td><td>จำนวนที่เปลี่ยน (+N เพิ่ม / -N ใช้)</td></tr>
+  <tr><td class="param-name">reason</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>"received"|"used"|"damaged"|"adjusted"</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "updated": true, "new_qty": 45, "below_min": false }</div>
+  </div></div>
+  <!-- stock_alert already shown in factory, reuse -->
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">stock_alert</span><span class="tool-desc">แจ้งเตือน stock ต่ำ (shared tool)</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><p style="font-size:12px;color:var(--muted)">→ See Factory Agent → <code>stock_alert</code> for full parameter reference. Same signature, different emitter context.</p></div></div>
+</div>
+
+<!-- ─────────────────────────── SWIFT ─────────────────────────── -->
+
+<!-- ══════════ SWIFT: DISPATCH AGENT ══════════ -->
+<div class="agent-section" id="dispatch-agent" data-client="swift">
+  <div class="agent-header">
+    <span class="agent-icon-lg">🗺️</span>
+    <div><div class="agent-name">Dispatch Agent <span class="agent-client-badge badge-swift">Swift</span></div><div class="agent-role">รับคำสั่งส่งพัสดุ · assign driver · จัดเส้นทาง</div></div>
+  </div>
+  <div class="agent-kpi"><span class="kpi-item"><span class="kpi-label">Dispatch Time:</span> ≤ 15 min</span><span class="kpi-item"><span class="kpi-label">Driver Utilization:</span> ≥ 85%</span><span class="kpi-item"><span class="kpi-label">MCP Events:</span> new_inquiry · job_scheduled · status_update</span></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">create_shipment</span><span class="tool-desc">สร้าง shipment order ใหม่</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">customer_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>LINE User ID ของผู้ส่ง</td></tr>
+  <tr><td class="param-name">pickup_address</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>ที่อยู่รับพัสดุ</td></tr>
+  <tr><td class="param-name">delivery_address</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>ที่อยู่ปลายทาง</td></tr>
+  <tr><td class="param-name">package_type</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>"document"|"parcel"|"fragile"|"large"</td></tr>
+  <tr><td class="param-name">cod_amount_thb</td><td><span class="param-type">number</span></td><td><span class="param-opt">optional</span></td><td>COD amount (0 = ไม่มี COD)</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "shipment_id": "SHP-2026-0001", "tracking_no": "SWFT-xxx", "mcp_event": "new_inquiry" }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">assign_driver</span><span class="tool-desc">Assign driver ที่เหมาะสมให้ shipment</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">shipment_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Shipment ID</td></tr>
+  <tr><td class="param-name">driver_id</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>ระบุ driver โดยตรง (ถ้าไม่ระบุ = auto-assign)</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "assigned_driver": "DRV-007", "eta_pickup_min": 20, "mcp_event": "job_scheduled" }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">optimize_route</span><span class="tool-desc">คำนวณเส้นทางที่เหมาะสมสำหรับ driver</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">driver_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Driver ID</td></tr>
+  <tr><td class="param-name">shipment_ids</td><td><span class="param-type">array</span></td><td><span class="param-req">required</span></td><td>รายการ shipment ที่ต้องส่ง</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "route_id": "RT-xxx", "stops": [...], "total_km": 42, "eta_minutes": 180 }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">send_pickup_notification</span><span class="tool-desc">ส่งการแจ้งเตือนให้ผู้ส่ง LINE</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">shipment_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Shipment ID</td></tr>
+  <tr><td class="param-name">eta_minutes</td><td><span class="param-type">number</span></td><td><span class="param-req">required</span></td><td>เวลาคาดการณ์ก่อนถึง (นาที)</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "success": true, "message_id": "mid_xxx" }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">trigger_mcp_event</span><span class="tool-desc">ส่ง MCP event ไปยัง event bus</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">event_name</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>ชื่อ MCP event (12 standard events)</td></tr>
+  <tr><td class="param-name">payload</td><td><span class="param-type">object</span></td><td><span class="param-req">required</span></td><td>Event payload object</td></tr>
+  <tr><td class="param-name">client_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>"swift"</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "event_id": "EVT-xxx", "routed_to": ["cs_agent","warehouse_agent"], "timestamp": "ISO8601" }</div>
+  </div></div>
+</div>
+
+<!-- ══════════ SWIFT: CS AGENT ══════════ -->
+<div class="agent-section" id="cs-agent" data-client="swift">
+  <div class="agent-header">
+    <span class="agent-icon-lg">💬</span>
+    <div><div class="agent-name">CS Agent <span class="agent-client-badge badge-swift">Swift</span></div><div class="agent-role">ตอบลูกค้า · track shipment · escalate complaint</div></div>
+  </div>
+  <div class="agent-kpi"><span class="kpi-item"><span class="kpi-label">First Response:</span> ≤ 1h</span><span class="kpi-item"><span class="kpi-label">Satisfaction:</span> ≥ 90%</span><span class="kpi-item"><span class="kpi-label">MCP Events:</span> first_response_4h · status_update · halt_alert</span></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">send_line_message</span><span class="tool-desc">ส่งข้อความ LINE ตอบลูกค้า Swift</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><p style="font-size:12px;color:var(--muted)">→ Shared tool — same signature as Daph → Sale Agent → <code>send_line_message</code>, with <code>client_id: "swift"</code>.</p></div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">get_shipment_status</span><span class="tool-desc">ดึงสถานะ shipment ปัจจุบัน</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">tracking_no</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Tracking number (SWFT-xxx)</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "status": "in_transit", "location": "ลาดพร้าว", "eta": "14:30", "driver_name": "สมชาย" }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">escalate_complaint</span><span class="tool-desc">Escalate complaint ไปยัง human supervisor</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">shipment_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Shipment ID</td></tr>
+  <tr><td class="param-name">complaint_type</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>"damage"|"late"|"lost"|"wrong_delivery"|"other"</td></tr>
+  <tr><td class="param-name">customer_message</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>ข้อความจากลูกค้า</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "ticket_id": "CST-xxx", "escalated": true, "mcp_event": "halt_alert" }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">send_flex_message</span><span class="tool-desc">ส่ง Flex Message tracking / notification (shared)</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><p style="font-size:12px;color:var(--muted)">→ Shared tool — same signature as Daph → Sale Agent → <code>send_flex_message</code>. Templates available: "tracking_update"|"delivery_confirmed"|"complaint_received".</p></div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">send_tracking_update</span><span class="tool-desc">Push tracking status ให้ลูกค้าทุก milestone</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">shipment_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Shipment ID</td></tr>
+  <tr><td class="param-name">milestone</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>"picked_up"|"in_transit"|"out_for_delivery"|"delivered"|"failed"</td></tr>
+  <tr><td class="param-name">location_text</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>ชื่อพื้นที่ปัจจุบัน</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "success": true, "message_id": "mid_xxx", "mcp_event": "status_update" }</div>
+  </div></div>
+</div>
+
+<!-- ══════════ SWIFT: DRIVER AGENT ══════════ -->
+<div class="agent-section" id="driver-agent" data-client="swift">
+  <div class="agent-header">
+    <span class="agent-icon-lg">🚛</span>
+    <div><div class="agent-name">Driver Agent <span class="agent-client-badge badge-swift">Swift</span></div><div class="agent-role">GPS check-in · update delivery status · capture POD · report damage</div></div>
+  </div>
+  <div class="agent-kpi"><span class="kpi-item"><span class="kpi-label">On-time Delivery:</span> ≥ 95%</span><span class="kpi-item"><span class="kpi-label">POD Capture:</span> 100%</span><span class="kpi-item"><span class="kpi-label">Critical TCs:</span> TC-DRIVER-01 · TC-DRIVER-03</span></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">gps_checkin</span><span class="tool-desc">บันทึก GPS ณ จุดรับหรือส่งพัสดุ (shared tool)</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><p style="font-size:12px;color:var(--muted)">→ Same signature as Daph → Install Agent → <code>gps_checkin</code> with <code>job_id</code> = shipment_id.</p></div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">update_delivery_status</span><span class="tool-desc">อัปเดตสถานะการจัดส่ง</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">shipment_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Shipment ID</td></tr>
+  <tr><td class="param-name">status</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>"picked_up"|"in_transit"|"arrived"|"delivered"|"failed_delivery"</td></tr>
+  <tr><td class="param-name">lat</td><td><span class="param-type">number</span></td><td><span class="param-opt">optional</span></td><td>Latitude ปัจจุบัน</td></tr>
+  <tr><td class="param-name">lng</td><td><span class="param-type">number</span></td><td><span class="param-opt">optional</span></td><td>Longitude ปัจจุบัน</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "updated": true, "mcp_event": "status_update", "customer_notified": true }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">capture_pod</span><span class="tool-desc">อัปโหลด Proof of Delivery (ภาพ + signature)</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">shipment_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Shipment ID</td></tr>
+  <tr><td class="param-name">photo_url</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>URL ภาพ POD</td></tr>
+  <tr><td class="param-name">signature_url</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>URL ลายเซ็น (base64)</td></tr>
+  <tr><td class="param-name">recipient_name</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>ชื่อผู้รับพัสดุ</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "pod_id": "POD-xxx", "mcp_event": "job_complete", "review_sent": true }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">report_damage</span><span class="tool-desc">รายงานความเสียหายพัสดุ + ส่ง halt_alert</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">shipment_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Shipment ID</td></tr>
+  <tr><td class="param-name">damage_type</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>"crushed"|"wet"|"torn"|"missing_item"|"wrong_item"</td></tr>
+  <tr><td class="param-name">photos</td><td><span class="param-type">array</span></td><td><span class="param-req">required</span></td><td>[url, ...] ภาพความเสียหาย</td></tr>
+  <tr><td class="param-name">severity</td><td><span class="param-type">number</span></td><td><span class="param-req">required</span></td><td>1–9 (PFMEA scale)</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "damage_id": "DMG-xxx", "halt_triggered": true, "mcp_event": "halt_alert", "qc_notified": true }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">sign_off_delivery</span><span class="tool-desc">ปิดงานส่งพัสดุ + ส่ง job_complete</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">shipment_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Shipment ID</td></tr>
+  <tr><td class="param-name">pod_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>POD ID จาก capture_pod</td></tr>
+  <tr><td class="param-name">cod_collected_thb</td><td><span class="param-type">number</span></td><td><span class="param-opt">optional</span></td><td>ยอด COD ที่เก็บได้ (0 ถ้าไม่มี)</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "signed_off": true, "mcp_event": "job_complete", "review_liff_sent": true }</div>
+  </div></div>
+</div>
+
+<!-- ══════════ SWIFT: WAREHOUSE AGENT ══════════ -->
+<div class="agent-section" id="warehouse-agent" data-client="swift">
+  <div class="agent-header">
+    <span class="agent-icon-lg">🏪</span>
+    <div><div class="agent-name">Warehouse Agent <span class="agent-client-badge badge-swift">Swift</span></div><div class="agent-role">รับพัสดุเข้า · จัดเรียง · scan out · inventory</div></div>
+  </div>
+  <div class="agent-kpi"><span class="kpi-item"><span class="kpi-label">Scan Accuracy:</span> ≥ 99.9%</span><span class="kpi-item"><span class="kpi-label">Processing:</span> ≤ 30 min</span><span class="kpi-item"><span class="kpi-label">MCP Events:</span> bom_received · stock_alert · job_scheduled</span></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">scan_inbound</span><span class="tool-desc">สแกน barcode รับพัสดุเข้า warehouse</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">barcode</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Barcode / tracking number</td></tr>
+  <tr><td class="param-name">condition</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>"good"|"damaged"|"needs_qc"</td></tr>
+  <tr><td class="param-name">location_code</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>ที่วางในคลัง (เช่น "A3-R2")</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "inbound_id": "IN-xxx", "shipment_id": "SHP-xxx", "status": "received" }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">scan_outbound</span><span class="tool-desc">สแกน barcode ส่งพัสดุออก (assign to driver)</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">barcode</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Barcode / tracking number</td></tr>
+  <tr><td class="param-name">driver_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Driver ที่รับพัสดุ</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "outbound_id": "OUT-xxx", "mcp_event": "job_scheduled", "driver_manifest_updated": true }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">update_inventory</span><span class="tool-desc">อัปเดต inventory warehouse (shared tool)</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><p style="font-size:12px;color:var(--muted)">→ See Daph → Procurement Agent → <code>update_inventory</code> for full parameter reference. Same signature.</p></div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">stock_alert</span><span class="tool-desc">แจ้งเตือน packaging / supply ต่ำ (shared tool)</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><p style="font-size:12px;color:var(--muted)">→ See Daph → Factory Agent → <code>stock_alert</code> for full parameter reference. Same signature, with <code>client_id: "swift"</code>.</p></div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">label_package</span><span class="tool-desc">พิมพ์/สร้าง label พัสดุใหม่</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">shipment_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Shipment ID</td></tr>
+  <tr><td class="param-name">label_type</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>"standard"|"fragile"|"cod"|"return" (default: "standard")</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "label_id": "LBL-xxx", "label_url": "https://...", "printed": true }</div>
+  </div></div>
+</div>
+
+<!-- ══════════ SWIFT: QC AGENT ══════════ -->
+<div class="agent-section" id="qc-agent-swift" data-client="swift">
+  <div class="agent-header">
+    <span class="agent-icon-lg">🔍</span>
+    <div><div class="agent-name">QC Agent <span class="agent-client-badge badge-swift">Swift</span></div><div class="agent-role">ตรวจสอบสภาพพัสดุ · capture damage · ออก claim report</div></div>
+  </div>
+  <div class="agent-kpi"><span class="kpi-item"><span class="kpi-label">Damage Detection:</span> 100%</span><span class="kpi-item"><span class="kpi-label">Claim Processing:</span> ≤ 24h</span><span class="kpi-item"><span class="kpi-label">MCP Events:</span> qc_checkpoint · halt_alert · status_update</span></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">capture_damage_photo</span><span class="tool-desc">ถ่ายภาพและบันทึกความเสียหายอย่างเป็นทางการ</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">shipment_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Shipment ID</td></tr>
+  <tr><td class="param-name">photos</td><td><span class="param-type">array</span></td><td><span class="param-req">required</span></td><td>[{url, angle: "front"|"side"|"barcode"}]</td></tr>
+  <tr><td class="param-name">damage_description</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>รายละเอียดความเสียหาย</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "damage_record_id": "DRD-xxx", "photos_saved": 3, "claim_eligible": true }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">create_claim_report</span><span class="tool-desc">สร้าง claim report อย่างเป็นทางการ</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">shipment_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Shipment ID</td></tr>
+  <tr><td class="param-name">damage_record_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Damage Record ID</td></tr>
+  <tr><td class="param-name">claim_amount_thb</td><td><span class="param-type">number</span></td><td><span class="param-req">required</span></td><td>ยอดเคลมเบื้องต้น (บาท)</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "claim_id": "CLM-xxx", "mcp_event": "halt_alert", "pdf_url": "https://...", "assigned_to": "supervisor_01" }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">qc_checkpoint</span><span class="tool-desc">บันทึก QC checkpoint สำหรับพัสดุ (shared tool)</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><p style="font-size:12px;color:var(--muted)">→ Same signature as Daph → Factory Agent → <code>qc_checkpoint</code>. Use <code>job_id</code> = shipment_id.</p></div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">escalate_damage</span><span class="tool-desc">Escalate damage เกินขีดจำกัด → halt_alert</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">damage_record_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Damage Record ID</td></tr>
+  <tr><td class="param-name">severity</td><td><span class="param-type">number</span></td><td><span class="param-req">required</span></td><td>1–9 (ถ้า ≥ 8 → auto halt_alert)</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "escalated": true, "mcp_event": "halt_alert", "ticket_id": "ESC-xxx" }</div>
+  </div></div>
+  <div class="tool-card"><div class="tool-header" onclick="toggleTool(this)"><span class="tool-method">CALL</span><span class="tool-name">send_qc_notification</span><span class="tool-desc">ส่งผล QC ให้ Dispatch + CS Agent</span><span class="tool-toggle">▼</span></div>
+  <div class="tool-body"><table class="params-table"><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td class="param-name">shipment_id</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Shipment ID</td></tr>
+  <tr><td class="param-name">qc_result</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>"pass"|"fail"|"pending_review"</td></tr>
+  <tr><td class="param-name">notes</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>หมายเหตุ QC</td></tr>
+  </table>
+  <div class="section-label">Returns</div><div class="returns-box">{ "success": true, "mcp_event": "qc_checkpoint", "notified_agents": ["dispatch_agent","cs_agent"] }</div>
+  </div></div>
+</div>
+
+<div id="no-result">ไม่พบ tool ที่ตรงกับการค้นหา</div>
+
+</div><!-- /main-content -->
+</div><!-- /layout -->
+
+<script>
+let activeClient='all';
+
+function filterClient(el,val){
+  document.querySelectorAll('.ct').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  activeClient=val;
+  applySearch();
+}
+
+function applySearch(){
+  const q=document.getElementById('search').value.toLowerCase().trim();
+  let visible=0;
+  document.querySelectorAll('.agent-section').forEach(sec=>{
+    const cl=sec.dataset.client;
+    const clientMatch=(activeClient==='all'||activeClient===cl);
+    if(!clientMatch){sec.style.display='none';return;}
+    if(!q){sec.style.display='';visible++;return;}
+    const text=sec.textContent.toLowerCase();
+    sec.style.display=text.includes(q)?'':'none';
+    if(text.includes(q))visible++;
+  });
+  document.getElementById('no-result').style.display=visible===0?'block':'none';
+  // count visible tools
+  let tc=0;
+  document.querySelectorAll('.tool-card').forEach(t=>{if(t.closest('.agent-section').style.display!=='none')tc++;});
+  document.getElementById('result-count').textContent=`${visible} agent${visible!==1?'s':''} · ${tc} tools`;
+}
+
+function toggleTool(header){
+  const body=header.nextElementSibling;
+  const toggle=header.querySelector('.tool-toggle');
+  const isOpen=body.classList.toggle('open');
+  toggle.textContent=isOpen?'▲':'▼';
+}
+
+function scrollTo(id){
+  const el=document.getElementById(id);
+  if(el){el.scrollIntoView({behavior:'smooth',block:'start'});}
+  document.querySelectorAll('.sidebar-item').forEach(s=>s.classList.remove('active'));
+  document.querySelector(`[data-target="${id}"]`).classList.add('active');
+}
+</script>
+</body>
+</html>

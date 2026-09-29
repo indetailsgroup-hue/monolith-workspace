@@ -60,8 +60,8 @@
 
 ## Phase 7: E2E + ปิดงาน
 
-- [ ] 15. e2e @smoke: สร้างตู้มุมโค้ง → X-Ray เห็น kerf → export DXF สำเร็จไม่มี console error
-- [ ] 16. รัน `npm run verify` เต็ม + bypass-scan + อัปเดต PRD §6.1.7 สถานะจาก 🔵 → ✅
+- [x] 15. e2e @smoke: สร้างตู้มุมโค้ง → X-Ray เห็น kerf → export DXF สำเร็จไม่มี console error
+- [x] 16. รัน `npm run verify` เต็ม + bypass-scan + อัปเดต PRD §6.1.7 สถานะจาก 🔵 → ✅
 
 ## Deferred (P2 — บันทึกไว้ ไม่ทำใน v1)
 

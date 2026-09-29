@@ -1,0 +1,24 @@
+apiVersion: 1
+
+datasources:
+  - name: InfluxDB-DigitalShadow
+    type: influxdb
+    access: proxy
+    url: http://influxdb:8086
+    jsonData:
+      version: Flux
+      organization: monolith
+      defaultBucket: digital-shadow
+      tlsSkipVerify: true
+    secureJsonData:
+      token: ${INFLUXDB_TOKEN}
+    isDefault: true
+    editable: true
+
+  - name: Redis-Commands
+    type: redis-datasource
+    access: proxy
+    url: redis://redis:6379
+    jsonData:
+      client: standalone
+    editable: true

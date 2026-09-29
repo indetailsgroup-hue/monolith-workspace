@@ -34,9 +34,10 @@ import {
 } from '../icons/MaterialIcons';
 import { Plus, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import { DesignerLogicContent } from '../ui/DesignerLogicContent';
+import { CurvedPanelProfileEditor } from '../ui/CurvedPanelProfileEditor';
 
 // Tab types
-type TabId = 'catalog' | 'materials' | 'hardware' | 'decor' | 'skills' | 'safety' | 'logic' | 'versions';
+type TabId = 'catalog' | 'materials' | 'hardware' | 'decor' | 'curves' | 'skills' | 'safety' | 'logic' | 'versions';
 
 interface Tab {
   id: TabId;
@@ -49,6 +50,7 @@ const TABS: Tab[] = [
   { id: 'materials', label: 'Materials', icon: '🎨' },
   { id: 'hardware', label: 'Hardware', icon: '🔩' },
   { id: 'decor', label: 'Decor', icon: '🏛️' },
+  { id: 'curves', label: 'Curves', icon: '〜' },
   { id: 'skills', label: 'Skills', icon: '⚡' },
   { id: 'safety', label: 'Safety', icon: '🛡️' },
   { id: 'logic', label: 'Logic', icon: '🧠' },
@@ -505,6 +507,7 @@ export function DesignerIntentPanel() {
         {activeTab === 'materials' && <MaterialsContent />}
         {activeTab === 'hardware' && <HardwareContent />}
         {activeTab === 'decor' && <DecorContent />}
+        {activeTab === 'curves' && <CurvedPanelProfileEditor />}
         {activeTab === 'skills' && <SkillsContent />}
         {activeTab === 'safety' && <SafetyPanel />}
         {activeTab === 'logic' && <DesignerLogicContent />}

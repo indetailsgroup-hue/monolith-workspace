@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Installation Agent Spec — MONOLITH n:162</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:  #1f2d5a; --gold:  #c9a84c; --green: #2d7a4f;
+    --red:   #c0392b; --purple:#5b4fcf; --bg: #f8f9fc;
+    --card:  #ffffff; --border:#e2e8f0; --text: #1e293b; --muted:#64748b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.7;}
+  .page-header{background:linear-gradient(135deg,var(--navy) 0%,#2a3d7a 60%,#1a2550 100%);color:#fff;padding:40px 48px 36px;border-bottom:4px solid var(--purple);}
+  .page-header .badge{display:inline-block;background:var(--purple);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.5px;margin-bottom:12px;text-transform:uppercase;}
+  .page-header h1{font-size:26px;font-weight:800;margin-bottom:6px;}
+  .page-header p{font-size:14px;opacity:.8;margin-bottom:16px;}
+  .header-meta{display:flex;gap:20px;flex-wrap:wrap;}
+  .header-meta span{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);padding:4px 14px;border-radius:20px;font-size:12px;}
+  .header-meta span b{color:var(--gold);}
+  .tab-nav{display:flex;gap:0;background:var(--navy);padding:0 48px;overflow-x:auto;}
+  .tab-btn{background:none;border:none;color:rgba(255,255,255,.6);padding:14px 20px;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;transition:all .2s;}
+  .tab-btn:hover{color:#fff;background:rgba(255,255,255,.07);}
+  .tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);}
+  .tab-content{display:none;padding:36px 48px 60px;max-width:1300px;}
+  .tab-content.active{display:block;}
+  .section-title{font-size:18px;font-weight:700;color:var(--navy);border-left:4px solid var(--gold);padding-left:14px;margin-bottom:20px;margin-top:36px;}
+  .section-title:first-child{margin-top:0;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:20px;box-shadow:0 1px 4px rgba(0,0,0,.05);}
+  .card-title{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{background:var(--navy);color:#fff;padding:10px 14px;text-align:left;font-weight:600;}
+  td{padding:10px 14px;border-bottom:1px solid var(--border);}
+  tr:last-child td{border-bottom:none;}
+  tr:nth-child(even) td{background:#f8f9fc;}
+  .code-block{background:#1e293b;color:#e2e8f0;border-radius:8px;padding:18px 20px;font-family:'Courier New',monospace;font-size:12px;line-height:1.7;overflow-x:auto;margin:10px 0;}
+  .code-block .c{color:#94a3b8;}.code-block .k{color:#93c5fd;}.code-block .s{color:#86efac;}
+  .code-block .n{color:#fde68a;}.code-block .v{color:#c4b5fd;}.code-block .r{color:#fca5a5;}
+  .badge-pill{display:inline-block;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:700;}
+  .badge-pill.green{background:#dcfce7;color:#166534;}.badge-pill.red{background:#fee2e2;color:#991b1b;}
+  .badge-pill.gold{background:#fef9c3;color:#854d0e;}.badge-pill.blue{background:#dbeafe;color:#1e40af;}
+  .badge-pill.purple{background:#ede9fe;color:#5b21b6;}
+  .info-box{background:#eff6ff;border:1px solid #bfdbfe;border-left:4px solid #3b82f6;border-radius:6px;padding:14px 18px;font-size:13px;margin:14px 0;}
+  .warn-box{background:#fffbeb;border:1px solid #fde68a;border-left:4px solid #f59e0b;border-radius:6px;padding:14px 18px;font-size:13px;margin:14px 0;}
+  .danger-box{background:#fff1f2;border:1px solid #fecdd3;border-left:4px solid var(--red);border-radius:6px;padding:14px 18px;font-size:13px;margin:14px 0;}
+  .step-list{list-style:none;}
+  .step-list li{display:flex;gap:14px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--border);}
+  .step-list li:last-child{border-bottom:none;}
+  .step-num{background:var(--navy);color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:2px;}
+  .step-body{flex:1;}.step-body strong{font-size:14px;color:var(--navy);display:block;margin-bottom:4px;}
+  .kpi-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;text-align:center;}
+  .kpi-value{font-size:28px;font-weight:800;color:var(--navy);margin-bottom:4px;}
+  .kpi-label{font-size:12px;color:var(--muted);margin-bottom:8px;}
+  .kpi-target{font-size:11px;font-weight:700;color:var(--green);}
+  .flow-box{background:var(--navy);color:#fff;padding:12px 18px;border-radius:8px;font-size:12px;font-weight:700;text-align:center;line-height:1.4;}
+  .flow-box.red{background:var(--red);}.flow-box.gold{background:var(--gold);color:var(--navy);}
+  .flow-box.green{background:var(--green);}.flow-box.purple{background:var(--purple);}
+  .flow-arrow{color:var(--muted);font-size:18px;padding:0 6px;align-self:center;}
+  .checklist-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+  .checklist-item:last-child{border-bottom:none;}
+  .check-box{width:20px;height:20px;border:2px solid var(--border);border-radius:4px;flex-shrink:0;margin-top:2px;}
+  .sev-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;min-width:40px;text-align:center;}
+  .sev-9{background:#fee2e2;color:#991b1b;}.sev-7{background:#fef9c3;color:#854d0e;}.sev-6{background:#e0f2fe;color:#0369a1;}
+  .page-footer{background:var(--navy);color:rgba(255,255,255,.5);text-align:center;padding:20px;font-size:12px;margin-top:40px;}
+  @media(max-width:768px){.page-header,.tab-content{padding:24px 20px;}.tab-nav{padding:0 12px;}.grid-2,.grid-3{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="badge">Agent n:162 — Install Department</div>
+  <h1>Installation Agent Spec — DAPH Decor Field Operations</h1>
+  <p>System Prompt · KPI Benchmarks · Site Checklist · Defect Capture Flow · PFMEA Test Cases</p>
+  <div class="header-meta">
+    <span><b>n:</b>162</span>
+    <span><b>Version:</b> v2.5</span>
+    <span><b>Agent:</b> Installation Agent</span>
+    <span><b>Role:</b> Field Operations Coordinator</span>
+    <span><b>Gate-1 Target:</b> avg ≥ 3.0</span>
+    <span><b>Status:</b> <span style="color:#86efac">Draft Spec</span></span>
+  </div>
+</div>
+
+<nav class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('overview',this)">01 ภาพรวม Agent</button>
+  <button class="tab-btn" onclick="switchTab('prompt',this)">02 System Prompt</button>
+  <button class="tab-btn" onclick="switchTab('kpi',this)">03 KPI Benchmarks</button>
+  <button class="tab-btn" onclick="switchTab('checklist',this)">04 Site Checklist</button>
+  <button class="tab-btn" onclick="switchTab('defect',this)">05 Defect Capture Flow</button>
+  <button class="tab-btn" onclick="switchTab('pfmea',this)">06 PFMEA Test Cases</button>
+</nav>
+
+<!-- ═══ TAB 01: ภาพรวม ═══ -->
+<div id="tab-overview" class="tab-content active">
+
+  <div class="section-title">บทบาท Installation Agent ใน MONOLITH Pipeline</div>
+
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 0;background:#f1f5f9;border-radius:8px;justify-content:center;">
+      <div class="flow-box" style="background:#334155">PM Agent<br><small>ออก production order</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box" style="background:#334155">Factory Agent<br><small>ผลิต + QC Pass</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box purple">Installation Agent<br><small>schedule → execute → sign-off</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box green">Project Closed<br><small>PM + ลูกค้า รับทราบ</small></div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">🔧 Installation Agent — หน้าที่หลัก</div>
+      <table>
+        <tr><th>Capability</th><th>รายละเอียด</th></tr>
+        <tr><td>Job Scheduling</td><td>รับ production complete signal → จัดทีม + วันเวลาติดตั้ง → แจ้ง LINE Group Install</td></tr>
+        <tr><td>Site Readiness Check</td><td>ตรวจ pre-install checklist 12 items (ไฟ/พื้นที่/ลิฟต์/ทางเข้า) ก่อนเข้าหน้างาน</td></tr>
+        <tr><td>Installation Logging</td><td>บันทึก step-by-step progress จาก SOP 18 ขั้นตอน → timestamp ทุก step</td></tr>
+        <tr><td>Defect Capture</td><td>รับรายงาน defect → classify severity → escalate ไป Factory/QA ตาม PFMEA</td></tr>
+        <tr><td>Completion Sign-off</td><td>สร้างใบรับงาน → ส่ง LINE OA ลูกค้า → รอ confirm → ปิด project</td></tr>
+        <tr><td>Back-channel Notify</td><td>ส่งผล completion ไป PM Agent + LINE OA ลูกค้าอัตโนมัติ</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">🔗 MCP Tools ที่ Installation Agent ใช้</div>
+      <table>
+        <tr><th>Tool</th><th>เรียกเมื่อ</th></tr>
+        <tr><td><code>schedule_installation</code></td><td>Factory Agent ส่ง production_complete</td></tr>
+        <tr><td><code>check_site_readiness</code></td><td>D-1 ก่อนวันติดตั้ง (auto)</td></tr>
+        <tr><td><code>log_install_step</code></td><td>ช่างรายงานแต่ละ step ผ่าน LINE</td></tr>
+        <tr><td><code>capture_defect</code></td><td>พบ defect ระหว่างติดตั้ง</td></tr>
+        <tr><td><code>escalate_to_factory</code></td><td>Defect Sev ≥7 → ต้องแก้ที่โรงงาน</td></tr>
+        <tr><td><code>complete_installation</code></td><td>ช่างยืนยัน all steps done</td></tr>
+        <tr><td><code>generate_completion_report</code></td><td>สร้างใบรับงาน PDF → ส่ง LINE OA</td></tr>
+        <tr><td><code>update_order_status</code></td><td>ปิด project → แจ้ง PM + ลูกค้า</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="section-title">Handoff Protocol</div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">📥 Input จาก Factory Agent</div>
+      <div class="code-block">
+<span class="c">// production_complete payload</span>
+{
+  "<span class="s">event</span>":      "<span class="n">production_complete</span>",
+  "<span class="s">project_id</span>": "<span class="v">PROJ-2026-0142</span>",
+  "<span class="s">lot_id</span>":     "<span class="v">LOT-2026-A042</span>",
+  "<span class="s">qc_status</span>":  "<span class="n">pass</span>",
+  "<span class="s">items</span>":      [
+    { "<span class="s">code</span>": "<span class="v">ITEM-001</span>", "<span class="s">name</span>": "<span class="v">ตู้เสื้อผ้า 3 บาน</span>", "<span class="s">qty</span>": 1 },
+    { "<span class="s">code</span>": "<span class="v">ITEM-002</span>", "<span class="s">name</span>": "<span class="v">ลิ้นชัก 6 ช่อง</span>",  "<span class="s">qty</span>": 2 }
+  ],
+  "<span class="s">ready_date</span>":  "<span class="v">2026-09-10</span>",
+  "<span class="s">customer</span>": {
+    "<span class="s">name</span>":        "<span class="v">คุณสมชาย ใจดี</span>",
+    "<span class="s">address</span>":     "<span class="v">ลาดพร้าว 87 ซ.12</span>",
+    "<span class="s">line_user_id</span>":"<span class="v">Uxxxxxxxxxx</span>"
+  }
+}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📤 Output ไปยัง PM Agent + ลูกค้า</div>
+      <div class="code-block">
+<span class="c">// completion payload</span>
+{
+  "<span class="s">event</span>":          "<span class="n">job_complete</span>",
+  "<span class="s">project_id</span>":     "<span class="v">PROJ-2026-0142</span>",
+  "<span class="s">completed_at</span>":   "<span class="v">2026-09-12T16:30:00Z</span>",
+  "<span class="s">team</span>":           ["<span class="v">ช่างสมศักดิ์</span>","<span class="v">ช่างวิชัย</span>"],
+  "<span class="s">duration_hours</span>": 7.5,
+  "<span class="s">defects_found</span>":  0,
+  "<span class="s">customer_signed</span>":true,
+  "<span class="s">report_url</span>":     "<span class="v">https://docs.daph.co.th/reports/PROJ-2026-0142.pdf</span>",
+  "<span class="s">photos</span>":         ["<span class="v">https://cdn.daph.co.th/install/...</span>"]
+}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ TAB 02: System Prompt ═══ -->
+<div id="tab-prompt" class="tab-content">
+
+  <div class="section-title">Installation Agent — System Prompt Template</div>
+  <div class="info-box">
+    System prompt นี้ถูกออกแบบสำหรับ LLM model (GPT-4o / Claude 3.5 Sonnet) ที่ทำงานเป็น Installation Coordinator Agent ใน MONOLITH MCP Layer — ใช้กับ few-shot examples และ knowledge-export.json เป็น context
+  </div>
+
+  <div class="card">
+    <div class="card-title">📄 System Prompt — Installation Agent</div>
+    <div class="code-block" style="max-height:600px;overflow-y:auto;white-space:pre-wrap;">
+<span class="c"># SYSTEM PROMPT: Installation Agent — DAPH Decor MONOLITH v2.5</span>
+
+<span class="k">## Role</span>
+You are the <span class="n">Installation Agent</span> for DAPH Decor's MONOLITH AI system.
+You coordinate all field installation operations after furniture/décor production is complete.
+You communicate in Thai with field teams and customers, and in English for internal logs.
+
+<span class="k">## Primary Responsibilities</span>
+1. Schedule installation jobs upon receiving production_complete from Factory Agent
+2. Verify site readiness using the 12-item pre-installation checklist
+3. Log installation progress step-by-step against SOP-INSTALL-001
+4. Capture, classify, and escalate defects using PFMEA severity scale
+5. Generate completion reports and obtain customer sign-off via LINE OA
+6. Notify PM Agent and customer upon project completion
+
+<span class="k">## Constraints — MUST Follow</span>
+- NEVER skip site readiness check. If site is not ready, reschedule automatically.
+- NEVER allow installation to proceed if ANY Sev-9 defect is unresolved.
+- ALWAYS timestamp every step log with ISO 8601 format.
+- ALWAYS escalate Sev ≥7 defects to Factory Agent via MCP tool escalate_to_factory.
+- NEVER generate completion report unless ALL 18 SOP steps are logged as complete.
+- Customer sign-off MUST be obtained via LINE OA before closing project.
+
+<span class="k">## PFMEA Severity Reference</span>
+- Sev 9 (Critical): ปัญหาส่งผลต่อความปลอดภัย/ไม่สามารถใช้งานได้ → HALT + escalate to Factory + QA
+- Sev 7 (Important): ปัญหาด้านความสวยงาม/การทำงานบางส่วน → log + escalate to Factory
+- Sev ≤6: log + แก้ไขในหน้างาน + รายงาน PM
+
+<span class="k">## Approval Gates</span>
+- Site Readiness: ALL 12 items must pass before team enters site
+- Installation Complete: ALL 18 SOP steps logged + 0 unresolved Sev≥9 defects
+- Customer Sign-off: received within 2 hours of completion
+
+<span class="k">## Communication Rules</span>
+- ส่ง LINE notification ไป LINE_GROUP_INSTALL เมื่อ: job scheduled, site ready/not-ready, each major step complete, defect found, completion
+- ส่ง LINE OA push message ไปลูกค้าเมื่อ: job confirmed, D-1 reminder, completion + sign-off request
+- ส่งผล escalation ไป LINE_GROUP_FACTORY เมื่อ: Sev≥7 defect ที่ต้องแก้ที่โรงงาน
+- แจ้ง LINE_GROUP_PM เมื่อ: job complete, defect escalation, schedule change
+
+<span class="k">## Output Format (Structured JSON)</span>
+Always respond with structured JSON for MCP tool calls:
+{
+  "tool": "log_install_step",
+  "params": {
+    "project_id": "PROJ-2026-XXXX",
+    "step_number": 7,
+    "step_name": "ติดตั้งลิ้นชักชุดที่ 1",
+    "status": "complete",
+    "timestamp": "2026-09-12T11:30:00Z",
+    "notes": "เรียบร้อย ไม่พบปัญหา"
+  }
+}
+
+<span class="k">## Knowledge Base Reference</span>
+- SOP-INSTALL-001: ขั้นตอนติดตั้งเฟอร์นิเจอร์มาตรฐาน 18 steps
+- PFMEA Risk Rows: pfmeaRiskRows ใน knowledge-export.json (severity ≥7, Install process)
+- RACI: raciMap.entries สำหรับ Install department
+- Material codes: ตรวจสอบกับ Procurement Agent ก่อน delivery
+    </div>
+  </div>
+
+  <div class="section-title">Few-Shot Examples</div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Example 1 — Job Scheduling</div>
+      <div class="code-block" style="font-size:11px">
+<span class="k">User (PM Agent):</span>
+production_complete received for PROJ-2026-0142
+items: ตู้เสื้อผ้า 3 บาน + ลิ้นชัก 6 ช่อง
+ready_date: 2026-09-10
+customer address: ลาดพร้าว 87 ซ.12
+
+<span class="n">Installation Agent:</span>
+{
+  "tool": "<span class="s">schedule_installation</span>",
+  "params": {
+    "project_id": "<span class="v">PROJ-2026-0142</span>",
+    "proposed_date": "<span class="v">2026-09-12</span>",
+    "proposed_time": "<span class="v">09:00</span>",
+    "team": ["<span class="v">ช่างสมศักดิ์</span>","<span class="v">ช่างวิชัย</span>"],
+    "estimated_hours": 8,
+    "site_check_date": "<span class="v">2026-09-11</span>"
+  }
+}
+<span class="c">→ notify LINE_GROUP_INSTALL</span>
+<span class="c">→ notify customer LINE OA: D-1 reminder</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Example 2 — Defect Capture (Sev 9)</div>
+      <div class="code-block" style="font-size:11px">
+<span class="k">User (Field Team via LINE):</span>
+ประตูตู้เสื้อผ้าบานขวาปิดไม่สนิท
+รอยร้าวที่บานพับซ้าย มีรอยแตก
+
+<span class="n">Installation Agent:</span>
+Classified: Sev-9 (structural defect, unusable)
+{
+  "tool": "<span class="s">capture_defect</span>",
+  "params": {
+    "project_id": "<span class="v">PROJ-2026-0142</span>",
+    "defect_code": "<span class="v">DEF-HINGE-001</span>",
+    "description": "<span class="v">บานพับซ้ายแตกร้าว ประตูปิดไม่สนิท</span>",
+    "severity": 9,
+    "item_code": "<span class="v">ITEM-001</span>",
+    "photos": ["<span class="v">{{photo_url}}</span>"]
+  }
+}
+{
+  "tool": "<span class="r">escalate_to_factory</span>",
+  "params": {
+    "defect_code": "<span class="v">DEF-HINGE-001</span>",
+    "action_required": "<span class="v">replace_item</span>",
+    "halt_installation": true
+  }
+}
+<span class="c">→ HALT installation</span>
+<span class="c">→ notify LINE_GROUP_FACTORY + LINE_GROUP_PM</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ TAB 03: KPI Benchmarks ═══ -->
+<div id="tab-kpi" class="tab-content">
+
+  <div class="section-title">KPI Benchmarks — Installation Agent</div>
+  <div class="grid-3" style="margin-bottom:24px;">
+    <div class="kpi-card">
+      <div class="kpi-value">≥95%</div>
+      <div class="kpi-label">On-time Job Start</div>
+      <div class="kpi-target">Target: ≥95% ตรงเวลา ±30 นาที</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">100%</div>
+      <div class="kpi-label">Site Checklist Completion</div>
+      <div class="kpi-target">Target: 12/12 items ทุก job</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">100%</div>
+      <div class="kpi-label">Defect Capture Rate (Sev≥7)</div>
+      <div class="kpi-target">Target: 0 missed critical defects</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">&lt;2%</div>
+      <div class="kpi-label">False Halt Rate</div>
+      <div class="kpi-target">Target: &lt;2% ของ total jobs</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">100%</div>
+      <div class="kpi-label">Sign-off Within 2h</div>
+      <div class="kpi-target">Target: ลูกค้า confirm ภายใน 2h</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">≥4.5/5</div>
+      <div class="kpi-label">Customer Satisfaction</div>
+      <div class="kpi-target">Target: avg rating หลัง completion</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📊 KPI Benchmark Table — UAT Evaluation</div>
+    <table>
+      <tr>
+        <th>#</th><th>KPI</th><th>Metric</th><th>Target</th><th>Measurement Method</th><th>Rubric</th>
+      </tr>
+      <tr>
+        <td>1</td>
+        <td>On-time Job Start</td>
+        <td>% jobs starting within ±30min of scheduled time</td>
+        <td>≥95%</td>
+        <td>log_install_step timestamp vs scheduled_time</td>
+        <td><span class="badge-pill green">Pass=≥95%</span> <span class="badge-pill gold">Sat=85–94%</span> <span class="badge-pill red">Fail=&lt;75%</span></td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>Site Checklist Completion</td>
+        <td>% of 12-item checklist completed before entry</td>
+        <td>100%</td>
+        <td>check_site_readiness response items_checked / 12</td>
+        <td><span class="badge-pill green">Pass=12/12</span> <span class="badge-pill red">Fail=&lt;12/12</span></td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>Defect Capture Rate</td>
+        <td>% Sev≥7 defects logged vs total defects found in QA re-check</td>
+        <td>100%</td>
+        <td>capture_defect logs vs post-install QA audit</td>
+        <td><span class="badge-pill green">Pass=100%</span> <span class="badge-pill red">Fail=missed ≥1 Sev≥7</span></td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>Halt Accuracy</td>
+        <td>% valid halts (Sev≥9 confirmed by QA) out of total halts</td>
+        <td>&lt;2% false halt</td>
+        <td>halt_alert count vs QA confirmation rate</td>
+        <td><span class="badge-pill green">Pass=&lt;2% false</span> <span class="badge-pill gold">Sat=2–5%</span> <span class="badge-pill red">Fail=&gt;10%</span></td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>SOP Step Logging</td>
+        <td>% of 18 SOP steps logged per job</td>
+        <td>100%</td>
+        <td>log_install_step count / 18 per project_id</td>
+        <td><span class="badge-pill green">Pass=18/18</span> <span class="badge-pill red">Fail=&lt;18/18</span></td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td>Customer Sign-off Time</td>
+        <td>% of sign-offs received within 2h of completion</td>
+        <td>≥95%</td>
+        <td>customer_signed_at − completed_at ≤ 7200s</td>
+        <td><span class="badge-pill green">Pass=≥95%</span> <span class="badge-pill gold">Sat=80–94%</span> <span class="badge-pill red">Fail=&lt;70%</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="section-title">Rubric — 4 Level Scoring</div>
+  <div class="card">
+    <table>
+      <tr><th>Level</th><th>Score</th><th>Definition</th><th>Installation Agent Criteria</th></tr>
+      <tr><td><span class="badge-pill green">Pass</span></td><td><strong>4</strong></td><td>Exceeds or meets all KPI targets</td><td>KPI 1–6 ทุกตัว Pass; 0 false halt; 0 missed defects</td></tr>
+      <tr><td><span class="badge-pill blue">Satisfactory</span></td><td><strong>3</strong></td><td>Meets most targets with minor deviations</td><td>≥4/6 KPIs Pass; Defect capture 100%; Sign-off ≥80%</td></tr>
+      <tr><td><span class="badge-pill gold">Needs Improvement</span></td><td><strong>2</strong></td><td>Significant gaps — requires retraining</td><td>≥2 KPIs Fail; OR missed ≥1 Sev≥7 defect</td></tr>
+      <tr><td><span class="badge-pill red">Fail</span></td><td><strong>1</strong></td><td>Critical failure — unsafe or non-functional</td><td>Proceeded without site check; OR missed Sev-9 defect; OR no sign-off</td></tr>
+    </table>
+    <div class="info-box" style="margin-top:16px;">
+      <strong>Gate-1 Requirement:</strong> Installation Agent ต้องได้ average score ≥ 3.0 จาก UAT Phase E ทุก test cases ก่อนเปิดใช้งาน production
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ TAB 04: Site Checklist ═══ -->
+<div id="tab-checklist" class="tab-content">
+
+  <div class="section-title">Pre-Installation Site Readiness Checklist — 12 Items</div>
+  <div class="warn-box">Installation Agent ต้อง run <code>check_site_readiness</code> ทุก job — ถ้า item ใดไม่ผ่าน ต้อง reschedule ก่อนทีมเข้าหน้างาน</div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">⚡ หมวด 1 — สาธารณูปโภค (4 items)</div>
+      <div>
+        <div class="checklist-item"><div class="check-box"></div><div><strong>ไฟฟ้า 220V พร้อมใช้งาน</strong><br><small style="color:var(--muted)">ทดสอบปลั๊กไฟอย่างน้อย 1 จุดในห้องติดตั้ง — จำเป็นสำหรับเครื่องมือ</small></div></div>
+        <div class="checklist-item"><div class="check-box"></div><div><strong>แสงสว่างเพียงพอ</strong><br><small style="color:var(--muted)">ห้องมีแสงสว่าง ≥300 lux หรือมีหลอดไฟชั่วคราวได้</small></div></div>
+        <div class="checklist-item"><div class="check-box"></div><div><strong>น้ำสะอาดสำหรับทำความสะอาด</strong><br><small style="color:var(--muted)">ก๊อกน้ำที่ใกล้ที่สุด ≤20m จากจุดติดตั้ง</small></div></div>
+        <div class="checklist-item"><div class="check-box"></div><div><strong>พื้นที่กันน้ำหรือปูผ้าได้</strong><br><small style="color:var(--muted)">สำหรับวางชิ้นส่วนชั่วคราวโดยไม่เสียหาย</small></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📐 หมวด 2 — พื้นที่และการเข้าถึง (4 items)</div>
+      <div>
+        <div class="checklist-item"><div class="check-box"></div><div><strong>พื้นที่ติดตั้งว่างเปล่า</strong><br><small style="color:var(--muted)">ไม่มีเฟอร์นิเจอร์เก่าหรือสิ่งของกีดขวาง</small></div></div>
+        <div class="checklist-item"><div class="check-box"></div><div><strong>ทางเข้าชิ้นงานผ่านได้</strong><br><small style="color:var(--muted)">ประตู/ช่องทางกว้าง ≥90cm หรือตามขนาด item ที่ใหญ่ที่สุด</small></div></div>
+        <div class="checklist-item"><div class="check-box"></div><div><strong>ลิฟต์/บันไดพร้อมใช้งาน</strong><br><small style="color:var(--muted)">ถ้าชั้น ≥2 — จองลิฟต์ freight ล่วงหน้า หรือบันไดสามารถขนได้</small></div></div>
+        <div class="checklist-item"><div class="check-box"></div><div><strong>ที่จอดรถขนส่ง ≤50m</strong><br><small style="color:var(--muted)">รถบรรทุก 6 ล้อ จอดได้ใกล้ทางเข้าอาคาร</small></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🏗️ หมวด 3 — ความพร้อมของสถานที่ (4 items)</div>
+      <div>
+        <div class="checklist-item"><div class="check-box"></div><div><strong>ผนังและพื้นได้มาตรฐาน</strong><br><small style="color:var(--muted)">ผนังฉาบเรียบ ไม่เปียก ไม่มีรอยแตกร้าว — พื้นระดับ (ค่าเบี่ยงเบน ≤3mm/3m)</small></div></div>
+        <div class="checklist-item"><div class="check-box"></div><div><strong>ไม่มีงาน CV/MEP ที่ยังไม่เสร็จ</strong><br><small style="color:var(--muted)">งานปูน/ไฟฟ้า/ประปาในห้องเสร็จสมบูรณ์ก่อนติดตั้งเฟอร์นิเจอร์</small></div></div>
+        <div class="checklist-item"><div class="check-box"></div><div><strong>ลูกค้าหรือผู้แทนอยู่ที่บ้าน</strong><br><small style="color:var(--muted)">มีผู้มีอำนาจตัดสินใจอยู่ด้วยตลอดการติดตั้ง สำหรับ sign-off</small></div></div>
+        <div class="checklist-item"><div class="check-box"></div><div><strong>Blueprint/drawing ล่าสุดพร้อม</strong><br><small style="color:var(--muted)">ช่างมี approved drawing revision ล่าสุด (ตรวจสอบ revision number กับ PM)</small></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🔧 Installation SOP Steps — 18 Steps Overview</div>
+      <table style="font-size:12px">
+        <tr><th>#</th><th>Step</th><th>Expected Duration</th></tr>
+        <tr><td>1–3</td><td>Unload + ตรวจนับ item + ตรวจสอบ damage ขนส่ง</td><td>30 นาที</td></tr>
+        <tr><td>4–6</td><td>ปูแผ่นกันรอย + วางตำแหน่ง + marking</td><td>20 นาที</td></tr>
+        <tr><td>7–9</td><td>ติดตั้งโครงหลัก (carcass assembly)</td><td>90 นาที</td></tr>
+        <tr><td>10–12</td><td>ติดตั้งบานประตู/ลิ้นชัก + ปรับระดับ</td><td>60 นาที</td></tr>
+        <tr><td>13–15</td><td>ติดตั้งอุปกรณ์เสริม (handle/hinge/soft-close)</td><td>45 นาที</td></tr>
+        <tr><td>16–17</td><td>QC ตรวจสอบ opening/closing + alignment</td><td>30 นาที</td></tr>
+        <tr><td>18</td><td>ทำความสะอาด + ถ่ายรูป + sign-off</td><td>20 นาที</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="section-title">Site Not-Ready Protocol</div>
+  <div class="card">
+    <table>
+      <tr><th>สถานการณ์</th><th>Agent Action</th><th>Notification</th><th>SLA</th></tr>
+      <tr><td>Item ≤2 items ไม่ผ่าน (minor)</td><td>แจ้งลูกค้า + ขอแก้ไขภายใน 2h</td><td>LINE OA ลูกค้า</td><td>รอ 2h ก่อน reschedule</td></tr>
+      <tr><td>Item ≥3 items ไม่ผ่าน (major)</td><td>Reschedule + แจ้ง PM ทันที</td><td>LINE OA + LINE_GROUP_PM</td><td>Reschedule ภายใน 24h</td></tr>
+      <tr><td>ลูกค้าไม่อยู่บ้าน</td><td>ห้ามเริ่มงาน + แจ้ง PM + ขอ reschedule</td><td>LINE OA + PM Group</td><td>Reschedule ภายในวันเดียวกัน</td></tr>
+      <tr><td>งานก่อสร้างยังไม่เสร็จ</td><td>Escalate ไป PM + รอ PM confirm</td><td>LINE_GROUP_PM</td><td>PM ต้อง respond ภายใน 4h</td></tr>
+    </table>
+  </div>
+
+</div>
+
+<!-- ═══ TAB 05: Defect Capture Flow ═══ -->
+<div id="tab-defect" class="tab-content">
+
+  <div class="section-title">Defect Capture & Escalation Flow</div>
+
+  <div class="card">
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:20px;background:#f1f5f9;border-radius:8px;">
+      <div class="flow-box purple" style="font-size:11px">ช่างพบ defect<br>ถ่ายรูป + รายงานผ่าน LINE</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box" style="font-size:11px">Agent รับข้อมูล<br>+ classify severity</div>
+      <div class="flow-arrow">→</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="flow-box red" style="font-size:11px">Sev 9 — Critical<br>HALT + escalate</div>
+        <div class="flow-box gold" style="font-size:11px">Sev 7 — Important<br>Log + escalate</div>
+        <div class="flow-box green" style="font-size:11px">Sev ≤6 — Minor<br>Fix in-site + log</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="flow-box red" style="font-size:11px">Factory + QA<br>+ PM notified</div>
+        <div class="flow-box gold" style="font-size:11px">Factory notified<br>+ PM log</div>
+        <div class="flow-box green" style="font-size:11px">PM log only<br>Continue install</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">🔴 Sev-9 Critical Defect Protocol</div>
+      <ul class="step-list">
+        <li>
+          <div class="step-num" style="background:var(--red)">1</div>
+          <div class="step-body">
+            <strong>HALT installation immediately</strong>
+            <p>Agent ส่ง <code>halt_installation(project_id, reason)</code> — ห้ามทีมดำเนินงานต่อ</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-num" style="background:var(--red)">2</div>
+          <div class="step-body">
+            <strong>Log defect with photos</strong>
+            <p><code>capture_defect()</code> พร้อม: defect_code, description, severity=9, photos[], item_code, location</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-num" style="background:var(--red)">3</div>
+          <div class="step-body">
+            <strong>Escalate to Factory Agent</strong>
+            <p><code>escalate_to_factory(defect_code, action_required="replace_item")</code> → LINE_GROUP_FACTORY ได้รับ Flex Message</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-num" style="background:var(--red)">4</div>
+          <div class="step-body">
+            <strong>Notify PM + Customer</strong>
+            <p>LINE_GROUP_PM: "ติดตั้ง HALT — รอชิ้นงานใหม่" / LINE OA ลูกค้า: "พบปัญหาระหว่างติดตั้ง — ขอโทษในความไม่สะดวก"</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-num" style="background:var(--red)">5</div>
+          <div class="step-body">
+            <strong>Reschedule</strong>
+            <p>รอ Factory confirm replacement date → <code>schedule_installation()</code> ใหม่</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">📄 capture_defect Payload</div>
+      <div class="code-block">
+{
+  "<span class="s">tool</span>": "<span class="n">capture_defect</span>",
+  "<span class="s">params</span>": {
+    "<span class="s">project_id</span>":   "<span class="v">PROJ-2026-0142</span>",
+    "<span class="s">defect_code</span>":  "<span class="v">DEF-{{TYPE}}-{{SEQ}}</span>",
+    "<span class="s">step_number</span>":  10,
+    "<span class="s">item_code</span>":    "<span class="v">ITEM-001</span>",
+    "<span class="s">location</span>":     "<span class="v">ด้านหน้าบนซ้าย</span>",
+    "<span class="s">description</span>":  "<span class="v">{{defect description in Thai}}</span>",
+    "<span class="s">severity</span>":     9,
+    "<span class="s">pfmea_ref</span>":    "<span class="v">PFMEA-ROW-{{ref}}</span>",
+    "<span class="s">photos</span>":       ["<span class="v">{{photo_url_1}}</span>","<span class="v">{{photo_url_2}}</span>"],
+    "<span class="s">timestamp</span>":    "<span class="v">{{ISO_8601}}</span>",
+    "<span class="s">reported_by</span>":  "<span class="v">{{technician_name}}</span>"
+  }
+}
+      </div>
+      <div class="card-title" style="margin-top:16px;">🔧 Defect Code Convention</div>
+      <table style="font-size:12px">
+        <tr><th>Type</th><th>Code Prefix</th><th>ตัวอย่าง</th></tr>
+        <tr><td>โครงสร้าง</td><td>DEF-STRUCT</td><td>DEF-STRUCT-001</td></tr>
+        <tr><td>พื้นผิว/ลวดลาย</td><td>DEF-SURF</td><td>DEF-SURF-002</td></tr>
+        <tr><td>บานพับ/อุปกรณ์</td><td>DEF-HINGE</td><td>DEF-HINGE-001</td></tr>
+        <tr><td>การวัด/ขนาด</td><td>DEF-DIM</td><td>DEF-DIM-003</td></tr>
+        <tr><td>ชิ้นงานขาด</td><td>DEF-MISS</td><td>DEF-MISS-001</td></tr>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ TAB 06: PFMEA Test Cases ═══ -->
+<div id="tab-pfmea" class="tab-content">
+
+  <div class="section-title">PFMEA-Derived Test Cases — Installation Agent UAT Phase E</div>
+  <div class="info-box">Test cases เหล่านี้อ้างอิงจาก pfmeaRiskRows ใน knowledge-export.json — เน้น failure modes ที่ severity ≥7 สำหรับ Install process</div>
+
+  <div class="card">
+    <table>
+      <tr>
+        <th style="width:100px">Test Case</th>
+        <th>Scenario</th>
+        <th>Severity</th>
+        <th>PFMEA Failure Mode</th>
+        <th>Input</th>
+        <th>Expected Agent Response</th>
+        <th>Pass Criteria</th>
+      </tr>
+      <tr>
+        <td><strong>TC-INSTALL-01</strong></td>
+        <td>Site Not Ready — 3 items fail</td>
+        <td><span class="sev-badge sev-7">Sev 7</span></td>
+        <td>ติดตั้งในสถานที่ที่ไม่พร้อม → ชิ้นงานเสียหาย/ไม่ได้คุณภาพ</td>
+        <td>check_site_readiness returns: ไฟฟ้าไม่พร้อม, ลูกค้าไม่อยู่, งานปูนยังไม่เสร็จ</td>
+        <td>1) HALT ก่อนเริ่มงาน 2) notify LINE OA ลูกค้า 3) notify PM Group 4) reschedule ภายใน 24h</td>
+        <td>ไม่มี log_install_step ใดๆ ก่อน site ready 100%</td>
+      </tr>
+      <tr>
+        <td><strong>TC-INSTALL-02</strong></td>
+        <td>Sev-9 Defect During Install</td>
+        <td><span class="sev-badge sev-9">Sev 9</span></td>
+        <td>ชิ้นงานโครงสร้างเสียหาย → ใช้งานไม่ได้/ไม่ปลอดภัย</td>
+        <td>ช่างรายงาน: "บานพับซ้ายแตกร้าว ประตูปิดไม่สนิท" + รูปถ่าย</td>
+        <td>1) classify Sev=9 2) capture_defect 3) escalate_to_factory 4) HALT 5) notify PM + customer 6) reschedule</td>
+        <td>halt_installation called before any further step; escalate_to_factory called; customer notified within 5 min</td>
+      </tr>
+      <tr>
+        <td><strong>TC-INSTALL-03</strong></td>
+        <td>Missing Material On Site</td>
+        <td><span class="sev-badge sev-7">Sev 7</span></td>
+        <td>ชิ้นส่วนไม่ครบ → ติดตั้งไม่เสร็จในวันนั้น</td>
+        <td>step 1 item count: delivery มี 2 items แต่ BOM ระบุ 3 items</td>
+        <td>1) log defect DEF-MISS-001 2) notify Procurement Agent ขอ item ขาด 3) notify PM 4) partial completion log</td>
+        <td>ไม่ generate completion report จนกว่า all items ครบ; Procurement ได้รับแจ้งภายใน 10 min</td>
+      </tr>
+      <tr>
+        <td><strong>TC-INSTALL-04</strong></td>
+        <td>Customer Refuses Sign-off</td>
+        <td><span class="sev-badge sev-7">Sev 7</span></td>
+        <td>ลูกค้าไม่พอใจผลงาน → ไม่ยอม sign-off</td>
+        <td>complete_installation called; customer replies "ไม่พอใจ ประตูไม่เรียบ"</td>
+        <td>1) บันทึก customer concern 2) escalate ไป PM Agent (first_response 4h) 3) ห้ามปิด project 4) schedule revisit</td>
+        <td>project_status ไม่เปลี่ยนเป็น "closed" จนกว่า PM resolves; PM notified ภายใน 5 min</td>
+      </tr>
+      <tr>
+        <td><strong>TC-INSTALL-05</strong></td>
+        <td>CNC Dimension Mismatch</td>
+        <td><span class="sev-badge sev-9">Sev 9</span></td>
+        <td>ขนาดชิ้นงาน ≠ drawing → ติดตั้งไม่ได้/ชนผนัง</td>
+        <td>step 7 (carcass): ชิ้นงานสูง 2,210mm แต่ ceiling height 2,200mm</td>
+        <td>1) HALT ทันที 2) log DEF-DIM-001 Sev=9 3) escalate ไป Factory + Designer 4) ถ่ายรูป 5) notify PM + customer</td>
+        <td>escalate_to_factory AND escalate_to_designer called; ไม่มี forced installation attempt</td>
+      </tr>
+      <tr>
+        <td><strong>TC-INSTALL-06</strong></td>
+        <td>Normal Completion Flow</td>
+        <td><span class="sev-badge sev-6">Pass</span></td>
+        <td>Happy path — ทุกอย่างเรียบร้อย</td>
+        <td>18/18 steps complete; 0 defects; ลูกค้าอยู่บ้าน</td>
+        <td>1) generate_completion_report 2) ส่ง LINE OA sign-off request 3) รับ confirm 4) update_order_status=closed 5) notify PM</td>
+        <td>customer_signed=true; PM receives job_complete; sign-off ภายใน 2h; report URL ใน payload</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="section-title">UAT Evaluation Summary — Installation Agent</div>
+  <div class="card">
+    <table>
+      <tr><th>Test Case</th><th>Rubric Weight</th><th>Score ที่ต้องได้</th><th>การทดสอบ</th></tr>
+      <tr><td>TC-INSTALL-01 (Site Not Ready)</td><td>High</td><td>≥3</td><td>Simulate site_readiness_failed event</td></tr>
+      <tr><td>TC-INSTALL-02 (Sev-9 Defect)</td><td>Critical</td><td>= 4 (MUST Pass)</td><td>Inject defect payload Sev=9</td></tr>
+      <tr><td>TC-INSTALL-03 (Missing Material)</td><td>High</td><td>≥3</td><td>delivery_count &lt; bom_count</td></tr>
+      <tr><td>TC-INSTALL-04 (Sign-off Refused)</td><td>Medium</td><td>≥3</td><td>Customer reply: negative</td></tr>
+      <tr><td>TC-INSTALL-05 (Dimension Mismatch)</td><td>Critical</td><td>= 4 (MUST Pass)</td><td>Inject DEF-DIM Sev=9</td></tr>
+      <tr><td>TC-INSTALL-06 (Happy Path)</td><td>High</td><td>= 4</td><td>Full 18-step completion flow</td></tr>
+    </table>
+    <div class="danger-box" style="margin-top:16px;">
+      <strong>Critical Pass Rule:</strong> TC-INSTALL-02 และ TC-INSTALL-05 ต้องได้ Score=4 (Pass) ทั้งคู่ — ถ้า fail ข้อใดข้อหนึ่ง Installation Agent ถือว่า <strong>Fail UAT Phase E ทันที</strong> ไม่คำนวณ average
+    </div>
+  </div>
+
+</div>
+
+<div class="page-footer">MONOLITH DAPH Decor AI Agent System — Installation Agent Spec n:162 — v2.5 — 2026</div>
+
+<script>
+function switchTab(id,btn){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>

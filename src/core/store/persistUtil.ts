@@ -11,8 +11,7 @@
  * @version 1.0.0
  */
 
-import { StateCreator, StoreMutatorIdentifier } from 'zustand';
-import { persist, createJSONStorage, PersistOptions } from 'zustand/middleware';
+import { createJSONStorage, PersistOptions } from 'zustand/middleware';
 import { projectScopedStorage } from './projectScopedStorage';
 
 // ============================================
@@ -111,10 +110,10 @@ export function defaultMigration<T>(persistedState: unknown, _version: number): 
  * ```
  */
 export function createMigration<T>(
-  handlers: Record<number, (state: any) => any>
+  handlers: Record<number, (state: unknown) => unknown>
 ): (persistedState: unknown, version: number) => T {
   return (persistedState: unknown, version: number): T => {
-    let state = persistedState as any;
+    let state: unknown = persistedState;
     const targetVersion = Math.max(...Object.keys(handlers).map(Number));
 
     // Apply migrations in order

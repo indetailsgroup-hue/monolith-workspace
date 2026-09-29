@@ -97,7 +97,7 @@ export function artifactsRouter(deps: ArtifactsRouterDeps): Router {
    */
   router.get('/artifacts/:sha256', async (req: Request, res: Response) => {
     try {
-      const { sha256 } = req.params;
+      const sha256 = req.params['sha256'] as string;
 
       // Validate hash format
       if (!/^[a-f0-9]{64}$/i.test(sha256)) {
@@ -141,7 +141,7 @@ export function artifactsRouter(deps: ArtifactsRouterDeps): Router {
    */
   router.head('/artifacts/:sha256', async (req: Request, res: Response) => {
     try {
-      const { sha256 } = req.params;
+      const sha256 = req.params['sha256'] as string;
 
       const exists = await cas.hasHash(sha256);
 

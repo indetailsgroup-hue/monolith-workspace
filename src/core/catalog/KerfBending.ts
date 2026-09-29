@@ -29,6 +29,125 @@ export type KerfProfile =
   | 'RADIAL'        // Fan pattern from center
   | 'LIVING_HINGE'; // Alternating offset cuts (maximum flexibility)
 
+// ============================================
+// SPEC §1.3 — TOOL MODEL (v1.1)
+// ============================================
+
+/**
+ * KerfToolProfile — discriminated union per spec §1.3 (v1.1 มติ grilling #1)
+ *
+ * ROUTER: plunge + serpentine — k_eff = bitDiameter + runout
+ * SAW:    straight pass        — k_eff = bladeKerf + set + runout
+ *
+ * If kEff is provided it overrides the nominal diameter (calibrated value).
+ */
+export type KerfToolProfile =
+  | { kind: 'ROUTER'; bitDiameter: number; kEff?: number }
+  | { kind: 'SAW';    bladeKerf: number;   kEff?: number; maxDepth?: number };
+
+/**
+ * Resolve effective kerf width from tool profile.
+ * Falls back to nominal size when kEff calibration is not yet provided.
+ */
+export function kEffFromTool(tool: KerfToolProfile): number {
+  if (tool.kind === 'ROUTER') return tool.kEff ?? tool.bitDiameter;
+  return tool.kEff ?? tool.bladeKerf;
+}
+
+// ============================================
+// SPEC §2.1 & §2.6 — MATERIAL CONSTANTS
+// ============================================
+
+/**
+ * Per-material constants for the kerf bending formulas (spec §2.1, §2.6)
+ *
+ *  c_mat          : allowable angle multiplier in θ_allow = c_mat × atan(k/t_web)
+ *                   plywood=1.1, MDF=1.0 (more conservative)
+ *  springback_gamma: γ in κ'(s) = κ(s) × (1 + γ); R_design = R_target / (1 + γ)
+ *                   plywood: 10–12 %, MDF: 12–15 %
+ *                   TODO task 4.3: verify γ on real panels
+ */
+export const MATERIAL_CONSTANTS: Record<KerfMaterial, {
+  /** allowable-angle scaling factor (θ_allow = c_mat × atan(k/t_web)) */
+  c_mat: number;
+  /** spring-back compensation factor γ */
+  springback_gamma: number;
+}> = {
+  MDF:            { c_mat: 1.0, springback_gamma: 0.12 },
+  PLYWOOD:        { c_mat: 1.1, springback_gamma: 0.10 },
+  PARTICLE_BOARD: { c_mat: 0.9, springback_gamma: 0.15 },  // brittle → conservative c_mat
+  HMR:            { c_mat: 1.0, springback_gamma: 0.12 },  // similar to MDF
+};
+
+// ============================================
+// SPEC §2.7 — R_min CATALOG (v1.1)
+// ============================================
+
+/**
+ * Minimum bend radius catalog per (material × nominal thickness).
+ *
+ * IMPORTANT: null = "data pending task 4.3 — no certified value yet".
+ *            Any null entry causes G12_MATERIAL_DATA_MISSING (BLOCKER).
+ *
+ * Current values are formula-estimated (T × empirical multiplier).
+ * They MUST be replaced with physically measured values in task 4.3
+ * before v1 production release. Each value requires a cited source.
+ *
+ * Spec §2.7: material×thickness ∉ catalog → G12_MATERIAL_DATA_MISSING (BLOCK)
+ *            R_requested < catalog_R_min  → G12_RADIUS_BELOW_MIN      (BLOCK)
+ */
+export const R_MIN_CATALOG: Partial<Record<KerfMaterial, Partial<Record<number, number | null>>>> = {
+  // TODO task 4.3: replace all formula estimates with measured values + citations
+  MDF: {
+    6:  48,   // formula estimate: 8 × T — pending measurement
+    9:  72,
+    12: 96,
+    18: 144,
+  },
+  PLYWOOD: {
+    6:  36,   // formula estimate: 6 × T — pending measurement
+    9:  54,
+    12: 72,
+    18: 108,
+  },
+  PARTICLE_BOARD: {
+    // spec §2.7 lists only 16 & 18 mm; other PB thicknesses → G12_MATERIAL_DATA_MISSING
+    16: null, // TODO task 4.3 — known to be higher than MDF; pending real test
+    18: null, // TODO task 4.3
+  },
+  HMR: {
+    6:  48,   // formula estimate: 8 × T — similar to MDF, pending measurement
+    9:  72,
+    12: 96,
+    18: 144,
+  },
+};
+
+/**
+ * Look up minimum bend radius from the certified catalog.
+ *
+ * Throws a string error code (suitable for G12 gate) when:
+ *  - material×thickness entry is absent (not in catalog at all), OR
+ *  - entry is `null` (data pending task 4.3 validation)
+ *
+ * @throws 'G12_MATERIAL_DATA_MISSING' if no certified R_min value exists
+ */
+export function lookupMinBendRadius(thickness: number, material: KerfMaterial): number {
+  const matEntry = R_MIN_CATALOG[material];
+  if (!matEntry) {
+    throw new Error('G12_MATERIAL_DATA_MISSING');
+  }
+  // Search exact thickness key first, then nearest standard size (round to nearest 3)
+  const exactVal = matEntry[thickness];
+  if (exactVal === undefined) {
+    throw new Error('G12_MATERIAL_DATA_MISSING');
+  }
+  if (exactVal === null) {
+    throw new Error('G12_MATERIAL_DATA_MISSING');
+  }
+  return exactVal;
+}
+
 export interface KerfBendingParams {
   // Panel dimensions
   panelThickness: number;      // T - Panel thickness (mm)
@@ -46,7 +165,8 @@ export interface KerfBendingParams {
   profile: KerfProfile;
 
   // Tool parameters
-  kerfWidth?: number;          // K - Kerf/slot width (blade/bit width)
+  kerfWidth?: number;          // K - Kerf/slot width (blade/bit width, legacy — use tool instead)
+  tool?: KerfToolProfile;      // Structured tool profile (overrides kerfWidth when provided)
   webThickness?: number;       // W - Remaining material thickness (auto-calculated if not provided)
 }
 
@@ -65,7 +185,12 @@ export interface KerfBendingResult {
   // Verification
   minBendRadius: number;       // Minimum achievable radius
   safetyFactor: number;        // How much margin we have
-  warnings: string[];          // Any warnings
+  warnings: string[];          // Non-blocking advisories
+
+  // Phase 0 additions — spec §1.3 / §2.6 / §2.7
+  errors: string[];            // BLOCKER G12_* codes (gate must reject when non-empty)
+  springBackFactor: number;    // γ — spring-back compensation factor
+  designRadius: number;        // R_design = R / (1 + γ) — actual CNC target radius (mm)
 
   // CNC parameters
   cncParams: KerfCNCParams;
@@ -125,19 +250,19 @@ export const WEB_THICKNESS_LIMITS: Record<KerfMaterial, {
  * R_min = f(T, material)
  * Tighter bends = more stress = more likely to break
  */
+/**
+ * Get minimum bend radius — backward-compat wrapper around lookupMinBendRadius().
+ *
+ * @deprecated Prefer lookupMinBendRadius() directly. This wrapper delegates to the
+ *             certified catalog and will throw 'G12_MATERIAL_DATA_MISSING' when no
+ *             validated entry exists (e.g. PARTICLE_BOARD pending task 4.3).
+ * @throws {Error} with message 'G12_MATERIAL_DATA_MISSING' when catalog entry absent/null
+ */
 export function getMinimumBendRadius(
   thickness: number,
   material: KerfMaterial
 ): number {
-  // General formula: R_min = T * multiplier
-  const multipliers: Record<KerfMaterial, number> = {
-    MDF: 8,           // R_min = 8 * T
-    PLYWOOD: 6,       // R_min = 6 * T (more flexible)
-    PARTICLE_BOARD: 12, // R_min = 12 * T (brittle)
-    HMR: 8,           // R_min = 8 * T
-  };
-
-  return thickness * multipliers[material];
+  return lookupMinBendRadius(thickness, material);
 }
 
 // ============================================
@@ -323,13 +448,20 @@ export function calculateKerfDepth(
 // ============================================
 
 /**
- * Complete Kerf Bending Calculator
+ * Complete Kerf Bending Calculator — Phase 0 rewrite (spec v1.1)
  *
- * Given panel dimensions and desired bend parameters,
- * calculates all kerf cutting specifications.
+ * Changes from legacy implementation:
+ *  - k_eff resolved from KerfToolProfile discriminated union (spec §1.3)
+ *  - R_min from certified catalog via lookupMinBendRadius(); G12_MATERIAL_DATA_MISSING early return
+ *  - Spring-back compensation: R_design = R / (1 + γ); arc lengths computed on R_design
+ *  - Variable spacing p(s) = clamp(θ_allow / κ, p_min, 25) replaces fixed ΔL/K formula
+ *  - Web hard block: web < max(15%T, abs_min) → G12_KERF_DEPTH_UNSAFE (BLOCKER)
+ *  - R < R_min → G12_RADIUS_BELOW_MIN (BLOCKER, was warning)
+ *  - New result fields: errors[], springBackFactor, designRadius
+ *  - cncParams.toolDiameter = k_eff (not legacy kerfWidth)
  *
  * @param params Kerf bending parameters
- * @returns Complete kerf bending result
+ * @returns Complete kerf bending result (check errors[] for blockers before use)
  */
 export function calculateKerfBending(params: KerfBendingParams): KerfBendingResult {
   const {
@@ -340,71 +472,112 @@ export function calculateKerfBending(params: KerfBendingParams): KerfBendingResu
     bendAngle: theta,
     material,
     profile,
-    kerfWidth: K = 3.2,  // Default 3.2mm (1/8" bit)
+    kerfWidth: K_legacy = 3.2,   // legacy — used only when tool is absent
+    tool,
   } = params;
 
+  const errors: string[] = [];
   const warnings: string[] = [];
 
-  // Step 1: Determine web thickness
+  // ─── Step 1: Resolve effective kerf width ────────────────────────────────
+  // spec §1.3: k_eff = calibrated kEff when provided, else nominal diameter/kerf
+  const k_eff = tool ? kEffFromTool(tool) : K_legacy;
+
+  // ─── Step 2: Catalog lookup — G12_MATERIAL_DATA_MISSING (BLOCKER) ─────────
+  // lookupMinBendRadius() throws 'G12_MATERIAL_DATA_MISSING' for absent/null entries.
+  // On any throw we return early with errors populated; downstream calcs are invalid.
+  const matConst = MATERIAL_CONSTANTS[material];
+  const gamma = matConst.springback_gamma;
+  const R_design = R / (1 + gamma);  // pre-compute regardless — needed in early return
+
+  let R_min: number;
+  try {
+    R_min = lookupMinBendRadius(T, material);
+  } catch {
+    errors.push('G12_MATERIAL_DATA_MISSING');
+    return {
+      arcLengthOuter: 0,
+      arcLengthInner: 0,
+      arcLengthDelta: 0,
+      kerfCount: 0,
+      kerfSpacing: 0,
+      kerfDepth: 0,
+      webThickness: 0,
+      minBendRadius: 0,
+      safetyFactor: 0,
+      warnings,
+      errors,
+      springBackFactor: gamma,
+      designRadius: Math.round(R_design * 100) / 100,
+      cncParams: {
+        toolDiameter: k_eff,
+        cutDepth: 0,
+        feedRate: 0,
+        spindleSpeed: 0,
+        passes: 1,
+        startPosition: 0,
+        endPosition: 0,
+      },
+    };
+  }
+
+  // ─── Step 3: Web thickness — hard block if below 15% T (spec §2.1) ───────
   const webLimits = WEB_THICKNESS_LIMITS[material];
-  let W = params.webThickness;
+  const web_min = Math.max(0.15 * T, webLimits.min);   // spec: max(15%T, absolute min)
+  let W = params.webThickness ?? Math.max(webLimits.recommended, T * webLimits.maxRatio);
 
-  if (!W) {
-    // Auto-calculate: use recommended or ratio, whichever is larger
-    W = Math.max(webLimits.recommended, T * webLimits.maxRatio);
+  if (W < web_min) {
+    errors.push('G12_KERF_DEPTH_UNSAFE');
+    W = web_min;   // clamp so depth calc doesn't go negative
   }
 
-  // Validate web thickness
-  if (W < webLimits.min) {
-    warnings.push(`Web thickness ${W}mm below minimum ${webLimits.min}mm for ${material}`);
-    W = webLimits.min;
-  }
-
-  // Step 2: Calculate kerf depth
+  // ─── Step 4: Kerf depth ───────────────────────────────────────────────────
   const D_kerf = calculateKerfDepth(T, W);
-
   if (D_kerf <= 0) {
     throw new Error(`Invalid kerf depth: ${D_kerf}mm. Panel too thin for web requirement.`);
   }
 
-  // Step 3: Calculate arc lengths
-  // Inner radius = R (the bend radius given)
-  // Outer radius = R + T (outer face)
-  const R_inner = R;
-  const R_outer = R + T;
-
-  const L_inner = calculateArcLength(R_inner, theta);
-  const L_outer = calculateArcLength(R_outer, theta);
-  const deltaL = calculateArcLengthDelta(T, theta);
-
-  // Step 4: Calculate kerf count and spacing
-  const N = calculateKerfCount(deltaL, K);
-  const S = calculateKerfSpacing(L_outer, N);
-
-  // Step 5: Validate bend radius
-  const R_min = getMinimumBendRadius(T, material);
+  // ─── Step 5: R < R_min → G12_RADIUS_BELOW_MIN (BLOCKER) ─────────────────
   const safetyFactor = R / R_min;
-
   if (safetyFactor < 1) {
-    warnings.push(`Bend radius ${R}mm is below minimum ${R_min}mm for ${T}mm ${material}`);
+    errors.push('G12_RADIUS_BELOW_MIN');
   } else if (safetyFactor < 1.5) {
     warnings.push(`Bend radius ${R}mm is close to minimum ${R_min}mm. Consider larger radius.`);
   }
 
-  // Step 6: Validate kerf spacing
-  if (S < K * 1.5) {
+  // ─── Step 6: Arc lengths on R_design (CNC target after spring-back) ───────
+  // The CNC cuts to R_design; after spring-back the part returns to R.
+  const L_inner = calculateArcLength(R_design, theta);
+  const L_outer = calculateArcLength(R_design + T, theta);
+  const deltaL   = calculateArcLengthDelta(T, theta);
+
+  // ─── Step 7: Variable spacing p(s) — spec §2.6 ───────────────────────────
+  // θ_allow = c_mat × atan(k_eff / W)   — max angle each kerf can open
+  // κ       = 1 / R_design               — local curvature
+  // p       = clamp(θ_allow / κ, p_min, 25 mm)
+  // N       = ceil(L_outer / p)
+  const c_mat = matConst.c_mat;
+  const kappa = 1 / Math.max(R_design, 1e-9);
+  const theta_allow = c_mat * Math.atan(k_eff / Math.max(W, 1e-9));
+  const p_min = Math.max(1.8 * k_eff, 5);                               // mm
+  const p = Math.min(Math.max(theta_allow / Math.max(kappa, 1e-9), p_min), 25); // clamp [p_min, 25]
+  const N = Math.ceil(L_outer / p);
+  const S = L_outer / Math.max(N, 1);
+
+  // ─── Step 8: Tight-spacing advisory ──────────────────────────────────────
+  if (S < k_eff * 1.5) {
     warnings.push(`Kerf spacing ${S.toFixed(1)}mm is very tight. May cause material failure.`);
   }
 
-  // Step 7: Generate CNC parameters
+  // ─── Step 9: CNC parameters ──────────────────────────────────────────────
   const cncParams: KerfCNCParams = {
-    toolDiameter: K,
+    toolDiameter: k_eff,                               // spec §1.3
     cutDepth: D_kerf,
-    feedRate: getFeedRate(material, K),
+    feedRate: getFeedRate(material, k_eff),
     spindleSpeed: getSpindleSpeed(material),
     passes: D_kerf > 12 ? Math.ceil(D_kerf / 6) : 1,
-    startPosition: S / 2,           // First kerf at half-spacing from edge
-    endPosition: L_outer - S / 2,   // Last kerf at half-spacing from edge
+    startPosition: S / 2,
+    endPosition: L_outer - S / 2,
   };
 
   return {
@@ -418,6 +591,9 @@ export function calculateKerfBending(params: KerfBendingParams): KerfBendingResu
     minBendRadius: R_min,
     safetyFactor: Math.round(safetyFactor * 100) / 100,
     warnings,
+    errors,
+    springBackFactor: gamma,
+    designRadius: Math.round(R_design * 100) / 100,
     cncParams,
   };
 }
@@ -812,17 +988,23 @@ export function getWettingRecommendation(
  * 3. Increase web thickness
  * 4. Use slower bending action
  */
-export type KerfToolProfile = 'FLAT' | 'BALL_NOSE' | 'V_BIT';
+/**
+ * KerfBitProfile — bottom profile of the CNC bit at kerf corners.
+ * Renamed from KerfToolProfile (which is now the tool-model discriminated union above).
+ *
+ * Used by assessStressConcentration() to rate crack risk at kerf corners.
+ */
+export type KerfBitProfile = 'FLAT' | 'BALL_NOSE' | 'V_BIT';
 
 export interface StressConcentrationResult {
-  toolProfile: KerfToolProfile;
+  toolProfile: KerfBitProfile;
   stressRisk: 'LOW' | 'MEDIUM' | 'HIGH';
   stressMultiplier: number;  // 1.0 = baseline, higher = worse
   recommendations: string[];
 }
 
 export function assessStressConcentration(
-  toolProfile: KerfToolProfile,
+  toolProfile: KerfBitProfile,
   webThickness: number,
   material: KerfMaterial
 ): StressConcentrationResult {
@@ -832,7 +1014,7 @@ export function assessStressConcentration(
   const recommendations: string[] = [];
 
   // Stress multiplier by tool profile
-  const profileMultipliers: Record<KerfToolProfile, number> = {
+  const profileMultipliers: Record<KerfBitProfile, number> = {
     FLAT: 2.5,      // Sharp corners concentrate stress
     BALL_NOSE: 1.2, // Rounded bottom reduces stress
     V_BIT: 1.8,     // Tapered but still has corner

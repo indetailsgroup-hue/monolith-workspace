@@ -68,8 +68,14 @@ name: codex-skills
 
 on:
   push:
+    branches: [main]
   pull_request:
+    branches: [main]
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -78,6 +84,7 @@ jobs:
   suite:
     name: vendored skill provenance + installer guards (Windows)
     runs-on: windows-latest
+    timeout-minutes: 30
     steps:
       # Set before checkout so the checkout itself converts, the way a Windows
       # developer's clone does.
@@ -113,7 +120,7 @@ jobs:
               ;;
           esac
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 

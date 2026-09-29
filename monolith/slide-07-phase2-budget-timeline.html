@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+@page { margin: 0; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: Arial, Helvetica, sans-serif; }
+.slide-container {
+    width: 1280px;
+    min-width: 100%;
+    height: 720px;
+    overflow: hidden;
+    background-color: #f5f6fa;
+    color: #1a1a2e;
+    display: flex;
+    flex-direction: column;
+    border-left: 6px solid #1f2d5a;
+    border-right: 6px solid #1f2d5a;
+}
+.slide-header {
+    background-color: #1f2d5a;
+    padding: 22px 60px 18px;
+    display: flex;
+    align-items: baseline;
+    gap: 18px;
+}
+.slide-header h2 { font-size: 36px; font-weight: 800; color: #ffffff; }
+.slide-header p { font-size: 16px; color: rgba(201,168,76,0.9); font-weight: 600; }
+.content-area {
+    flex: 1;
+    display: flex;
+    gap: 20px;
+    padding: 20px 60px 0;
+}
+.left-col { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+.right-col { width: 340px; display: flex; flex-direction: column; gap: 12px; }
+.tl-box {
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 18px 20px;
+    border-top: 4px solid #1f2d5a;
+}
+.tl-box h4 { font-size: 18px; font-weight: 700; color: #1f2d5a; margin-bottom: 14px; }
+.tl-milestone {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 12px;
+}
+.tl-dot {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: #1f2d5a;
+    color: #c9a84c;
+    font-size: 13px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.tl-dot.gold { background-color: #c9a84c; color: #1f2d5a; }
+.tl-dot.green { background-color: #27ae60; color: #fff; }
+.tl-dot.purple { background-color: #7e3f8f; color: #fff; }
+.tl-info h5 { font-size: 16px; font-weight: 700; color: #1f2d5a; margin-bottom: 3px; }
+.tl-info p { font-size: 13px; color: #666; line-height: 1.4; }
+.budget-breakdown {
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 18px 20px;
+    border-top: 4px solid #c9a84c;
+}
+.budget-breakdown h4 { font-size: 18px; font-weight: 700; color: #1f2d5a; margin-bottom: 12px; }
+.budget-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.budget-bar-lbl { font-size: 13px; font-weight: 600; color: #1f2d5a; width: 80px; }
+.budget-bar-bg { flex: 1; background-color: #eee; border-radius: 4px; height: 18px; }
+.budget-bar-fill { height: 18px; border-radius: 4px; background-color: #1f2d5a; }
+.budget-bar-val { font-size: 13px; font-weight: 700; color: #1f2d5a; width: 56px; text-align: right; }
+.release-box {
+    background-color: #1f2d5a;
+    border-radius: 8px;
+    padding: 16px 20px;
+}
+.release-box h4 { font-size: 16px; font-weight: 700; color: #c9a84c; margin-bottom: 10px; }
+.release-row { display: flex; justify-content: space-between; font-size: 14px; color: rgba(255,255,255,0.8); padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.12); }
+.release-row:last-child { border-bottom: none; }
+.slide-footer {
+    margin-top: auto;
+    padding: 8px 60px;
+    border-top: 1px solid rgba(0,0,0,0.1);
+    color: rgba(0,0,0,0.45);
+    font-size: 11px;
+    background-color: #ffffff;
+}
+</style>
+</head>
+<body>
+<div class="slide-container">
+    <div class="slide-header">
+        <h2>Phase 2 Budget &amp; Timeline</h2>
+        <p>THB 6.0M Estimate · Q1 2033 – Q4 2033 · 4 Milestones</p>
+    </div>
+    <div class="content-area">
+        <div class="left-col">
+            <div class="tl-box">
+                <h4>Milestone Schedule</h4>
+                <div class="tl-milestone">
+                    <div class="tl-dot">P2-M1</div>
+                    <div class="tl-info">
+                        <h5>Q1 2033 — Phase 2 Kickoff</h5>
+                        <p>SC-2032-XX ratified · Programme Director onboarded · GAP-05 + GAP-06 commenced · src/ branches initialised</p>
+                    </div>
+                </div>
+                <div class="tl-milestone">
+                    <div class="tl-dot gold">P2-M2</div>
+                    <div class="tl-info">
+                        <h5>Q2 2033 — Mid-Phase Gate</h5>
+                        <p>GAP-06 Event Bus MVP delivered · GAP-09/10 design approved · Coverage spot-check &gt;70%</p>
+                    </div>
+                </div>
+                <div class="tl-milestone">
+                    <div class="tl-dot gold" style="background:#b7770d;">P2-M3</div>
+                    <div class="tl-info">
+                        <h5>Q3 2033 — 75% Coverage Gate</h5>
+                        <p>GAP-05 AI Engine delivered · GAP-09/10 UAT passed · GAP-11/12 build commenced · Coverage &gt;75% verified</p>
+                    </div>
+                </div>
+                <div class="tl-milestone">
+                    <div class="tl-dot green">P2-M4</div>
+                    <div class="tl-info">
+                        <h5>Q4 2033 — Phase 2 Completion</h5>
+                        <p>All 6 Phase 2 gaps closed · Coverage 80% verified · Phase 2 Completion Certificate · Phase 3 gate initiated</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="right-col">
+            <div class="budget-breakdown">
+                <h4>Budget by Gap (THB M)</h4>
+                <div class="budget-bar-row">
+                    <p class="budget-bar-lbl">GAP-05</p>
+                    <div class="budget-bar-bg"><div class="budget-bar-fill" style="width:75%;"></div></div>
+                    <p class="budget-bar-val">1.5M</p>
+                </div>
+                <div class="budget-bar-row">
+                    <p class="budget-bar-lbl">GAP-06</p>
+                    <div class="budget-bar-bg"><div class="budget-bar-fill" style="width:50%;"></div></div>
+                    <p class="budget-bar-val">1.0M</p>
+                </div>
+                <div class="budget-bar-row">
+                    <p class="budget-bar-lbl">GAP-09</p>
+                    <div class="budget-bar-bg"><div class="budget-bar-fill" style="width:40%;background-color:#c9a84c;"></div></div>
+                    <p class="budget-bar-val">0.8M</p>
+                </div>
+                <div class="budget-bar-row">
+                    <p class="budget-bar-lbl">GAP-10</p>
+                    <div class="budget-bar-bg"><div class="budget-bar-fill" style="width:35%;background-color:#c9a84c;"></div></div>
+                    <p class="budget-bar-val">0.7M</p>
+                </div>
+                <div class="budget-bar-row">
+                    <p class="budget-bar-lbl">GAP-11</p>
+                    <div class="budget-bar-bg"><div class="budget-bar-fill" style="width:40%;background-color:#c9a84c;"></div></div>
+                    <p class="budget-bar-val">0.8M</p>
+                </div>
+                <div class="budget-bar-row">
+                    <p class="budget-bar-lbl">GAP-12</p>
+                    <div class="budget-bar-bg"><div class="budget-bar-fill" style="width:30%;background-color:#c9a84c;"></div></div>
+                    <p class="budget-bar-val">0.6M</p>
+                </div>
+                <div class="budget-bar-row">
+                    <p class="budget-bar-lbl">Contingency</p>
+                    <div class="budget-bar-bg"><div class="budget-bar-fill" style="width:30%;background-color:#999;"></div></div>
+                    <p class="budget-bar-val">0.6M</p>
+                </div>
+                <div style="border-top:2px solid #1f2d5a;margin-top:6px;padding-top:8px;display:flex;justify-content:space-between;">
+                    <p style="font-size:16px;font-weight:800;color:#1f2d5a;">Total</p>
+                    <p style="font-size:18px;font-weight:800;color:#c9a84c;">THB 6.0M</p>
+                </div>
+            </div>
+            <div class="release-box">
+                <h4>Budget Release Schedule</h4>
+                <div class="release-row"><p>Q1 2033</p><p style="font-weight:700;color:#c9a84c;">THB 2.5M</p></div>
+                <div class="release-row"><p>Q2 2033</p><p style="font-weight:700;color:#c9a84c;">THB 1.5M</p></div>
+                <div class="release-row"><p>Q3–Q4 2033</p><p style="font-weight:700;color:#c9a84c;">THB 2.0M</p></div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer"><p>MONOLITH DAPH Decor AI Agent Programme · SC Review 2569 · Section 50.4–50.5 Phase 2 PDD · Budget per SC-2032-XX</p></div>
+</div>
+</body>
+</html>

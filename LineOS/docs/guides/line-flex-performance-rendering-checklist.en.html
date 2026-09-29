@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>Flex Message Performance and Rendering Checklist</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1>Flex Message Performance and Rendering Checklist</h1>
+<ul>
+<li>Status: release checklist for the v1 standalone authoring scope</li>
+<li>Edition: English</li>
+<li>Official LINE limits rechecked 2026-08-02</li>
+</ul>
+<h2>1. Release rule</h2>
+<p>Run this checklist for every preset, language and material content change. The Studio preview is a local approximation; only the exported HTTPS assets, official simulator and real LINE clients exercise the delivery rendering path. A visual pass never overrides validation, security, authorization or Trust P0.</p>
+<p>The v1 Studio authors <strong>one bubble only</strong>. It does not authorize carousel composition or live delivery.</p>
+<p>The required failure matrix covers unavailable image, LINE API 4xx/429/5xx, duplicate delivery and <code>unknown-after-send</code>.</p>
+<h2>2. Payload ceilings and budget</h2>
+<div class="tablewrap"><table><thead><tr><th>Item</th><th>LINE ceiling</th><th>MONOLITH release rule</th></tr></thead><tbody>
+<tr><td>Flex bubble definition</td><td><strong>30 KB</strong> JSON</td><td>Target at or below <strong>24 KB</strong>; above 24 KB is warning, above 30 KB blocks.</td></tr>
+<tr><td>Flex carousel definition</td><td><strong>50 KB</strong> JSON</td><td>Out of v1 authoring scope; design review required.</td></tr>
+<tr><td>Carousel bubbles</td><td>Maximum <strong>12</strong></td><td>v1 Studio authors one bubble only.</td></tr>
+<tr><td>Flex <code>altText</code></td><td><strong>1,500</strong> characters</td><td>Required, meaningful in Thai/English, and tested in notifications/chat list.</td></tr>
+</tbody></table></div>
+<p>Measure UTF-8 bytes on the exact <code>contents</code> object that will be sent. Do not assume character count equals byte count, especially for Thai and emoji. Stay below the hard ceiling with margin because copy and URL changes grow the payload.</p>
+<ul>
+<li>[ ] Bubble size ≤ 24 KB soft budget.</li>
+<li>[ ] Any 24–30 KB exception is documented with an owner and reduction plan.</li>
+<li>[ ] Export is blocked above 30 KB.</li>
+<li>[ ] <code>altText</code> is present, accurate and ≤ 1,500 characters.</li>
+<li>[ ] No unused components, duplicate styles or decorative nesting.</li>
+</ul>
+<h2>3. Image acceptance</h2>
+<p>For Flex image components, use an <strong>HTTPS</strong> URL with supported <strong>JPEG or PNG</strong> content. The official acceptance ceilings are <strong>1024×1024</strong> pixels and <strong>10 MB</strong> per image; LINE recommends keeping individual images at 1 MB or less to avoid display delay. These are acceptance ceilings, not a performance target.</p>
+<ul>
+<li>[ ] Protocol is HTTPS with supported TLS; redirect chain also remains HTTPS.</li>
+<li>[ ] MIME/content is the expected JPEG/PNG and not an HTML error page.</li>
+<li>[ ] Dimensions are no greater than 1024×1024.</li>
+<li>[ ] File is no greater than 10 MB and production target is substantially smaller (normally ≤ 1 MB).</li>
+<li>[ ] URL is percent-encoded where required, stable for the message lifetime and contains no token/secret.</li>
+<li>[ ] Cache policy and content replacement behavior are reviewed.</li>
+<li>[ ] Broken/unavailable image leaves essential meaning and CTA understandable.</li>
+</ul>
+<p>The standalone bundle uses <strong>no base64</strong>, no remote fonts and no third-party runtime. Preserve this boundary: base64 expands payloads, remote fonts introduce availability/privacy/rendering drift, and third-party runtime makes a local safety artifact dependent on external code.</p>
+<h2>4. Local preview versus exported URL</h2>
+<p>The Studio’s Hero preview uses a bundled local SVG from <code>LineOS/assets/line-flex-studio/</code>. The generated JSON uses the Hero <strong>Export HTTPS URL</strong> instead. A correct local picture does not prove the exported URL exists, serves the right bytes or works from LINE.</p>
+<ul>
+<li>[ ] Inspect the generated <code>hero.url</code>; do not infer it from the local preview.</li>
+<li>[ ] Open the HTTPS asset from an environment outside the developer machine.</li>
+<li>[ ] Confirm status, content type, dimensions, file size, certificate and redirect behavior.</li>
+<li>[ ] Paste the payload into Flex Message Simulator.</li>
+<li>[ ] Test the exported asset in real LINE clients and under poor network conditions.</li>
+</ul>
+<h2>5. Width, language and font matrix</h2>
+<p>Inspect at <strong>320</strong>, <strong>360</strong> and <strong>390</strong> CSS-pixel viewport widths. For each width, complete:</p>
+<div class="tablewrap"><table><thead><tr><th>Case</th><th>Pass condition</th></tr></thead><tbody>
+<tr><td>Thai</td><td>Natural wrapping; no clipped vowel/tone marks; facts remain associated with labels.</td></tr>
+<tr><td>English</td><td>Long words and names wrap without overflow; CTA remains visible.</td></tr>
+<tr><td>Emoji/symbols</td><td>Emoji, currency, percent, en dash and bullets render without replacement boxes.</td></tr>
+<tr><td>Long name</td><td>Project, customer and requester names wrap without obscuring revision/deadline.</td></tr>
+<tr><td>Large font</td><td>Current device large-font setting does not overlap, crop or hide action meaning.</td></tr>
+</tbody></table></div>
+<p>Do not force copy to match one screenshot. LINE states that OS, LINE version, resolution, language and font affect Flex rendering.</p>
+<h2>6. Hero crop and safe visual area</h2>
+<ul>
+<li>[ ] Test <code>cover</code> cropping at every width and on tall/wide source variants.</li>
+<li>[ ] Keep the focal subject inside a centered safe visual area with generous edge margin.</li>
+<li>[ ] Do not bake revision, price, deadline, approval consequence or other essential text into the image.</li>
+<li>[ ] Put essential text in Flex text components and in useful <code>altText</code>.</li>
+<li>[ ] Check face/material/product crops, logos and contrast after crop.</li>
+<li>[ ] Verify the card remains understandable when the image is unavailable.</li>
+</ul>
+<p><code>cover</code> may remove source-image edges by design. Approval truth must remain outside the image.</p>
+<h2>7. Layout resilience</h2>
+<ul>
+<li>[ ] Keep layout shallow; remove containers used only for decoration.</li>
+<li>[ ] Set important text to wrap and tolerate one or more additional lines.</li>
+<li>[ ] Avoid fixed heights for text-bearing containers; fixed height can clip translated or enlarged text.</li>
+<li>[ ] Do not align facts by inserting spaces or hard-coded line breaks.</li>
+<li>[ ] Use consistent spacing, concise labels and sufficient touch targets.</li>
+<li>[ ] Test missing optional text and longest allowed text.</li>
+<li>[ ] Verify fallback for client features whose support depends on LINE version.</li>
+</ul>
+<h2>8. Primary CTA clarity</h2>
+<ul>
+<li>[ ] One primary CTA is visually dominant.</li>
+<li>[ ] Label states what opens or happens: “Review and confirm,” not “OK.”</li>
+<li>[ ] Trust note explains that consequential state changes only after private confirmation.</li>
+<li>[ ] Secondary route has lower consequence and cannot bypass the primary review.</li>
+<li>[ ] Action matches the approved Message/Postback/URI/LIFF matrix.</li>
+<li>[ ] High-risk action opens LIFF and requires MONOLITH step-up.</li>
+</ul>
+<h2>9. Accessibility and motion</h2>
+<ul>
+<li>[ ] Entire Studio and review journey works with keyboard only.</li>
+<li>[ ] Tab order follows reading order; focus is visible and returns to the trigger after dialogs.</li>
+<li>[ ] Header/Hero/Body/Footer and mobile pane tabs support arrows, Home and End.</li>
+<li>[ ] Contrast is sufficient in normal, disabled, warning and error states.</li>
+<li>[ ] Controls have semantic labels and validation connects a rule to the affected field.</li>
+<li>[ ] Meaning is not conveyed by color, image or animation alone.</li>
+<li>[ ] <code>altText</code> conveys the actionable summary.</li>
+<li>[ ] Reduced-motion preference is respected; avoid essential animation.</li>
+<li>[ ] Screen-reader reading order and large font are checked on real devices.</li>
+</ul>
+<h2>10. Real-device matrix</h2>
+<p>Use organization-controlled test accounts and record the exact date, OS, device class and current installed LINE version across iOS, Android and desktop. “Latest” without a version/date is not evidence.</p>
+<div class="tablewrap"><table><thead><tr><th>Client</th><th>Minimum cases</th></tr></thead><tbody>
+<tr><td>iOS LINE</td><td>320/390-class width, normal/large font, Thai/English, image available/unavailable, LIFF open/cancel/confirm</td></tr>
+<tr><td>Android LINE</td><td>360/390-class width, normal/large font, Thai/English, image available/unavailable, LIFF open/cancel/confirm</td></tr>
+<tr><td>Desktop LINE (Windows/macOS as supported)</td><td>Window narrow/wide, URI fallback, keyboard, unsupported-feature fallback</td></tr>
+<tr><td>External browser from LIFF path</td><td>Login, exact redirect, cancellation, stale/expired transaction and support fallback</td></tr>
+</tbody></table></div>
+<p>Retest after material Flex changes, image/CDN changes, LIFF SDK/platform changes and meaningful LINE client updates.</p>
+<h2>11. Media delivery</h2>
+<p><strong>Future production guidance</strong> — not evidence of a deployed CDN:</p>
+<ul>
+<li>use an approved first-party media host/CDN with HTTPS, monitored availability and explicit owner;</li>
+<li>publish immutable, content-addressed or versioned asset URLs so an approved message does not silently change;</li>
+<li>avoid signed URLs that expire before message retention/use; never embed bearer credentials;</li>
+<li>optimize JPEG/PNG dimensions and quality before upload; do not rely on CDN transformation at view time without a pinned contract;</li>
+<li>set correct content type, cache headers and safe redirects;</li>
+<li>monitor origin/CDN errors and latency, and keep an accessible text fallback;</li>
+<li>define takedown, privacy, retention and incident procedures.</li>
+</ul>
+<p>Production host, SLA, region and retention remain architecture decisions. Revalidate them at release.</p>
+<h2>12. Failure and recovery checks</h2>
+<h3>Unavailable image</h3>
+<ul>
+<li>[ ] Simulate DNS failure, 404/403, slow response and wrong MIME.</li>
+<li>[ ] Essential text and CTA remain outside the image.</li>
+<li>[ ] Operator can replace/version the asset without rewriting historical evidence.</li>
+</ul>
+<h3>LINE API <code>4xx</code></h3>
+<ul>
+<li>[ ] Treat validation/auth/recipient errors as terminal until classified; do not blind retry.</li>
+<li>[ ] Preserve non-secret request ID, payload hash, error body and environment for audit.</li>
+<li>[ ] Quarantine invalid payloads and return them to the owner.</li>
+</ul>
+<h3>LINE API <code>429</code></h3>
+<ul>
+<li>[ ] Honor platform rate constraints and controlled backoff/queue policy.</li>
+<li>[ ] Do not multiply retries across workers.</li>
+<li>[ ] Monitor queue age, tenant fairness and SLA impact.</li>
+</ul>
+<h3>LINE API <code>5xx</code> or timeout</h3>
+<ul>
+<li>[ ] Use LINE retry-key semantics only where officially supported and retain the same retry key for the same request.</li>
+<li>[ ] Bound retries with backoff and a circuit/incident threshold.</li>
+<li>[ ] Do not equate API acceptance with human receipt.</li>
+</ul>
+<h3>Duplicate delivery</h3>
+<ul>
+<li>[ ] Deduplicate inbound events by <code>webhookEventId</code> and business commands by stable idempotency key.</li>
+<li>[ ] Replayed action returns the stored safe result and never repeats a state transition.</li>
+</ul>
+<h3><code>unknown-after-send</code></h3>
+<ul>
+<li>[ ] Persist request ID, retry key, payload hash, target reference and acceptance state before send.</li>
+<li>[ ] Mark ambiguous outcome explicitly, stop blind resend and reconcile through platform evidence/operator review.</li>
+<li>[ ] Escalate unresolved ambiguity; preserve the queue and audit trail.</li>
+</ul>
+<h2>13. Release evidence record</h2>
+<div class="tablewrap"><table><thead><tr><th>Evidence</th><th>Required value</th></tr></thead><tbody>
+<tr><td>Payload</td><td>Preset/revision, JSON hash, UTF-8 byte count, alt-text length</td></tr>
+<tr><td>Visual</td><td>320/360/390 captures for TH/EN, large font and image failure</td></tr>
+<tr><td>Official simulation</td><td>Flex Message Simulator date/result</td></tr>
+<tr><td>Devices</td><td>OS, device, LINE version, environment and tester</td></tr>
+<tr><td>Accessibility</td><td>Keyboard/focus/contrast/labels/reduced-motion result</td></tr>
+<tr><td>Failure</td><td>Image, <code>4xx</code>, <code>429</code>, <code>5xx</code>, timeout, duplicate, replay and unknown-after-send evidence</td></tr>
+<tr><td>Authorization</td><td>Action decision, Trust P0 gate and step-up evidence where applicable</td></tr>
+<tr><td>Rollback</td><td>Owner, disable path, worker stop and reconciliation drill</td></tr>
+</tbody></table></div>
+<p>Any hard-limit breach, hidden essential image text, unclear primary CTA, missing real-device evidence, failed accessibility condition or unresolved consequential-action gate means NO-GO.</p>
+<h2>Official sources</h2>
+<p>Retrieved 2026-08-02:</p>
+<ul>
+<li><a href="https://developers.line.biz/en/reference/messaging-api/nojs/" target="_blank" rel="noopener">Messaging API reference: Flex, carousel, alt text and image constraints</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/using-flex-messages/" target="_blank" rel="noopener">Send Flex Messages and rendering variability</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/using-flex-message-simulator/" target="_blank" rel="noopener">Flex Message Simulator image requirements</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/flex-message-layout/" target="_blank" rel="noopener">Flex Message layout</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/receiving-messages/" target="_blank" rel="noopener">Receive messages and webhook duplicates</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/retrying-api-request/" target="_blank" rel="noopener">Retrying a Messaging API request</a></li>
+<li><a href="https://developers.line.biz/en/reference/messaging-api/nojs/#status-codes" target="_blank" rel="noopener">Messaging API status codes</a></li>
+</ul>
+</main></body>
+</html>

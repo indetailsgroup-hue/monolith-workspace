@@ -166,6 +166,21 @@ export interface PacketCutListRow {
   cutH: number;
   /** Grain direction */
   grain: 'HORIZONTAL' | 'VERTICAL' | 'NONE';
+  /** Developed (unrolled) length for curved panels (mm). Present only when panel has a curve profile. */
+  developedLength?: number;
+  /** Number of kerf cuts for this panel. Present only when panel has a curve profile. */
+  kerfCount?: number;
+  /**
+   * Projected depth of the curved zone along the bend axis (mm).
+   * = R × (1 − cos(sweepRad)) for ARC; sum of per-arc terms for S_CURVE.
+   * Used by the nesting optimizer: flatBlank = cut + (developedLength − projectedDepth).
+   */
+  projectedDepth?: number;
+  /**
+   * Panel edge that carries the primary curve (ARC / S_CURVE).
+   * Absent for ROUNDED_CORNER (corner curve, no single dominant edge).
+   */
+  curvedEdge?: 'TOP' | 'BOTTOM' | 'LEFT' | 'RIGHT';
   /** Notes */
   note?: string;
 }
@@ -299,6 +314,10 @@ export interface FactoryPacket {
   gateResult: PacketGateResult;
   /** ADR-061(c): Connector OS compiler ops — artifact คู่ขนาน (ยังไม่แทน drillMap) */
   connectorOps?: import('./builders/buildConnectorOps').PacketConnectorOps;
+  /** Phase 6: Curved Panel System — kerf slot patterns by panel */
+  kerfPatterns?: import('../../cnc/mapping/mapKerfPatternToOps').KerfPatternsByPanelId;
+  /** Nesting optimization results (optional — present when nesting was run before export) */
+  nestingSheets?: import('../../core/export/monolith/monolithExportContext').NestingSheet[];
 }
 
 // ============================================

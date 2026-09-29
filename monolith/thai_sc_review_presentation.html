@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MONOLITH · DAPH — SC Review Presentation (ภาษาไทย)</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --navy:#1f2d5a;--navy2:#2a3f7e;--gold:#c9a227;--gold2:#e8c84a;
+  --green:#27ae60;--green2:#2ecc71;--red:#c0392b;--mid:#e8ecf4;
+  --light:#f5f7fa;--white:#ffffff;--text:#1a1a2e;--muted:#6b7280;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Sarabun',sans-serif;background:#0f1730;color:var(--text);font-size:16pt}
+
+/* ── NAV ─────────────────────────────────────────────────── */
+nav{
+  position:fixed;top:0;left:0;width:100%;z-index:999;
+  background:rgba(15,23,48,.97);border-bottom:2px solid var(--gold);
+  display:flex;align-items:center;padding:0 20px;height:48px;gap:4px;
+  overflow-x:auto;white-space:nowrap
+}
+nav a{
+  color:rgba(255,255,255,.7);font-size:9.5pt;font-weight:600;
+  text-decoration:none;padding:6px 10px;border-radius:4px;
+  transition:all .2s;flex-shrink:0
+}
+nav a:hover,nav a.active{background:var(--gold);color:#000}
+nav .brand{color:var(--gold);font-weight:700;font-size:11pt;margin-right:14px;flex-shrink:0}
+
+/* ── SLIDE BASE ──────────────────────────────────────────── */
+.slide{
+  min-height:100vh;padding:68px 5% 40px;
+  display:flex;flex-direction:column;justify-content:center
+}
+.slide-inner{max-width:1200px;margin:0 auto;width:100%}
+
+/* ── SLIDE 1 — COVER ──────────────────────────────────────── */
+.s01{background:linear-gradient(160deg,#0f1730 0%,#1f2d5a 60%,#0f1730 100%)}
+.s01 .brand-line{color:var(--gold);font-size:13pt;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px}
+.s01 h1{color:#fff;font-size:42pt;font-weight:700;line-height:1.15;margin-bottom:8px}
+.s01 h1 span{color:var(--gold)}
+.s01 .sub{color:rgba(255,255,255,.8);font-size:17pt;margin-bottom:24px}
+.s01 .chips{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:32px}
+.chip{display:inline-block;padding:5px 14px;border-radius:20px;font-size:10.5pt;font-weight:600}
+.chip-green{background:rgba(39,174,96,.2);color:var(--green2);border:1px solid var(--green)}
+.chip-gold{background:rgba(201,162,39,.2);color:var(--gold2);border:1px solid var(--gold)}
+.chip-navy{background:rgba(255,255,255,.1);color:#c5d0f0;border:1px solid rgba(255,255,255,.25)}
+.s01 .cover-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:10px}
+.cstat{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:14px 10px;text-align:center}
+.cstat .val{font-size:24pt;font-weight:700;color:var(--gold2)}
+.cstat .lbl{font-size:9.5pt;color:rgba(255,255,255,.7);margin-top:4px;line-height:1.3}
+.s01 .phase-bar{margin-top:28px;background:rgba(255,255,255,.06);border-radius:8px;padding:16px 20px;border:1px solid rgba(201,162,39,.3)}
+.s01 .phase-bar p{color:rgba(255,255,255,.6);font-size:10.5pt;margin-bottom:8px}
+.prog-row{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.prog-label{color:rgba(255,255,255,.8);font-size:10pt;width:130px;flex-shrink:0}
+.prog-bar{flex:1;height:10px;background:rgba(255,255,255,.1);border-radius:5px;overflow:hidden}
+.prog-fill{height:100%;border-radius:5px}
+.prog-pct{color:#fff;font-size:10pt;font-weight:700;width:50px;text-align:right;flex-shrink:0}
+
+/* ── SLIDE 2 — PHASE 1 SUMMARY ─────────────────────────── */
+.s02{background:var(--light)}
+.slide-title{color:var(--navy);font-size:22pt;font-weight:700;border-left:5px solid var(--gold);padding-left:14px;margin-bottom:6px}
+.slide-sub{color:var(--muted);font-size:11pt;margin-bottom:28px;padding-left:20px}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
+.stat-card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,.07);border-top:4px solid var(--navy)}
+.stat-card.green{border-top-color:var(--green)}
+.stat-card.gold{border-top-color:var(--gold)}
+.stat-card .sv{font-size:32pt;font-weight:700;color:var(--navy);line-height:1}
+.stat-card.green .sv{color:var(--green)}
+.stat-card.gold .sv{color:var(--gold)}
+.stat-card .sl{font-size:10pt;color:var(--muted);margin-top:4px}
+.stat-card .sd{font-size:10.5pt;color:#444;margin-top:6px;line-height:1.4}
+.gap-closed-bar{background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 2px 10px rgba(0,0,0,.07);margin-bottom:20px}
+.gap-closed-bar h4{color:var(--navy);font-size:12pt;margin-bottom:12px}
+.gap-chips{display:flex;gap:8px;flex-wrap:wrap}
+.gap-chip{background:rgba(39,174,96,.12);color:#1a6b3a;border:1px solid var(--green);border-radius:20px;padding:4px 12px;font-size:10pt;font-weight:600}
+.gap-chip.open{background:rgba(201,162,39,.12);color:#7a4f00;border-color:var(--gold)}
+.info-strip{background:var(--navy);color:#fff;border-radius:10px;padding:14px 20px;font-size:11pt;display:flex;align-items:center;gap:12px}
+.info-strip .badge{background:var(--green);border-radius:20px;padding:3px 12px;font-size:10pt;font-weight:700;white-space:nowrap}
+
+/* ── SLIDE 3 — AMD-004 DELIVERY ─────────────────────────── */
+.s03{background:#fff}
+.ws-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px}
+.ws-card{background:var(--light);border-radius:12px;padding:16px;border-top:4px solid var(--navy);text-align:center}
+.ws-card .ws-id{color:var(--navy);font-size:11pt;font-weight:700;margin-bottom:6px}
+.ws-card .ws-name{font-size:9.5pt;color:#333;margin-bottom:10px;line-height:1.35;min-height:40px}
+.ws-card .ws-budget{font-size:16pt;font-weight:700;color:var(--gold)}
+.ws-card .ws-bunit{font-size:9pt;color:var(--muted)}
+.ws-card .ws-agent{margin-top:8px;font-size:9pt;background:var(--navy);color:#fff;border-radius:4px;padding:2px 6px;display:inline-block}
+.timeline-bar{background:var(--navy);border-radius:12px;padding:20px 24px;color:#fff;margin-bottom:20px}
+.timeline-bar h4{font-size:12pt;margin-bottom:14px;color:var(--gold)}
+.tl-track{display:flex;align-items:center;position:relative;margin-bottom:8px}
+.tl-seg{flex:1;text-align:center;font-size:9pt}
+.tl-seg .tl-q{font-weight:700;color:var(--gold2);font-size:10pt}
+.tl-seg .tl-label{color:rgba(255,255,255,.75);font-size:8.5pt;margin-top:2px}
+.tl-line{flex:1;height:3px;background:rgba(255,255,255,.2)}
+.tl-dot{width:14px;height:14px;border-radius:50%;background:var(--gold);flex-shrink:0}
+.total-strip{background:var(--light);border:2px solid var(--navy);border-radius:10px;padding:12px 20px;display:flex;justify-content:space-between;align-items:center}
+.total-strip .tl{font-size:13pt;font-weight:700;color:var(--navy)}
+.total-strip .tr{font-size:18pt;font-weight:700;color:var(--gold)}
+
+/* ── SLIDE 4 — ROI ─────────────────────────────────────── */
+.s04{background:var(--light)}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.kpi-card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,.07);text-align:center;border-bottom:4px solid var(--gold)}
+.kpi-card .kv{font-size:26pt;font-weight:700;color:var(--navy)}
+.kpi-card .kl{font-size:9.5pt;color:var(--muted);margin-top:4px}
+.kpi-card .kd{font-size:9.5pt;color:#333;margin-top:6px;line-height:1.35}
+.sla-section{background:#fff;border-radius:12px;padding:20px 24px;box-shadow:0 2px 10px rgba(0,0,0,.07)}
+.sla-section h4{color:var(--navy);font-size:12pt;margin-bottom:16px}
+.sla-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.sla-group{font-size:10pt;font-weight:700;width:80px;flex-shrink:0;color:var(--navy)}
+.sla-agents{font-size:9.5pt;color:#444;flex:1}
+.sla-bar{width:200px;flex-shrink:0;height:12px;background:var(--mid);border-radius:6px;overflow:hidden}
+.sla-fill{height:100%;border-radius:6px;background:var(--green)}
+.sla-pct{font-size:10pt;font-weight:700;color:var(--green);width:45px;text-align:right;flex-shrink:0}
+
+/* ── SLIDE 5 — GAP TABLE ────────────────────────────────── */
+.s05{background:#fff}
+.gap-table{width:100%;border-collapse:collapse;font-size:10pt;margin-bottom:20px}
+.gap-table th{background:var(--navy);color:#fff;padding:8px 10px;text-align:left;font-size:10pt}
+.gap-table td{padding:7px 10px;border-bottom:1px solid var(--mid);vertical-align:top}
+.gap-table tr:nth-child(even) td{background:#f9fafb}
+.gap-table tr:hover td{background:#eef2ff}
+.badge-high{background:rgba(192,57,43,.15);color:var(--red);border:1px solid var(--red);border-radius:4px;padding:1px 7px;font-size:8.5pt;font-weight:700;white-space:nowrap}
+.badge-med{background:rgba(201,162,39,.15);color:#7a4f00;border:1px solid var(--gold);border-radius:4px;padding:1px 7px;font-size:8.5pt;font-weight:700;white-space:nowrap}
+.badge-low{background:rgba(39,174,96,.12);color:#1a6b3a;border:1px solid var(--green);border-radius:4px;padding:1px 7px;font-size:8.5pt;font-weight:700;white-space:nowrap}
+.status-closed{color:var(--green);font-weight:700;font-size:9pt}
+.status-open{color:var(--gold);font-weight:700;font-size:9pt}
+.phase-tag{font-size:8.5pt;background:var(--mid);border-radius:4px;padding:1px 6px;color:var(--navy);font-weight:600}
+
+/* ── SLIDE 6 — PHASE 2 BUSINESS CASE ───────────────────── */
+.s06{background:var(--light)}
+.gap2-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px}
+.gap2-card{background:#fff;border-radius:12px;padding:18px;box-shadow:0 2px 10px rgba(0,0,0,.07);border-left:5px solid var(--gold)}
+.gap2-card .gc-id{font-size:12pt;font-weight:700;color:var(--navy)}
+.gap2-card .gc-name{font-size:10pt;color:#333;margin:4px 0 10px}
+.gap2-card .gc-row{display:flex;justify-content:space-between;font-size:9.5pt;margin-bottom:4px}
+.gc-label{color:var(--muted)}
+.gc-value{font-weight:700;color:var(--navy)}
+.coverage-proj{background:#fff;border-radius:12px;padding:18px 22px;box-shadow:0 2px 10px rgba(0,0,0,.07);margin-bottom:18px}
+.coverage-proj h4{color:var(--navy);font-size:12pt;margin-bottom:14px}
+.cov-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.cov-phase{width:110px;font-size:10pt;font-weight:600;color:var(--navy);flex-shrink:0}
+.cov-bar{flex:1;height:14px;background:var(--mid);border-radius:7px;overflow:hidden}
+.cov-fill{height:100%;border-radius:7px}
+.cov-pct{font-size:11pt;font-weight:700;width:55px;text-align:right;flex-shrink:0}
+.budget-row{background:var(--navy);border-radius:10px;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;color:#fff}
+.budget-row .bl{font-size:12pt;font-weight:600}
+.budget-row .bv{font-size:20pt;font-weight:700;color:var(--gold2)}
+
+/* ── SLIDE 7 — BUDGET & TIMELINE ───────────────────────── */
+.s07{background:#fff}
+.milestone-table{width:100%;border-collapse:collapse;margin-bottom:22px;font-size:10.5pt}
+.milestone-table th{background:var(--navy);color:#fff;padding:9px 12px;text-align:left}
+.milestone-table td{padding:9px 12px;border-bottom:1px solid var(--mid);vertical-align:top}
+.milestone-table tr:nth-child(even) td{background:#f9fafb}
+.m-id{font-weight:700;color:var(--navy);white-space:nowrap}
+.budget-bars{background:var(--light);border-radius:12px;padding:18px 22px}
+.budget-bars h4{color:var(--navy);font-size:12pt;margin-bottom:14px}
+.bbar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.bbar-label{width:110px;font-size:10pt;color:var(--navy);font-weight:600;flex-shrink:0}
+.bbar-track{flex:1;height:18px;background:var(--mid);border-radius:9px;overflow:hidden}
+.bbar-fill{height:100%;border-radius:9px;background:var(--gold)}
+.bbar-val{font-size:10pt;font-weight:700;color:var(--navy);width:70px;text-align:right;flex-shrink:0}
+
+/* ── SLIDE 8 — GOVERNANCE ──────────────────────────────── */
+.s08{background:var(--light)}
+.gov-table{width:100%;border-collapse:collapse;margin-bottom:22px;font-size:10.5pt}
+.gov-table th{background:var(--navy);color:#fff;padding:9px 14px;text-align:left}
+.gov-table td{padding:9px 14px;border-bottom:1px solid var(--mid);vertical-align:top}
+.gov-table tr:nth-child(even) td{background:#f9fafb}
+.next-steps{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:18px}
+.ns-card{background:#fff;border-radius:10px;padding:16px 18px;box-shadow:0 2px 8px rgba(0,0,0,.06);border-top:3px solid var(--gold)}
+.ns-card .ns-num{font-size:22pt;font-weight:700;color:var(--gold);line-height:1}
+.ns-card .ns-title{font-size:11pt;font-weight:700;color:var(--navy);margin:4px 0}
+.ns-card .ns-desc{font-size:10pt;color:#444;line-height:1.45}
+.gate-box{background:var(--navy);border-radius:10px;padding:16px 20px;color:#fff}
+.gate-box h4{color:var(--gold);font-size:12pt;margin-bottom:10px}
+.gate-box ul{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.gate-box li{font-size:10pt;padding-left:14px;position:relative;color:rgba(255,255,255,.85)}
+.gate-box li::before{content:"✓";position:absolute;left:0;color:var(--green2);font-weight:700}
+.gate-box li.open::before{content:"◦";color:var(--gold2)}
+
+/* ── SLIDE 9 — RECOMMENDATION ──────────────────────────── */
+.s09{background:linear-gradient(160deg,#0f1730 0%,#1f2d5a 60%,#0f1730 100%)}
+.s09 .slide-title{color:var(--gold);border-left-color:rgba(255,255,255,.3)}
+.s09 .slide-sub{color:rgba(255,255,255,.6)}
+.resolution-cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:24px}
+.res-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:20px}
+.res-card .rc-num{font-size:32pt;font-weight:700;color:var(--gold);line-height:1}
+.res-card .rc-title{font-size:12pt;font-weight:700;color:#fff;margin:6px 0}
+.res-card .rc-body{font-size:10pt;color:rgba(255,255,255,.75);line-height:1.5}
+.res-card .rc-ref{font-size:9pt;color:var(--gold);margin-top:10px}
+.summary-row{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.srow-pill{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:10px 16px;flex:1;min-width:140px}
+.srow-pill .sp-v{font-size:18pt;font-weight:700;color:var(--gold2)}
+.srow-pill .sp-l{font-size:9.5pt;color:rgba(255,255,255,.7);margin-top:2px}
+.vote-strip{background:rgba(39,174,96,.15);border:1px solid var(--green);border-radius:10px;padding:14px 20px;display:flex;align-items:center;gap:16px}
+.vote-strip .vs-label{color:rgba(255,255,255,.7);font-size:11pt}
+.vote-strip .vs-action{background:var(--green);color:#fff;border-radius:20px;padding:6px 18px;font-size:11pt;font-weight:700;white-space:nowrap}
+.vote-strip .vs-ref{font-size:10pt;color:rgba(255,255,255,.6);margin-left:auto}
+
+/* ── SLIDE 10 — REFERENCES ─────────────────────────────── */
+.s10{background:var(--light)}
+.ref-list{list-style:none;display:flex;flex-direction:column;gap:14px}
+.ref-list li{background:#fff;border-radius:10px;padding:16px 20px;box-shadow:0 2px 8px rgba(0,0,0,.06);border-left:4px solid var(--navy)}
+.ref-num{display:inline-block;background:var(--navy);color:#fff;border-radius:50%;width:24px;height:24px;text-align:center;line-height:24px;font-size:9.5pt;font-weight:700;margin-right:10px;flex-shrink:0}
+.ref-text{font-size:10.5pt;color:#333;line-height:1.6}
+.ref-text em{color:var(--navy);font-style:italic}
+
+/* ── FOOTER ─────────────────────────────────────────────── */
+.slide-footer{
+  margin-top:24px;font-size:9pt;color:var(--muted);
+  border-top:1px solid var(--mid);padding-top:10px;
+  display:flex;justify-content:space-between;align-items:center
+}
+.s01 .slide-footer,.s09 .slide-footer{color:rgba(255,255,255,.4);border-top-color:rgba(255,255,255,.1)}
+
+@media(max-width:768px){
+  .stat-grid,.ws-grid,.kpi-grid,.gap2-grid,.resolution-cards{grid-template-columns:1fr 1fr}
+  .s01 .cover-stats{grid-template-columns:repeat(3,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- NAVIGATION -->
+<nav>
+  <span class="brand">MONOLITH · SC</span>
+  <a href="#s01">1 · ปก</a>
+  <a href="#s02">2 · Phase 1</a>
+  <a href="#s03">3 · AMD-004</a>
+  <a href="#s04">4 · ROI</a>
+  <a href="#s05">5 · Gap Register</a>
+  <a href="#s06">6 · Phase 2</a>
+  <a href="#s07">7 · งบประมาณ</a>
+  <a href="#s08">8 · การกำกับดูแล</a>
+  <a href="#s09">9 · ข้อเสนอแนะ</a>
+  <a href="#s10">10 · อ้างอิง</a>
+</nav>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 1 — COVER                                           -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="s01" class="slide s01">
+<div class="slide-inner">
+  <div class="brand-line">MONOLITH · DAPH DECOR AI AGENT PROGRAMME</div>
+  <h1>รายงานการ<span>ทบทวน SC</span></h1>
+  <p class="sub">สรุปผล Phase 1 เสร็จสมบูรณ์ · ข้อเสนอ Phase 2 · งบประมาณ THB 6.0M</p>
+  <div class="chips">
+    <span class="chip chip-green">Phase 1 เสร็จสมบูรณ์ · GAP-01/02/03/04/07/08 ปิดแล้ว</span>
+    <span class="chip chip-gold">ข้อเสนอ Phase 2 · SC-2032-XX</span>
+    <span class="chip chip-navy">AMD-004 · THB 5.2M · ส่งมอบแล้ว</span>
+  </div>
+  <div class="cover-stats">
+    <div class="cstat"><div class="val">68%</div><div class="lbl">ความครอบคลุม SOP Phase 1</div></div>
+    <div class="cstat"><div class="val">6/15</div><div class="lbl">Gap ปิดแล้วใน Phase 1</div></div>
+    <div class="cstat"><div class="val">28</div><div class="lbl">AI Agents ที่ใช้งานอยู่</div></div>
+    <div class="cstat"><div class="val">THB 5.2M</div><div class="lbl">AMD-004 งบประมาณ (ส่งมอบตรงเวลา)</div></div>
+    <div class="cstat"><div class="val">49</div><div class="lbl">หมวด SOP สมบูรณ์</div></div>
+  </div>
+  <div class="phase-bar">
+    <p>แผนงาน Coverage Roadmap</p>
+    <div class="prog-row">
+      <span class="prog-label">ก่อน Phase 1</span>
+      <div class="prog-bar"><div class="prog-fill" style="width:56%;background:#6b7280"></div></div>
+      <span class="prog-pct">56%</span>
+    </div>
+    <div class="prog-row">
+      <span class="prog-label">Phase 1 (ปัจจุบัน)</span>
+      <div class="prog-bar"><div class="prog-fill" style="width:68%;background:var(--green)"></div></div>
+      <span class="prog-pct">68%</span>
+    </div>
+    <div class="prog-row">
+      <span class="prog-label">Phase 2 (เป้าหมาย)</span>
+      <div class="prog-bar"><div class="prog-fill" style="width:80%;background:var(--gold)"></div></div>
+      <span class="prog-pct">80%</span>
+    </div>
+    <div class="prog-row">
+      <span class="prog-label">Phase 3 (เป้าหมาย)</span>
+      <div class="prog-bar"><div class="prog-fill" style="width:92%;background:rgba(201,162,39,.5)"></div></div>
+      <span class="prog-pct">92%</span>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span>SOP v2.5 (49 หมวด) · SHA 14b90bc</span>
+    <span>3 กันยายน 2569 · MONOLITH DAPH SC Review</span>
+  </div>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 2 — PHASE 1 SUMMARY                                 -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="s02" class="slide s02">
+<div class="slide-inner">
+  <h2 class="slide-title">สรุปผลสำเร็จ Phase 1</h2>
+  <p class="slide-sub">ตัวชี้วัดหลักที่บรรลุเป้าหมายใน Phase 1 ของโครงการ MONOLITH DAPH Decor AI Agent Programme</p>
+  <div class="stat-grid">
+    <div class="stat-card green">
+      <div class="sv">+12%</div>
+      <div class="sl">การเพิ่มขึ้นของ SOP Coverage</div>
+      <div class="sd">56% → 68% — เพิ่มขึ้น 12 percentage points ใน Phase 1 (S39–S49)</div>
+    </div>
+    <div class="stat-card">
+      <div class="sv">6/15</div>
+      <div class="sl">Gap ที่ปิดแล้ว</div>
+      <div class="sd">GAP-01/02/03/04/07/08 ปิดสมบูรณ์ — HIGH priority gaps ทั้ง 6 รายการ</div>
+    </div>
+    <div class="stat-card gold">
+      <div class="sv">THB 5.2M</div>
+      <div class="sl">AMD-004 งบประมาณ (ตรงเป้า)</div>
+      <div class="sd">ส่งมอบครบ 5 Workstream ภายในงบประมาณและกรอบเวลาที่กำหนด</div>
+    </div>
+    <div class="stat-card">
+      <div class="sv">28</div>
+      <div class="sl">AI Agents ที่ใช้งานอยู่</div>
+      <div class="sd">SLA Groups A–D ทั้งหมด 28 agents พร้อมใช้งาน (เพิ่มจาก 20 ใน Phase A)</div>
+    </div>
+    <div class="stat-card green">
+      <div class="sv">49</div>
+      <div class="sl">หมวด SOP สมบูรณ์</div>
+      <div class="sd">S1–S49 ครอบคลุม Governance, Delivery, และ Phase 1 Closure ครบถ้วน</div>
+    </div>
+    <div class="stat-card gold">
+      <div class="sv">40%</div>
+      <div class="sl">ลดรอบการอนุมัติ Design</div>
+      <div class="sd">Phase 1 KPI: กระบวนการอนุมัติ Design Freeze (GAP-02) ลดลง 40% จากเดิม</div>
+    </div>
+  </div>
+  <div class="gap-closed-bar">
+    <h4>Gap ที่ปิดแล้วใน Phase 1 (GAP-01/02/03/04/07/08)</h4>
+    <div class="gap-chips">
+      <span class="gap-chip">GAP-01 Biophilic Design (S39)</span>
+      <span class="gap-chip">GAP-02 Design Freeze Gate (S40)</span>
+      <span class="gap-chip">GAP-03 Sensory Commissioning (S41)</span>
+      <span class="gap-chip">GAP-04 Post-Occupancy Evaluation (S42)</span>
+      <span class="gap-chip">GAP-07 SC Governance Module (S43)</span>
+      <span class="gap-chip">GAP-08 Real-time KPI Dashboard (S47)</span>
+      <span class="gap-chip open">GAP-05/06/09/10/11/12 → Phase 2</span>
+      <span class="gap-chip open">GAP-13/14/15 → Phase 3</span>
+    </div>
+  </div>
+  <div class="info-strip">
+    <span class="badge">Phase 1 COMPLETE</span>
+    <span>S39–S49 ปิดสมบูรณ์ · Phase 1 Completion Certificate ออกแล้ว · พร้อมเข้าสู่ Phase 2</span>
+  </div>
+  <div class="slide-footer">
+    <span>SOP v2.5 · Phase 1 Achievements · S39–S49</span>
+    <span>แหล่งอ้างอิง: monolith_project_summary_v25_accepted.docx (S49)</span>
+  </div>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 3 — AMD-004 DELIVERY                                -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="s03" class="slide s03">
+<div class="slide-inner">
+  <h2 class="slide-title">การส่งมอบ AMD-004</h2>
+  <p class="slide-sub">MONOLITH DAPH Decor AI Agent Programme — 5 Workstream ส่งมอบครบถ้วน Q3 2030 – Q2 2032</p>
+  <div class="ws-grid">
+    <div class="ws-card">
+      <div class="ws-id">WS-A</div>
+      <div class="ws-name">Core AI Agent Infrastructure &amp; Governance</div>
+      <div class="ws-budget">฿0.8M</div>
+      <div class="ws-bunit">THB 800,000</div>
+      <div class="ws-agent">Core · Guardian</div>
+    </div>
+    <div class="ws-card">
+      <div class="ws-id">WS-B</div>
+      <div class="ws-name">Technology Infrastructure &amp; AI Creative Engine</div>
+      <div class="ws-budget">฿1.1M</div>
+      <div class="ws-bunit">THB 1,100,000</div>
+      <div class="ws-agent">Signal · Blaze</div>
+    </div>
+    <div class="ws-card">
+      <div class="ws-id">WS-C</div>
+      <div class="ws-name">Client Service Innovation &amp; Cross-Pillar Bus</div>
+      <div class="ws-budget">฿1.2M</div>
+      <div class="ws-bunit">THB 1,200,000</div>
+      <div class="ws-agent">Kelly · Remy</div>
+    </div>
+    <div class="ws-card">
+      <div class="ws-id">WS-D</div>
+      <div class="ws-name">Analytics, KPI Dashboard &amp; Reporting</div>
+      <div class="ws-budget">฿0.9M</div>
+      <div class="ws-bunit">THB 900,000</div>
+      <div class="ws-agent">Nexus · Ledger</div>
+    </div>
+    <div class="ws-card">
+      <div class="ws-id">WS-E</div>
+      <div class="ws-name">Human Capital &amp; Change Management</div>
+      <div class="ws-budget">฿0.6M</div>
+      <div class="ws-bunit">THB 600,000</div>
+      <div class="ws-agent">Talent · Vega</div>
+    </div>
+  </div>
+  <div class="timeline-bar">
+    <h4>ไทม์ไลน์การส่งมอบ AMD-004</h4>
+    <div class="tl-track">
+      <div class="tl-seg"><div class="tl-q">Q3 2030</div><div class="tl-label">WS-A Kickoff</div></div>
+      <div class="tl-line"></div>
+      <div class="tl-dot"></div>
+      <div class="tl-line"></div>
+      <div class="tl-seg"><div class="tl-q">Q1 2031</div><div class="tl-label">WS-B &amp; WS-C Start</div></div>
+      <div class="tl-line"></div>
+      <div class="tl-dot"></div>
+      <div class="tl-line"></div>
+      <div class="tl-seg"><div class="tl-q">Q3 2031</div><div class="tl-label">WS-D &amp; WS-E</div></div>
+      <div class="tl-line"></div>
+      <div class="tl-dot"></div>
+      <div class="tl-line"></div>
+      <div class="tl-seg"><div class="tl-q">Q1 2032</div><div class="tl-label">Phase 1 Gate</div></div>
+      <div class="tl-line"></div>
+      <div class="tl-dot"></div>
+      <div class="tl-line"></div>
+      <div class="tl-seg"><div class="tl-q">Q2 2032</div><div class="tl-label">AMD-004 CLOSE</div></div>
+    </div>
+  </div>
+  <div class="total-strip">
+    <span class="tl">AMD-004 งบประมาณรวม (WS-A ถึง WS-E)</span>
+    <span class="tr">THB 5.2M (ส่งมอบตรงเป้า)</span>
+  </div>
+  <div class="slide-footer">
+    <span>WS-A ฿0.8M · WS-B ฿1.1M · WS-C ฿1.2M · WS-D ฿0.9M · WS-E ฿0.6M</span>
+    <span>แหล่งอ้างอิง: S38 AMD-004 PDD · S48–S49 WS-E Closure</span>
+  </div>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 4 — ROI & VALUE                                     -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="s04" class="slide s04">
+<div class="slide-inner">
+  <h2 class="slide-title">ROI และมูลค่า Phase 1</h2>
+  <p class="slide-sub">ตัวชี้วัด KPI หลักและผลตอบแทนจากการลงทุน AMD-004 THB 5.2M</p>
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kv">+12%</div>
+      <div class="kl">SOP Coverage เพิ่มขึ้น</div>
+      <div class="kd">56% → 68%<br>S39–S49 Phase 1 Complete</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kv">40%</div>
+      <div class="kl">ลดรอบ Design Cycle</div>
+      <div class="kd">Design Freeze Gate (GAP-02)<br>ลดกระบวนการอนุมัติลง 40%</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kv">100%</div>
+      <div class="kl">GAP Closure Phase 1</div>
+      <div class="kd">6/6 target gaps ปิดสมบูรณ์<br>ตามแผน AMD-004</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kv">THB 5.2M</div>
+      <div class="kl">ส่งมอบตรงงบประมาณ</div>
+      <div class="kd">0 cost overrun<br>5 WS ส่งมอบทันกำหนด</div>
+    </div>
+  </div>
+  <div class="sla-section">
+    <h4>SLA Performance — 28 Agents, 4 Groups</h4>
+    <div class="sla-row">
+      <span class="sla-group">Group A</span>
+      <span class="sla-agents">Kelly, Signal, Aria, Blaze, Nova</span>
+      <div class="sla-bar"><div class="sla-fill" style="width:95%"></div></div>
+      <span class="sla-pct">≥95%</span>
+    </div>
+    <div class="sla-row">
+      <span class="sla-group">Group B</span>
+      <span class="sla-agents">Compass, Remy, Scout, Finn, Hana, Ember, Shore, Draft</span>
+      <div class="sla-bar"><div class="sla-fill" style="width:93%"></div></div>
+      <span class="sla-pct">≥93%</span>
+    </div>
+    <div class="sla-row">
+      <span class="sla-group">Group C</span>
+      <span class="sla-agents">Atlas, Bo, Forge, Leo, Ops, Stone, Pulse, Frame</span>
+      <div class="sla-bar"><div class="sla-fill" style="width:94%"></div></div>
+      <span class="sla-pct">≥94%</span>
+    </div>
+    <div class="sla-row">
+      <span class="sla-group">Group D</span>
+      <span class="sla-agents">Core, Nexus, Rex, Guardian, Talent, Vega, Ledger</span>
+      <div class="sla-bar"><div class="sla-fill" style="width:97%"></div></div>
+      <span class="sla-pct">≥97%</span>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span>AMD-004 ROI · SLA Groups A–D · Phase 1 KPI Results</span>
+    <span>แหล่งอ้างอิง: S43 SC Governance · S47 KPI Dashboard · S49 Programme Closure</span>
+  </div>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 5 — GAP REGISTER                                    -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="s05" class="slide s05">
+<div class="slide-inner">
+  <h2 class="slide-title">ทะเบียน Gap ทั้ง 15 รายการ</h2>
+  <p class="slide-sub">GAP-01–08 HIGH priority · GAP-09–12 MEDIUM · GAP-13–15 LOW · สถานะปัจจุบันหลัง Phase 1</p>
+  <table class="gap-table">
+    <thead>
+      <tr><th>Gap</th><th>รายละเอียด</th><th>Priority</th><th>Phase</th><th>Agent</th><th>สถานะ</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>GAP-01</td><td>Biophilic Design Integration (S39)</td><td><span class="badge-high">HIGH</span></td><td><span class="phase-tag">Phase 1</span></td><td>Aria, Blaze</td><td class="status-closed">CLOSED</td></tr>
+      <tr><td>GAP-02</td><td>Design Freeze Gate Protocol (S40)</td><td><span class="badge-high">HIGH</span></td><td><span class="phase-tag">Phase 1</span></td><td>Core, Guardian</td><td class="status-closed">CLOSED</td></tr>
+      <tr><td>GAP-03</td><td>Sensory Commissioning &amp; POE (S41)</td><td><span class="badge-high">HIGH</span></td><td><span class="phase-tag">Phase 1</span></td><td>Scout, Hana</td><td class="status-closed">CLOSED</td></tr>
+      <tr><td>GAP-04</td><td>Post-Occupancy Evaluation Framework (S42)</td><td><span class="badge-high">HIGH</span></td><td><span class="phase-tag">Phase 1</span></td><td>Atlas, Frame</td><td class="status-closed">CLOSED</td></tr>
+      <tr><td>GAP-05</td><td>AI Creative Engine &amp; Generative Design (AIE-001–005)</td><td><span class="badge-high">HIGH</span></td><td><span class="phase-tag">Phase 2</span></td><td>Aria, Nova</td><td class="status-open">OPEN</td></tr>
+      <tr><td>GAP-06</td><td>Cross-Pillar Event Bus &amp; Real-time Integration (EVT-001–005)</td><td><span class="badge-high">HIGH</span></td><td><span class="phase-tag">Phase 2</span></td><td>Signal, Core</td><td class="status-open">OPEN</td></tr>
+      <tr><td>GAP-07</td><td>SC Governance Module (S43)</td><td><span class="badge-high">HIGH</span></td><td><span class="phase-tag">Phase 1</span></td><td>Core, Rex</td><td class="status-closed">CLOSED</td></tr>
+      <tr><td>GAP-08</td><td>Real-time KPI Dashboard (KPI-001–024, S47)</td><td><span class="badge-high">HIGH</span></td><td><span class="phase-tag">Phase 1</span></td><td>Nexus, Ledger</td><td class="status-closed">CLOSED</td></tr>
+      <tr><td>GAP-09</td><td>Material Intelligence &amp; Sustainable Sourcing</td><td><span class="badge-med">MEDIUM</span></td><td><span class="phase-tag">Phase 2</span></td><td>Forge, Stone</td><td class="status-open">OPEN</td></tr>
+      <tr><td>GAP-10</td><td>Contractor &amp; Vendor Integration Portal</td><td><span class="badge-med">MEDIUM</span></td><td><span class="phase-tag">Phase 2</span></td><td>Compass, Finn</td><td class="status-open">OPEN</td></tr>
+      <tr><td>GAP-11</td><td>Spatial Analytics &amp; Digital Twin</td><td><span class="badge-med">MEDIUM</span></td><td><span class="phase-tag">Phase 2</span></td><td>Atlas, Pulse</td><td class="status-open">OPEN</td></tr>
+      <tr><td>GAP-12</td><td>Multi-language Support (TH/EN/ZH)</td><td><span class="badge-med">MEDIUM</span></td><td><span class="phase-tag">Phase 2</span></td><td>Remy, Draft</td><td class="status-open">OPEN</td></tr>
+      <tr><td>GAP-13</td><td>AR/VR Design Visualisation</td><td><span class="badge-low">LOW</span></td><td><span class="phase-tag">Phase 3</span></td><td>Nova, Leo</td><td class="status-open">OPEN</td></tr>
+      <tr><td>GAP-14</td><td>Predictive Maintenance &amp; Asset Lifecycle</td><td><span class="badge-low">LOW</span></td><td><span class="phase-tag">Phase 3</span></td><td>Ops, Bo</td><td class="status-open">OPEN</td></tr>
+      <tr><td>GAP-15</td><td>Client Self-service &amp; Design Configurator</td><td><span class="badge-low">LOW</span></td><td><span class="phase-tag">Phase 3</span></td><td>Kelly, Ember</td><td class="status-open">OPEN</td></tr>
+    </tbody>
+  </table>
+  <div class="slide-footer">
+    <span>8 HIGH · 4 MEDIUM · 3 LOW · Phase 1 ปิด 6 รายการ · Phase 2 เป้าหมาย 6 รายการ · Phase 3 เป้าหมาย 3 รายการ</span>
+    <span>แหล่งอ้างอิง: thai_gap_register_brief.html · sc_presentation.html</span>
+  </div>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 6 — PHASE 2 BUSINESS CASE                          -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="s06" class="slide s06">
+<div class="slide-inner">
+  <h2 class="slide-title">กรณีธุรกิจ Phase 2</h2>
+  <p class="slide-sub">GAP-05/06/09/10/11/12 · Coverage 68% → 80% · งบประมาณ THB 6.0M · SC-2032-XX</p>
+  <div class="gap2-grid">
+    <div class="gap2-card">
+      <div class="gc-id">GAP-05</div>
+      <div class="gc-name">AI Creative Engine &amp; Generative Design</div>
+      <div class="gc-row"><span class="gc-label">งบประมาณ</span><span class="gc-value">THB 1.5M</span></div>
+      <div class="gc-row"><span class="gc-label">Agent</span><span class="gc-value">Aria · Nova</span></div>
+      <div class="gc-row"><span class="gc-label">ไทม์ไลน์</span><span class="gc-value">Q1–Q3 2033</span></div>
+    </div>
+    <div class="gap2-card">
+      <div class="gc-id">GAP-06</div>
+      <div class="gc-name">Cross-Pillar Event Bus &amp; Real-time Integration</div>
+      <div class="gc-row"><span class="gc-label">งบประมาณ</span><span class="gc-value">THB 1.0M</span></div>
+      <div class="gc-row"><span class="gc-label">Agent</span><span class="gc-value">Signal · Core</span></div>
+      <div class="gc-row"><span class="gc-label">ไทม์ไลน์</span><span class="gc-value">Q1–Q2 2033</span></div>
+    </div>
+    <div class="gap2-card">
+      <div class="gc-id">GAP-09</div>
+      <div class="gc-name">Material Intelligence &amp; Sustainable Sourcing</div>
+      <div class="gc-row"><span class="gc-label">งบประมาณ</span><span class="gc-value">THB 0.8M</span></div>
+      <div class="gc-row"><span class="gc-label">Agent</span><span class="gc-value">Forge · Stone</span></div>
+      <div class="gc-row"><span class="gc-label">ไทม์ไลน์</span><span class="gc-value">Q2–Q3 2033</span></div>
+    </div>
+    <div class="gap2-card">
+      <div class="gc-id">GAP-10</div>
+      <div class="gc-name">Contractor &amp; Vendor Integration Portal</div>
+      <div class="gc-row"><span class="gc-label">งบประมาณ</span><span class="gc-value">THB 0.7M</span></div>
+      <div class="gc-row"><span class="gc-label">Agent</span><span class="gc-value">Compass · Finn</span></div>
+      <div class="gc-row"><span class="gc-label">ไทม์ไลน์</span><span class="gc-value">Q2–Q4 2033</span></div>
+    </div>
+    <div class="gap2-card">
+      <div class="gc-id">GAP-11</div>
+      <div class="gc-name">Spatial Analytics &amp; Digital Twin Platform</div>
+      <div class="gc-row"><span class="gc-label">งบประมาณ</span><span class="gc-value">THB 0.8M</span></div>
+      <div class="gc-row"><span class="gc-label">Agent</span><span class="gc-value">Atlas · Pulse</span></div>
+      <div class="gc-row"><span class="gc-label">ไทม์ไลน์</span><span class="gc-value">Q3–Q4 2033</span></div>
+    </div>
+    <div class="gap2-card">
+      <div class="gc-id">GAP-12</div>
+      <div class="gc-name">Multi-language Support (TH/EN/ZH)</div>
+      <div class="gc-row"><span class="gc-label">งบประมาณ</span><span class="gc-value">THB 0.6M</span></div>
+      <div class="gc-row"><span class="gc-label">Agent</span><span class="gc-value">Remy · Draft</span></div>
+      <div class="gc-row"><span class="gc-label">ไทม์ไลน์</span><span class="gc-value">Q3–Q4 2033</span></div>
+    </div>
+  </div>
+  <div class="coverage-proj">
+    <h4>การคาดการณ์ Coverage</h4>
+    <div class="cov-row">
+      <span class="cov-phase">ก่อน Phase 1</span>
+      <div class="cov-bar"><div class="cov-fill" style="width:56%;background:#9ca3af"></div></div>
+      <span class="cov-pct" style="color:#9ca3af">56%</span>
+    </div>
+    <div class="cov-row">
+      <span class="cov-phase">Phase 1 (ปัจจุบัน)</span>
+      <div class="cov-bar"><div class="cov-fill" style="width:68%;background:var(--green)"></div></div>
+      <span class="cov-pct" style="color:var(--green)">68%</span>
+    </div>
+    <div class="cov-row">
+      <span class="cov-phase">Phase 2 (เป้าหมาย)</span>
+      <div class="cov-bar"><div class="cov-fill" style="width:80%;background:var(--gold)"></div></div>
+      <span class="cov-pct" style="color:var(--gold)">80%</span>
+    </div>
+    <div class="cov-row">
+      <span class="cov-phase">Phase 3 (เป้าหมาย)</span>
+      <div class="cov-bar"><div class="cov-fill" style="width:92%;background:#c9a22780"></div></div>
+      <span class="cov-pct" style="color:var(--gold)">92%</span>
+    </div>
+  </div>
+  <div class="budget-row">
+    <span class="bl">งบประมาณ Phase 2 รวม (GAP-05/06/09/10/11/12 + Contingency THB 0.6M)</span>
+    <span class="bv">THB 6.0M</span>
+  </div>
+  <div class="slide-footer">
+    <span>SC-2032-XX · Phase 2 PDD (S50) · Q1–Q4 2033</span>
+    <span>แหล่งอ้างอิง: S50 Phase 2 PDD · sop_github_mapping.md</span>
+  </div>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 7 — BUDGET & TIMELINE                               -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="s07" class="slide s07">
+<div class="slide-inner">
+  <h2 class="slide-title">งบประมาณและไทม์ไลน์ Phase 2</h2>
+  <p class="slide-sub">Milestone P2-M1 ถึง P2-M4 · Q1–Q4 2033 · งบประมาณรวม THB 6.0M</p>
+  <table class="milestone-table">
+    <thead>
+      <tr><th>Milestone</th><th>คำอธิบาย</th><th>เป้าหมาย</th><th>Gap ที่เกี่ยวข้อง</th><th>Coverage</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="m-id">P2-M1</td>
+        <td>Phase 2 Kickoff · RFP-GAP05-001 ออก · ทีมงานจัดตั้ง</td>
+        <td>Q1 2033</td>
+        <td>GAP-05, GAP-06</td>
+        <td>68% (ยืนยัน Baseline)</td>
+      </tr>
+      <tr>
+        <td class="m-id">P2-M2</td>
+        <td>Vendor Award (GAP-05) · GAP-06 Event Bus v1 · GAP-09/10 Design Start</td>
+        <td>Q2 2033</td>
+        <td>GAP-05, GAP-06, GAP-09, GAP-10</td>
+        <td>72% (กลาง Phase 2)</td>
+      </tr>
+      <tr>
+        <td class="m-id">P2-M3</td>
+        <td>GAP-05 UAT · GAP-06 Production · GAP-11/12 Development</td>
+        <td>Q3 2033</td>
+        <td>GAP-05, GAP-06, GAP-11, GAP-12</td>
+        <td>76% (midpoint gate)</td>
+      </tr>
+      <tr>
+        <td class="m-id">P2-M4</td>
+        <td>GAP-05–12 ทั้งหมดปิด · Phase 2 Completion Certificate · SC Gate Review</td>
+        <td>Q4 2033</td>
+        <td>GAP-05/06/09/10/11/12</td>
+        <td>80% (เป้าหมาย Phase 2)</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="budget-bars">
+    <h4>งบประมาณตาม Gap (THB)</h4>
+    <div class="bbar-row">
+      <span class="bbar-label">GAP-05 (AIE)</span>
+      <div class="bbar-track"><div class="bbar-fill" style="width:75%"></div></div>
+      <span class="bbar-val">THB 1.5M</span>
+    </div>
+    <div class="bbar-row">
+      <span class="bbar-label">GAP-06 (Event Bus)</span>
+      <div class="bbar-track"><div class="bbar-fill" style="width:50%"></div></div>
+      <span class="bbar-val">THB 1.0M</span>
+    </div>
+    <div class="bbar-row">
+      <span class="bbar-label">GAP-09 (Material)</span>
+      <div class="bbar-track"><div class="bbar-fill" style="width:40%"></div></div>
+      <span class="bbar-val">THB 0.8M</span>
+    </div>
+    <div class="bbar-row">
+      <span class="bbar-label">GAP-10 (Vendor)</span>
+      <div class="bbar-track"><div class="bbar-fill" style="width:35%"></div></div>
+      <span class="bbar-val">THB 0.7M</span>
+    </div>
+    <div class="bbar-row">
+      <span class="bbar-label">GAP-11 (Spatial)</span>
+      <div class="bbar-track"><div class="bbar-fill" style="width:40%"></div></div>
+      <span class="bbar-val">THB 0.8M</span>
+    </div>
+    <div class="bbar-row">
+      <span class="bbar-label">GAP-12 (ML Support)</span>
+      <div class="bbar-track"><div class="bbar-fill" style="width:30%"></div></div>
+      <span class="bbar-val">THB 0.6M</span>
+    </div>
+    <div class="bbar-row">
+      <span class="bbar-label">Contingency (10%)</span>
+      <div class="bbar-track"><div class="bbar-fill" style="width:30%;background:#9ca3af"></div></div>
+      <span class="bbar-val">THB 0.6M</span>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span>P2-M1 Q1 2033 · P2-M2 Q2 2033 · P2-M3 Q3 2033 · P2-M4 Q4 2033</span>
+    <span>แหล่งอ้างอิง: S50.4 Budget Estimate · S50.5 Milestones</span>
+  </div>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 8 — GOVERNANCE & NEXT STEPS                        -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="s08" class="slide s08">
+<div class="slide-inner">
+  <h2 class="slide-title">การกำกับดูแลและขั้นตอนถัดไป</h2>
+  <p class="slide-sub">โครงสร้างการกำกับดูแล Phase 2 · เงื่อนไขก่อนเริ่ม · ขั้นตอนที่จำเป็น</p>
+  <table class="gov-table">
+    <thead>
+      <tr><th>บทบาท</th><th>ผู้รับผิดชอบ</th><th>ความรับผิดชอบ</th><th>รายงานต่อ</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>SC Chair</strong></td>
+        <td>คณะกรรมการกำกับดูแล</td>
+        <td>อนุมัติ SC-2032-XX · ดูแล Phase 2 gate reviews · approve budget</td>
+        <td>Board</td>
+      </tr>
+      <tr>
+        <td><strong>Programme Director</strong></td>
+        <td>ต้องได้รับการแต่งตั้งจาก SC</td>
+        <td>กำกับดูแล Phase 2 ทั้งหมด · อนุมัติ RFP-GAP05-001 · milestone gates</td>
+        <td>SC Chair</td>
+      </tr>
+      <tr>
+        <td><strong>Lead Agents</strong></td>
+        <td>Aria (GAP-05), Signal (GAP-06), Forge (GAP-09), Compass (GAP-10), Atlas (GAP-11), Remy (GAP-12)</td>
+        <td>ส่งมอบแต่ละ Gap · รายงาน SLA · milestone delivery</td>
+        <td>Programme Director</td>
+      </tr>
+      <tr>
+        <td><strong>Governance Agent</strong></td>
+        <td>Core (Group D, SLA ≥97%)</td>
+        <td>SC reporting · compliance · change management · audit trail</td>
+        <td>SC Chair</td>
+      </tr>
+      <tr>
+        <td><strong>Finance Agent</strong></td>
+        <td>Ledger (Group D, SLA ≥97%)</td>
+        <td>Phase 2 budget tracking · vendor payment management · financial reporting</td>
+        <td>Programme Director + SC</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="next-steps">
+    <div class="ns-card">
+      <div class="ns-num">01</div>
+      <div class="ns-title">SC อนุมัติ SC-2032-XX</div>
+      <div class="ns-desc">ผ่านมติ SC-2032-XX เพื่ออนุมัติงบประมาณ THB 6.0M และ authorise Phase 2 Programme อย่างเป็นทางการ</div>
+    </div>
+    <div class="ns-card">
+      <div class="ns-num">02</div>
+      <div class="ns-title">แต่งตั้ง Programme Director</div>
+      <div class="ns-desc">SC แต่งตั้ง Phase 2 Programme Director ภายใน 2 สัปดาห์หลังผ่านมติ SC-2032-XX</div>
+    </div>
+    <div class="ns-card">
+      <div class="ns-num">03</div>
+      <div class="ns-title">ออก RFP-GAP05-001</div>
+      <div class="ns-desc">Programme Director อนุมัติและออก RFP-GAP05-001 ภายใน P2-M1 + 2 สัปดาห์ (Q1 2033)</div>
+    </div>
+    <div class="ns-card">
+      <div class="ns-num">04</div>
+      <div class="ns-title">เริ่ม Phase 2 Kickoff (P2-M1)</div>
+      <div class="ns-desc">Kickoff ทีมงาน Phase 2 · ยืนยัน Coverage Baseline 68% · เริ่ม GAP-06 Event Bus architecture</div>
+    </div>
+  </div>
+  <div class="gate-box">
+    <h4>เงื่อนไขก่อนเริ่ม Phase 2 (Pre-conditions Gate)</h4>
+    <ul>
+      <li>Phase 1 Completion Certificate ออกแล้ว</li>
+      <li>AMD-004 AMD4-CLOSE-01–05 ปิดสมบูรณ์</li>
+      <li>Coverage 68% ยืนยันอิสระแล้ว</li>
+      <li>SC-2030-01 Phase 1 obligations discharged</li>
+      <li>SC-2032-XX ผ่านมติอย่างเป็นทางการ</li>
+      <li>Phase 2 Programme Director แต่งตั้งแล้ว</li>
+      <li class="open">Budget THB 6.0M อนุมัติโดย SC</li>
+      <li class="open">Phase 2 kickoff date ยืนยันแล้ว</li>
+    </ul>
+  </div>
+  <div class="slide-footer">
+    <span>S43 SC Governance · S50 Phase 2 PDD · SC-2032-XX</span>
+    <span>แหล่งอ้างอิง: S50.6 Governance · S43.1 SC Committee Structure</span>
+  </div>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 9 — SC RECOMMENDATION                               -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="s09" class="slide s09">
+<div class="slide-inner">
+  <h2 class="slide-title">ข้อเสนอแนะต่อ SC</h2>
+  <p class="slide-sub">มติที่เสนอขอ SC ลงมติ — SC-2032-XX · 3 รายการ</p>
+  <div class="resolution-cards">
+    <div class="res-card">
+      <div class="rc-num">01</div>
+      <div class="rc-title">รับรอง Phase 1 เสร็จสมบูรณ์</div>
+      <div class="rc-body">
+        SC รับรองการปิด Phase 1 อย่างเป็นทางการ: GAP-01/02/03/04/07/08 ปิดสมบูรณ์, 
+        Coverage 68% บรรลุ, AMD-004 THB 5.2M ส่งมอบตรงงบประมาณและกำหนดเวลา, 
+        49 หมวด SOP สมบูรณ์
+      </div>
+      <div class="rc-ref">SC-2032-XX มาตรา 1 · อ้างอิง: S49 Programme Closure</div>
+    </div>
+    <div class="res-card">
+      <div class="rc-num">02</div>
+      <div class="rc-title">อนุมัติ Phase 2 PDD + งบประมาณ THB 6.0M</div>
+      <div class="rc-body">
+        SC อนุมัติ Phase 2 Programme Definition Document (S50) และงบประมาณ THB 6.0M 
+        สำหรับ GAP-05/06/09/10/11/12 พร้อม Contingency THB 0.6M 
+        ไทม์ไลน์ Q1–Q4 2033 Coverage เป้าหมาย 80%
+      </div>
+      <div class="rc-ref">SC-2032-XX มาตรา 2 · อ้างอิง: S50 Phase 2 PDD</div>
+    </div>
+    <div class="res-card">
+      <div class="rc-num">03</div>
+      <div class="rc-title">แต่งตั้ง Phase 2 Programme Director</div>
+      <div class="rc-body">
+        SC แต่งตั้ง Phase 2 Programme Director ภายใน 2 สัปดาห์หลังผ่านมติ 
+        เพื่อ authorise RFP-GAP05-001, กำกับดูแล P2-M1–M4, 
+        และรับผิดชอบ Phase 2 delivery ทั้งหมด
+      </div>
+      <div class="rc-ref">SC-2032-XX มาตรา 3 · อ้างอิง: S50.6 Governance</div>
+    </div>
+  </div>
+  <div class="summary-row">
+    <div class="srow-pill"><div class="sp-v">68%</div><div class="sp-l">Coverage Phase 1 บรรลุ</div></div>
+    <div class="srow-pill"><div class="sp-v">6/15</div><div class="sp-l">Gap ปิดแล้วใน Phase 1</div></div>
+    <div class="srow-pill"><div class="sp-v">THB 5.2M</div><div class="sp-l">AMD-004 ส่งมอบตรงเป้า</div></div>
+    <div class="srow-pill"><div class="sp-v">THB 6.0M</div><div class="sp-l">งบประมาณ Phase 2 ขออนุมัติ</div></div>
+    <div class="srow-pill"><div class="sp-v">80%</div><div class="sp-l">Coverage เป้าหมาย Phase 2</div></div>
+  </div>
+  <div class="vote-strip">
+    <span class="vs-label">SC-2032-XX — ขอ SC ลงมติ:</span>
+    <span class="vs-action">อนุมัติ 3 รายการข้างต้น</span>
+    <span class="vs-ref">อ้างอิง: S50 Phase 2 PDD · S49 Programme Closure · AMD-004 Final Report</span>
+  </div>
+  <div class="slide-footer">
+    <span>SC-2032-XX · Q3 2032 (target resolution date)</span>
+    <span>SOP v2.5 (49 หมวด) · MONOLITH DAPH SC Review</span>
+  </div>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 10 — REFERENCES                                     -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<section id="s10" class="slide s10">
+<div class="slide-inner">
+  <h2 class="slide-title">อ้างอิง</h2>
+  <p class="slide-sub">เอกสารอ้างอิงหลัก — MONOLITH DAPH Decor AI Agent Programme</p>
+  <ul class="ref-list">
+    <li>
+      <span class="ref-num">1</span>
+      <span class="ref-text">
+        MONOLITH DAPH Programme Team. (2026). <em>MONOLITH DAPH Decor AI Agent Programme — Project Summary v2.5 (S1–S50)</em>. 
+        MONOLITH DAPH Internal Document. 
+        /home/sandbox/monolith_project_summary_v25_accepted.docx. 
+        SHA: 14b90bcdca232f99195b87aca81e45aa3fe5c4aa.
+      </span>
+    </li>
+    <li>
+      <span class="ref-num">2</span>
+      <span class="ref-text">
+        MONOLITH DAPH Programme Team. (2026). <em>AMD-004 Phase 2 PDD — Section 50: Phase 2 Programme Definition Document</em>. 
+        MONOLITH DAPH SOP v2.5, Section 50. 
+        SC Resolution SC-2032-XX reference. Coverage target 68% → 80%, THB 6.0M.
+      </span>
+    </li>
+    <li>
+      <span class="ref-num">3</span>
+      <span class="ref-text">
+        MONOLITH DAPH Programme Team. (2026). <em>AMD-004 Programme Closure and Phase 2 Gateway — Section 49</em>. 
+        MONOLITH DAPH SOP v2.5, Section 49. 
+        Phase 1 Completion Certificate, WS-A–E summary, THB 5.2M, GAP-01/02/03/04/07/08 closed.
+      </span>
+    </li>
+    <li>
+      <span class="ref-num">4</span>
+      <span class="ref-text">
+        MONOLITH DAPH Programme Team. (2026). <em>SOP GitHub Repository Mapping — MONOLITH Workspace</em>. 
+        sop_github_mapping.md. GitHub: indetailsgroup-hue/monolith-workspace, branch main. 
+        SHA: 14b90bcdca232f99195b87aca81e45aa3fe5c4aa.
+      </span>
+    </li>
+    <li>
+      <span class="ref-num">5</span>
+      <span class="ref-text">
+        MONOLITH DAPH Programme Team. (2026). <em>Gap Register Brief (Thai) — 15 Gaps with Priority Matrix and AMD-004 WS-A Plan</em>. 
+        thai_gap_register_brief.html. 
+        HIGH 8 items (GAP-01–08), MEDIUM 4 (GAP-09–12), LOW 3 (GAP-13–15).
+      </span>
+    </li>
+    <li>
+      <span class="ref-num">6</span>
+      <span class="ref-text">
+        MONOLITH DAPH Programme Team. (2026). <em>Phase 2 Procurement &amp; Vendor Selection Framework (GAP-05 AI Creative Engine) — Section 51</em>. 
+        MONOLITH DAPH SOP v2.5, Section 51. 
+        RFP-GAP05-001, THB 1.5M, AIE-001–005, 5-stage selection process, P2-CHK-01–12.
+      </span>
+    </li>
+  </ul>
+  <div class="slide-footer">
+    <span>MONOLITH DAPH SC Review Presentation (ภาษาไทย) · thai_sc_review_presentation.html</span>
+    <span>SOP v2.5 (49 หมวด) · 3 กันยายน 2569 · Sarabun Font</span>
+  </div>
+</div>
+</section>
+
+<script>
+// Highlight active nav link on scroll
+const sections = document.querySelectorAll('.slide');
+const navLinks = document.querySelectorAll('nav a');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const id = entry.target.id;
+      const active = document.querySelector(`nav a[href="#${id}"]`);
+      if (active) active.classList.add('active');
+    }
+  });
+}, { threshold: 0.4 });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

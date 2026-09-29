@@ -107,7 +107,7 @@ export function exportsRouter(deps: ExportsRouterDeps): Router {
    */
   router.get('/:jobId', async (req: Request, res: Response) => {
     try {
-      const { jobId } = req.params;
+      const jobId = req.params['jobId'] as string;
 
       const job = await getJobById(jobId);
       if (!job) {
@@ -151,7 +151,7 @@ export function exportsRouter(deps: ExportsRouterDeps): Router {
    */
   router.get('/:jobId/result', async (req: Request, res: Response) => {
     try {
-      const { jobId } = req.params;
+      const jobId = req.params['jobId'] as string;
 
       const job = await getJobById(jobId);
       if (!job) {

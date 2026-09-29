@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VS-01 — Vision-to-BOQ Vertical Slice Specification v1.0 | MONOLITH</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #1f2d5a;
+    --gold: #c9a84c;
+    --green: #2d7a4f;
+    --red: #c0392b;
+    --orange: #d35400;
+    --bg: #f8f9fc;
+    --card: #ffffff;
+    --border: #dde1ec;
+    --text: #1a1a2e;
+    --muted: #6b7280;
+    --code-bg: #1e2235;
+    --code-text: #e8eaf6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Sarabun', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  /* Header */
+  .site-header {
+    background: var(--navy);
+    color: #fff;
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .site-header .brand { font-size: 18px; font-weight: 700; letter-spacing: 1px; color: var(--gold); }
+  .site-header .doc-id { font-size: 13px; color: rgba(255,255,255,0.65); }
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, var(--navy) 0%, #2a3d7a 100%);
+    color: #fff;
+    padding: 48px 32px 40px;
+    border-bottom: 4px solid var(--gold);
+  }
+  .hero .badge {
+    display: inline-block;
+    background: rgba(201,168,76,0.2);
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+  .hero h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+  .hero .subtitle { font-size: 14px; color: rgba(255,255,255,0.75); margin-bottom: 20px; }
+  .meta-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .meta-item { font-size: 13px; }
+  .meta-item span { color: rgba(255,255,255,0.5); margin-right: 4px; }
+  .meta-item strong { color: var(--gold); }
+  /* Layout */
+  .layout { display: flex; max-width: 1400px; margin: 0 auto; }
+  .sidebar {
+    width: 260px;
+    min-width: 260px;
+    background: var(--card);
+    border-right: 1px solid var(--border);
+    position: sticky;
+    top: 56px;
+    height: calc(100vh - 56px);
+    overflow-y: auto;
+    padding: 20px 16px;
+  }
+  .sidebar h3 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 8px; margin-top: 16px; }
+  .sidebar h3:first-child { margin-top: 0; }
+  .sidebar a {
+    display: block;
+    padding: 5px 8px;
+    color: var(--text);
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 13px;
+    transition: all 0.15s;
+  }
+  .sidebar a:hover { background: #f0f3ff; color: var(--navy); }
+  .sidebar a.active { background: var(--navy); color: #fff; }
+  /* Content */
+  .content { flex: 1; padding: 32px 40px; min-width: 0; }
+  /* Sections */
+  .section { margin-bottom: 48px; scroll-margin-top: 72px; }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--border);
+  }
+  .section-header .num {
+    background: var(--navy);
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .section-header h2 { font-size: 20px; font-weight: 700; color: var(--navy); }
+  /* Cards */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card h4 { font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 12px; }
+  /* Tables */
+  .tbl-wrap { overflow-x: auto; margin-bottom: 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th {
+    background: var(--navy);
+    color: #fff;
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 12.5px;
+  }
+  td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f8f9fc; }
+  tr:nth-child(even) td { background: #fafbff; }
+  tr:nth-child(even):hover td { background: #f0f3ff; }
+  /* Badges */
+  .badge-green { background: #e6f7ee; color: #1a6b3c; border: 1px solid #a3d9b8; padding: 2px 8px; border-radius: 12px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+  .badge-red { background: #fde8e8; color: #c0392b; border: 1px solid #f1a9a9; padding: 2px 8px; border-radius: 12px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+  .badge-gold { background: #fff8e6; color: #8a6000; border: 1px solid #e8c96a; padding: 2px 8px; border-radius: 12px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+  .badge-blue { background: #e8eeff; color: #1f2d5a; border: 1px solid #a0aee8; padding: 2px 8px; border-radius: 12px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+  .badge-gray { background: #f0f1f4; color: #4a5568; border: 1px solid #cbd0da; padding: 2px 8px; border-radius: 12px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+  /* Alerts */
+  .alert {
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    display: flex;
+    gap: 10px;
+  }
+  .alert-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .alert-red { background: #fde8e8; border-left: 4px solid var(--red); }
+  .alert-gold { background: #fff8e6; border-left: 4px solid var(--gold); }
+  .alert-green { background: #e6f7ee; border-left: 4px solid var(--green); }
+  .alert-navy { background: #e8eeff; border-left: 4px solid var(--navy); }
+  /* Code blocks */
+  pre {
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 16px 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 12.5px;
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+  code { background: #eef0f8; color: var(--navy); padding: 2px 5px; border-radius: 3px; font-size: 12.5px; font-family: 'Courier New', monospace; }
+  /* Confidence bands */
+  .conf-band {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .conf-item {
+    flex: 1;
+    min-width: 140px;
+    border-radius: 8px;
+    padding: 12px 14px;
+    text-align: center;
+  }
+  .conf-h { background: #e6f7ee; border: 1px solid #a3d9b8; }
+  .conf-m { background: #fff8e6; border: 1px solid #e8c96a; }
+  .conf-l { background: #fff3e0; border: 1px solid #ffb74d; }
+  .conf-vl { background: #fde8e8; border: 1px solid #f1a9a9; }
+  .conf-item .band-range { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .conf-item .band-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .conf-item .band-action { font-size: 11.5px; color: var(--muted); }
+  /* Pipeline */
+  .pipeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-bottom: 16px;
+  }
+  .pipe-step {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    position: relative;
+    font-size: 13.5px;
+  }
+  .pipe-step .step-label { font-weight: 600; color: var(--navy); }
+  .pipe-step .step-detail { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .pipe-arrow { text-align: center; font-size: 18px; color: var(--gold); padding: 4px 0; }
+  /* Scope grid */
+  .scope-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .scope-in { border-left: 4px solid var(--green); }
+  .scope-out { border-left: 4px solid var(--red); }
+  /* AC list */
+  .ac-item {
+    display: flex;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: flex-start;
+  }
+  .ac-item:last-child { border-bottom: none; }
+  .ac-id { font-size: 11px; font-weight: 700; color: var(--muted); white-space: nowrap; min-width: 90px; }
+  .ac-criterion { font-size: 13.5px; }
+  .ac-target { font-size: 12px; color: var(--green); font-weight: 600; margin-top: 2px; }
+  /* SSoT table */
+  .ssot td:nth-child(3) { font-weight: 700; color: var(--green); }
+  .ssot td:nth-child(4) { font-size: 12px; color: var(--muted); }
+  .ssot td:nth-child(5) { font-size: 12px; color: var(--red); }
+  /* Footer */
+  footer {
+    background: var(--navy);
+    color: rgba(255,255,255,0.55);
+    text-align: center;
+    padding: 20px;
+    font-size: 12px;
+    margin-top: 40px;
+  }
+  footer strong { color: var(--gold); }
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .scope-grid { grid-template-columns: 1fr; }
+    .content { padding: 20px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="brand">MONOLITH</div>
+  <div class="doc-id">VS-01 · Vision-to-BOQ Vertical Slice · v1.0 · DRAFT · 2026-09-04</div>
+</header>
+
+<div class="hero">
+  <div class="badge">VS-01 · DRAFT</div>
+  <h1>Vision-to-BOQ Vertical Slice Specification</h1>
+  <div class="subtitle">FR-03 Spatial Evidence Compiler + FR-04 Capture Spine · RM-030–RM-033</div>
+  <div class="meta-grid">
+    <div class="meta-item"><span>รหัสงาน:</span><strong>VS-01</strong></div>
+    <div class="meta-item"><span>เวอร์ชัน:</span><strong>1.0</strong></div>
+    <div class="meta-item"><span>สถานะ:</span><strong>DRAFT</strong></div>
+    <div class="meta-item"><span>วันที่:</span><strong>2026-09-04</strong></div>
+    <div class="meta-item"><span>PRD:</span><strong>FR-03 + FR-04</strong></div>
+    <div class="meta-item"><span>Roadmap:</span><strong>RM-030–033</strong></div>
+    <div class="meta-item"><span>Related Story:</span><strong>S55 (อ้างอิงเท่านั้น)</strong></div>
+  </div>
+</div>
+
+<div class="layout">
+  <nav class="sidebar">
+    <h3>สารบัญ</h3>
+    <a href="#s1">1. ภาพรวม</a>
+    <a href="#s2">2. Scope / Non-Scope</a>
+    <a href="#s3">3. PRD Alignment</a>
+    <a href="#s4">4. Input Layer</a>
+    <a href="#s5">5. Vision Model Layer</a>
+    <a href="#s6">6. System Prompt Contract</a>
+    <a href="#s7">7. Evidence Draft Schema</a>
+    <a href="#s8">8. Specs Single Source of Truth</a>
+    <a href="#s9">9. BOQ Draft Schema</a>
+    <a href="#s10">10. Human Review Workflow</a>
+    <a href="#s11">11. Validation Rules</a>
+    <a href="#s12">12. Export / API</a>
+    <a href="#s13">13. Acceptance Criteria</a>
+    <a href="#s14">14. P0 Dependency Map</a>
+  </nav>
+
+  <main class="content">
+
+    <!-- §1 -->
+    <section class="section" id="s1">
+      <div class="section-header">
+        <div class="num">1</div>
+        <h2>ภาพรวมและวัตถุประสงค์</h2>
+      </div>
+      <div class="card">
+        <p>VS-01 คือ <strong>vertical slice แรก</strong> ที่พิสูจน์ความสามารถ end-to-end ของ Vision-to-BOQ pipeline ในระบบ MONOLITH Manufacturing OS</p>
+        <br>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>วัตถุประสงค์</th><th>รายละเอียด</th></tr></thead>
+            <tbody>
+              <tr><td><strong>พิสูจน์ทางเทคนิค</strong></td><td>drawing/photo → AI Evidence Draft → BOQ Draft ทำงานได้ใน sandbox ก่อน production</td></tr>
+              <tr><td><strong>กำหนดขอบเขต</strong></td><td>Pipeline ผลิต BOQ draft ที่ต้องมนุษย์ตรวจ ไม่ใช่ production truth</td></tr>
+              <tr><td><strong>ยืนยัน Single Source of Truth</strong></td><td>ก่อน AI คำนวณใดๆ ต้องมีค่า canonical เพียงชุดเดียว (§8)</td></tr>
+              <tr><td><strong>สร้าง Prompt Contract</strong></td><td>ทุก prompt มี version, structured output schema, confidence rules และ refusal rules</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="alert alert-gold">
+        <div class="alert-icon">⚠️</div>
+        <div>VS-01 <strong>ไม่</strong> ใช่ production release — เป็น pilot ที่ต้องผ่าน Acceptance Criteria ใน §13 ก่อนพิจารณา FR-18 หรือ production rollout</div>
+      </div>
+    </section>
+
+    <!-- §2 -->
+    <section class="section" id="s2">
+      <div class="section-header">
+        <div class="num">2</div>
+        <h2>Scope และ Non-Scope</h2>
+      </div>
+      <div class="scope-grid">
+        <div class="card scope-in">
+          <h4>✅ In Scope</h4>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>หัวข้อ</th><th>รายละเอียด</th></tr></thead>
+              <tbody>
+                <tr><td>Drawing intake</td><td>PDF, DXF, PNG/JPG</td></tr>
+                <tr><td>Photo intake</td><td>ชุดภาพถ่ายห้อง ≥ 6 ภาพ</td></tr>
+                <tr><td>Quality gate</td><td>ตรวจคุณภาพ input ก่อน inference</td></tr>
+                <tr><td>Vision inference</td><td>ส่ง input ไปยัง Vision model</td></tr>
+                <tr><td>Evidence draft</td><td>structured_evidence_draft JSON</td></tr>
+                <tr><td>BOQ draft</td><td>boq_draft JSON + confidence/provenance</td></tr>
+                <tr><td>Human review</td><td>Designer/Factory review gate</td></tr>
+                <tr><td>Output validation</td><td>ตรวจ BOQ draft ก่อน APPROVED</td></tr>
+                <tr><td>API endpoints</td><td>Intake, query, review</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card scope-out">
+          <h4>⛔ Hard Boundary — ห้ามโดยเด็ดขาด</h4>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>สิ่งที่ห้าม</th><th>เหตุผล</th></tr></thead>
+              <tbody>
+                <tr><td>สร้าง Released Spec อัตโนมัติ</td><td>ต้องผ่าน Safety Gate FR-09</td></tr>
+                <tr><td>สร้าง CNC packet อัตโนมัติ</td><td>ต้องผ่าน FR-11 + P0 resolution</td></tr>
+                <tr><td>สร้าง production truth</td><td>VS-01 ผลิตเฉพาะ evidence + draft</td></tr>
+                <tr><td>Override Safety Gate FR-09</td><td>Safety Gate เป็น independent layer</td></tr>
+                <tr><td>ERP/CRM write</td><td>Post-VS-01 phase เท่านั้น</td></tr>
+                <tr><td>สร้าง FR-18</td><td>จนกว่า VS-01 จะผ่าน AC ทุกข้อใน §13</td></tr>
+                <tr><td>ปรับแก้ spec files อัตโนมัติ</td><td>ต้องผ่าน human review + ADR</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- §3 -->
+    <section class="section" id="s3">
+      <div class="section-header">
+        <div class="num">3</div>
+        <h2>PRD Alignment</h2>
+      </div>
+      <div class="card">
+        <h4>Functional Requirements</h4>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>FR</th><th>ชื่อ</th><th>PRD Status</th><th>VS-01 ทดสอบ</th></tr></thead>
+            <tbody>
+              <tr><td><code>FR-03</code></td><td>Spatial Evidence Compiler</td><td><span class="badge-gold">PARTIAL</span></td><td>Evidence draft generation pipeline</td></tr>
+              <tr><td><code>FR-04</code></td><td>Capture Spine</td><td><span class="badge-gold">PARTIAL</span></td><td>Drawing/photo intake + metadata</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Roadmap Epics</h4>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Epic</th><th>ชื่อ</th><th>Phase</th><th>VS-01 Coverage</th></tr></thead>
+            <tbody>
+              <tr><td><code>RM-030</code></td><td>Spatial Evidence Sandbox</td><td>Phase 3 M4–M6</td><td>PoC environment setup</td></tr>
+              <tr><td><code>RM-031</code></td><td>Vision PoC</td><td>Phase 3 M4–M6</td><td>Model selection benchmark</td></tr>
+              <tr><td><code>RM-032</code></td><td>Drawing intake pipeline</td><td>Phase 3 M4–M6</td><td>Intake + preprocessing</td></tr>
+              <tr><td><code>RM-033</code></td><td>BOQ extraction</td><td>Phase 3 M4–M6</td><td>BOQ draft generation</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="alert alert-navy">
+        <div class="alert-icon">ℹ️</div>
+        <div><strong>S55 Clarification:</strong> S55 ใน repo = "Phase 3 RFP &amp; Vendor Selection Framework" (DOCX sections 2571–2699) — เป็น consulting document ไม่ใช่ส่วนหนึ่งของ VS-01 scope ใช้เป็นอ้างอิงเท่านั้น</div>
+      </div>
+    </section>
+
+    <!-- §4 -->
+    <section class="section" id="s4">
+      <div class="section-header">
+        <div class="num">4</div>
+        <h2>Input Layer Specification</h2>
+      </div>
+      <div class="card">
+        <h4>Drawing Input</h4>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Parameter</th><th>ข้อกำหนด</th></tr></thead>
+            <tbody>
+              <tr><td>Formats</td><td>PDF (vector preferred), DXF (AC1015/R2000 min), PNG, JPG</td></tr>
+              <tr><td>Max file size</td><td>50 MB ต่อไฟล์</td></tr>
+              <tr><td>DXF version</td><td>AC1015 (DXF2000) minimum — ดู Canonical Value §8</td></tr>
+              <tr><td>Min resolution (raster)</td><td>300 DPI</td></tr>
+              <tr><td>Required metadata</td><td>project_id, drawing_type, version, created_by, created_at</td></tr>
+              <tr><td>Drawing types</td><td>Floor plan, elevation view, section view, detail drawing</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Photo Input</h4>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Parameter</th><th>ข้อกำหนด</th></tr></thead>
+            <tbody>
+              <tr><td>Formats</td><td>JPG, PNG, HEIC</td></tr>
+              <tr><td>Min resolution</td><td>1920 × 1080 px</td></tr>
+              <tr><td>Coverage required</td><td>≥ 6 photos: ผนัง 4 ด้าน + เพดาน + พื้น</td></tr>
+              <tr><td>EXIF</td><td>GPS + timestamp เก็บไว้สำหรับ provenance</td></tr>
+              <tr><td>Max file size</td><td>20 MB ต่อภาพ</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Quality Gate — Pre-processing (Auto)</h4>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>ตรวจสอบ</th><th>เกณฑ์ Reject</th><th>เกณฑ์ Flag</th></tr></thead>
+            <tbody>
+              <tr><td>Blur (Laplacian variance)</td><td>&lt; 100 → auto-reject</td><td>100–200 → flag</td></tr>
+              <tr><td>Corner crop</td><td>ขาดมุม &gt; 10% → reject</td><td>—</td></tr>
+              <tr><td>Exposure</td><td>over/under ≥ 40% → reject</td><td>20–40% → flag</td></tr>
+              <tr><td>Handwritten annotation</td><td>—</td><td>ตรวจพบ → flag ทุกครั้ง</td></tr>
+              <tr><td>Scale ambiguity</td><td>—</td><td>หน่วยไม่ชัดเจน → flag</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- §5 -->
+    <section class="section" id="s5">
+      <div class="section-header">
+        <div class="num">5</div>
+        <h2>Vision Model Layer</h2>
+      </div>
+      <div class="alert alert-red">
+        <div class="alert-icon">🔴</div>
+        <div>ต้องทำ <strong>Benchmark บน test set จริง ≥ 20 drawings + 5 ชุดภาพถ่าย</strong> ก่อน production deployment — ห้ามเลือก model โดยไม่มี benchmark result</div>
+      </div>
+      <div class="card">
+        <h4>Model Selection Criteria</h4>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Criterion</th><th>Minimum</th><th>Target</th></tr></thead>
+            <tbody>
+              <tr><td>Cabinet count accuracy</td><td>≥ 90%</td><td>≥ 95%</td></tr>
+              <tr><td>Dimension extraction error (MAE)</td><td>≤ 5 mm</td><td>≤ 2 mm</td></tr>
+              <tr><td>Material type classification</td><td>≥ 85%</td><td>≥ 90%</td></tr>
+              <tr><td>Confidence calibration (ECE)</td><td>≤ 0.10</td><td>≤ 0.05</td></tr>
+              <tr><td>Processing time per drawing</td><td>≤ 30 s</td><td>≤ 10 s</td></tr>
+              <tr><td>Hallucination rate</td><td>≤ 5%</td><td>≤ 1%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Candidate Models (ต้อง Benchmark ก่อนเลือก)</h4>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Model</th><th>Provider</th><th>Role ใน PRD</th><th>หมายเหตุ</th></tr></thead>
+            <tbody>
+              <tr><td>GPT-4o Vision</td><td>OpenAI</td><td>—</td><td>สมัคร Tier ≥ 2 สำหรับ rate limit</td></tr>
+              <tr><td>Claude 3.5 Sonnet Vision</td><td>Anthropic</td><td>—</td><td>JSON mode stable</td></tr>
+              <tr><td>SpatialLM</td><td>Meta (open-source)</td><td>FR-03 evidence role only</td><td>⚠️ evidence ไม่ใช่ authority — PoC ยังไม่พบใน repo</td></tr>
+              <tr><td>Gemini 2.0 Flash Vision</td><td>Google</td><td>—</td><td>Cost-effective สำหรับ high-volume</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Inference Pipeline</h4>
+        <div class="pipeline">
+          <div class="pipe-step"><div class="step-label">📁 Input File</div><div class="step-detail">Drawing PDF/DXF/PNG หรือ Photo set</div></div>
+          <div class="pipe-arrow">↓</div>
+          <div class="pipe-step"><div class="step-label">🔍 Quality Gate</div><div class="step-detail">Blur, crop, exposure, annotation checks — §4.3</div></div>
+          <div class="pipe-arrow">↓ PASS</div>
+          <div class="pipe-step"><div class="step-label">⚙️ Preprocessing</div><div class="step-detail">DXF rasterize (1200 DPI) / PDF vector extract / Photo normalize + EXIF</div></div>
+          <div class="pipe-arrow">↓</div>
+          <div class="pipe-step"><div class="step-label">🤖 Vision Model Inference</div><div class="step-detail">Prompt: FR-03-DRAW-v{ver} หรือ FR-04-PHOTO-v{ver}</div></div>
+          <div class="pipe-arrow">↓</div>
+          <div class="pipe-step"><div class="step-label">📊 Evidence Extractor + Confidence Scorer</div><div class="step-detail">Parse JSON, map ต่อ Canonical Values §8, flag ตาม rules §6.6</div></div>
+          <div class="pipe-arrow">↓</div>
+          <div class="pipe-step"><div class="step-label">📋 Evidence Draft Output</div><div class="step-detail">structured_evidence_draft JSON — schema §7</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- §6 -->
+    <section class="section" id="s6">
+      <div class="section-header">
+        <div class="num">6</div>
+        <h2>System Prompt Contract</h2>
+      </div>
+      <div class="card">
+        <h4>Prompt ID Registry</h4>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Prompt ID</th><th>ไฟล์</th><th>ใช้สำหรับ</th></tr></thead>
+            <tbody>
+              <tr><td><code>FR-03-DRAW</code></td><td>fr03-drawing-analysis-prompt-v1.0.md</td><td>Drawing → Evidence Draft</td></tr>
+              <tr><td><code>FR-04-PHOTO</code></td><td>fr04-photo-analysis-prompt-v1.0.md</td><td>Photo set → Spatial Evidence</td></tr>
+              <tr><td><code>FR-03-BOQ</code></td><td>fr03-boq-extraction-prompt-v1.0.md</td><td>Evidence Draft → BOQ Draft</td></tr>
+              <tr><td><code>FR-03-CONFLICT</code></td><td>fr03-conflict-resolution-prompt-v1.0.md</td><td>Resolve conflicting values</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="alert alert-navy" style="margin-top:8px;">
+          <div class="alert-icon">📁</div>
+          <div>เก็บใน <code>docs/prompts/</code> (ต้องสร้างใหม่ใน repo) — ทุกการเปลี่ยนแปลง = increment version + changelog entry</div>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Confidence Rules</h4>
+        <div class="conf-band">
+          <div class="conf-item conf-h">
+            <div class="band-range" style="color:#1a6b3c">0.90–1.00</div>
+            <div class="band-label" style="color:#1a6b3c">HIGH</div>
+            <div class="band-action">Pass ไปยัง BOQ generation อัตโนมัติ</div>
+          </div>
+          <div class="conf-item conf-m">
+            <div class="band-range" style="color:#8a6000">0.70–0.89</div>
+            <div class="band-label" style="color:#8a6000">MEDIUM</div>
+            <div class="band-action">Flag NEEDS_REVIEW + pass (reviewer ยืนยัน)</div>
+          </div>
+          <div class="conf-item conf-l">
+            <div class="band-range" style="color:#e65c00">0.50–0.69</div>
+            <div class="band-label" style="color:#e65c00">LOW</div>
+            <div class="band-action">Block BOQ + require human review</div>
+          </div>
+          <div class="conf-item conf-vl">
+            <div class="band-range" style="color:#c0392b">0.00–0.49</div>
+            <div class="band-label" style="color:#c0392b">VERY LOW</div>
+            <div class="band-action">Reject + return to user with reason</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Refusal Rules</h4>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Condition</th><th>Response</th></tr></thead>
+            <tbody>
+              <tr><td>คุณภาพภาพต่ำ</td><td><code>quality_error</code> + reason</td></tr>
+              <tr><td>ไม่รู้จัก drawing type</td><td><code>type_error</code> + reason</td></tr>
+              <tr><td>Conflict รุนแรง</td><td><code>conflict_error</code> + candidates list</td></tr>
+              <tr><td>Request ให้สร้าง CNC/cutting list</td><td><code>scope_error</code> — VS-01 does not produce CNC output</td></tr>
+              <tr><td>Request ให้ override canonical values</td><td><code>spec_error</code> — Canonical values are fixed; see §8</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- §7 -->
+    <section class="section" id="s7">
+      <div class="section-header">
+        <div class="num">7</div>
+        <h2>Evidence Draft JSON Schema</h2>
+      </div>
+      <div class="card">
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Schema ID: <code>https://monolith-workspace/docs/specs/schemas/evidence-draft.schema.json</code> — v1.0</p>
+        <pre>{
+  "evidence_id":     "uuid — unique identifier",
+  "project_id":      "string",
+  "source": {
+    "file_id":       "uuid",
+    "file_type":     "pdf | dxf | png | jpg | photo_set",
+    "page":          "integer (PDF only)",
+    "photo_ids":     ["uuid", ...]
+  },
+  "model": {
+    "model_id":           "string",
+    "model_version":      "string",
+    "prompt_id":          "FR-03-DRAW | FR-04-PHOTO",
+    "prompt_version":     "x.y",
+    "inference_timestamp":"ISO 8601",
+    "tokens_used":        "integer",
+    "latency_ms":         "integer"
+  },
+  "cabinets": [{
+    "cabinet_id":   "string",
+    "type":         "UPPER | LOWER | TALL | ISLAND | CUSTOM",
+    "dimensions": {
+      "width_mm":   "number (300–4000)",
+      "height_mm":  "number (200–3000)",
+      "depth_mm":   "number (100–600)",
+      "confidence": "0.0–1.0"
+    },
+    "material":     { "type", "finish", "color", "confidence" },
+    "hardware":     [{ "type", "quantity", "confidence" }],
+    "provenance":   { "source_element": "string", "bounding_box": [x1,y1,x2,y2] },
+    "confidence":   "0.0–1.0",
+    "flags":        ["NEEDS_REVIEW", "CONFLICT", "INFERRED"],
+    "conflict_candidates": [{ "value", "source", "confidence" }]
+  }],
+  "room_dimensions":    { "width_mm", "length_mm", "height_mm", "confidence" },
+  "overall_confidence": "0.0–1.0",
+  "review_required":    "boolean",
+  "quality_warnings":   ["string"],
+  "created_at":         "ISO 8601"
+}</pre>
+      </div>
+    </section>
+
+    <!-- §8 -->
+    <section class="section" id="s8">
+      <div class="section-header">
+        <div class="num">8</div>
+        <h2>Specs Single Source of Truth — 11 Drifts Resolved</h2>
+      </div>
+      <div class="alert alert-red">
+        <div class="alert-icon">⚠️</div>
+        <div><strong>Critical:</strong> AI prompts ทุกตัวใน VS-01 ต้องอ้างอิงตารางนี้เท่านั้น ห้าม infer หรืออ้างอิงค่าจาก spec files แต่ละไฟล์โดยตรง เพราะมีความขัดแย้ง 11 จุด</div>
+      </div>
+      <div class="tbl-wrap">
+        <table class="ssot">
+          <thead><tr><th>#</th><th>Parameter</th><th>Canonical Value</th><th>Source Authority</th><th>ยกเลิกค่าจาก</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Premill</td><td>Include per side</td><td>SPEC-08 v8.2 + code</td><td>formula-reference (เก่ากว่า)</td></tr>
+            <tr><td>2</td><td>DXF version output</td><td>AC1015 / DXF2000</td><td>HOMAG compatibility</td><td>R2018 spec (not impl.), R12 code (legacy)</td></tr>
+            <tr><td>3</td><td>Hinge cup depth</td><td>12 mm</td><td>dxf-export-specs</td><td>master-db 11.5 mm, door-drawer 13 mm</td></tr>
+            <tr><td>4</td><td>Minifix CAM depth</td><td>13.5 mm</td><td>code (resolved S16 Jul 2026)</td><td>mfg doc 12.5, master-db 12.7</td></tr>
+            <tr><td>5</td><td>Number of views</td><td>7 views (incl. Top)</td><td>code + api-documentation</td><td>spec.md 6 views (เก่ากว่า)</td></tr>
+            <tr><td>6</td><td>MIN_WIDTH cabinet</td><td>300 mm</td><td>api-documentation</td><td>spec.md 200 mm</td></tr>
+            <tr><td>7</td><td>MAX_DEPTH cabinet</td><td>600 mm</td><td>api-documentation</td><td>spec.md 1000 mm</td></tr>
+            <tr><td>8</td><td>Cabinet types</td><td>UPPER/LOWER/TALL/ISLAND/CUSTOM</td><td>api-documentation</td><td>spec.md subset</td></tr>
+            <tr><td>9</td><td>Minifix bolt bore</td><td>SLEEVE Ø10×17.5 mm</td><td>factory truth (resolved S16)</td><td>S200 direct Ø7.5 mm (legacy)</td></tr>
+            <tr><td>10</td><td>Spec export path</td><td>manufacturing/</td><td>actual codebase</td><td>cross-ref → specs/export/ (ไม่มีจริง)</td></tr>
+            <tr><td>11</td><td>PreMill in API packet</td><td>+PreMill ใส่ใน packet</td><td>spec.md FR4.2 + SPEC-08 v8.2</td><td>formula-ref no premill (เก่ากว่า)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="alert alert-gold">
+        <div class="alert-icon">📌</div>
+        <div>เมื่อมีการแก้ไข spec ให้ update ตารางนี้ก่อนเสมอ แล้วจึง bump prompt version ที่ใช้ค่านั้น</div>
+      </div>
+    </section>
+
+    <!-- §9 -->
+    <section class="section" id="s9">
+      <div class="section-header">
+        <div class="num">9</div>
+        <h2>BOQ Draft JSON Schema</h2>
+      </div>
+      <div class="card">
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Schema ID: <code>https://monolith-workspace/docs/specs/schemas/boq-draft.schema.json</code> — v1.0</p>
+        <pre>{
+  "boq_id":             "uuid",
+  "evidence_id":        "uuid → structured_evidence_draft",
+  "project_id":         "string",
+  "status":             "DRAFT | HUMAN_REVIEW | APPROVED | REJECTED",
+  "generated_at":       "ISO 8601",
+  "model":              { "prompt_id": "FR-03-BOQ", "prompt_version", "model_id" },
+  "line_items": [{
+    "item_id":          "string",
+    "cabinet_id":       "string → evidence_draft cabinet",
+    "description":      "string",
+    "quantity":         "number",
+    "unit":             "pcs | m | m2 | set",
+    "material_code":    "string | null",
+    "dimensions":       { "width_mm", "height_mm", "depth_mm" },
+    "confidence":       "0.0–1.0",
+    "provenance":       "string — drawing element reference",
+    "flags":            ["NEEDS_REVIEW", "CONFLICT", "INFERRED"]
+  }],
+  "overall_confidence": "0.0–1.0",
+  "review_required":    "boolean",
+  "reviewer":           { "user_id", "role", "reviewed_at" },
+  "review_notes":       "string",
+  "approved_at":        "ISO 8601 — set when APPROVED",
+  "rejection_reason":   "string — set when REJECTED"
+}
+// ⛔ ห้ามมี pricing/cost fields ใน VS-01</pre>
+      </div>
+    </section>
+
+    <!-- §10 -->
+    <section class="section" id="s10">
+      <div class="section-header">
+        <div class="num">10</div>
+        <h2>Human Review Workflow</h2>
+      </div>
+      <div class="card">
+        <h4>Triggers ที่ต้องมี Human Review</h4>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Condition</th><th>ทำอะไร</th></tr></thead>
+            <tbody>
+              <tr><td>overall_confidence &lt; 0.80</td><td>Block auto-advance + ส่งไป HUMAN_REVIEW</td></tr>
+              <tr><td>Flag NEEDS_REVIEW</td><td>Flag item นั้น + reviewer ต้องยืนยัน</td></tr>
+              <tr><td>Flag CONFLICT</td><td>Block item นั้น + ต้อง resolve ก่อน approve</td></tr>
+              <tr><td>Flag INFERRED</td><td>Flag item นั้น + reviewer ต้อง acknowledge</td></tr>
+              <tr><td>Dimension นอก valid range §8</td><td>Auto-flag + require review</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Reviewer Actions</h4>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Action</th><th>ผล</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge-green">APPROVE item</span></td><td>Item status = reviewed</td></tr>
+              <tr><td><span class="badge-gold">EDIT + APPROVE item</span></td><td>แก้ค่า + บันทึก edit_reason + reviewer_id</td></tr>
+              <tr><td><span class="badge-red">REJECT item</span></td><td>Item removed + ต้องใส่ rejection_reason</td></tr>
+              <tr><td><span class="badge-red">REJECT BOQ ทั้งหมด</span></td><td>status = REJECTED + ต้องใส่ reason</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Escalation Path</h4>
+        <div class="pipeline">
+          <div class="pipe-step"><div class="step-label">👤 Reviewer (Designer Agent context)</div><div class="step-detail">ไม่สามารถ resolve conflict</div></div>
+          <div class="pipe-arrow">↓</div>
+          <div class="pipe-step"><div class="step-label">🏭 Factory Agent Review</div><div class="step-detail">ยังไม่สามารถ resolve</div></div>
+          <div class="pipe-arrow">↓</div>
+          <div class="pipe-step"><div class="step-label">📋 PM Agent → Human PM</div><div class="step-detail">Escalate ไปยัง human PM</div></div>
+          <div class="pipe-arrow">↓</div>
+          <div class="pipe-step"><div class="step-label">❌ Reject BOQ + Return to Intake</div><div class="step-detail">ส่งกลับไปยัง customer intake phase</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- §11 -->
+    <section class="section" id="s11">
+      <div class="section-header">
+        <div class="num">11</div>
+        <h2>Validation Rules</h2>
+      </div>
+      <div class="card">
+        <h4>Pre-BOQ Validation (Evidence Draft)</h4>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Rule</th><th>ตรวจสอบ</th><th>Error Code</th></tr></thead>
+            <tbody>
+              <tr><td><code>V-ED-01</code></td><td>Dimension ทุกตัวอยู่ใน valid range §8</td><td>INVALID_DIMENSION</td></tr>
+              <tr><td><code>V-ED-02</code></td><td>ไม่มี dimension = 0 ที่ไม่มี annotation</td><td>ZERO_DIMENSION</td></tr>
+              <tr><td><code>V-ED-03</code></td><td>cabinet_id ไม่ซ้ำกัน</td><td>DUPLICATE_CABINET_ID</td></tr>
+              <tr><td><code>V-ED-04</code></td><td>Cabinet count สมเหตุสมผลกับ room dimensions</td><td>CABINET_OVERFLOW</td></tr>
+              <tr><td><code>V-ED-05</code></td><td>model + prompt_version ระบุครบ</td><td>MISSING_PROVENANCE</td></tr>
+              <tr><td><code>V-ED-06</code></td><td>CONFLICT flag ต้องมี candidates ≥ 2</td><td>INVALID_CONFLICT</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Post-Review Validation (BOQ Draft → APPROVED)</h4>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Rule</th><th>ตรวจสอบ</th><th>Error Code</th></tr></thead>
+            <tbody>
+              <tr><td><code>V-BOQ-01</code></td><td>ไม่มี CONFLICT flag ที่ยังไม่ resolve</td><td>UNRESOLVED_CONFLICT</td></tr>
+              <tr><td><code>V-BOQ-02</code></td><td>ไม่มี INFERRED ที่ reviewer ยัง unacknowledged</td><td>UNACKNOWLEDGED_INFERRED</td></tr>
+              <tr><td><code>V-BOQ-03</code></td><td>BOQ total area ≤ room wall area × 1.2</td><td>AREA_OVERFLOW</td></tr>
+              <tr><td><code>V-BOQ-04</code></td><td>material_code valid ตาม catalog</td><td>INVALID_MATERIAL_CODE</td></tr>
+              <tr><td><code>V-BOQ-05</code></td><td>reviewer_id set + reviewed_at &gt; generated_at</td><td>MISSING_REVIEW</td></tr>
+              <tr><td><code>V-BOQ-06</code></td><td>ไม่มี pricing/cost fields</td><td>SCOPE_VIOLATION</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="alert alert-gold">
+        <div class="alert-icon">⚠️</div>
+        <div>Validation ไม่สามารถรับประกัน dimensional accuracy และไม่สามารถ promote BOQ draft เป็น Released Spec — นั้นคือหน้าที่ Safety Gate FR-09</div>
+      </div>
+    </section>
+
+    <!-- §12 -->
+    <section class="section" id="s12">
+      <div class="section-header">
+        <div class="num">12</div>
+        <h2>Export / API Specification</h2>
+      </div>
+      <div class="card">
+        <h4>Endpoints</h4>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Method</th><th>Endpoint</th><th>ทำอะไร</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge-green">POST</span></td><td><code>/api/v1/vs01/intake</code></td><td>Upload drawing/photo set → returns evidence_id</td></tr>
+              <tr><td><span class="badge-blue">GET</span></td><td><code>/api/v1/vs01/evidence-draft/{evidence_id}</code></td><td>ดู evidence draft</td></tr>
+              <tr><td><span class="badge-blue">GET</span></td><td><code>/api/v1/vs01/boq-draft/{boq_id}</code></td><td>ดู BOQ draft</td></tr>
+              <tr><td><span class="badge-green">POST</span></td><td><code>/api/v1/vs01/boq-draft/{evidence_id}/generate</code></td><td>Trigger BOQ generation</td></tr>
+              <tr><td><span class="badge-green">POST</span></td><td><code>/api/v1/vs01/review/{boq_id}</code></td><td>Submit human review decision</td></tr>
+              <tr><td><span class="badge-blue">GET</span></td><td><code>/api/v1/vs01/inference-log/{inference_id}</code></td><td>ดู inference log</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="alert alert-red">
+        <div class="alert-icon">⛔</div>
+        <div><strong>VS-01 API ไม่ export:</strong> CNC packet (ต้องผ่าน FR-11 + Safety Gate FR-09) · Released Spec · ERP/CRM write · Material pricing</div>
+      </div>
+    </section>
+
+    <!-- §13 -->
+    <section class="section" id="s13">
+      <div class="section-header">
+        <div class="num">13</div>
+        <h2>Acceptance Criteria</h2>
+      </div>
+      <div class="alert alert-green">
+        <div class="alert-icon">✅</div>
+        <div>VS-01 ถือว่า <strong>PROVEN</strong> เมื่อผ่านทุกข้อ — จึงพิจารณา FR-18 และ production rollout</div>
+      </div>
+      <div class="card">
+        <div class="ac-item"><div class="ac-id">AC-VS01-01</div><div><div class="ac-criterion">Vision model benchmark เสร็จสมบูรณ์</div><div class="ac-target">≥ 3 models ทดสอบบน ≥ 20 drawings จริง</div></div></div>
+        <div class="ac-item"><div class="ac-id">AC-VS01-02</div><div><div class="ac-criterion">Cabinet count accuracy</div><div class="ac-target">≥ 90% ใน benchmark set</div></div></div>
+        <div class="ac-item"><div class="ac-id">AC-VS01-03</div><div><div class="ac-criterion">Dimension extraction error</div><div class="ac-target">MAE ≤ 5 mm</div></div></div>
+        <div class="ac-item"><div class="ac-id">AC-VS01-04</div><div><div class="ac-criterion">Confidence calibration (ECE)</div><div class="ac-target">ECE ≤ 0.10</div></div></div>
+        <div class="ac-item"><div class="ac-id">AC-VS01-05</div><div><div class="ac-criterion">Human review workflow validated</div><div class="ac-target">≥ 5 real reviews เสร็จสมบูรณ์</div></div></div>
+        <div class="ac-item"><div class="ac-id">AC-VS01-06</div><div><div class="ac-criterion">Hard boundary enforced</div><div class="ac-target">0 incidents ที่ VS-01 สร้าง CNC/Released Spec อัตโนมัติ</div></div></div>
+        <div class="ac-item"><div class="ac-id">AC-VS01-07</div><div><div class="ac-criterion">Prompt contract versioned</div><div class="ac-target">ทุก prompt อยู่ใน version control พร้อม changelog</div></div></div>
+        <div class="ac-item"><div class="ac-id">AC-VS01-08</div><div><div class="ac-criterion">Specs single source of truth applied</div><div class="ac-target">11 drifts resolve ใน prompt context ทุกตัว</div></div></div>
+        <div class="ac-item"><div class="ac-id">AC-VS01-09</div><div><div class="ac-criterion">Evidence draft schema valid</div><div class="ac-target">100% output ผ่าน JSON schema validation</div></div></div>
+        <div class="ac-item"><div class="ac-id">AC-VS01-10</div><div><div class="ac-criterion">BOQ draft schema valid</div><div class="ac-target">100% output ผ่าน JSON schema validation</div></div></div>
+      </div>
+    </section>
+
+    <!-- §14 -->
+    <section class="section" id="s14">
+      <div class="section-header">
+        <div class="num">14</div>
+        <h2>Dependency Map — P0 Blockers</h2>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>P0 Blocker</th><th>ไฟล์ที่เกี่ยวข้อง</th><th>Impact ต่อ VS-01</th><th>PoC?</th></tr></thead>
+          <tbody>
+            <tr><td><code>AB-AUTH-01</code></td><td>src/core/auth/roles.ts:67</td><td>⚠️ ต้องแก้ก่อน production</td><td><span class="badge-green">PoC ได้ (service role key)</span></td></tr>
+            <tr><td><code>AB-EXP-01</code></td><td>AppShell.tsx:174</td><td>ไม่ block โดยตรง (BOQ ≠ CNC export)</td><td><span class="badge-green">PoC ได้</span></td></tr>
+            <tr><td><code>AB-PKT-01/02</code></td><td>factory packet files</td><td>ไม่ block (ไม่มี packet creation ใน scope)</td><td><span class="badge-green">PoC ได้</span></td></tr>
+            <tr><td><code>AB-KEY-01</code></td><td>production.receipt.pubkeys.v1.json:1</td><td>ไม่ block PoC (ไม่มี production signing)</td><td><span class="badge-green">PoC ได้</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="alert alert-gold">
+        <div class="alert-icon">🟡</div>
+        <div><strong>Sandbox safety:</strong> VS-01 PoC ทำงานได้โดยไม่ต้องรอ P0 resolution แต่ <strong>ห้าม deploy VS-01 ใน production</strong> จนกว่า AB-AUTH-01 จะได้รับการแก้ไข</div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  <strong>MONOLITH Manufacturing OS</strong> · VS-01 — Vision-to-BOQ Vertical Slice Specification v1.0 · DRAFT · 2026-09-04<br>
+  อ้างอิง: PRD v5.1 (FR-03, FR-04) · Roadmap v1 (RM-030–033) · SPECS-RECONCILIATION-NOTES.md (11 drifts)
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>eTax Compliance Dashboard — MONOLITH</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50:'#f0f9ff', 500:'#0ea5e9', 700:'#0369a1', 900:'#0c4a6e' },
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
+
+    /* Fade-in animation */
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.35s ease-out forwards; }
+
+    /* Pulse for loading */
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .pulse { animation: pulse 1.4s ease-in-out infinite; }
+
+    /* Tier badge colours */
+    .tier-critical { background:#fef2f2; color:#dc2626; border:1px solid #fca5a5; }
+    .tier-warning  { background:#fffbeb; color:#d97706; border:1px solid #fcd34d; }
+    .tier-healthy  { background:#f0fdf4; color:#16a34a; border:1px solid #86efac; }
+
+    /* Freshness badge */
+    .fresh-fresh   { background:#f0fdf4; color:#15803d; }
+    .fresh-stale   { background:#fffbeb; color:#b45309; }
+    .fresh-critical{ background:#fef2f2; color:#b91c1c; }
+
+    /* Tab underline */
+    .tab-active { border-bottom: 3px solid #0ea5e9; color: #0ea5e9; font-weight: 600; }
+    .tab-inactive{ border-bottom: 3px solid transparent; color: #64748b; }
+
+    /* Score fill bar */
+    .score-bar-fill { transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen font-sans">
+
+<!-- ── Config Banner ──────────────────────────────────────────────────────── -->
+<div id="config-banner" class="bg-amber-50 border-b border-amber-200 px-4 py-3 hidden">
+  <div class="max-w-7xl mx-auto flex items-center gap-3">
+    <svg class="w-5 h-5 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+    </svg>
+    <span class="text-amber-800 text-sm">
+      กรุณาตั้งค่า Supabase URL และ API Key ก่อนใช้งาน —
+      <button onclick="openConfig()" class="underline font-medium hover:text-amber-900">ตั้งค่าตอนนี้</button>
+    </span>
+  </div>
+</div>
+
+<!-- ── Header ─────────────────────────────────────────────────────────────── -->
+<header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <!-- Logo mark -->
+      <div class="w-8 h-8 rounded-lg bg-brand-700 flex items-center justify-center">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0120 9.414V19a2 2 0 01-2 2z"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-base font-bold text-slate-900 leading-none">eTax Compliance Dashboard</h1>
+        <p class="text-xs text-slate-400 mt-0.5">MONOLITH Manufacturing OS</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <!-- Freshness indicator -->
+      <div id="freshness-strip" class="hidden items-center gap-2 text-xs">
+        <span id="freshness-badge" class="px-2 py-1 rounded-full font-medium fresh-fresh">— fresh</span>
+        <span id="last-refresh-time" class="text-slate-400"></span>
+      </div>
+
+      <!-- Auto-refresh toggle -->
+      <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none">
+        <div class="relative">
+          <input type="checkbox" id="auto-refresh-toggle" class="sr-only" checked>
+          <div class="w-9 h-5 bg-slate-200 rounded-full transition-colors peer-checked:bg-brand-500" id="toggle-bg"></div>
+          <div class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform" id="toggle-dot"></div>
+        </div>
+        <span>Auto-refresh</span>
+      </label>
+
+      <!-- Refresh button -->
+      <button id="refresh-btn" onclick="fetchAllData()"
+        class="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-slate-200
+               hover:bg-slate-50 text-slate-600 transition-colors">
+        <svg id="refresh-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Refresh
+      </button>
+
+      <!-- Settings -->
+      <button onclick="openConfig()"
+        class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors" title="ตั้งค่าการเชื่อมต่อ">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ── Tabs ────────────────────────────────────────────────────────────────── -->
+<div class="bg-white border-b border-slate-200">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 flex gap-1">
+    <button onclick="switchTab('overview')"  id="tab-overview"  class="tab-active   px-5 py-3 text-sm transition-colors">Overview</button>
+    <button onclick="switchTab('ranking')"   id="tab-ranking"   class="tab-inactive px-5 py-3 text-sm transition-colors">Risk Ranking</button>
+    <button onclick="switchTab('detail')"    id="tab-detail"    class="tab-inactive px-5 py-3 text-sm transition-colors">Compliance Detail</button>
+    <button onclick="switchTab('sla')"       id="tab-sla"       class="tab-inactive px-5 py-3 text-sm transition-colors">SLA Monitor</button>
+    <button onclick="switchTab('executive')" id="tab-executive" class="tab-inactive px-5 py-3 text-sm transition-colors">Executive Summary</button>
+  </div>
+</div>
+
+<!-- ── Main ────────────────────────────────────────────────────────────────── -->
+<main class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+
+  <!-- Error banner -->
+  <div id="error-banner" class="hidden mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm flex items-start gap-3">
+    <svg class="w-5 h-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <span id="error-message"></span>
+  </div>
+
+  <!-- ── Tab: Overview ──────────────────────────────────────────────────── -->
+  <div id="panel-overview" class="fade-in">
+
+    <!-- KPI Cards -->
+    <div id="kpi-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+      <!-- filled by JS -->
+      <div class="col-span-full flex items-center justify-center h-24 pulse text-slate-400 text-sm" id="kpi-loading">
+        กำลังโหลดข้อมูล…
+      </div>
+    </div>
+
+    <!-- Two-column: health summary + critical orgs -->
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+      <!-- Health Summary -->
+      <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+        <h2 class="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+          <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+          สรุปสุขภาพระบบ
+        </h2>
+        <div id="health-summary-list" class="space-y-3 text-sm text-slate-400 pulse">กำลังโหลด…</div>
+      </div>
+
+      <!-- Critical Orgs -->
+      <div class="lg:col-span-3 bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+        <h2 class="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+          <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          </svg>
+          องค์กรที่ต้องตรวจสอบเร่งด่วน (CRITICAL)
+        </h2>
+        <div id="critical-orgs-list" class="text-sm text-slate-400 pulse">กำลังโหลด…</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Tab: Risk Ranking ───────────────────────────────────────────────── -->
+  <div id="panel-ranking" class="hidden fade-in">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+
+      <!-- Table toolbar -->
+      <div class="p-4 border-b border-slate-100 flex flex-wrap items-center gap-3">
+        <h2 class="text-sm font-semibold text-slate-700 mr-auto">Risk Ranking — ทุกองค์กร</h2>
+
+        <!-- Tier filter -->
+        <select id="tier-filter" onchange="applyFilters()"
+          class="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-600 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+          <option value="">ทุก Tier</option>
+          <option value="CRITICAL">CRITICAL</option>
+          <option value="WARNING">WARNING</option>
+          <option value="HEALTHY">HEALTHY</option>
+        </select>
+
+        <!-- Search -->
+        <div class="relative">
+          <input id="org-search" type="text" placeholder="ค้นหาองค์กร…" oninput="applyFilters()"
+            class="text-sm border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 w-48 focus:ring-2 focus:ring-brand-500 focus:outline-none"/>
+          <svg class="absolute left-2.5 top-2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+        </div>
+
+        <span id="ranking-count" class="text-xs text-slate-400"></span>
+      </div>
+
+      <!-- Table -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
+            <tr>
+              <th class="px-4 py-3 text-right cursor-pointer hover:text-brand-600 w-16" onclick="sortTable('risk_rank')">
+                Rank <span id="sort-risk_rank">↕</span>
+              </th>
+              <th class="px-4 py-3 text-left cursor-pointer hover:text-brand-600" onclick="sortTable('org_name')">
+                องค์กร <span id="sort-org_name">↕</span>
+              </th>
+              <th class="px-4 py-3 text-center">Health Score</th>
+              <th class="px-4 py-3 text-center cursor-pointer hover:text-brand-600" onclick="sortTable('risk_tier')">
+                Risk Tier <span id="sort-risk_tier">↕</span>
+              </th>
+              <th class="px-4 py-3 text-center">Status</th>
+              <th class="px-4 py-3 text-center">Priority Review</th>
+              <th class="px-4 py-3 text-right cursor-pointer hover:text-brand-600" onclick="sortTable('last_submission_at')">
+                Last Submission <span id="sort-last_submission_at">↕</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody id="ranking-tbody" class="divide-y divide-slate-100">
+            <tr><td colspan="7" class="px-4 py-8 text-center text-slate-400 pulse">กำลังโหลด…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tab: Compliance Detail ──────────────────────────────────────────── -->
+  <div id="panel-detail" class="hidden fade-in">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+
+      <div class="p-4 border-b border-slate-100 flex flex-wrap items-center gap-3">
+        <h2 class="text-sm font-semibold text-slate-700 mr-auto">Compliance Detail — v_etax_compliance_dashboard</h2>
+        <input id="detail-search" type="text" placeholder="ค้นหา…" oninput="applyDetailFilter()"
+          class="text-sm border border-slate-200 rounded-lg px-3 py-1.5 w-48 focus:ring-2 focus:ring-brand-500 focus:outline-none"/>
+        <span id="detail-count" class="text-xs text-slate-400"></span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
+            <tr>
+              <th class="px-4 py-3 text-left">องค์กร</th>
+              <th class="px-4 py-3 text-right">Total</th>
+              <th class="px-4 py-3 text-right">Submitted</th>
+              <th class="px-4 py-3 text-right">Failed</th>
+              <th class="px-4 py-3 text-right">Success Rate</th>
+              <th class="px-4 py-3 text-right">Overdue</th>
+              <th class="px-4 py-3 text-right">Failed 24 h</th>
+              <th class="px-4 py-3 text-right">Last Submission</th>
+            </tr>
+          </thead>
+          <tbody id="detail-tbody" class="divide-y divide-slate-100">
+            <tr><td colspan="8" class="px-4 py-8 text-center text-slate-400 pulse">กำลังโหลด…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+<!-- ─────────────────────────────────────────────────────────────────────────
+     SLA Monitor tab
+────────────────────────────────────────────────────────────────────────── -->
+<div id="panel-sla" class="hidden fade-in max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+  <!-- SLA Summary Card -->
+  <div id="sla-summary-card" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+    <h2 class="text-base font-semibold text-slate-700 mb-4">SLA Health Summary</h2>
+    <div id="sla-summary-content" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div class="text-center"><div class="text-2xl font-bold text-slate-800" id="sla-total-submissions">–</div><div class="text-xs text-slate-500 mt-1">Total Submissions</div></div>
+      <div class="text-center"><div class="text-2xl font-bold text-red-600" id="sla-breach-count">–</div><div class="text-xs text-slate-500 mt-1">Breached</div></div>
+      <div class="text-center"><div class="text-2xl font-bold text-amber-600" id="sla-breach-rate">–</div><div class="text-xs text-slate-500 mt-1">Breach Rate</div></div>
+      <div class="text-center"><div class="text-2xl font-bold text-slate-800" id="sla-worst-type">–</div><div class="text-xs text-slate-500 mt-1">Worst Type</div></div>
+      <div class="text-center"><div class="text-2xl font-bold text-slate-800" id="sla-threshold">–</div><div class="text-xs text-slate-500 mt-1">SLA Threshold (h)</div></div>
+      <div class="text-center"><div id="sla-summary-tier" class="inline-block px-3 py-1 rounded-full text-sm font-semibold">–</div><div class="text-xs text-slate-500 mt-1">Severity</div></div>
+    </div>
+  </div>
+
+  <!-- SLA Cumulative Breach Trend (Chart.js) -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+    <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+      <div>
+        <h2 class="text-base font-semibold text-slate-700" id="sla-chart-title">30-Day Cumulative Breach Trend</h2>
+        <p class="text-xs text-slate-400 mt-0.5" id="sla-chart-subtitle">Running total of SLA breaches per document type — fetched from daily breach timeline</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <!-- Chart type segmented control -->
+        <div class="inline-flex rounded-lg border border-slate-200 overflow-hidden text-xs font-medium shadow-sm">
+          <button id="chart-mode-line"
+            onclick="switchChartMode('line')"
+            class="px-3 py-1.5 bg-brand-500 text-white transition-colors">
+            Cumulative
+          </button>
+          <button id="chart-mode-bar"
+            onclick="switchChartMode('bar')"
+            class="px-3 py-1.5 bg-white text-slate-600 border-l border-slate-200 hover:bg-slate-50 transition-colors">
+            Daily Breaches
+          </button>
+        </div>
+        <label class="text-xs text-slate-500">Days:</label>
+        <select id="chart-days-select" onchange="onChartDaysChange()" class="text-sm border border-slate-200 rounded-lg px-2 py-1 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+          <option value="7">7 days</option>
+          <option value="14">14 days</option>
+          <option value="30" selected>30 days</option>
+          <option value="60">60 days</option>
+          <option value="90">90 days</option>
+        </select>
+        <button onclick="refreshSlaChart()" class="text-xs bg-brand-500 text-white px-3 py-1.5 rounded-lg hover:bg-brand-700 transition-colors">Refresh</button>
+      </div>
+    </div>
+    <div id="sla-chart-loading" class="text-center text-slate-400 py-6 text-sm pulse">Loading chart data…</div>
+    <div id="sla-chart-empty"   class="hidden text-center text-slate-400 py-6 text-sm">No timeline data available — run the archival job or wait for submissions.</div>
+    <div id="sla-chart-error"   class="hidden text-center text-red-500 py-6 text-sm"></div>
+    <div id="sla-chart-wrap"    class="hidden" style="position:relative;height:320px;">
+      <canvas id="sla-breach-chart"></canvas>
+    </div>
+  </div>
+
+  <!-- SLA per Document Type Table -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div class="p-4 border-b border-slate-100 flex flex-wrap items-center gap-3">
+      <h2 class="text-base font-semibold text-slate-700 flex-1">SLA Status by Document Type</h2>
+      <select id="sla-filter-severity" onchange="applySlaFilter()"
+        class="text-sm border border-slate-200 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+        <option value="">All Severity</option>
+        <option value="CRITICAL">CRITICAL</option>
+        <option value="WARNING">WARNING</option>
+        <option value="ELEVATED">ELEVATED</option>
+        <option value="NORMAL">NORMAL</option>
+        <option value="HEALTHY">HEALTHY</option>
+      </select>
+      <select id="sla-filter-doctype" onchange="applySlaFilter()"
+        class="text-sm border border-slate-200 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+        <option value="">All Types</option>
+        <option value="T01">T01</option>
+        <option value="T02">T02</option>
+        <option value="T03">T03</option>
+        <option value="T04">T04</option>
+      </select>
+      <span id="sla-count" class="text-xs text-slate-400"></span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
+          <tr>
+            <th class="px-4 py-3 text-left">Organisation</th>
+            <th class="px-4 py-3 text-center">Doc Type</th>
+            <th class="px-4 py-3 text-right">Total</th>
+            <th class="px-4 py-3 text-right">Breached</th>
+            <th class="px-4 py-3 text-right">Breach Rate</th>
+            <th class="px-4 py-3 text-right">Avg Hours</th>
+            <th class="px-4 py-3 text-right">SLA (h)</th>
+            <th class="px-4 py-3 text-center">Severity</th>
+            <th class="px-4 py-3 text-center">Breach Flag</th>
+          </tr>
+        </thead>
+        <tbody id="sla-tbody" class="divide-y divide-slate-100">
+          <tr><td colspan="9" class="px-4 py-8 text-center text-slate-400">Loading SLA data…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Archive Org Rollup Panel ─────────────────────────────────────────── -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div class="p-4 border-b border-slate-100 flex flex-wrap items-center gap-3">
+      <div class="flex-1">
+        <h2 class="text-base font-semibold text-slate-700">Long-Term Archive — Org Rollup</h2>
+        <p class="text-xs text-slate-400 mt-0.5">Source: <code class="bg-slate-100 px-1 rounded">rpc_etax_sla_archive_org_rollup</code> (Migration 0202) — one row per org</p>
+      </div>
+      <span id="archive-rollup-count" class="text-xs text-slate-400"></span>
+    </div>
+    <div id="archive-rollup-loading" class="text-center text-slate-400 py-6 text-sm pulse">Loading archive data…</div>
+    <div id="archive-rollup-empty"   class="hidden text-center text-slate-400 py-6 text-sm">No archive data yet — run <code>fn_archive_etax_sla_breach_timeline</code> first.</div>
+    <div id="archive-rollup-wrap"    class="hidden overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
+          <tr>
+            <th class="px-4 py-3 text-left">Organisation</th>
+            <th class="px-4 py-3 text-right">Archive Days</th>
+            <th class="px-4 py-3 text-right">Total Created</th>
+            <th class="px-4 py-3 text-right">Total Breached</th>
+            <th class="px-4 py-3 text-right">Overall Breach %</th>
+            <th class="px-4 py-3 text-right">Peak Cumulative</th>
+            <th class="px-4 py-3 text-center">Worst Tier</th>
+            <th class="px-4 py-3 text-left">Breached Doc Types</th>
+            <th class="px-4 py-3 text-right">SLA (h)</th>
+          </tr>
+        </thead>
+        <tbody id="archive-rollup-tbody" class="divide-y divide-slate-100"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Archive Summary by Tier Panel ───────────────────────────────────── -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div class="p-4 border-b border-slate-100 flex flex-wrap items-center gap-3">
+      <div class="flex-1">
+        <h2 class="text-base font-semibold text-slate-700">Long-Term Archive — Summary by Severity Tier</h2>
+        <p class="text-xs text-slate-400 mt-0.5">Source: <code class="bg-slate-100 px-1 rounded">rpc_etax_sla_archive_summary</code> (Migration 0202) — grouped by (org, tier)</p>
+      </div>
+      <select id="archive-summary-filter-tier" onchange="renderSlaArchiveSummary()"
+        class="text-sm border border-slate-200 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+        <option value="">All Tiers</option>
+        <option value="CRITICAL">CRITICAL</option>
+        <option value="WARNING">WARNING</option>
+        <option value="ELEVATED">ELEVATED</option>
+        <option value="NORMAL">NORMAL</option>
+        <option value="HEALTHY">HEALTHY</option>
+      </select>
+      <span id="archive-summary-count" class="text-xs text-slate-400"></span>
+    </div>
+    <div id="archive-summary-loading" class="text-center text-slate-400 py-6 text-sm pulse">Loading archive summary…</div>
+    <div id="archive-summary-empty"   class="hidden text-center text-slate-400 py-6 text-sm">No archive summary data yet.</div>
+    <div id="archive-summary-wrap"    class="hidden overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
+          <tr>
+            <th class="px-4 py-3 text-left">Organisation</th>
+            <th class="px-4 py-3 text-center">Severity Tier</th>
+            <th class="px-4 py-3 text-right">Archive Days</th>
+            <th class="px-4 py-3 text-right">Total Created</th>
+            <th class="px-4 py-3 text-right">Total Breached</th>
+            <th class="px-4 py-3 text-right">Avg Breach Rate</th>
+            <th class="px-4 py-3 text-right">Max Breach Rate</th>
+            <th class="px-4 py-3 text-right">Max Cumulative</th>
+            <th class="px-4 py-3 text-right">SLA (h)</th>
+          </tr>
+        </thead>
+        <tbody id="archive-summary-tbody" class="divide-y divide-slate-100"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Executive Summary Tab -->
+<div id="panel-executive" class="hidden fade-in max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+  <!-- KPI Banner -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+    <h2 class="text-lg font-semibold text-slate-800 mb-4">Executive KPI Banner</h2>
+    <div id="exec-kpi-loading" class="text-sm text-slate-500">Loading…</div>
+    <div id="exec-kpi-banner" class="hidden grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div class="bg-slate-50 rounded-xl p-4 text-center"><div class="text-2xl font-bold text-slate-800" id="exec-total-orgs">–</div><div class="text-xs text-slate-500 mt-1">Total Orgs</div></div>
+      <div class="bg-orange-50 rounded-xl p-4 text-center"><div class="text-2xl font-bold text-orange-700" id="exec-attention-orgs">–</div><div class="text-xs text-slate-500 mt-1">Require Attention</div></div>
+      <div class="bg-slate-50 rounded-xl p-4 text-center"><div class="text-2xl font-bold text-slate-800" id="exec-live-submissions">–</div><div class="text-xs text-slate-500 mt-1">Live Submissions</div></div>
+      <div class="bg-red-50 rounded-xl p-4 text-center"><div class="text-2xl font-bold text-red-700" id="exec-live-breached">–</div><div class="text-xs text-slate-500 mt-1">Live Breached</div></div>
+      <div class="bg-purple-50 rounded-xl p-4 text-center"><div class="text-sm font-bold text-purple-700" id="exec-worst-severity">–</div><div class="text-xs text-slate-500 mt-1">Worst Severity</div></div>
+      <div class="bg-blue-50 rounded-xl p-4 text-center"><div class="text-2xl font-bold text-blue-700" id="exec-peak-breach-rate">–</div><div class="text-xs text-slate-500 mt-1">Peak Breach Rate</div></div>
+      <div class="bg-slate-50 rounded-xl p-4 text-center"><div class="text-2xl font-bold text-slate-800" id="exec-archive-created">–</div><div class="text-xs text-slate-500 mt-1">Archive Submissions</div></div>
+      <div class="bg-red-50 rounded-xl p-4 text-center"><div class="text-2xl font-bold text-red-700" id="exec-archive-breached">–</div><div class="text-xs text-slate-500 mt-1">Archive Breached</div></div>
+      <div class="bg-slate-50 rounded-xl p-4 text-center"><div class="text-2xl font-bold text-slate-800" id="exec-sla-threshold">–</div><div class="text-xs text-slate-500 mt-1">SLA Threshold (hrs)</div></div>
+    </div>
+  </div>
+
+  <!-- Org Executive Summary Table -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-slate-800">Org-Level SLA Executive Summary</h2>
+      <span id="exec-summary-count" class="text-xs bg-slate-100 text-slate-600 rounded-full px-3 py-1"></span>
+    </div>
+    <div id="exec-summary-empty" class="hidden text-sm text-slate-400 py-8 text-center">No data available.</div>
+    <div id="exec-summary-wrap" class="hidden overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-slate-200 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
+            <th class="py-3 pr-4">Org</th>
+            <th class="py-3 pr-4 text-right">Live Submissions</th>
+            <th class="py-3 pr-4 text-right">Live Breached</th>
+            <th class="py-3 pr-4 text-right">Live Breach Rate</th>
+            <th class="py-3 pr-4 text-center">Live Severity</th>
+            <th class="py-3 pr-4 text-right">Archive Submissions</th>
+            <th class="py-3 pr-4 text-right">Archive Breached</th>
+            <th class="py-3 pr-4 text-right">Archive Breach Rate</th>
+            <th class="py-3 pr-4 text-center">Combined Severity</th>
+            <th class="py-3 text-center">Requires Attention</th>
+          </tr>
+        </thead>
+        <tbody id="exec-summary-tbody" class="divide-y divide-slate-100"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+</main>
+
+<!-- ── Config Modal ────────────────────────────────────────────────────────── -->
+<div id="config-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+    <h2 class="text-base font-bold text-slate-900 mb-1">ตั้งค่าการเชื่อมต่อ Supabase</h2>
+    <p class="text-xs text-slate-500 mb-5">ข้อมูลถูกเก็บใน localStorage เท่านั้น ไม่มีการส่งไปยังเซิร์ฟเวอร์ภายนอก</p>
+
+    <div class="space-y-4">
+      <div>
+        <label class="block text-xs font-medium text-slate-600 mb-1">Supabase URL</label>
+        <input id="cfg-url" type="url" placeholder="https://xxxx.supabase.co"
+          class="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"/>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-600 mb-1">Anon / Service Role Key</label>
+        <input id="cfg-key" type="password" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…"
+          class="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"/>
+        <p class="text-xs text-slate-400 mt-1">ใช้ anon key สำหรับ authenticated user หรือ service_role key สำหรับ admin view</p>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-600 mb-1">Auto-refresh interval (วินาที)</label>
+        <input id="cfg-interval" type="number" min="10" max="3600" value="60"
+          class="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"/>
+      </div>
+    </div>
+
+    <div class="flex gap-3 mt-6">
+      <button onclick="saveConfig()"
+        class="flex-1 bg-brand-700 hover:bg-brand-900 text-white text-sm font-medium py-2 rounded-xl transition-colors">
+        บันทึกและโหลดข้อมูล
+      </button>
+      <button onclick="closeConfig()"
+        class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
+        ยกเลิก
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Scripts ─────────────────────────────────────────────────────────────── -->
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// Config
+// ═══════════════════════════════════════════════════════════════════
+const CFG_KEY = 'monolith_etax_dashboard_cfg';
+
+function getConfig() {
+  try {
+    return JSON.parse(localStorage.getItem(CFG_KEY) || '{}');
+  } catch { return {}; }
+}
+
+function saveConfig() {
+  const url      = document.getElementById('cfg-url').value.trim();
+  const key      = document.getElementById('cfg-key').value.trim();
+  const interval = parseInt(document.getElementById('cfg-interval').value, 10) || 60;
+
+  if (!url || !key) { alert('กรุณากรอก URL และ Key'); return; }
+
+  localStorage.setItem(CFG_KEY, JSON.stringify({ url, key, interval }));
+  closeConfig();
+  fetchAllData();
+  startAutoRefresh();
+}
+
+function openConfig() {
+  const cfg = getConfig();
+  document.getElementById('cfg-url').value      = cfg.url      || '';
+  document.getElementById('cfg-key').value      = cfg.key      || '';
+  document.getElementById('cfg-interval').value = cfg.interval || 60;
+  document.getElementById('config-modal').classList.remove('hidden');
+}
+
+function closeConfig() {
+  document.getElementById('config-modal').classList.add('hidden');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// State
+// ═══════════════════════════════════════════════════════════════════
+let state = {
+  compliance:        [],
+  healthSummary:     [],
+  riskRanking:       [],
+  slaRows:           [],
+  slaSummary:        null,
+  slaTimeline:       [],
+  slaArchiveRollup:  [],   // rpc_etax_sla_archive_org_rollup (Migration 0202)
+  slaArchiveSummary: [],   // rpc_etax_sla_archive_summary    (Migration 0202)
+  executiveSummary:  [],   // rpc_etax_sla_executive_summary  (Migration 0203)
+  executiveKpiBanner: null, // rpc_etax_executive_kpi_banner   (Migration 0204)
+  loading:           false,
+  error:             null,
+  lastRefreshed:     null,
+  sortCol:           'risk_rank',
+  sortDir:           'asc',
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// API helpers
+// ═══════════════════════════════════════════════════════════════════
+async function apiFetch(path) {
+  const cfg = getConfig();
+  if (!cfg.url || !cfg.key) throw new Error('ยังไม่ได้ตั้งค่า Supabase URL หรือ Key');
+
+  const resp = await fetch(`${cfg.url}/rest/v1/${path}`, {
+    headers: {
+      'apikey':        cfg.key,
+      'Authorization': `Bearer ${cfg.key}`,
+      'Accept':        'application/json',
+      'Range':         '0-499',
+    }
+  });
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => resp.statusText);
+    throw new Error(`API Error ${resp.status}: ${text.slice(0, 200)}`);
+  }
+  return resp.json();
+}
+
+async function rpcFetch(fnName, body = {}) {
+  const cfg = getConfig();
+  if (!cfg.url || !cfg.key) throw new Error('ยังไม่ได้ตั้งค่า Supabase URL หรือ Key');
+
+  const resp = await fetch(`${cfg.url}/rest/v1/rpc/${fnName}`, {
+    method:  'POST',
+    headers: {
+      'apikey':        cfg.key,
+      'Authorization': `Bearer ${cfg.key}`,
+      'Content-Type':  'application/json',
+      'Accept':        'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => resp.statusText);
+    throw new Error(`RPC ${fnName} Error ${resp.status}: ${text.slice(0, 200)}`);
+  }
+  return resp.json();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Fetch all data
+// ═══════════════════════════════════════════════════════════════════
+async function fetchAllData() {
+  if (state.loading) return;
+  state.loading = true;
+  setRefreshSpinning(true);
+  hideError();
+
+  try {
+    const [compliance, healthSummary, riskRanking, slaRows, slaSummary, slaTimeline,
+           slaArchiveRollup, slaArchiveSummary,
+           executiveSummary, executiveKpiBanner] = await Promise.all([
+      apiFetch('v_etax_compliance_dashboard?select=*&order=org_id.asc').catch(e => { console.warn('compliance:', e); return []; }),
+      apiFetch('v_etax_full_health_summary?select=*&order=health_score.asc').catch(e => { console.warn('health:', e); return []; }),
+      rpcFetch('rpc_etax_org_risk_ranking_admin', { p_limit: 200 }).catch(() =>
+        apiFetch('v_etax_org_risk_ranking?select=*&order=risk_rank.asc').catch(e => { console.warn('ranking:', e); return []; })
+      ),
+      rpcFetch('rpc_etax_submission_sla_cached', {}).catch(e => { console.warn('sla_cached:', e); return []; }),
+      rpcFetch('rpc_etax_sla_summary', {}).catch(e => { console.warn('sla_summary:', e); return null; }),
+      rpcFetch('rpc_etax_sla_breach_timeline', { p_days: 30 }).catch(e => { console.warn('sla_timeline:', e); return []; }),
+      rpcFetch('rpc_etax_sla_archive_org_rollup', {}).catch(e => { console.warn('sla_archive_rollup:', e); return []; }),
+      rpcFetch('rpc_etax_sla_archive_summary', {}).catch(e => { console.warn('sla_archive_summary:', e); return []; }),
+      rpcFetch('rpc_etax_sla_executive_summary', {}).catch(e => { console.warn('executive_summary:', e); return []; }),
+      rpcFetch('rpc_etax_executive_kpi_banner', {}).catch(e => { console.warn('executive_kpi_banner:', e); return null; }),
+    ]);
+
+    state.compliance        = compliance    || [];
+    state.healthSummary     = healthSummary || [];
+    state.slaRows           = Array.isArray(slaRows) ? slaRows : [];
+    state.slaSummary        = Array.isArray(slaSummary) ? (slaSummary[0] || null) : slaSummary;
+    state.slaTimeline       = Array.isArray(slaTimeline) ? slaTimeline : [];
+    state.riskRanking       = Array.isArray(riskRanking) ? riskRanking : [];
+    state.slaArchiveRollup  = Array.isArray(slaArchiveRollup)  ? slaArchiveRollup  : [];
+    state.slaArchiveSummary = Array.isArray(slaArchiveSummary) ? slaArchiveSummary : [];
+    state.executiveSummary  = Array.isArray(executiveSummary)  ? executiveSummary  : [];
+    state.executiveKpiBanner = Array.isArray(executiveKpiBanner) ? (executiveKpiBanner[0] || null) : executiveKpiBanner;
+    state.lastRefreshed = new Date();
+    state.error         = null;
+
+    renderAll();
+  } catch (err) {
+    state.error = err.message;
+    showError(err.message);
+  } finally {
+    state.loading = false;
+    setRefreshSpinning(false);
+    updateFreshnessStrip();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Render helpers
+// ═══════════════════════════════════════════════════════════════════
+function renderAll() {
+  renderKPICards();
+  renderHealthSummary();
+  renderCriticalOrgs();
+  renderRankingTable();
+  renderDetailTable();
+  renderSlaTab();
+  renderExecutiveTab();
+}
+
+// ── SLA Monitor Tab ──────────────────────────────────────────────────────────
+
+const TIER_CLASSES = {
+  CRITICAL: 'bg-red-100 text-red-800',
+  WARNING:  'bg-orange-100 text-orange-800',
+  ELEVATED: 'bg-yellow-100 text-yellow-800',
+  NORMAL:   'bg-blue-100 text-blue-800',
+  HEALTHY:  'bg-green-100 text-green-800',
+};
+
+function tierBadge(tier) {
+  const cls = TIER_CLASSES[tier] || 'bg-slate-100 text-slate-700';
+  return `<span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${cls}">${tier || '–'}</span>`;
+}
+
+function renderSlaTab() {
+  // ── Summary card
+  const s = state.slaSummary;
+  if (s) {
+    const rate = s.breach_rate != null ? (Number(s.breach_rate) * 100).toFixed(1) + '%' : '–';
+    document.getElementById('sla-total-submissions').textContent = s.total_submissions ?? '–';
+    document.getElementById('sla-breach-count').textContent      = s.breach_count      ?? '–';
+    document.getElementById('sla-breach-rate').textContent       = rate;
+    document.getElementById('sla-worst-type').textContent        = s.worst_document_type ?? '–';
+    document.getElementById('sla-threshold').textContent         = s.sla_threshold_hours ?? '24';
+    const tierEl = document.getElementById('sla-summary-tier');
+    const tierCls = TIER_CLASSES[s.severity_tier] || 'bg-slate-100 text-slate-700';
+    tierEl.className = `inline-block px-3 py-1 rounded-full text-sm font-semibold ${tierCls}`;
+    tierEl.textContent = s.severity_tier || '–';
+  }
+  applySlaFilter();
+  renderSlaChart();
+  renderSlaArchiveRollup();
+  renderSlaArchiveSummary();
+}
+
+// ── Archive Org Rollup renderer ───────────────────────────────────────────────
+function renderSlaArchiveRollup() {
+  const rows    = state.slaArchiveRollup || [];
+  const loading = document.getElementById('archive-rollup-loading');
+  const empty   = document.getElementById('archive-rollup-empty');
+  const wrap    = document.getElementById('archive-rollup-wrap');
+  const tbody   = document.getElementById('archive-rollup-tbody');
+  const countEl = document.getElementById('archive-rollup-count');
+
+  if (loading) loading.classList.add('hidden');
+
+  if (!rows.length) {
+    if (empty) empty.classList.remove('hidden');
+    if (wrap)  wrap.classList.add('hidden');
+    if (countEl) countEl.textContent = '0 orgs';
+    return;
+  }
+
+  if (empty) empty.classList.add('hidden');
+  if (wrap)  wrap.classList.remove('hidden');
+  if (countEl) countEl.textContent = `${rows.length} org${rows.length !== 1 ? 's' : ''}`;
+
+  const fmt  = v => (v ?? 0).toLocaleString();
+  const pct  = v => v != null ? Number(v).toFixed(1) + '%' : '–';
+
+  tbody.innerHTML = rows.map(r => {
+    const docTypes = Array.isArray(r.breached_document_types)
+      ? r.breached_document_types.map(d =>
+          `<span class="inline-block bg-slate-100 text-slate-600 text-xs px-1.5 py-0.5 rounded mr-1">${d}</span>`
+        ).join('')
+      : '–';
+    return `<tr class="hover:bg-slate-50 transition-colors">
+      <td class="px-4 py-3 font-medium text-slate-800">${esc(r.org_name || r.org_id)}</td>
+      <td class="px-4 py-3 text-right tabular-nums text-slate-700">${fmt(r.total_archive_days)}</td>
+      <td class="px-4 py-3 text-right tabular-nums text-slate-700">${fmt(r.total_created)}</td>
+      <td class="px-4 py-3 text-right tabular-nums ${(r.total_breached||0)>0?'text-red-600 font-medium':'text-slate-400'}">${fmt(r.total_breached)}</td>
+      <td class="px-4 py-3 text-right tabular-nums ${(r.overall_breach_rate||0)>=25?'text-red-600 font-semibold':(r.overall_breach_rate||0)>=10?'text-amber-600':'text-slate-600'}">${pct(r.overall_breach_rate)}</td>
+      <td class="px-4 py-3 text-right tabular-nums text-slate-600">${fmt(r.peak_cumulative)}</td>
+      <td class="px-4 py-3 text-center">${tierBadge(r.worst_severity_tier)}</td>
+      <td class="px-4 py-3">${docTypes}</td>
+      <td class="px-4 py-3 text-right tabular-nums text-slate-500">${r.sla_threshold_hours ?? 24}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Archive Summary by Tier renderer ─────────────────────────────────────────
+function renderSlaArchiveSummary() {
+  const tierFilter = document.getElementById('archive-summary-filter-tier')?.value || '';
+  const allRows    = state.slaArchiveSummary || [];
+  const rows       = tierFilter ? allRows.filter(r => r.severity_tier === tierFilter) : allRows;
+
+  const loading = document.getElementById('archive-summary-loading');
+  const empty   = document.getElementById('archive-summary-empty');
+  const wrap    = document.getElementById('archive-summary-wrap');
+  const tbody   = document.getElementById('archive-summary-tbody');
+  const countEl = document.getElementById('archive-summary-count');
+
+  if (loading) loading.classList.add('hidden');
+
+  if (!rows.length) {
+    if (empty) empty.classList.remove('hidden');
+    if (wrap)  wrap.classList.add('hidden');
+    if (countEl) countEl.textContent = '0 rows';
+    return;
+  }
+
+  if (empty) empty.classList.add('hidden');
+  if (wrap)  wrap.classList.remove('hidden');
+  if (countEl) countEl.textContent = `${rows.length} row${rows.length !== 1 ? 's' : ''}`;
+
+  const fmt  = v => (v ?? 0).toLocaleString();
+  const rate = v => v != null ? (Number(v) * 100).toFixed(1) + '%' : '–';
+
+  tbody.innerHTML = rows.map(r => `<tr class="hover:bg-slate-50 transition-colors">
+    <td class="px-4 py-3 font-medium text-slate-800">${esc(r.org_name || r.org_id)}</td>
+    <td class="px-4 py-3 text-center">${tierBadge(r.severity_tier)}</td>
+    <td class="px-4 py-3 text-right tabular-nums text-slate-700">${fmt(r.total_archive_days)}</td>
+    <td class="px-4 py-3 text-right tabular-nums text-slate-700">${fmt(r.total_created)}</td>
+    <td class="px-4 py-3 text-right tabular-nums ${(r.total_breached||0)>0?'text-red-600 font-medium':'text-slate-400'}">${fmt(r.total_breached)}</td>
+    <td class="px-4 py-3 text-right tabular-nums text-slate-600">${rate(r.avg_breach_rate)}</td>
+    <td class="px-4 py-3 text-right tabular-nums ${(r.max_breach_rate||0)>=0.5?'text-red-600 font-semibold':(r.max_breach_rate||0)>=0.25?'text-amber-600':'text-slate-600'}">${rate(r.max_breach_rate)}</td>
+    <td class="px-4 py-3 text-right tabular-nums text-slate-600">${fmt(r.max_cumulative)}</td>
+    <td class="px-4 py-3 text-right tabular-nums text-slate-500">${r.sla_threshold_hours ?? 24}</td>
+  </tr>`).join('');
+}
+
+// ── SLA Breach Trend Chart ───────────────────────────────────────────────────
+
+const DOC_COLORS = {
+  T01: { border: '#0ea5e9', bg: 'rgba(14,165,233,0.12)' },
+  T02: { border: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
+  T03: { border: '#10b981', bg: 'rgba(16,185,129,0.12)' },
+  T04: { border: '#ef4444', bg: 'rgba(239,68,68,0.12)'  },
+};
+
+let _slaChart    = null;
+let _chartMode   = 'line'; // 'line' = cumulative_breached | 'bar' = daily breached_count
+
+function renderSlaChart(timelineRows) {
+  const rows   = timelineRows ?? state.slaTimeline ?? [];
+  const loading = document.getElementById('sla-chart-loading');
+  const empty   = document.getElementById('sla-chart-empty');
+  const errEl   = document.getElementById('sla-chart-error');
+  const wrap    = document.getElementById('sla-chart-wrap');
+
+  if (loading) loading.classList.add('hidden');
+  if (errEl)   errEl.classList.add('hidden');
+
+  if (!rows || rows.length === 0) {
+    if (empty) empty.classList.remove('hidden');
+    if (wrap)  wrap.classList.add('hidden');
+    return;
+  }
+
+  if (empty) empty.classList.add('hidden');
+  if (wrap)  wrap.classList.remove('hidden');
+
+  // Collect unique sorted dates and unique doc types
+  const dateSet    = new Set(rows.map(r => r.breach_date));
+  const labels     = [...dateSet].sort();
+  const docTypes   = [...new Set(rows.map(r => r.document_type))].sort();
+
+  // Branch on chart mode
+  const isBar     = _chartMode === 'bar';
+  const valueKey  = isBar ? 'breached_count' : 'cumulative_breached';
+
+  // Build dataset per doc type
+  const datasets = docTypes.map(dt => {
+    const dtRows = rows.filter(r => r.document_type === dt);
+    const lookup = Object.fromEntries(dtRows.map(r => [r.breach_date, r[valueKey]]));
+    const data   = labels.map(d => lookup[d] ?? null);
+    const col    = DOC_COLORS[dt] || { border: '#64748b', bg: 'rgba(100,116,139,0.12)' };
+    if (isBar) {
+      return {
+        label:           dt,
+        data,
+        backgroundColor: col.border,
+        borderColor:     col.border,
+        borderWidth:     1,
+        borderRadius:    4,
+        spanGaps:        true,
+      };
+    }
+    return {
+      label:                dt,
+      data,
+      borderColor:          col.border,
+      backgroundColor:      col.bg,
+      pointBackgroundColor: col.border,
+      pointRadius:          3,
+      pointHoverRadius:     5,
+      borderWidth:          2,
+      tension:              0.3,
+      fill:                 false,
+      spanGaps:             true,
+    };
+  });
+
+  const canvas = document.getElementById('sla-breach-chart');
+  if (!canvas) return;
+
+  // Destroy previous chart instance if it exists
+  if (_slaChart) {
+    _slaChart.destroy();
+    _slaChart = null;
+  }
+
+  const chartTitle    = isBar ? 'Daily Breach Counts' : '30-Day Cumulative Breach Trend';
+  const chartSubtitle = isBar
+    ? 'Daily SLA breach count per document type — bar view'
+    : 'Running total of SLA breaches per document type — fetched from daily breach timeline';
+  const yAxisTitle    = isBar ? 'Daily Breaches' : 'Cumulative Breaches';
+  const tooltipLabel  = isBar
+    ? ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y ?? 0} daily breaches`
+    : ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y ?? 0} cumulative breaches`;
+
+  // Update heading
+  const titleEl    = document.getElementById('sla-chart-title');
+  const subtitleEl = document.getElementById('sla-chart-subtitle');
+  if (titleEl)    titleEl.textContent    = chartTitle;
+  if (subtitleEl) subtitleEl.textContent = chartSubtitle;
+
+  _slaChart = new Chart(canvas, {
+    type: isBar ? 'bar' : 'line',
+    data: { labels, datasets },
+    options: {
+      responsive:          true,
+      maintainAspectRatio: false,
+      interaction:         { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          position: 'top',
+          labels:   { font: { size: 12 }, padding: 16, usePointStyle: true },
+        },
+        tooltip: {
+          callbacks: {
+            title: ctx => `Date: ${ctx[0].label}`,
+            label: tooltipLabel,
+          },
+        },
+      },
+      scales: {
+        x: {
+          type:    'category',
+          stacked: isBar,
+          ticks: {
+            maxTicksLimit: 10,
+            font:          { size: 11 },
+            maxRotation:   30,
+          },
+          grid: { color: 'rgba(148,163,184,0.15)' },
+        },
+        y: {
+          beginAtZero: true,
+          stacked:     false,
+          ticks:       { precision: 0, font: { size: 11 } },
+          grid:        { color: 'rgba(148,163,184,0.2)' },
+          title: {
+            display: true,
+            text:    yAxisTitle,
+            font:    { size: 11 },
+            color:   '#94a3b8',
+          },
+        },
+      },
+    },
+  });
+}
+
+async function onChartDaysChange() {
+  await refreshSlaChart();
+}
+
+function switchChartMode(mode) {
+  _chartMode = mode;
+  // Update segmented control button styles
+  const lineBtn = document.getElementById('chart-mode-line');
+  const barBtn  = document.getElementById('chart-mode-bar');
+  if (lineBtn && barBtn) {
+    if (mode === 'line') {
+      lineBtn.className = 'px-3 py-1.5 bg-brand-500 text-white transition-colors';
+      barBtn.className  = 'px-3 py-1.5 bg-white text-slate-600 border-l border-slate-200 hover:bg-slate-50 transition-colors';
+    } else {
+      lineBtn.className = 'px-3 py-1.5 bg-white text-slate-600 hover:bg-slate-50 transition-colors';
+      barBtn.className  = 'px-3 py-1.5 bg-brand-500 text-white border-l border-slate-200 transition-colors';
+    }
+  }
+  // Re-render with current data
+  renderSlaChart(state.slaTimeline ?? []);
+}
+
+async function refreshSlaChart() {
+  const days    = parseInt(document.getElementById('chart-days-select')?.value || '30', 10);
+  const loading = document.getElementById('sla-chart-loading');
+  const wrap    = document.getElementById('sla-chart-wrap');
+  const errEl   = document.getElementById('sla-chart-error');
+
+  if (loading) loading.classList.remove('hidden');
+  if (wrap)    wrap.classList.add('hidden');
+  if (errEl)   errEl.classList.add('hidden');
+
+  try {
+    const rows = await rpcFetch('rpc_etax_sla_breach_timeline', { p_days: days });
+    state.slaTimeline = Array.isArray(rows) ? rows : [];
+    renderSlaChart(state.slaTimeline);
+  } catch (err) {
+    if (loading) loading.classList.add('hidden');
+    if (errEl) {
+      errEl.textContent = `Chart error: ${err?.message || err}`;
+      errEl.classList.remove('hidden');
+    }
+  } finally {
+    if (loading) loading.classList.add('hidden');
+  }
+}
+
+function applySlaFilter() {
+  const sevFilter = document.getElementById('sla-filter-severity')?.value || '';
+  const docFilter = document.getElementById('sla-filter-doctype')?.value || '';
+
+  const rows = state.slaRows.filter(r => {
+    if (sevFilter && r.severity_tier !== sevFilter) return false;
+    if (docFilter && r.document_type !== docFilter) return false;
+    return true;
+  });
+
+  const tbody = document.getElementById('sla-tbody');
+  const countEl = document.getElementById('sla-count');
+  if (countEl) countEl.textContent = `${rows.length} row${rows.length !== 1 ? 's' : ''}`;
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-slate-400">No SLA data available</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => {
+    const rate      = r.breach_rate != null ? (Number(r.breach_rate) * 100).toFixed(1) + '%' : '–';
+    const avgHours  = r.avg_processing_hours != null ? Number(r.avg_processing_hours).toFixed(1) : '–';
+    const breachFlag = r.sla_breach_flag
+      ? '<span class="text-red-600 font-bold">●</span> Breached'
+      : '<span class="text-green-600 font-bold">●</span> OK';
+    return `<tr class="hover:bg-slate-50 transition-colors">
+      <td class="px-4 py-3 text-slate-800">${r.org_name ?? r.org_id ?? '–'}</td>
+      <td class="px-4 py-3 text-center font-mono text-slate-700">${r.document_type ?? '–'}</td>
+      <td class="px-4 py-3 text-right tabular-nums text-slate-700">${r.total_submissions ?? 0}</td>
+      <td class="px-4 py-3 text-right tabular-nums text-red-700">${r.breach_count ?? 0}</td>
+      <td class="px-4 py-3 text-right tabular-nums">${rate}</td>
+      <td class="px-4 py-3 text-right tabular-nums text-slate-600">${avgHours}</td>
+      <td class="px-4 py-3 text-right tabular-nums text-slate-600">${r.sla_threshold_hours ?? 24}</td>
+      <td class="px-4 py-3 text-center">${tierBadge(r.severity_tier)}</td>
+      <td class="px-4 py-3 text-center text-xs">${breachFlag}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── KPI Cards ─────────────────────────────────────────────────────
+function renderKPICards() {
+  const grid = document.getElementById('kpi-grid');
+  const loading = document.getElementById('kpi-loading');
+  if (loading) loading.remove();
+
+  const totals = state.compliance.reduce((acc, r) => ({
+    total:           acc.total           + (r.total_submissions         || 0),
+    submitted:       acc.submitted       + (r.submitted_count           || 0),
+    failed:          acc.failed          + (r.failed_count              || 0),
+    overdue:         acc.overdue         + (r.overdue_with_pending_etax || 0),
+    failed24h:       acc.failed24h       + (r.failed_last_24h           || 0),
+  }), { total: 0, submitted: 0, failed: 0, overdue: 0, failed24h: 0 });
+
+  const successRate = totals.total > 0
+    ? ((totals.submitted / totals.total) * 100).toFixed(1)
+    : '—';
+
+  const cards = [
+    { label: 'Total Submissions', value: fmt(totals.total),     icon: '📊', color: 'blue' },
+    { label: 'Submitted',         value: fmt(totals.submitted), icon: '✅', color: 'green' },
+    { label: 'Failed',            value: fmt(totals.failed),    icon: '❌', color: 'red' },
+    { label: 'Success Rate',      value: `${successRate}%`,     icon: '📈', color: successRate >= 80 ? 'green' : successRate >= 50 ? 'yellow' : 'red' },
+    { label: 'Overdue + eTax',    value: fmt(totals.overdue),   icon: '⏰', color: totals.overdue > 0 ? 'orange' : 'green' },
+    { label: 'Failed (24 h)',     value: fmt(totals.failed24h), icon: '🔴', color: totals.failed24h > 5 ? 'red' : 'slate' },
+  ];
+
+  const colourMap = {
+    blue:   'bg-blue-50 border-blue-100 text-blue-700',
+    green:  'bg-green-50 border-green-100 text-green-700',
+    red:    'bg-red-50 border-red-100 text-red-700',
+    yellow: 'bg-yellow-50 border-yellow-100 text-yellow-700',
+    orange: 'bg-orange-50 border-orange-100 text-orange-700',
+    slate:  'bg-white border-slate-100 text-slate-700',
+  };
+
+  // Clear existing cards (keep loading placeholder removed above)
+  grid.querySelectorAll('.kpi-card').forEach(el => el.remove());
+
+  cards.forEach(({ label, value, icon, color }) => {
+    const classes = colourMap[color] || colourMap.slate;
+    const card = document.createElement('div');
+    card.className = `kpi-card rounded-2xl border p-4 flex flex-col gap-1 fade-in ${classes}`;
+    card.innerHTML = `
+      <div class="text-xl">${icon}</div>
+      <div class="text-2xl font-bold leading-none">${value}</div>
+      <div class="text-xs font-medium opacity-75">${label}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+// ── Health Summary ─────────────────────────────────────────────────
+function renderHealthSummary() {
+  const el = document.getElementById('health-summary-list');
+  if (!state.healthSummary.length) {
+    el.innerHTML = '<p class="text-slate-400">ไม่มีข้อมูล</p>';
+    el.classList.remove('pulse');
+    return;
+  }
+
+  const tiers = { CRITICAL: 0, WARNING: 0, HEALTHY: 0 };
+  const totalScore = state.healthSummary.reduce((s, r) => s + (r.health_score || 0), 0);
+  const avgScore = totalScore / state.healthSummary.length;
+  state.healthSummary.forEach(r => {
+    const t = r.health_status === 'critical' ? 'CRITICAL' : r.health_status === 'warning' ? 'WARNING' : 'HEALTHY';
+    tiers[t]++;
+  });
+
+  const scoreBar = (score) => {
+    const w = Math.round(score);
+    const col = score >= 80 ? 'bg-green-500' : score >= 50 ? 'bg-yellow-500' : 'bg-red-500';
+    return `<div class="w-full bg-slate-100 rounded-full h-1.5 mt-1">
+      <div class="score-bar-fill h-1.5 rounded-full ${col}" style="width:${w}%"></div>
+    </div>`;
+  };
+
+  el.classList.remove('pulse');
+  el.innerHTML = `
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-slate-600 font-medium">Average Health Score</span>
+      <span class="text-2xl font-bold ${avgScore >= 80 ? 'text-green-600' : avgScore >= 50 ? 'text-yellow-600' : 'text-red-600'}">
+        ${avgScore.toFixed(1)}
+      </span>
+    </div>
+    ${scoreBar(avgScore)}
+    <div class="grid grid-cols-3 gap-2 mt-4">
+      <div class="text-center p-2 rounded-xl tier-critical">
+        <div class="text-xl font-bold">${tiers.CRITICAL}</div>
+        <div class="text-xs font-medium">CRITICAL</div>
+      </div>
+      <div class="text-center p-2 rounded-xl tier-warning">
+        <div class="text-xl font-bold">${tiers.WARNING}</div>
+        <div class="text-xs font-medium">WARNING</div>
+      </div>
+      <div class="text-center p-2 rounded-xl tier-healthy">
+        <div class="text-xl font-bold">${tiers.HEALTHY}</div>
+        <div class="text-xs font-medium">HEALTHY</div>
+      </div>
+    </div>
+    <div class="mt-3 text-xs text-slate-400">
+      ${state.healthSummary.length} องค์กรทั้งหมด
+    </div>
+  `;
+}
+
+// ── Critical Orgs ──────────────────────────────────────────────────
+function renderCriticalOrgs() {
+  const el = document.getElementById('critical-orgs-list');
+  el.classList.remove('pulse');
+
+  const critical = state.riskRanking.filter(r => r.risk_tier === 'CRITICAL').slice(0, 8);
+  if (!critical.length) {
+    el.innerHTML = '<div class="flex items-center gap-2 text-green-600 py-4"><span class="text-lg">✅</span><span>ไม่มีองค์กรในสถานะ CRITICAL</span></div>';
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="space-y-2">
+      ${critical.map(r => `
+        <div class="flex items-center gap-3 p-3 rounded-xl bg-red-50 border border-red-100">
+          <div class="w-7 h-7 rounded-full bg-red-100 flex items-center justify-center text-red-700 text-xs font-bold shrink-0">
+            ${r.risk_rank}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-medium text-slate-800 truncate">${esc(r.org_name || r.org_id)}</div>
+            <div class="text-xs text-slate-500">Health Score: <strong>${r.health_score ?? '—'}</strong></div>
+          </div>
+          <div class="shrink-0 text-right">
+            <span class="px-2 py-0.5 rounded-full text-xs font-medium tier-critical">CRITICAL</span>
+            ${r.is_priority_review ? '<div class="text-xs text-red-600 mt-0.5">⚠ Priority</div>' : ''}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// ── Ranking Table ──────────────────────────────────────────────────
+function renderRankingTable() {
+  const tbody = document.getElementById('ranking-tbody');
+  const countEl = document.getElementById('ranking-count');
+
+  if (!state.riskRanking.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-slate-400">ไม่มีข้อมูล</td></tr>';
+    return;
+  }
+
+  applyFilters();
+  updateSortIndicators();
+}
+
+function applyFilters() {
+  const tierFilter = document.getElementById('tier-filter')?.value || '';
+  const search     = (document.getElementById('org-search')?.value || '').toLowerCase();
+
+  let rows = [...state.riskRanking];
+
+  if (tierFilter) rows = rows.filter(r => r.risk_tier === tierFilter);
+  if (search)     rows = rows.filter(r => (r.org_name || r.org_id || '').toLowerCase().includes(search));
+
+  // Sort
+  rows.sort((a, b) => {
+    let av = a[state.sortCol] ?? '';
+    let bv = b[state.sortCol] ?? '';
+    if (typeof av === 'number') {
+      return state.sortDir === 'asc' ? av - bv : bv - av;
+    }
+    av = String(av).toLowerCase();
+    bv = String(bv).toLowerCase();
+    return state.sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+  });
+
+  document.getElementById('ranking-count').textContent = `${rows.length} รายการ`;
+
+  const tbody = document.getElementById('ranking-tbody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-slate-400">ไม่พบรายการ</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => {
+    const tierClass = r.risk_tier === 'CRITICAL' ? 'bg-red-50' : r.risk_tier === 'WARNING' ? 'bg-yellow-50/60' : '';
+    const scoreColour = (r.health_score || 0) >= 80 ? 'text-green-600' : (r.health_score || 0) >= 50 ? 'text-yellow-600' : 'text-red-600';
+    return `
+      <tr class="${tierClass} hover:bg-slate-50 transition-colors">
+        <td class="px-4 py-3 text-right font-mono font-bold text-slate-500">${r.risk_rank ?? '—'}</td>
+        <td class="px-4 py-3 font-medium text-slate-800">${esc(r.org_name || r.org_id)}</td>
+        <td class="px-4 py-3 text-center">
+          <div class="inline-flex items-center gap-2">
+            <span class="font-bold ${scoreColour}">${r.health_score ?? '—'}</span>
+            <div class="w-16 bg-slate-100 rounded-full h-1.5">
+              <div class="score-bar-fill h-1.5 rounded-full ${(r.health_score||0)>=80?'bg-green-500':(r.health_score||0)>=50?'bg-yellow-500':'bg-red-500'}"
+                   style="width:${Math.min(100,r.health_score||0)}%"></div>
+            </div>
+          </div>
+        </td>
+        <td class="px-4 py-3 text-center">
+          <span class="px-2 py-0.5 rounded-full text-xs font-medium ${tierBadgeClass(r.risk_tier)}">
+            ${r.risk_tier ?? '—'}
+          </span>
+        </td>
+        <td class="px-4 py-3 text-center">
+          <span class="px-2 py-0.5 rounded-full text-xs ${statusClass(r.health_status)}">
+            ${r.health_status ?? '—'}
+          </span>
+        </td>
+        <td class="px-4 py-3 text-center">
+          ${r.is_priority_review ? '<span class="text-red-600 font-medium text-xs">⚠ ใช่</span>' : '<span class="text-slate-300 text-xs">—</span>'}
+        </td>
+        <td class="px-4 py-3 text-right text-xs text-slate-500 font-mono">${fmtDate(r.last_submission_at)}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function sortTable(col) {
+  if (state.sortCol === col) {
+    state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    state.sortCol = col;
+    state.sortDir = 'asc';
+  }
+  applyFilters();
+  updateSortIndicators();
+}
+
+function updateSortIndicators() {
+  ['risk_rank', 'org_name', 'risk_tier', 'last_submission_at'].forEach(col => {
+    const el = document.getElementById(`sort-${col}`);
+    if (el) {
+      el.textContent = state.sortCol === col ? (state.sortDir === 'asc' ? '↑' : '↓') : '↕';
+    }
+  });
+}
+
+// ── Detail Table ───────────────────────────────────────────────────
+function renderDetailTable() {
+  applyDetailFilter();
+}
+
+function applyDetailFilter() {
+  const search = (document.getElementById('detail-search')?.value || '').toLowerCase();
+  let rows = [...state.compliance];
+  if (search) rows = rows.filter(r => (r.org_name || r.org_id || '').toLowerCase().includes(search));
+
+  document.getElementById('detail-count').textContent = `${rows.length} รายการ`;
+  const tbody = document.getElementById('detail-tbody');
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-slate-400">ไม่มีข้อมูล</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => {
+    const rate = r.success_rate != null ? Number(r.success_rate).toFixed(1) : '—';
+    const rateColour = (r.success_rate || 0) >= 80 ? 'text-green-600' : (r.success_rate || 0) >= 50 ? 'text-yellow-600' : 'text-red-600';
+    return `
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="px-4 py-3 font-medium text-slate-800">${esc(r.org_name || r.org_id)}</td>
+        <td class="px-4 py-3 text-right font-mono text-slate-600">${fmt(r.total_submissions)}</td>
+        <td class="px-4 py-3 text-right font-mono text-green-600">${fmt(r.submitted_count)}</td>
+        <td class="px-4 py-3 text-right font-mono text-red-500">${fmt(r.failed_count)}</td>
+        <td class="px-4 py-3 text-right font-bold ${rateColour}">${rate}%</td>
+        <td class="px-4 py-3 text-right font-mono ${(r.overdue_with_pending_etax||0)>0?'text-orange-600 font-medium':'text-slate-400'}">${fmt(r.overdue_with_pending_etax)}</td>
+        <td class="px-4 py-3 text-right font-mono ${(r.failed_last_24h||0)>0?'text-red-600':'text-slate-400'}">${fmt(r.failed_last_24h)}</td>
+        <td class="px-4 py-3 text-right text-xs text-slate-500 font-mono">${fmtDate(r.last_submission_at)}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Tabs
+// ═══════════════════════════════════════════════════════════════════
+let activeTab = 'overview';
+
+function switchTab(tab) {
+  activeTab = tab;
+  ['overview', 'ranking', 'detail', 'sla', 'executive'].forEach(t => {
+    document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== tab);
+    document.getElementById(`tab-${t}`).className =
+      t === tab ? 'tab-active px-5 py-3 text-sm transition-colors'
+                : 'tab-inactive px-5 py-3 text-sm transition-colors';
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Utilities
+// ═══════════════════════════════════════════════════════════════════
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function fmt(n) {
+  if (n == null) return '—';
+  return Number(n).toLocaleString('th-TH');
+}
+function fmtDate(iso) {
+  if (!iso) return '—';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('th-TH', { day:'2-digit', month:'2-digit', year:'2-digit' })
+      + ' ' + d.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' });
+  } catch { return iso; }
+}
+function tierBadgeClass(tier) {
+  return tier === 'CRITICAL' ? 'tier-critical'
+       : tier === 'WARNING'  ? 'tier-warning'
+       : 'tier-healthy';
+}
+function statusClass(status) {
+  return status === 'critical' ? 'bg-red-50 text-red-600'
+       : status === 'warning'  ? 'bg-yellow-50 text-yellow-700'
+       : 'bg-green-50 text-green-700';
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-banner');
+  document.getElementById('error-message').textContent = msg;
+  el.classList.remove('hidden');
+}
+function hideError() {
+  document.getElementById('error-banner').classList.add('hidden');
+}
+
+function setRefreshSpinning(spinning) {
+  const icon = document.getElementById('refresh-icon');
+  if (spinning) icon.classList.add('animate-spin');
+  else          icon.classList.remove('animate-spin');
+}
+
+function updateFreshnessStrip() {
+  if (!state.lastRefreshed) return;
+  const strip = document.getElementById('freshness-strip');
+  const badge = document.getElementById('freshness-badge');
+  const timeEl = document.getElementById('last-refresh-time');
+
+  strip.classList.remove('hidden');
+  strip.classList.add('flex');
+
+  const now = new Date();
+  const age = (now - state.lastRefreshed) / 1000;
+  const cls = age < 120 ? 'fresh-fresh' : age < 900 ? 'fresh-stale' : 'fresh-critical';
+  const label = age < 120 ? 'fresh' : age < 900 ? 'stale' : 'critical';
+  badge.className = `px-2 py-1 rounded-full font-medium text-xs ${cls}`;
+  badge.textContent = `● ${label}`;
+  timeEl.textContent = `อัปเดต ${fmtDate(state.lastRefreshed.toISOString())}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Auto-refresh
+// ═══════════════════════════════════════════════════════════════════
+let refreshTimer = null;
+
+function startAutoRefresh() {
+  if (refreshTimer) clearInterval(refreshTimer);
+  const cfg = getConfig();
+  const ms = ((cfg.interval || 60) * 1000);
+  refreshTimer = setInterval(() => {
+    if (document.getElementById('auto-refresh-toggle').checked) fetchAllData();
+  }, ms);
+}
+
+// Toggle visuals
+function updateToggleVisual() {
+  const checked = document.getElementById('auto-refresh-toggle').checked;
+  document.getElementById('toggle-bg').style.backgroundColor  = checked ? '#0369a1' : '#e2e8f0';
+  document.getElementById('toggle-dot').style.transform = checked ? 'translateX(16px)' : 'translateX(0)';
+}
+
+document.getElementById('auto-refresh-toggle').addEventListener('change', updateToggleVisual);
+updateToggleVisual();
+
+// ═══════════════════════════════════════════════════════════════════
+// Init
+// ═══════════════════════════════════════════════════════════════════
+(function init() {
+  const cfg = getConfig();
+  if (!cfg.url || !cfg.key) {
+    document.getElementById('config-banner').classList.remove('hidden');
+  } else {
+    fetchAllData();
+    startAutoRefresh();
+  }
+})();
+
+// Executive Summary Tab
+function renderExecutiveTab() {
+  const b = state.executiveKpiBanner;
+  const kpiBanner  = document.getElementById('exec-kpi-banner');
+  const kpiLoading = document.getElementById('exec-kpi-loading');
+
+  if (b) {
+    if (kpiLoading) kpiLoading.classList.add('hidden');
+    if (kpiBanner)  kpiBanner.classList.remove('hidden');
+    const pct = v => v != null ? Number(v).toFixed(1) + '%' : '–';
+    const fmt = v => (v ?? 0).toLocaleString();
+    document.getElementById('exec-total-orgs').textContent       = fmt(b.total_orgs);
+    document.getElementById('exec-attention-orgs').textContent   = fmt(b.orgs_requiring_attention);
+    document.getElementById('exec-live-submissions').textContent = fmt(b.live_total_submissions);
+    document.getElementById('exec-live-breached').textContent    = fmt(b.live_total_breached);
+    document.getElementById('exec-worst-severity').textContent   = b.global_worst_severity || '–';
+    document.getElementById('exec-peak-breach-rate').textContent = pct(b.global_peak_breach_rate_pct);
+    document.getElementById('exec-archive-created').textContent  = fmt(b.archive_total_created);
+    document.getElementById('exec-archive-breached').textContent = fmt(b.archive_total_breached);
+    document.getElementById('exec-sla-threshold').textContent    = b.sla_threshold_hours ?? '24';
+  } else {
+    if (kpiLoading) kpiLoading.textContent = 'No data available.';
+  }
+
+  const rows    = state.executiveSummary || [];
+  const empty   = document.getElementById('exec-summary-empty');
+  const wrap    = document.getElementById('exec-summary-wrap');
+  const tbody   = document.getElementById('exec-summary-tbody');
+  const countEl = document.getElementById('exec-summary-count');
+
+  if (!rows.length) {
+    if (empty) empty.classList.remove('hidden');
+    if (wrap)  wrap.classList.add('hidden');
+    if (countEl) countEl.textContent = '0 orgs';
+    return;
+  }
+  if (empty) empty.classList.add('hidden');
+  if (wrap)  wrap.classList.remove('hidden');
+  if (countEl) countEl.textContent = rows.length + ' org' + (rows.length !== 1 ? 's' : '');
+
+  const fmt = v => (v ?? 0).toLocaleString();
+  const pct = v => v != null ? Number(v).toFixed(1) + '%' : '–';
+
+  tbody.innerHTML = rows.map(r => {
+    const attn = r.requires_attention
+      ? '<span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800">Yes</span>'
+      : '<span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">No</span>';
+    return '<tr class="hover:bg-slate-50 transition-colors">'
+      + '<td class="py-2 pr-4 font-medium text-slate-700">' + esc(r.org_name || r.org_id) + '</td>'
+      + '<td class="py-2 pr-4 text-right text-slate-600">' + fmt(r.live_total_submissions) + '</td>'
+      + '<td class="py-2 pr-4 text-right text-slate-600">' + fmt(r.live_breach_count) + '</td>'
+      + '<td class="py-2 pr-4 text-right text-slate-600">' + pct(r.live_breach_rate_pct) + '</td>'
+      + '<td class="py-2 pr-4 text-center">' + tierBadge(r.live_worst_severity) + '</td>'
+      + '<td class="py-2 pr-4 text-right text-slate-600">' + fmt(r.archive_total_created) + '</td>'
+      + '<td class="py-2 pr-4 text-right text-slate-600">' + fmt(r.archive_total_breached) + '</td>'
+      + '<td class="py-2 pr-4 text-right text-slate-600">' + pct(r.archive_breach_rate_pct) + '</td>'
+      + '<td class="py-2 pr-4 text-center">' + tierBadge(r.combined_worst_severity) + '</td>'
+      + '<td class="py-2 text-center">' + attn + '</td>'
+      + '</tr>';
+  }).join('');
+}
+</script>
+</body>
+</html>
+

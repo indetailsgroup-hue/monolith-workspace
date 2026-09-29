@@ -1,0 +1,79 @@
+name: TPC database integrity
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/*team_pulse*'
+      - 'supabase/migrations/*tpc*'
+      - 'tests/tpc-integrity/**'
+      - '.github/workflows/tpc-integrity.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/*team_pulse*'
+      - 'supabase/migrations/*tpc*'
+      - 'tests/tpc-integrity/**'
+      - '.github/workflows/tpc-integrity.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tpc-integrity:
+    name: TPC role isolation (PostgreSQL ${{ matrix.postgres }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        postgres: ['15', '18']
+    services:
+      postgres:
+        image: postgres:${{ matrix.postgres }}
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tpc_integrity
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: tpc_integrity
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Verify real TPC migrations against isolated role fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -X -v ON_ERROR_STOP=1 -At \
+            -c 'SELECT version()' \
+            -f tests/tpc-integrity/bootstrap.sql \
+            -f supabase/migrations/20270322_team_pulse_check.sql \
+            -f supabase/migrations/20270323_tpc_tenant_integrity.sql \
+            -f tests/tpc-integrity/verify.sql 2>&1 | tee tpc-integrity.log
+          count=$(grep -c '^PASS ' tpc-integrity.log || true)
+          if [ "$count" -ne 18 ]; then
+            echo "::error::expected 18 TPC role assertions, got $count"
+            exit 1
+          fi
+      - name: Retain database assertion evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: tpc-integrity-pg${{ matrix.postgres }}-${{ github.sha }}
+          path: tpc-integrity.log
+          if-no-files-found: error
+          retention-days: 30

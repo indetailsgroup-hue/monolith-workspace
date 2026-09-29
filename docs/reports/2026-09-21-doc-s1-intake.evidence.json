@@ -1,0 +1,497 @@
+{
+  "doc-s1": {
+    "sha256": "4712b25aa80dc0f3ef2cc6e3a68c3921b12413c81bc0f0610ca8813502f00e47",
+    "entries": 26,
+    "manifest_entries": 21,
+    "checks": [
+      {
+        "path": "doc-s1/analysis/phase-mapping-analysis.en.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "doc-s1/analysis/phase-mapping-analysis.en.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "doc-s1/analysis/phase-mapping-analysis.th.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "doc-s1/analysis/phase-mapping-analysis.th.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "doc-s1/gaps/content-gap-register.en.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "doc-s1/gaps/content-gap-register.en.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "doc-s1/gaps/content-gap-register.th.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "doc-s1/gaps/content-gap-register.th.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "doc-s1/gaps/glossary.en.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "doc-s1/gaps/glossary.en.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "doc-s1/gaps/glossary.th.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "doc-s1/gaps/glossary.th.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "doc-s1/inventory/chapter-inventory.csv",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "doc-s1/inventory/chapter-inventory.json",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "doc-s1/manifest/changed-file-list.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "doc-s1/manifest/files-read.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "doc-s1/manifest/limitations.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "doc-s1/readme/doc-s2-draft-readme.en.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "doc-s1/readme/doc-s2-draft-readme.en.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "doc-s1/readme/doc-s2-draft-readme.th.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "doc-s1/readme/doc-s2-draft-readme.th.md",
+        "hash_ok": true,
+        "size_ok": true
+      }
+    ],
+    "unlisted": [
+      "doc-s1/data/chapters_parsed.json",
+      "doc-s1/manifest/changed-file-list.html",
+      "doc-s1/manifest/files-read.html",
+      "doc-s1/manifest/limitations.html",
+      "doc-s1/manifest/manifest-sha256.json"
+    ],
+    "inventory_count": 55,
+    "inventory_errors": [],
+    "phases": {
+      "Foundation": 27,
+      "Phase 1": 1,
+      "Phase 2": 1,
+      "Phase 3": 2,
+      "Phase 4": 1,
+      "Phase 5": 2,
+      "Phase 6": 2,
+      "Phase 7": 2,
+      "Phase 8": 2,
+      "Phase 9": 3,
+      "Phase 10": 2,
+      "Phase 11": 2,
+      "Phase 12": 2,
+      "Phase 13": 2,
+      "Phase 14": 2,
+      "Phase 15": 2
+    },
+    "statuses": {
+      "complete": 53,
+      "in-progress": 2
+    },
+    "mcp_sum": 126,
+    "mismatch_flags": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      15,
+      38
+    ]
+  },
+  "v4.1": {
+    "sha256": "e6f23a67dd092bbf1ee88ab457f942ebe9917884faa6cad8d7d343be67fcac2d",
+    "entries": 66,
+    "manifest_entries": 65,
+    "checks": [
+      {
+        "path": "pfmea-domain-matrix.en.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "pfmea-domain-matrix.th.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "pfmea-domain-matrix.en.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "pfmea-domain-matrix.th.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "s03-s05-pilot-decision-list.en.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "s03-s05-pilot-decision-list.th.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "s03-s05-pilot-decision-list.en.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "s03-s05-pilot-decision-list.th.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "gap-semantic-matrix.csv",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-tracker.csv",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "monolith-conflict-register.csv",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "monolith-proposed-id-register.csv",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con002-006-aie-naming.en.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con002-006-aie-naming.th.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con002-006-aie-naming.en.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con002-006-aie-naming.th.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con007-008-gap-redef.en.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con007-008-gap-redef.th.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con007-008-gap-redef.en.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con007-008-gap-redef.th.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con009-pdpa.en.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con009-pdpa.th.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con009-pdpa.en.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con009-pdpa.th.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con010-vs01-title.en.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con010-vs01-title.th.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con010-vs01-title.en.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con010-vs01-title.th.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con011-programme-status.en.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con011-programme-status.th.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con011-programme-status.en.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con011-programme-status.th.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con012-pfmea.en.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con012-pfmea.th.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con012-pfmea.en.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con012-pfmea.th.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con013-roadmap2.en.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con013-roadmap2.th.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con013-roadmap2.en.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "decision-memo-con013-roadmap2.th.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "monolith-document-reconciliation.en.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "monolith-document-reconciliation.th.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "monolith-document-reconciliation.en.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "monolith-document-reconciliation.th.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "action-provenance-table.en.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "action-provenance-table.th.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "action-provenance-table.en.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "action-provenance-table.th.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "handoff-summary.en.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "handoff-summary.th.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "handoff-summary.en.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "handoff-summary.th.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "acceptance-response-matrix-v4.1.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "vs01-title-proposal.en.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "vs01-title-proposal.th.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "vs01-title-proposal.en.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "vs01-title-proposal.th.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "vs01-vision-to-boq-vertical-slice-v1.th.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "sc-backlog.csv",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "monolith-decision-dashboard.html",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "changed-files-v4.1.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "source_docs/2026-09-11-monolith-delivery-roadmap.en.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "source_docs/2026-09-11-monolith-delivery-roadmap.th.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "source_docs/2026-09-11-scispace-reconciliation-intake.en.md",
+        "hash_ok": true,
+        "size_ok": true
+      },
+      {
+        "path": "source_docs/2026-09-11-scispace-reconciliation-intake.th.md",
+        "hash_ok": true,
+        "size_ok": true
+      }
+    ],
+    "unlisted": [
+      "checksums-v4.1.csv"
+    ]
+  }
+}

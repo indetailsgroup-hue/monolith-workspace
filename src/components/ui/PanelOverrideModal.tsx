@@ -13,6 +13,8 @@ import { useCabinetStore, useCabinet } from '../../core/store/useCabinetStore';
 import { DEFAULT_POSITION_OVERRIDES } from '../../core/types/Cabinet';
 import type { ShelfConnectorConfig, ShelfConnectionType, StructuralConnectorConfig, StructuralConnectionType, BackPanelConnectorConfig } from '../../core/types/Cabinet';
 import { DEFAULT_SHELF_CONNECTOR_CONFIG, DEFAULT_STRUCTURAL_CONNECTOR_CONFIG, DEFAULT_BACK_PANEL_CONNECTOR_CONFIG } from '../../core/types/Cabinet';
+import { validatePanelProfile } from '../../core/manufacturing/curve/curveProfile';
+import type { PanelProfile, PanelEdge } from '../../core/types/Cabinet';
 
 // ── Groove Number Input (local-state pattern for free typing) ──
 function GrooveNumberInput({ label, value, min, max, step, onChange }: {
@@ -105,6 +107,10 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
   const resetPanelPosition = useCabinetStore((s) => s.resetPanelPosition);
   const manufacturingParams = useCabinetStore((s) => s.manufacturingParams);
   const setManufacturingParam = useCabinetStore((s) => s.setManufacturingParam);
+  const updatePanelProfile = useCabinetStore((s) => s.updatePanelProfile);
+
+  // Curve/Kerf section open state
+  const [curveOpen, setCurveOpen] = React.useState(false);
 
   // Draggable state
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -513,6 +519,153 @@ export function PanelConfigModal({ panelId, isOpen, onClose }: PanelConfigModalP
                 );
               })}
             </div>
+          </div>
+          
+          {/* Curve / Kerf */}
+          <div className="p-2 bg-surface-2 rounded-lg border border-[#333]">
+            <button
+              className="w-full flex items-center justify-between text-[10px] text-gray-400 hover:text-white transition-colors"
+              onClick={() => setCurveOpen((o) => !o)}
+            >
+              <span className="font-medium">Curve / Kerf</span>
+              <span>{curveOpen ? '▲' : '▼'}</span>
+            </button>
+            {curveOpen && (() => {
+              const prof: PanelProfile = panel.profile ?? { kind: 'RECT' };
+              const W = panel.finishWidth;
+              const H = panel.finishHeight;
+              const validation = validatePanelProfile(prof, W, H);
+
+              const setKind = (kind: PanelProfile['kind']) => {
+                if (kind === 'RECT') {
+                  updatePanelProfile(currentPanelId, { kind: 'RECT' });
+                } else if (kind === 'ARC') {
+                  const edge = (prof as any).edge ?? 'TOP';
+                  const radius = (prof as any).radius ?? 200;
+                  const sweepDeg = (prof as any).sweepDeg ?? 90;
+                  updatePanelProfile(currentPanelId, { kind: 'ARC', edge, radius, sweepDeg });
+                } else if (kind === 'ROUNDED_CORNER') {
+                  updatePanelProfile(currentPanelId, { kind: 'ROUNDED_CORNER', corners: {} });
+                } else if (kind === 'S_CURVE') {
+                  const edge = (prof as any).edge ?? 'TOP';
+                  updatePanelProfile(currentPanelId, { kind: 'S_CURVE', edge, r1: 150, r2: 150, sweepDeg1: 45, sweepDeg2: 45 });
+                }
+              };
+
+              return (
+                <div className="mt-2 space-y-2">
+                  {/* Profile kind */}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] text-gray-500 shrink-0">Profile</span>
+                    <select
+                      value={prof.kind}
+                      onChange={(e) => setKind(e.target.value as PanelProfile['kind'])}
+                      className="flex-1 bg-surface-1 border border-[#333] rounded px-1.5 py-0.5 text-[11px] text-white font-mono focus:outline-none focus:border-green-500"
+                    >
+                      <option value="RECT">RECT (flat)</option>
+                      <option value="ARC">ARC</option>
+                      <option value="ROUNDED_CORNER">ROUNDED_CORNER</option>
+                      <option value="S_CURVE">S_CURVE</option>
+                    </select>
+                  </div>
+
+                  {/* ARC fields */}
+                  {prof.kind === 'ARC' && (
+                    <>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] text-gray-500 shrink-0">Edge</span>
+                        <select
+                          value={prof.edge}
+                          onChange={(e) => updatePanelProfile(currentPanelId, { ...prof, edge: e.target.value as PanelEdge })}
+                          className="flex-1 bg-surface-1 border border-[#333] rounded px-1.5 py-0.5 text-[11px] text-white font-mono focus:outline-none focus:border-green-500"
+                        >
+                          {(['TOP','BOTTOM','LEFT','RIGHT'] as PanelEdge[]).map(e => (
+                            <option key={e} value={e}>{e}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] text-gray-500 shrink-0">Radius mm</span>
+                        <input
+                          type="number" min={1} step={1}
+                          value={prof.radius}
+                          onChange={(e) => updatePanelProfile(currentPanelId, { ...prof, radius: Number(e.target.value) })}
+                          className="w-20 bg-surface-1 border border-[#333] rounded px-1.5 py-0.5 text-[11px] text-white font-mono focus:outline-none focus:border-green-500 text-right"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] text-gray-500 shrink-0">Sweep °</span>
+                        <input
+                          type="number" min={1} max={180} step={1}
+                          value={prof.sweepDeg}
+                          onChange={(e) => updatePanelProfile(currentPanelId, { ...prof, sweepDeg: Number(e.target.value) })}
+                          className="w-20 bg-surface-1 border border-[#333] rounded px-1.5 py-0.5 text-[11px] text-white font-mono focus:outline-none focus:border-green-500 text-right"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {/* ROUNDED_CORNER fields */}
+                  {prof.kind === 'ROUNDED_CORNER' && (
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {(['TL','TR','BL','BR'] as const).map((corner) => (
+                        <div key={corner} className="flex items-center gap-1">
+                          <span className="text-[10px] text-gray-500 w-5 shrink-0">{corner}</span>
+                          <input
+                            type="number" min={0} step={1}
+                            value={prof.corners[corner] ?? ''}
+                            placeholder="0"
+                            onChange={(e) => {
+                              const val = e.target.value === '' ? undefined : Number(e.target.value);
+                              updatePanelProfile(currentPanelId, { ...prof, corners: { ...prof.corners, [corner]: val } });
+                            }}
+                            className="flex-1 bg-surface-1 border border-[#333] rounded px-1 py-0.5 text-[11px] text-white font-mono focus:outline-none focus:border-green-500 text-right"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* S_CURVE fields */}
+                  {prof.kind === 'S_CURVE' && (
+                    <>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] text-gray-500 shrink-0">Edge</span>
+                        <select
+                          value={prof.edge}
+                          onChange={(e) => updatePanelProfile(currentPanelId, { ...prof, edge: e.target.value as PanelEdge })}
+                          className="flex-1 bg-surface-1 border border-[#333] rounded px-1.5 py-0.5 text-[11px] text-white font-mono focus:outline-none focus:border-green-500"
+                        >
+                          {(['TOP','BOTTOM','LEFT','RIGHT'] as PanelEdge[]).map(e => (
+                            <option key={e} value={e}>{e}</option>
+                          ))}
+                        </select>
+                      </div>
+                      {(['r1','sweepDeg1','r2','sweepDeg2'] as const).map((field) => (
+                        <div key={field} className="flex items-center justify-between gap-2">
+                          <span className="text-[10px] text-gray-500 shrink-0">{field}</span>
+                          <input
+                            type="number" min={1} step={1}
+                            value={prof[field]}
+                            onChange={(e) => updatePanelProfile(currentPanelId, { ...prof, [field]: Number(e.target.value) })}
+                            className="w-20 bg-surface-1 border border-[#333] rounded px-1.5 py-0.5 text-[11px] text-white font-mono focus:outline-none focus:border-green-500 text-right"
+                          />
+                        </div>
+                      ))}
+                    </>
+                  )}
+
+                  {/* Validation readout */}
+                  {prof.kind !== 'RECT' && (
+                    <div className={`text-[10px] rounded px-2 py-1 ${validation.errors.length > 0 ? 'bg-red-900/40 text-red-400 border border-red-800' : 'bg-emerald-900/40 text-emerald-400 border border-emerald-800'}`}>
+                      {validation.errors.length > 0
+                        ? validation.errors.join(' · ')
+                        : '✓ Profile valid'}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
           
           {/* Computed Values */}

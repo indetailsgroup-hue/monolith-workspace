@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>MONOLITH LINE Design Approval Port A1 Implementation Plan</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1>MONOLITH LINE Design Approval Port A1 Implementation Plan</h1>
+<blockquote><p><strong>For agentic workers:</strong> REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended after explicit execution authorization) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (<code>- [ ]</code>) syntax for tracking.</p></blockquote>
+<ul>
+<li><strong>Goal:</strong> Build the approved A1 <code>DesignApprovalPort</code> sandbox journey so the Design Approval preset reviews an adapter-owned revision and returns a truthful no-business-effect record without connecting to MONOLITH runtime.</li>
+<li><strong>Estimated tasks:</strong> 8</li>
+<li><strong>Estimated time:</strong> approximately 7–10 focused hours plus review gates</li>
+<li><strong>Touches:</strong> Parent LineOS ES modules, standalone HTML/CSS, Node tests, bilingual documentation, and local browser evidence</li>
+<li><strong>Approved design:</strong> <code>LineOS/docs/superpowers/specs/2026-08-02-monolith-line-design-approval-port-a1-design.en.md</code></li>
+</ul>
+<h2>Current Problem / Current Solution</h2>
+<p>The standalone Flex Studio currently runs every preset through one browser-local demo path:</p>
+<p><code>editable draft -&gt; demo transaction -&gt; browser confirmation -&gt; SHA-256 Verification Receipt — Demo</code></p>
+<p>That path binds editable fixture values such as <code>tenantId</code>, recipient, target, and revision. Its labels are honest about being a demo, but it does not express the approved A1 boundary: an opaque review token, adapter-owned review snapshot, adapter-issued idempotency key, stale-revision checks, session-only duplicate suppression, and a record that explicitly has no business effect.</p>
+<p>The nested MONOLITH repository already contains product identity, customer design-view, approval RPC, RLS, and audit substrate. A1 must not duplicate or modify it. A1 is a parent-only contract harness and remains disconnected from MONOLITH runtime.</p>
+<h2>Proposed Approach</h2>
+<p>Add a narrow, dependency-free <code>DesignApprovalPort</code> path only for the <code>design-approval</code> preset:</p>
+<ol>
+<li>Flex JSON carries a non-secret opaque sandbox review token in the existing URI action.</li>
+<li>The Studio opens a snapshot from a sandbox adapter rather than deriving authority from editable draft fields.</li>
+<li>The adapter issues the session and idempotency key, rechecks revision/version/expiry, and records one session-only attempt.</li>
+<li>A separate record builder creates a deeply frozen <code>Sandbox Verification Record — Demo · No Business Effect</code> with deterministic SHA-256 integrity metadata.</li>
+<li>The other four approved presets retain the existing demo journey in A1.</li>
+<li>Static and browser checks prove zero external requests, no persistent secret/token storage, exact forbidden-field handling, bilingual accessibility, and unchanged nested-product scope.</li>
+</ol>
+<p>No new dependency, service, generic gateway, database table, Supabase mutation, LINE SDK, credential, or production signature is introduced.</p>
+<h2>Side by Side</h2>
+<div class="tablewrap"><table><thead><tr><th>Scenario</th><th>Before</th><th>After A1</th></tr></thead><tbody>
+<tr><td>Design Approval open</td><td>Review is derived from editable Flex draft values.</td><td>Review comes from <code>DesignApprovalPort.openReview(reviewToken)</code>.</td></tr>
+<tr><td>Identity/scope display</td><td>Demo <code>tenantId</code> and recipient fields appear receipt-like.</td><td>Adapter-owned <code>providerContext</code>/<code>scopeContext</code>; no tenant assertion.</td></tr>
+<tr><td>Confirmation</td><td>Browser confirms a local demo transaction.</td><td>Browser returns only session, adapter-issued key, expected revision, and <code>confirm</code>.</td></tr>
+<tr><td>Duplicate submit</td><td>UI guard and local transaction binding only.</td><td>Adapter single-flight and session ledger return one stable record.</td></tr>
+<tr><td>Revision change</td><td>Draft-value comparison only.</td><td>Adapter rechecks revision ID, manifest digest, workflow version, and expiry.</td></tr>
+<tr><td>Receipt</td><td><code>Verification Receipt — Demo</code>.</td><td><code>Sandbox Verification Record — Demo · No Business Effect</code>.</td></tr>
+<tr><td>Other presets</td><td>Existing demo journey.</td><td>Unchanged in A1.</td></tr>
+<tr><td>MONOLITH runtime</td><td>Disconnected.</td><td>Still disconnected; contract-ready only.</td></tr>
+</tbody></table></div>
+<h2>Assumptions &amp; Risks</h2>
+<ul>
+<li><strong>Assumed:</strong> Node.js 22.20.0 or newer and browser Web Crypto remain available; planning observed Node <code>v22.21.1</code> and npm <code>11.6.2</code>.</li>
+<li><strong>Assumed:</strong> The existing five-preset Flex model, validator, shell resource allowlist, and four non-design demo journeys remain product requirements.</li>
+<li><strong>Assumed:</strong> The A1 review token is an opaque non-secret fixture reference. It carries no customer, tenant, role, or authorization claim.</li>
+<li><strong>Assumed:</strong> A session-only ledger may reset after reload; the UI must disclose that limitation.</li>
+<li><strong>Risk:</strong> Two journey implementations can drift. Limit branching to one explicit preset predicate and keep shared rendering helpers small.</li>
+<li><strong>Risk:</strong> Calling a browser digest a signature would create false authority. Schema and copy tests must reject signature/approval language.</li>
+<li><strong>Risk:</strong> Editable draft data could accidentally re-enter the Design Approval record. Tests must mutate every draft authority-like field and prove the snapshot/record is unchanged.</li>
+<li><strong>Risk:</strong> Concurrent confirms can race across an async digest. The adapter needs per-key single-flight behavior, not only a <code>Map.has</code> check.</li>
+<li><strong>Risk:</strong> Parent and nested worktrees are dirty. Execution requires an isolated parent worktree and exact-path checks; nested code remains read-only.</li>
+<li><strong>Risk:</strong> Existing documentation still describes the legacy demo path. The A1 guide must distinguish the Design Approval path from the other four presets.</li>
+</ul>
+<h2>Impact</h2>
+<ul>
+<li>The Design Approval preset gains the approved A1 contract and truthful sandbox semantics.</li>
+<li>Existing Flex generation and the other four presets remain stable.</li>
+<li>No customer, workflow, tenant, audit, or signing authority is added.</li>
+<li>The next A2 decision receives concrete contract and browser evidence rather than a generic integration abstraction.</li>
+</ul>
+<h2>Execution Preconditions and Global Guards</h2>
+<ol>
+<li>REQUIRED SUB-SKILL: use <code>superpowers:using-git-worktrees</code> before Task 1. Create an isolated parent worktree from the approved starting commit. Do not create a nested-product worktree because A1 does not modify nested source.</li>
+<li>Record fresh parent and nested branch, full SHA, status count, Node/npm version, and baseline LineOS test summary. Planning baseline: parent <code>aae611a6a</code>, nested <code>a1e9006add32</code>, parent 206 status entries, nested 67, LineOS 72/72 passing.</li>
+<li>Preserve all unrelated changes. The nested files <code>supabase/functions/_shared/order-adapter.ts</code> and <code>tests/line-oa-commerce/ts/orderNormalization.property.test.ts</code> are explicitly outside scope.</li>
+<li>Do not commit, push, merge, open a PR, deploy, send LINE messages, or use production credentials under this plan unless the owner separately authorizes that action.</li>
+<li>Every production-code task must load <code>superpowers:test-driven-development</code> and show RED -&gt; GREEN -&gt; REFACTOR evidence.</li>
+<li>Do not weaken the existing HTML resource allowlist or introduce npm dependencies.</li>
+<li>All project-facing documentation must have aligned <code>.en.md</code>, <code>.th.md</code>, <code>.en.html</code>, and <code>.th.html</code> editions.</li>
+<li>After Tasks 1–8, use <code>superpowers:requesting-code-review</code>, <code>superpowers:scrutinize</code>, and <code>superpowers:verification-before-completion</code> before any completion claim.</li>
+</ol>
+<h2>File Map</h2>
+<div class="tablewrap"><table><thead><tr><th>File</th><th>Responsibility</th></tr></thead><tbody>
+<tr><td><code>LineOS/line-design-approval-contract.mjs</code></td><td>Allowed shapes, forbidden authority fields, outcomes, canonical contract validation</td></tr>
+<tr><td><code>LineOS/line-design-approval-record.mjs</code></td><td>Deterministic sandbox record construction, digest, deep freeze, bilingual visible rows</td></tr>
+<tr><td><code>LineOS/line-design-approval-sandbox.mjs</code></td><td>A1 fixture source, review sessions, expiry/revision/version checks, idempotency and single-flight ledger</td></tr>
+<tr><td><code>LineOS/line-flex-presets.mjs</code></td><td>Add the non-secret Design Approval review token only</td></tr>
+<tr><td><code>LineOS/line-flex-json.mjs</code></td><td>Put the opaque token into the Design Approval URI without authority fields</td></tr>
+<tr><td><code>LineOS/line-flex-studio.mjs</code></td><td>Route only Design Approval through the port; preserve four legacy journeys</td></tr>
+<tr><td><code>LineOS/line-flex-studio.html</code></td><td>Static sandbox disclosure and semantic review/record hooks</td></tr>
+<tr><td><code>LineOS/line-flex-studio.css</code></td><td>Trust Concierge sandbox, state, digest, and responsive styles</td></tr>
+<tr><td><code>LineOS/tests/line-design-approval-contract.test.mjs</code></td><td>Contract and Flex-token RED/GREEN tests</td></tr>
+<tr><td><code>LineOS/tests/line-design-approval-record.test.mjs</code></td><td>Record integrity, forbidden-field, bilingual-row tests</td></tr>
+<tr><td><code>LineOS/tests/line-design-approval-sandbox.test.mjs</code></td><td>Session, stale, expiry, idempotency, replay and concurrency tests</td></tr>
+<tr><td><code>LineOS/tests/line-design-approval-security.test.mjs</code></td><td>Static no-network/no-storage/forbidden-authority inventory</td></tr>
+<tr><td>Existing LineOS tests</td><td>Regression and shell/controller integration coverage</td></tr>
+</tbody></table></div>
+<h2>Task Overview</h2>
+<blockquote><p><strong>For implementation tasks:</strong> REQUIRED SUB-SKILL: Use superpowers:test-driven-development before editing production code. Each task is a RED -&gt; GREEN -&gt; REFACTOR slice. <strong>Parallel-first:</strong> Spawn separate sub-agents for independent lanes after explicit execution authorization. Do not parallelize tasks that can race on the same files, generated HTML, evidence artifacts, or shared tests.</p></blockquote>
+<ol>
+<li><strong>Contract and safe Flex review token</strong> — Lane A | Can run together: none | Must wait for: execution preflight | TDD slice: missing contract/token tests -&gt; minimal validators and URI token -&gt; targeted green</li>
+<li><strong>Sandbox verification record</strong> — Lane B | Can run together: Task 4 | Must wait for: Task 1 | TDD slice: missing bounded record -&gt; deterministic frozen record -&gt; targeted green</li>
+<li><strong>Sandbox port, ledger, and single-flight</strong> — Lane B | Can run together: Task 4 | Must wait for: Task 2 | TDD slice: session/replay/stale/concurrency failures -&gt; minimal adapter -&gt; targeted green</li>
+<li><strong>Trust Concierge sandbox shell</strong> — Lane C | Can run together: Tasks 2–3 | Must wait for: Task 1 | TDD slice: missing semantic disclosure hooks -&gt; minimal HTML/CSS -&gt; structure green</li>
+<li><strong>Design Approval controller integration</strong> — Lane A | Can run together: none | Must wait for: Tasks 3–4 | TDD slice: legacy draft-derived journey -&gt; preset-scoped port routing -&gt; controller/regression green</li>
+<li><strong>Security inventory and complete automated gate</strong> — Lane D | Can run together: Task 7 | Must wait for: Task 5 | TDD slice: missing fail-closed inventory -&gt; exact static/security tests and scripts -&gt; core/full green</li>
+<li><strong>Bilingual A1 operating guide and document contract</strong> — Lane E | Can run together: Task 6 | Must wait for: Task 5 | TDD slice: missing A1 guide manifest -&gt; aligned docs/HTML and contract assertions -&gt; docs green</li>
+<li><strong>Browser evidence, implementation report, and final review gates</strong> — Sequential | Can run together: none | Must wait for: Tasks 6–7 | TDD slice: missing evidence/report contract -&gt; observed artifacts and bounded report -&gt; full post-review verification</li>
+</ol>
+<hr>
+<h3>Task 1: Contract and Safe Flex Review Token</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Create: <code>LineOS/line-design-approval-contract.mjs</code></li>
+<li>Create: <code>LineOS/tests/line-design-approval-contract.test.mjs</code></li>
+<li>Modify: <code>LineOS/line-flex-presets.mjs:38-74</code></li>
+<li>Modify: <code>LineOS/line-flex-json.mjs:3-14</code></li>
+<li>Modify: <code>LineOS/tests/line-flex-json-validator.test.mjs:149-175</code></li>
+</ul>
+<p><strong>REQUIRED SUB-SKILL:</strong> Use <code>superpowers:test-driven-development</code> for this production task.</p>
+<p><strong>Parallelization:</strong></p>
+<ul>
+<li>Can run with: <code>none</code></li>
+<li>Must wait for: isolated-worktree and baseline preflight</li>
+<li>Race risk: contract and URI shape are dependencies of all later tasks</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 0: Load the TDD discipline</strong></li>
+</ul>
+<p>Use <code>superpowers:test-driven-development</code> before editing production code.</p>
+<ul>
+<li>[ ] <strong>Step 1: Write failing contract tests</strong></li>
+</ul>
+<p>Cover these exact behaviors:</p>
+<ul>
+<li>the Design Approval preset has one opaque, non-secret <code>reviewToken</code> that carries no <code>tenant</code>, customer, role, recipient, project, or approval data;</li>
+<li>the built URI contains only the approved demo path, preset, and encoded review token;</li>
+<li><code>assertReviewSnapshot</code> requires the approved A1 fields and exact <code>mode: sandbox</code> / <code>businessEffect: none</code>;</li>
+<li>nested or top-level authority fields such as tenant assertions, customer identity, approval status, signature, and key material are rejected;</li>
+<li><code>assertConfirmReviewInput</code> accepts only session, adapter-issued key, expected revision, and <code>decision: confirm</code>;</li>
+<li>the allowed outcome registry matches the written spec exactly and is deeply frozen.</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 2: Run RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-design-approval-contract.test.mjs tests/line-flex-json-validator.test.mjs</code></pre>
+<p>Expected: FAIL because the module, token, and contract behavior are absent; existing Flex tests should continue to execute.</p>
+<ul>
+<li>[ ] <strong>Step 3: Implement the minimum contract and URI change</strong></li>
+</ul>
+<p>Reuse <code>canonicalize</code> and <code>deepFreeze</code> from <code>line-flex-model.mjs</code>. Do not add schema libraries. Keep the token non-editable in the Studio field list. Preserve action selection and all non-design preset JSON byte-for-byte except where existing timestamps or generated formatting make that impossible.</p>
+<ul>
+<li>[ ] <strong>Step 4: Run GREEN and regressions</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-design-approval-contract.test.mjs tests/line-flex-json-validator.test.mjs tests/line-flex-model.test.mjs</code></pre>
+<p>Expected: all targeted tests PASS; Design Approval remains a <code>uri</code> action and no authority field enters Flex JSON.</p>
+<ul>
+<li>[ ] <strong>Step 5: Refactor after green</strong></li>
+</ul>
+<p>Keep validators pure, own-property based, and fail-closed. Rerun the same command.</p>
+<h3>Task 2: Sandbox Verification Record</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Create: <code>LineOS/line-design-approval-record.mjs</code></li>
+<li>Create: <code>LineOS/tests/line-design-approval-record.test.mjs</code></li>
+<li>Read-only reference: <code>LineOS/line-flex-receipt.mjs</code></li>
+<li>Read-only reference: <code>LineOS/line-flex-model.mjs</code></li>
+</ul>
+<p><strong>REQUIRED SUB-SKILL:</strong> Use <code>superpowers:test-driven-development</code> for this production task.</p>
+<p><strong>Parallelization:</strong></p>
+<ul>
+<li>Can run with: <code>Task 4</code></li>
+<li>Must wait for: <code>Task 1</code></li>
+<li>Race risk: none; new module and new test only</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 0: Load the TDD discipline</strong></li>
+</ul>
+<p>Use <code>superpowers:test-driven-development</code>.</p>
+<ul>
+<li>[ ] <strong>Step 1: Write failing record tests</strong></li>
+</ul>
+<p>Require the exact title <code>Sandbox Verification Record — Demo · No Business Effect</code>, exact <code>mode</code> and <code>businessEffect</code>, bounded identifiers, revision/manifest data, canonicalization version, timestamps, requested action, outcome, and SHA-256 digest. Prove:</p>
+<ul>
+<li>identical canonical inputs return identical digests;</li>
+<li>every bound field changes the digest;</li>
+<li>key order does not change the digest;</li>
+<li>returned records and descendants are frozen;</li>
+<li>record keys and visible TH/EN rows exclude approval, signature, key, tenant, token, and product-audit claims;</li>
+<li>rendering uses <code>textContent</code>-ready scalar values only.</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 2: Run RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-design-approval-record.test.mjs</code></pre>
+<p>Expected: FAIL because the record builder does not exist.</p>
+<ul>
+<li>[ ] <strong>Step 3: Implement the minimum record builder</strong></li>
+</ul>
+<p>Use browser/Node Web Crypto and the existing canonicalization helper. A digest is integrity metadata only. Do not import or call <code>ApprovalSigner</code>, LINE, Supabase, storage, or network APIs.</p>
+<ul>
+<li>[ ] <strong>Step 4: Run GREEN</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-design-approval-record.test.mjs tests/line-flex-actions-receipt.test.mjs</code></pre>
+<p>Expected: new record tests and legacy receipt tests PASS.</p>
+<ul>
+<li>[ ] <strong>Step 5: Refactor after green</strong></li>
+</ul>
+<p>Keep record construction separate from DOM rendering and rerun the targeted command.</p>
+<h3>Task 3: Sandbox Port, Ledger, and Single-Flight</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Create: <code>LineOS/line-design-approval-sandbox.mjs</code></li>
+<li>Create: <code>LineOS/tests/line-design-approval-sandbox.test.mjs</code></li>
+<li>Use: <code>LineOS/line-design-approval-contract.mjs</code></li>
+<li>Use: <code>LineOS/line-design-approval-record.mjs</code></li>
+</ul>
+<p><strong>REQUIRED SUB-SKILL:</strong> Use <code>superpowers:test-driven-development</code> for this production task.</p>
+<p><strong>Parallelization:</strong></p>
+<ul>
+<li>Can run with: <code>Task 4</code></li>
+<li>Must wait for: <code>Task 2</code></li>
+<li>Race risk: none with Task 4; do not edit shell/controller files</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 0: Load the TDD discipline</strong></li>
+</ul>
+<p>Use <code>superpowers:test-driven-development</code>.</p>
+<ul>
+<li>[ ] <strong>Step 1: Write failing adapter tests</strong></li>
+</ul>
+<p>Build deterministic dependency injection for clock, ID factory, fixture source, and ledger. Test:</p>
+<ul>
+<li>valid/invalid review token handling without resource enumeration;</li>
+<li>adapter-issued session and idempotency key;</li>
+<li>immutable adapter-owned snapshot unaffected by editable draft data;</li>
+<li>exact expiry boundary and post-expiry rejection;</li>
+<li>stale revision ID, changed manifest, and workflow version conflict;</li>
+<li>same key/payload replay returns the same record;</li>
+<li>same key/different payload returns <code>idempotency_conflict</code>;</li>
+<li><code>Promise.all</code> concurrent confirms produce one ledger entry and one stable record;</li>
+<li>a pre-record failure can retry with the same key;</li>
+<li>no browser persistence API is used and a fresh adapter starts with an empty ledger.</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 2: Run RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-design-approval-sandbox.test.mjs</code></pre>
+<p>Expected: FAIL because the adapter is absent.</p>
+<ul>
+<li>[ ] <strong>Step 3: Implement the minimum adapter</strong></li>
+</ul>
+<p>Expose <code>createSandboxDesignApprovalPort(dependencies)</code>. Use per-key pending-promise/single-flight state so async digest work cannot double-record. Keep fixture identity private to the adapter and return neutral bounded errors.</p>
+<ul>
+<li>[ ] <strong>Step 4: Run GREEN</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-design-approval-sandbox.test.mjs tests/line-design-approval-record.test.mjs</code></pre>
+<p>Expected: PASS with one ledger entry in concurrent cases and no skips.</p>
+<ul>
+<li>[ ] <strong>Step 5: Refactor after green</strong></li>
+</ul>
+<p>Separate snapshot recheck, ledger resolution, and error mapping only if it reduces duplication. Rerun targeted tests.</p>
+<h3>Task 4: Trust Concierge Sandbox Shell</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Modify: <code>LineOS/line-flex-studio.html:44-53</code></li>
+<li>Modify: <code>LineOS/line-flex-studio.css:36-80</code></li>
+<li>Modify: <code>LineOS/tests/line-flex-structure.test.mjs:208-267</code></li>
+</ul>
+<p><strong>REQUIRED SUB-SKILL:</strong> Use <code>superpowers:test-driven-development</code> for this production task.</p>
+<p><strong>Parallelization:</strong></p>
+<ul>
+<li>Can run with: <code>Tasks 2–3</code></li>
+<li>Must wait for: <code>Task 1</code></li>
+<li>Race risk: Task 5 later consumes these exact DOM hooks and must wait</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 0: Load the TDD discipline</strong></li>
+</ul>
+<p>Use <code>superpowers:test-driven-development</code>.</p>
+<ul>
+<li>[ ] <strong>Step 1: Write failing semantic-shell tests</strong></li>
+</ul>
+<p>Require local semantic elements for:</p>
+<ul>
+<li>a persistent-in-dialog <code>SANDBOX — NO BUSINESS EFFECT</code> warning;</li>
+<li>mode/effect provenance;</li>
+<li>review expiry and digest display;</li>
+<li>bounded outcome/error region;</li>
+<li>sandbox record title and disclosure;</li>
+<li>accessible dialog labels and live-region behavior;</li>
+<li>no new scripts, images, inline handlers, remote resources, or CSS URLs.</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 2: Run RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-flex-structure.test.mjs</code></pre>
+<p>Expected: FAIL on missing sandbox hooks, not on the existing resource parser.</p>
+<ul>
+<li>[ ] <strong>Step 3: Implement minimal HTML/CSS</strong></li>
+</ul>
+<p>Retain the one stylesheet/one module resource allowlist. Keep warnings visually prominent at desktop and mobile widths and under reduced motion. Do not use <code>innerHTML</code> or dynamic style attributes.</p>
+<ul>
+<li>[ ] <strong>Step 4: Run GREEN</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-flex-structure.test.mjs</code></pre>
+<p>Expected: all structure/resource/responsive tests PASS.</p>
+<ul>
+<li>[ ] <strong>Step 5: Refactor after green</strong></li>
+</ul>
+<p>Consolidate only repeated sandbox style declarations and rerun the test.</p>
+<h3>Task 5: Design Approval Controller Integration</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Modify: <code>LineOS/line-flex-studio.mjs:1-8,115-218,297-417,484-752</code></li>
+<li>Modify: <code>LineOS/tests/line-flex-studio-state.test.mjs:1-106</code></li>
+<li>Modify: <code>LineOS/tests/line-flex-actions-receipt.test.mjs:24-40</code> only if routing regression coverage needs a precise assertion</li>
+<li>Use: the three new Design Approval modules</li>
+</ul>
+<p><strong>REQUIRED SUB-SKILL:</strong> Use <code>superpowers:test-driven-development</code> for this production task.</p>
+<p><strong>Parallelization:</strong></p>
+<ul>
+<li>Can run with: <code>none</code></li>
+<li>Must wait for: <code>Tasks 3–4</code></li>
+<li>Race risk: central controller and shared bilingual copy; single owner only</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 0: Load the TDD discipline</strong></li>
+</ul>
+<p>Use <code>superpowers:test-driven-development</code>.</p>
+<ul>
+<li>[ ] <strong>Step 1: Write failing controller/state tests</strong></li>
+</ul>
+<p>Add pure exported helpers where needed and prove:</p>
+<ul>
+<li>only <code>presetId === "design-approval"</code> selects the port journey;</li>
+<li>the four other preset IDs keep the legacy demo path;</li>
+<li>Design Approval visible rows come from the adapter snapshot/record, not the editable draft;</li>
+<li>switching preset/language, editing a field, cancelling, closing, stale error, or expiry clears the active review safely;</li>
+<li>adapter errors map to exact neutral TH/EN messages;</li>
+<li>the confirm button is busy/disabled during submission but adapter idempotency remains authoritative;</li>
+<li>the final title/copy is the approved sandbox record and says workflow state did not change.</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 2: Run RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-flex-studio-state.test.mjs tests/line-design-approval-sandbox.test.mjs</code></pre>
+<p>Expected: FAIL because the controller still uses the legacy transaction for Design Approval.</p>
+<ul>
+<li>[ ] <strong>Step 3: Implement minimal preset-scoped routing</strong></li>
+</ul>
+<p>Allow <code>bindStudio(doc, options)</code> to accept an injected port for tests; create the default sandbox port only in browser binding. Reuse safe DOM APIs. Do not delete the legacy modules or migrate the other presets.</p>
+<ul>
+<li>[ ] <strong>Step 4: Run GREEN and focused regression</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-flex-studio-state.test.mjs tests/line-design-approval-contract.test.mjs tests/line-design-approval-record.test.mjs tests/line-design-approval-sandbox.test.mjs tests/line-flex-actions-receipt.test.mjs</code></pre>
+<p>Expected: all targeted tests PASS, including legacy receipt behavior.</p>
+<ul>
+<li>[ ] <strong>Step 5: Refactor after green</strong></li>
+</ul>
+<p>Extract only small journey-selection or row-render helpers if the controller becomes ambiguous. Rerun the same command.</p>
+<h3>Task 6: Security Inventory and Complete Automated Gate</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Create: <code>LineOS/tests/line-design-approval-security.test.mjs</code></li>
+<li>Modify: <code>LineOS/package.json:6-10</code></li>
+<li>Modify: existing tests only where an exact new security invariant belongs</li>
+</ul>
+<p><strong>REQUIRED SUB-SKILL:</strong> Use <code>superpowers:test-driven-development</code> for this production task.</p>
+<p><strong>Parallelization:</strong></p>
+<ul>
+<li>Can run with: <code>Task 7</code></li>
+<li>Must wait for: <code>Task 5</code></li>
+<li>Race risk: do not modify <code>docs-contract.test.mjs</code>; Task 7 owns it</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 0: Load the TDD discipline</strong></li>
+</ul>
+<p>Use <code>superpowers:test-driven-development</code>.</p>
+<ul>
+<li>[ ] <strong>Step 1: Write failing inventory tests</strong></li>
+</ul>
+<p>Recursively inspect the A1 modules and shell for:</p>
+<ul>
+<li><code>fetch</code>, XHR, WebSocket, EventSource, <code>sendBeacon</code>, LINE SDK, Supabase, authorization headers, service keys, token logging, <code>localStorage</code>, <code>sessionStorage</code>, IndexedDB, cookies, and dynamic remote imports;</li>
+<li>forbidden receipt/record authority keys and production-claim copy;</li>
+<li>draft-to-record authority leakage;</li>
+<li>unclassified network-capable or persistent-storage calls;</li>
+<li>exact local module/resource inventory.</li>
+</ul>
+<p>The test should fail closed when a synthetic unsafe fixture is introduced.</p>
+<ul>
+<li>[ ] <strong>Step 2: Run RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-design-approval-security.test.mjs</code></pre>
+<p>Expected: initial FAIL on missing inventory/allowlist behavior.</p>
+<ul>
+<li>[ ] <strong>Step 3: Implement minimal tests and scripts</strong></li>
+</ul>
+<p>Add <code>test:design-approval</code> and include the new tests in <code>test:core</code>. Do not broaden external-resource allowlists.</p>
+<ul>
+<li>[ ] <strong>Step 4: Run GREEN and full suite</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test:design-approval
+npm.cmd --prefix LineOS run test:core
+npm.cmd --prefix LineOS run test</code></pre>
+<p>Expected: complete untruncated summaries, zero failures/skips/todos, and the prior 72-test baseline plus the new tests.</p>
+<ul>
+<li>[ ] <strong>Step 5: Refactor after green</strong></li>
+</ul>
+<p>Remove duplicate scanner code without weakening exact source inventories. Rerun all three commands.</p>
+<h3>Task 7: Bilingual A1 Operating Guide and Document Contract</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Create: <code>LineOS/docs/guides/line-design-approval-sandbox-a1-guide.en.md</code></li>
+<li>Create: <code>LineOS/docs/guides/line-design-approval-sandbox-a1-guide.th.md</code></li>
+<li>Generate: matching <code>.en.html</code> and <code>.th.html</code></li>
+<li>Modify: <code>LineOS/tests/docs-contract.test.mjs</code></li>
+<li>Read: approved A1 spec and this plan</li>
+</ul>
+<p><strong>Parallelization:</strong></p>
+<ul>
+<li>Can run with: <code>Task 6</code></li>
+<li>Must wait for: <code>Task 5</code></li>
+<li>Race risk: Task 8 later extends <code>docs-contract.test.mjs</code> and must wait</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 0: Document the docs/config exception</strong></li>
+</ul>
+<p>This task changes documentation and its executable manifest. Use a failing docs-contract assertion instead of a production-code TDD test.</p>
+<ul>
+<li>[ ] <strong>Step 1: Add failing document-contract assertions</strong></li>
+</ul>
+<p>Require the approved A1 spec/plan and new guide in TH/EN Markdown/HTML. Require exact statements for:</p>
+<ul>
+<li>contract-ready but runtime-disconnected status;</li>
+<li>Design Approval-only A1 routing;</li>
+<li>opaque non-secret review token;</li>
+<li>session-only reset limitation;</li>
+<li><code>providerContext</code> rather than tenant authority;</li>
+<li>exact sandbox record title;</li>
+<li>no workflow mutation, LINE send, database write, signature, or audit claim;</li>
+<li>future A2 promotion gates.</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 2: Run the failing contract</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/docs-contract.test.mjs</code></pre>
+<p>Expected: FAIL because the new guide editions are missing.</p>
+<ul>
+<li>[ ] <strong>Step 3: Write aligned TH/EN guides and render HTML</strong></li>
+</ul>
+<pre><code class="language-powershell">python tools/render_docs.py LineOS/docs/guides/line-design-approval-sandbox-a1-guide.en.md LineOS/docs/guides/line-design-approval-sandbox-a1-guide.th.md LineOS/docs/superpowers/plans/2026-08-02-monolith-line-design-approval-port-a1-implementation.en.md LineOS/docs/superpowers/plans/2026-08-02-monolith-line-design-approval-port-a1-implementation.th.md</code></pre>
+<ul>
+<li>[ ] <strong>Step 4: Run docs GREEN gates</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/docs-contract.test.mjs
+python tools/lint_claims.py LineOS/docs/guides/line-design-approval-sandbox-a1-guide.en.md LineOS/docs/guides/line-design-approval-sandbox-a1-guide.th.md LineOS/docs/superpowers/specs/2026-08-02-monolith-line-design-approval-port-a1-design.en.md LineOS/docs/superpowers/specs/2026-08-02-monolith-line-design-approval-port-a1-design.th.md</code></pre>
+<p>Expected: docs contract PASS; claim lint exit 0 without new debt.</p>
+<ul>
+<li>[ ] <strong>Step 5: Verify Markdown/HTML parity</strong></li>
+</ul>
+<p>Check language tags, headings, tables, key claims, standalone resources, trailing whitespace, and replacement characters.</p>
+<h3>Task 8: Browser Evidence, Implementation Report, and Final Review Gates</h3>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Create: <code>LineOS/artifacts/line-design-approval-a1/desktop-1440.png</code></li>
+<li>Create: <code>LineOS/artifacts/line-design-approval-a1/mobile-390.png</code></li>
+<li>Create: <code>LineOS/artifacts/line-design-approval-a1/verification-summary.json</code></li>
+<li>Create: <code>LineOS/docs/reports/2026-08-02-line-design-approval-port-a1-implementation-report.en.md</code></li>
+<li>Create: <code>LineOS/docs/reports/2026-08-02-line-design-approval-port-a1-implementation-report.th.md</code></li>
+<li>Generate: matching report <code>.en.html</code> and <code>.th.html</code></li>
+<li>Modify: <code>LineOS/tests/docs-contract.test.mjs</code></li>
+<li>Do not modify: nested MONOLITH product source</li>
+</ul>
+<p><strong>Parallelization:</strong></p>
+<ul>
+<li>Can run with: <code>none</code></li>
+<li>Must wait for: <code>Tasks 6–7</code></li>
+<li>Race risk: shared evidence summary, report, and docs contract require one owner</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 0: Load verification and browser disciplines</strong></li>
+</ul>
+<p>Use <code>superpowers:webapp-testing</code>, <code>superpowers:requesting-code-review</code>, <code>superpowers:scrutinize</code>, and <code>superpowers:verification-before-completion</code> at their required gates.</p>
+<ul>
+<li>[ ] <strong>Step 1: Add failing evidence/report contract</strong></li>
+</ul>
+<p>Extend <code>docs-contract.test.mjs</code> to require:</p>
+<ul>
+<li>exact repository commit/worktree provenance and dirty-scope disclosure;</li>
+<li>automated command and complete pass/fail/skip/todo counts;</li>
+<li>TH/EN, desktop/mobile, keyboard journey results;</li>
+<li>one successful sandbox confirmation, replay, stale revision, expiry, cancellation, and legacy-preset regression;</li>
+<li>zero external requests and zero console/page errors;</li>
+<li>receipt forbidden-field scan;</li>
+<li>nested HEAD and targeted status evidence;</li>
+<li>explicit <code>NO-GO_RUNTIME_INTEGRATION</code> and A2 blockers.</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 2: Run RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/docs-contract.test.mjs</code></pre>
+<p>Expected: FAIL because fresh evidence and reports do not exist.</p>
+<ul>
+<li>[ ] <strong>Step 3: Run the complete automated suite before browser evidence</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test
+python tools/lint_claims.py LineOS/docs
+git diff --check</code></pre>
+<p>Record complete untruncated summaries. Do not create the JSON summary from expected values.</p>
+<ul>
+<li>[ ] <strong>Step 4: Serve locally and collect browser evidence</strong></li>
+</ul>
+<p>Serve <code>LineOS/</code> over localhost, not <code>file://</code>. Verify at least widths 1440 and 390 in both languages. Exercise the Design Approval success/replay/stale/expired/cancel paths, one non-design legacy journey, keyboard focus return, reduced-motion behavior, and record copy/readability. Capture every request and prove all are localhost with zero external requests. Capture console and page errors.</p>
+<ul>
+<li>[ ] <strong>Step 5: Write observed evidence only</strong></li>
+</ul>
+<p>Create <code>verification-summary.json</code> from observed values using <code>apply_patch</code>. Bind it to exact hashes for the two screenshots and the final source/commit snapshot. Label the record as sandbox and runtime integration as false.</p>
+<ul>
+<li>[ ] <strong>Step 6: Write aligned implementation reports and render HTML</strong></li>
+</ul>
+<p>Include scope, two-root provenance, changed files, TDD evidence, complete test counts, browser matrix, network record, review findings/fixes, residual risks, A2 gates, and the exact decision <code>NO-GO_RUNTIME_INTEGRATION</code>.</p>
+<pre><code class="language-powershell">python tools/render_docs.py LineOS/docs/reports/2026-08-02-line-design-approval-port-a1-implementation-report.en.md LineOS/docs/reports/2026-08-02-line-design-approval-port-a1-implementation-report.th.md</code></pre>
+<ul>
+<li>[ ] <strong>Step 7: Run review gates and fix findings test-first</strong></li>
+</ul>
+<p>Request task-scoped code review, then whole-change scrutiny. Every accepted behavioral fix starts with or updates a failing regression test. Re-run affected targeted tests after each fix.</p>
+<ul>
+<li>[ ] <strong>Step 8: Run the final fresh complete gate</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test
+python tools/lint_claims.py LineOS/docs
+git diff --check
+git status --short
+git -C determined-williams rev-parse HEAD
+git -C determined-williams status --short</code></pre>
+<p>Expected: full LineOS suite PASS with complete counts; claim lint exit 0 without new debt; diff check silent; parent status contains only authorized A1 files plus preserved pre-existing changes; nested HEAD remains the authorized baseline and no A1 path appears there.</p>
+<h2>Plan Validation Checklist</h2>
+<ul>
+<li>[ ] Every production task has RED -&gt; GREEN -&gt; REFACTOR steps and an exact command.</li>
+<li>[ ] Tasks 2/3 and 4 have disjoint write scopes and may run concurrently; central controller work remains sequential.</li>
+<li>[ ] No task modifies nested product runtime, migrations, the dirty order adapter, or production credentials.</li>
+<li>[ ] The four legacy preset journeys remain explicit regression scope.</li>
+<li>[ ] Session-only replay limitation and no-business-effect copy are testable acceptance criteria.</li>
+<li>[ ] Record digest and production signature remain distinct.</li>
+<li>[ ] Tenant, customer identity, workflow status, and audit authority remain outside browser control.</li>
+<li>[ ] All project-facing docs are planned in TH/EN Markdown and standalone HTML.</li>
+<li>[ ] No task asks an implementer to commit or push.</li>
+<li>[ ] A2 blockers remain explicit rather than hidden inside A1 tasks.</li>
+</ul>
+</main></body>
+</html>

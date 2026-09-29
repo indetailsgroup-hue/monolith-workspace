@@ -2,7 +2,8 @@
 // S17-1: end-user identity and authorization are derived only from a verified JWT.
 // S17-2: every packet/output path is RELEASED-only at both Edge and SQL boundaries.
 
-export type FactoryCapability = "DESIGNER" | "FACTORY" | "INSTALLER" | "FINANCE" | "ADMIN";
+// AB-AUTH-01 fix: added AI_REVIEWER for VS-01 Vision-to-BOQ pipeline
+export type FactoryCapability = "DESIGNER" | "FACTORY" | "INSTALLER" | "FINANCE" | "ADMIN" | "AI_REVIEWER";
 
 export interface ServerActor {
   subjectId: string;
@@ -48,6 +49,12 @@ const EVIDENCE_READ_CAPABILITIES: readonly FactoryCapability[] = [
 const DESIGN_CAPABILITIES: readonly FactoryCapability[] = ["ADMIN", "DESIGNER"];
 const FACTORY_CAPABILITIES: readonly FactoryCapability[] = ["ADMIN", "FACTORY"];
 
+// AB-AUTH-01 fix: VS-01 Vision-to-BOQ pipeline authorization constants
+// VS_EVIDENCE_INTAKE_CAPABILITIES: roles that may upload drawings/photos and trigger inference
+const VS_EVIDENCE_INTAKE_CAPABILITIES: readonly FactoryCapability[] = ["ADMIN", "DESIGNER", "AI_REVIEWER"];
+// VS_EVIDENCE_REVIEW_CAPABILITIES: roles that may review + approve/reject evidence/BOQ drafts
+const VS_EVIDENCE_REVIEW_CAPABILITIES: readonly FactoryCapability[] = ["ADMIN", "DESIGNER", "FACTORY", "AI_REVIEWER"];
+
 // JWT role vocabulary is lower-case in C12. Upper-case entries preserve compatibility
 // with already-issued MONOLITH role claims; every value is still signed server metadata.
 const CLAIM_CAPABILITY: Readonly<Record<string, FactoryCapability>> = {
@@ -64,6 +71,9 @@ const CLAIM_CAPABILITY: Readonly<Record<string, FactoryCapability>> = {
   operations: "ADMIN",
   executive_owner: "ADMIN",
   ADMIN: "ADMIN",
+  // AB-AUTH-01 fix: AI_REVIEWER for VS-01 evidence pipeline
+  ai_reviewer: "AI_REVIEWER",
+  AI_REVIEWER: "AI_REVIEWER",
 };
 
 function json(status: number, body: Record<string, unknown>): Response {
@@ -143,6 +153,17 @@ export async function deriveServerActor(verifiedUser: unknown): Promise<ServerAc
     capabilities,
     authorizationContextId,
   };
+}
+
+/**
+ * AB-AUTH-01 fix: JS-layer site-code enforcement helper.
+ * ADMIN bypasses site-code check (cross-site authority).
+ * All other roles must have the target site_code in their verified server claims.
+ * This is a defense-in-depth layer — RLS enforces the same boundary at SQL.
+ */
+export function actorHasSiteCode(actor: ServerActor, siteCode: string): boolean {
+  if (actor.capabilities.includes("ADMIN")) return true;
+  return actor.siteCodes.includes(siteCode);
 }
 
 /** Verify a strict Bearer token against Supabase Auth before deriving claims. */

@@ -56,12 +56,22 @@ export interface Polyline2D {
 // Contour Types
 // ============================================================================
 
-/** Outer contour - the panel boundary (always a rectangle for standard panels) */
-export interface OuterContour {
-  type: 'rectangle';
-  width: number;   // Cut width (mm)
-  height: number;  // Cut height (mm)
-}
+/** Outer contour - the panel boundary */
+export type OuterContour =
+  | { type: 'rectangle'; width: number; height: number }
+  | {
+      type: 'arc';
+      /** Panel flat width (mm) — used for straight sides */
+      width: number;
+      /** Panel flat height (mm) — used for straight sides */
+      height: number;
+      /** Which edge is curved */
+      edge: import('./Cabinet').PanelEdge;
+      /** Arc radius (mm) */
+      radius: number;
+      /** Arc sweep angle (degrees) */
+      sweepDeg: number;
+    };
 
 /** Inner contour - cutouts within the panel */
 export interface InnerContour {

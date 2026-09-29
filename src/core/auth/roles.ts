@@ -9,15 +9,18 @@
  * - INSTALLER: Views installation guides (future)
  * - FINANCE: Views cost breakdowns, handles deposits (future)
  * - ADMIN: Full access, can override gates
+ * - AI_REVIEWER: Reviews Vision-to-BOQ evidence + BOQ drafts (VS-01 pipeline) [AB-AUTH-01 fix]
  */
+
+import { readRaw, writeRaw } from '../persistence/unsafeStorage';
 
 // ============================================================================
 // Role Types
 // ============================================================================
 
-export type Role = 'DESIGNER' | 'FACTORY' | 'INSTALLER' | 'FINANCE' | 'ADMIN';
+export type Role = 'DESIGNER' | 'FACTORY' | 'INSTALLER' | 'FINANCE' | 'ADMIN' | 'AI_REVIEWER';
 
-export const ROLES: Role[] = ['DESIGNER', 'FACTORY', 'INSTALLER', 'FINANCE', 'ADMIN'];
+export const ROLES: Role[] = ['DESIGNER', 'FACTORY', 'INSTALLER', 'FINANCE', 'ADMIN', 'AI_REVIEWER'];
 
 // ============================================================================
 // Role Metadata
@@ -61,6 +64,13 @@ export const ROLE_INFO: Record<Role, RoleInfo> = {
     description: 'Full system access, can override gates and manage keys',
     color: '#ef4444', // Red
   },
+  // AB-AUTH-01 fix: AI Reviewer role for VS-01 Vision-to-BOQ pipeline
+  AI_REVIEWER: {
+    id: 'AI_REVIEWER',
+    label: 'AI Reviewer',
+    description: 'Reviews AI-generated evidence drafts and BOQ drafts (VS-01 pipeline)',
+    color: '#0ea5e9', // Sky blue — distinct from other roles
+  },
 };
 
 // ============================================================================
@@ -72,11 +82,16 @@ const ROLE_STORAGE_KEY = 'monolith.user.role';
 /**
  * Get the local presentation role used to hide/show UI affordances.
  * Defaults to DESIGNER for development. Server authorization never consumes it.
+ *
+ * ⚠️ AB-AUTH-01 WARNING: localStorage role is PRESENTATION-ONLY.
+ * It must NEVER be used as server authority for VS-01 API calls.
+ * VS-01 routes use Supabase JWT + RLS via factory-api/index.ts.
+ * See: supabase/functions/factory-api/index.ts — VS_EVIDENCE_INTAKE_CAPABILITIES
  */
 export function getCurrentRole(): Role {
   if (typeof window === 'undefined') return 'DESIGNER';
 
-  const stored = localStorage.getItem(ROLE_STORAGE_KEY);
+  const stored = readRaw(ROLE_STORAGE_KEY);
   if (stored && ROLES.includes(stored as Role)) {
     return stored as Role;
   }
@@ -88,7 +103,7 @@ export function getCurrentRole(): Role {
  */
 export function setCurrentRole(role: Role): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(ROLE_STORAGE_KEY, role);
+  writeRaw(ROLE_STORAGE_KEY, role);
 }
 
 /**
@@ -123,6 +138,8 @@ export interface RoleFeatures {
   canViewFinance: boolean;
   canOverrideGates: boolean;
   canManageKeys: boolean;
+  // AB-AUTH-01 fix: VS-01 Vision-to-BOQ pipeline review permission
+  canReviewVSEvidence: boolean;
 }
 
 export function getRoleFeatures(role: Role): RoleFeatures {
@@ -138,6 +155,7 @@ export function getRoleFeatures(role: Role): RoleFeatures {
         canViewFinance: false,
         canOverrideGates: false,
         canManageKeys: false,
+        canReviewVSEvidence: true, // Designer can review evidence drafts
       };
 
     case 'FACTORY':
@@ -151,6 +169,7 @@ export function getRoleFeatures(role: Role): RoleFeatures {
         canViewFinance: false,
         canOverrideGates: false,
         canManageKeys: false,
+        canReviewVSEvidence: true, // Factory can review BOQ drafts
       };
 
     case 'INSTALLER':
@@ -164,6 +183,7 @@ export function getRoleFeatures(role: Role): RoleFeatures {
         canViewFinance: false,
         canOverrideGates: false,
         canManageKeys: false,
+        canReviewVSEvidence: false,
       };
 
     case 'FINANCE':
@@ -177,6 +197,7 @@ export function getRoleFeatures(role: Role): RoleFeatures {
         canViewFinance: true,
         canOverrideGates: false,
         canManageKeys: false,
+        canReviewVSEvidence: false,
       };
 
     case 'ADMIN':
@@ -190,6 +211,21 @@ export function getRoleFeatures(role: Role): RoleFeatures {
         canViewFinance: true,
         canOverrideGates: true,
         canManageKeys: true,
+        canReviewVSEvidence: true, // Admin has full access
+      };
+
+    case 'AI_REVIEWER':
+      return {
+        canAccessWorkspace: false,
+        canEditSpec: false,
+        canRunValidation: false,
+        canInitiateRelease: false,
+        canViewPacket: true, // Read-only — view evidence + BOQ drafts
+        canExportToMachine: false,
+        canViewFinance: false,
+        canOverrideGates: false,
+        canManageKeys: false,
+        canReviewVSEvidence: true, // Primary capability for VS-01
       };
   }
 }

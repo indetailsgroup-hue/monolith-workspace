@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Vendor Onboarding &amp; Integration Brief — S52 MONOLITH DAPH Decor</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 14mm 14mm 12mm 14mm; }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Sarabun', sans-serif;
+    font-size: 9.5pt;
+    color: #1a2240;
+    background: #ffffff;
+    line-height: 1.45;
+  }
+
+  /* ── Page header ── */
+  .page-header {
+    border-bottom: 3pt solid #1f2d5a;
+    padding-bottom: 7pt;
+    margin-bottom: 10pt;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .page-header .brand { font-size: 8.5pt; font-weight: 700; color: #1f2d5a; letter-spacing: .5px; text-transform: uppercase; }
+  .page-header .doc-meta { font-size: 7.5pt; color: #7a8ab2; text-align: right; }
+
+  /* ── Title block ── */
+  .title-block {
+    background: #1f2d5a;
+    color: #ffffff;
+    padding: 10pt 12pt;
+    border-radius: 4pt;
+    margin-bottom: 9pt;
+  }
+  .title-block .doc-tag {
+    font-size: 7pt; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+    color: #c9a84c; margin-bottom: 4pt;
+  }
+  .title-block h1 { font-size: 14pt; font-weight: 700; line-height: 1.2; margin-bottom: 3pt; }
+  .title-block h1 span { color: #c9a84c; }
+  .title-block .title-sub { font-size: 8.5pt; color: rgba(255,255,255,.65); }
+  .title-block .kpi-row {
+    display: flex; gap: 14pt; margin-top: 8pt; padding-top: 7pt;
+    border-top: 1pt solid rgba(201,168,76,.3); flex-wrap: wrap;
+  }
+  .kpi-item { text-align: center; }
+  .kpi-item .kval { font-size: 16pt; font-weight: 800; color: #c9a84c; line-height: 1; }
+  .kpi-item .klbl { font-size: 7pt; color: rgba(255,255,255,.55); text-transform: uppercase; letter-spacing: .8px; margin-top: 1pt; }
+
+  /* ── Section header ── */
+  .section-hdr {
+    display: flex; align-items: center; gap: 7pt;
+    border-left: 3pt solid #c9a84c; padding-left: 7pt;
+    margin-bottom: 6pt; margin-top: 9pt;
+  }
+  .section-hdr h2 { font-size: 10.5pt; font-weight: 700; color: #1f2d5a; }
+  .section-hdr .hbadge {
+    font-size: 7pt; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    background: #c9a84c; color: #1f2d5a; padding: 2pt 6pt; border-radius: 2pt;
+  }
+
+  /* ── V-CHK checklist table ── */
+  table.vchk-tbl {
+    width: 100%; border-collapse: collapse; font-size: 8pt;
+    margin-bottom: 9pt;
+  }
+  table.vchk-tbl th {
+    background: #1f2d5a; color: rgba(255,255,255,.85);
+    font-size: 7.5pt; font-weight: 700; padding: 5pt 6pt;
+    text-align: left; letter-spacing: .4px;
+  }
+  table.vchk-tbl td { padding: 4.5pt 6pt; border-bottom: .5pt solid #e5e8f0; vertical-align: top; }
+  table.vchk-tbl tr:nth-child(even) td { background: #f8f9fc; }
+  table.vchk-tbl tr:last-child td { border-bottom: none; }
+  .vchk-id { font-size: 7.5pt; font-weight: 700; color: #c9a84c; white-space: nowrap; }
+  .vchk-phase {
+    display: inline-block; font-size: 6.5pt; font-weight: 700; letter-spacing: .5px;
+    text-transform: uppercase; padding: 1.5pt 4pt; border-radius: 2pt; white-space: nowrap;
+  }
+  .ph-pre  { background: #e8f0ff; color: #1f2d5a; }
+  .ph-sit  { background: #fff7e0; color: #a07800; }
+  .ph-uat  { background: #fdecea; color: #c0392b; }
+  .ph-live { background: #e8f5ee; color: #2d7a4f; }
+  .ph-care { background: #f3e8ff; color: #7e3f8f; }
+  .chk-box-cell { text-align: center; }
+  .chk-box { display: inline-block; width: 9pt; height: 9pt; border: 1.5pt solid #1f2d5a; border-radius: 2pt; }
+  .auth-txt { font-size: 7.5pt; color: #7a8ab2; font-style: italic; }
+
+  /* ── SLA table ── */
+  table.sla-tbl {
+    width: 100%; border-collapse: collapse; font-size: 8.5pt;
+    margin-bottom: 9pt;
+  }
+  table.sla-tbl th {
+    background: #2d7a4f; color: rgba(255,255,255,.9);
+    font-size: 7.5pt; font-weight: 700; padding: 5pt 6pt;
+    text-align: left; letter-spacing: .4px;
+  }
+  table.sla-tbl td { padding: 5pt 6pt; border-bottom: .5pt solid #e5e8f0; vertical-align: middle; }
+  table.sla-tbl tr:nth-child(even) td { background: #f5faf7; }
+  table.sla-tbl tr:last-child td { border-bottom: none; }
+  .aie-code { font-size: 7.5pt; font-weight: 700; color: #2d7a4f; white-space: nowrap; }
+  .sla-val { font-weight: 700; color: #1f2d5a; }
+  .sla-pill {
+    display: inline-block; font-size: 7pt; font-weight: 700;
+    padding: 1.5pt 5pt; border-radius: 2pt;
+  }
+  .sla-a { background: #e8f5ee; color: #2d7a4f; }
+  .sla-b { background: #e8f0ff; color: #1f2d5a; }
+  .int-type { font-size: 7.5pt; color: #7a8ab2; }
+
+  /* ── Escalation matrix ── */
+  .esc-grid { display: flex; gap: 0; margin-bottom: 9pt; }
+  .esc-card {
+    flex: 1; border-radius: 0; padding: 7pt 8pt;
+    border-top: 3pt solid; border-right: .5pt solid #dde0ea;
+  }
+  .esc-card:first-child { border-radius: 4pt 0 0 4pt; }
+  .esc-card:last-child  { border-radius: 0 4pt 4pt 0; border-right: none; }
+  .esc-card:nth-child(1) { border-color: #2d7a4f;  background: #f5faf7; }
+  .esc-card:nth-child(2) { border-color: #2e75b6;  background: #f0f4fc; }
+  .esc-card:nth-child(3) { border-color: #d4a017;  background: #fffdf0; }
+  .esc-card:nth-child(4) { border-color: #c0392b;  background: #fef8f8; }
+  .esc-card .ec-level {
+    font-size: 7pt; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    margin-bottom: 2pt;
+  }
+  .esc-card:nth-child(1) .ec-level { color: #2d7a4f; }
+  .esc-card:nth-child(2) .ec-level { color: #2e75b6; }
+  .esc-card:nth-child(3) .ec-level { color: #a07800; }
+  .esc-card:nth-child(4) .ec-level { color: #c0392b; }
+  .esc-card .ec-who { font-size: 8.5pt; font-weight: 700; color: #1f2d5a; margin-bottom: 4pt; line-height: 1.2; }
+  .esc-card .ec-ack { font-size: 7pt; color: #7a8ab2; margin-bottom: 2pt; }
+  .esc-card .ec-ack strong { color: #1f2d5a; }
+  .esc-card .ec-trigger { font-size: 7pt; color: #3d4f7c; line-height: 1.35; margin-top: 3pt; border-top: .5pt solid rgba(0,0,0,.08); padding-top: 3pt; }
+
+  /* ── Hypercare timeline ── */
+  .hc-timeline { display: flex; gap: 6pt; margin-bottom: 9pt; }
+  .hc-card {
+    flex: 1; border-radius: 4pt; padding: 7pt 8pt;
+    border-left: 3pt solid;
+  }
+  .hc-card:nth-child(1) { border-color: #c9a84c; background: #fffdf5; }
+  .hc-card:nth-child(2) { border-color: #2e75b6; background: #f0f4fc; }
+  .hc-card:nth-child(3) { border-color: #7e3f8f; background: #f8f3ff; }
+  .hc-card:nth-child(4) { border-color: #2d7a4f; background: #f5faf7; }
+  .hc-card .hc-period {
+    font-size: 7pt; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    color: #7a8ab2; margin-bottom: 3pt;
+  }
+  .hc-card .hc-title { font-size: 8.5pt; font-weight: 700; color: #1f2d5a; margin-bottom: 4pt; line-height: 1.2; }
+  .hc-card .hc-sla {
+    font-size: 7pt; font-weight: 600; color: #ffffff; border-radius: 2pt;
+    padding: 1.5pt 5pt; display: inline-block; margin-bottom: 4pt;
+  }
+  .hc-card:nth-child(1) .hc-sla { background: #c9a84c; }
+  .hc-card:nth-child(2) .hc-sla { background: #2e75b6; }
+  .hc-card:nth-child(3) .hc-sla { background: #7e3f8f; }
+  .hc-card:nth-child(4) .hc-sla { background: #2d7a4f; }
+  .hc-card .hc-items { font-size: 7.5pt; color: #3d4f7c; line-height: 1.4; }
+  .hc-card .hc-items li { margin-left: 10pt; margin-bottom: 2pt; }
+  .hc-chk { font-size: 7pt; font-weight: 700; color: #c9a84c; margin-top: 3pt; }
+
+  /* ── Info box ── */
+  .info-box {
+    background: #edf0f8; border-radius: 3pt; padding: 6pt 8pt;
+    font-size: 8pt; color: #3d4f7c; margin-bottom: 8pt;
+    border-left: 3pt solid #2e75b6;
+  }
+  .info-box strong { color: #1f2d5a; }
+
+  /* ── Agents row ── */
+  .agents-row { display: flex; flex-wrap: wrap; gap: 4pt; margin-bottom: 9pt; }
+  .agent-chip {
+    font-size: 7.5pt; font-weight: 600; padding: 2.5pt 7pt; border-radius: 10pt;
+    border: 1pt solid;
+  }
+  .ag-a { background: #e8f0ff; color: #1f2d5a; border-color: #bbc9e8; }
+  .ag-b { background: #e8f5ee; color: #2d7a4f; border-color: #9fd0b5; }
+  .ag-c { background: #fff7e0; color: #a07800; border-color: #ffe08a; }
+  .ag-d { background: #fdecea; color: #c0392b; border-color: #f5b9b4; }
+
+  /* ── Footer ── */
+  .page-footer {
+    margin-top: 10pt;
+    border-top: 1pt solid #c9a84c;
+    padding-top: 5pt;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 7pt; color: #7a8ab2;
+  }
+  .page-footer .pf-right { text-align: right; }
+  .page-footer strong { color: #1f2d5a; }
+
+  .page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<!-- Page Header -->
+<div class="page-header">
+  <div class="brand">MONOLITH DAPH Decor · AI Agent Programme · SOP v2.5</div>
+  <div class="doc-meta">
+    <div>เอกสาร: Thai Vendor Onboarding Brief · S52</div>
+    <div>วันที่: 4 กันยายน 2569 · รุ่น: v1.0</div>
+  </div>
+</div>
+
+<!-- Title Block -->
+<div class="title-block">
+  <div class="doc-tag">Steering Committee Brief · Phase 2 · GAP-05</div>
+  <h1>Vendor Onboarding &amp; Integration Protocol —<br><span>S52 GAP-05 AI Creative Engine</span></h1>
+  <div class="title-sub">V-CHK-01–12 Readiness Checklist · AIE-001–005 SLA KPIs · 90-Day Hypercare Escalation Matrix</div>
+  <div class="kpi-row">
+    <div class="kpi-item">
+      <div class="kval">12</div>
+      <div class="klbl">V-CHK Gates</div>
+    </div>
+    <div class="kpi-item">
+      <div class="kval">5</div>
+      <div class="klbl">AIE Modules</div>
+    </div>
+    <div class="kpi-item">
+      <div class="kval">90</div>
+      <div class="klbl">วัน Hypercare</div>
+    </div>
+    <div class="kpi-item">
+      <div class="kval">Q2 2033</div>
+      <div class="klbl">เป้าหมาย Go-Live</div>
+    </div>
+    <div class="kpi-item">
+      <div class="kval">4</div>
+      <div class="klbl">Escalation Levels</div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 1: V-CHK-01–12 -->
+<div class="section-hdr">
+  <h2>1. Vendor Integration Readiness Checklist — V-CHK-01 ถึง V-CHK-12</h2>
+  <span class="hbadge">S52 · 52.7</span>
+</div>
+
+<div class="info-box">
+  <strong>หลักการ:</strong> แต่ละ V-CHK ต้องสถานะ COMPLETE ก่อนจะเข้าสู่ขั้นตอนถัดไป — หากมีรายการ INCOMPLETE จะบล็อค progression และต้องรายงาน Programme Director ทันที
+  ผู้มีอำนาจอนุมัติ V-CHK-12 (Phase 2 Programme Director ร่วมกับ Core) คือ gate สุดท้ายก่อนเข้า BAU mode
+</div>
+
+<table class="vchk-tbl">
+  <thead>
+    <tr>
+      <th style="width:9%">V-CHK</th>
+      <th style="width:11%">Phase</th>
+      <th style="width:42%">รายการตรวจสอบ</th>
+      <th style="width:20%">ผู้มีอำนาจ</th>
+      <th style="width:10%" style="text-align:center">สถานะ</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="vchk-id">V-CHK-01</span></td>
+      <td><span class="vchk-phase ph-pre">Pre-Onb</span></td>
+      <td>Contract &amp; Legal — MSA, SOW, DPA ลงนามแล้ว; IP schedules แนบครบ</td>
+      <td><span class="auth-txt">Aria</span></td>
+      <td class="chk-box-cell"><div class="chk-box"></div></td>
+    </tr>
+    <tr>
+      <td><span class="vchk-id">V-CHK-02</span></td>
+      <td><span class="vchk-phase ph-pre">Pre-Onb</span></td>
+      <td>NDA &amp; Data Classification — NDA ลงนาม; PDPA briefing สำเร็จ</td>
+      <td><span class="auth-txt">Aria</span></td>
+      <td class="chk-box-cell"><div class="chk-box"></div></td>
+    </tr>
+    <tr>
+      <td><span class="vchk-id">V-CHK-03</span></td>
+      <td><span class="vchk-phase ph-pre">Pre-Onb</span></td>
+      <td>Access Provisioning — VPN, repository, sandbox environment พร้อมใช้งาน</td>
+      <td><span class="auth-txt">Signal</span></td>
+      <td class="chk-box-cell"><div class="chk-box"></div></td>
+    </tr>
+    <tr>
+      <td><span class="vchk-id">V-CHK-04</span></td>
+      <td><span class="vchk-phase ph-pre">Pre-Onb</span></td>
+      <td>Environment Setup — AIE-001–005 scaffolding ตรวจสอบกับ MONOLITH infra spec v2.5 แล้ว</td>
+      <td><span class="auth-txt">Signal</span></td>
+      <td class="chk-box-cell"><div class="chk-box"></div></td>
+    </tr>
+    <tr>
+      <td><span class="vchk-id">V-CHK-05</span></td>
+      <td><span class="vchk-phase ph-sit">SIT</span></td>
+      <td>Integration Test Suite — pass rate ≥ 98%; zero P1/P2 defects เมื่อปิด SIT</td>
+      <td><span class="auth-txt">Signal</span></td>
+      <td class="chk-box-cell"><div class="chk-box"></div></td>
+    </tr>
+    <tr>
+      <td><span class="vchk-id">V-CHK-06</span></td>
+      <td><span class="vchk-phase ph-sit">SIT</span></td>
+      <td>Performance Benchmarks — latency SLA ทุก AIE module ผ่านภายใต้ 50 concurrent sessions</td>
+      <td><span class="auth-txt">Signal</span></td>
+      <td class="chk-box-cell"><div class="chk-box"></div></td>
+    </tr>
+    <tr>
+      <td><span class="vchk-id">V-CHK-07</span></td>
+      <td><span class="vchk-phase ph-uat">UAT</span></td>
+      <td>UAT Acceptance — 10 project briefs ประมวลผลสำเร็จ; คะแนน design panel ≥ 4.0/5.0</td>
+      <td><span class="auth-txt">Aria + Programme Director</span></td>
+      <td class="chk-box-cell"><div class="chk-box"></div></td>
+    </tr>
+    <tr>
+      <td><span class="vchk-id">V-CHK-08</span></td>
+      <td><span class="vchk-phase ph-live">Go-Live</span></td>
+      <td>Go-Live Readiness Gate — V-CHK-01–07 COMPLETE ทั้งหมด; rollback plan อนุมัติแล้ว</td>
+      <td><span class="auth-txt">Programme Director + Signal</span></td>
+      <td class="chk-box-cell"><div class="chk-box"></div></td>
+    </tr>
+    <tr>
+      <td><span class="vchk-id">V-CHK-09</span></td>
+      <td><span class="vchk-phase ph-care">Hypercare</span></td>
+      <td>Hypercare Entry — Nova monitoring live; emergency contacts ยืนยัน; baseline metrics บันทึก</td>
+      <td><span class="auth-txt">Signal</span></td>
+      <td class="chk-box-cell"><div class="chk-box"></div></td>
+    </tr>
+    <tr>
+      <td><span class="vchk-id">V-CHK-10</span></td>
+      <td><span class="vchk-phase ph-care">Hypercare</span></td>
+      <td>30-Day Review — availability ≥ 99.5%; zero P1 ที่เปิดอยู่; P2 backlog ≤ 5 รายการ</td>
+      <td><span class="auth-txt">Programme Director</span></td>
+      <td class="chk-box-cell"><div class="chk-box"></div></td>
+    </tr>
+    <tr>
+      <td><span class="vchk-id">V-CHK-11</span></td>
+      <td><span class="vchk-phase ph-care">Hypercare</span></td>
+      <td>60-Day Review — AIE-001–005 performance stable; weekly report compliance 100%</td>
+      <td><span class="auth-txt">Signal</span></td>
+      <td class="chk-box-cell"><div class="chk-box"></div></td>
+    </tr>
+    <tr>
+      <td><span class="vchk-id">V-CHK-12</span></td>
+      <td><span class="vchk-phase ph-care">Hypercare</span></td>
+      <td>90-Day Hypercare Exit — ลงนามอย่างเป็นทางการ; DPA countersigned; BAU SLA ยืนยัน</td>
+      <td><span class="auth-txt">Programme Director + Core</span></td>
+      <td class="chk-box-cell"><div class="chk-box"></div></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Section 2: AIE SLA Table -->
+<div class="section-hdr">
+  <h2>2. SLA KPIs — AIE-001 ถึง AIE-005</h2>
+  <span class="hbadge">S52 · 52.3</span>
+</div>
+
+<table class="sla-tbl">
+  <thead>
+    <tr>
+      <th style="width:10%">โมดูล</th>
+      <th style="width:20%">ชื่อโมดูล</th>
+      <th style="width:13%">Integration</th>
+      <th style="width:14%">Latency (p95)</th>
+      <th style="width:13%">Availability</th>
+      <th style="width:13%">Error Rate</th>
+      <th style="width:17%">ผู้ติดตาม</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="aie-code">AIE-001</span></td>
+      <td>Concept Generator</td>
+      <td><span class="int-type">REST API</span></td>
+      <td><span class="sla-val">≤ 3 วินาที</span></td>
+      <td><span class="sla-pill sla-a">≥ 99.5%</span></td>
+      <td>≤ 0.5%</td>
+      <td>Nova + Signal</td>
+    </tr>
+    <tr>
+      <td><span class="aie-code">AIE-002</span></td>
+      <td>Style Harmoniser</td>
+      <td><span class="int-type">GraphQL</span></td>
+      <td><span class="sla-val">≤ 5 วินาที</span></td>
+      <td><span class="sla-pill sla-a">≥ 99.5%</span></td>
+      <td>≤ 0.5%</td>
+      <td>Nova + Signal</td>
+    </tr>
+    <tr>
+      <td><span class="aie-code">AIE-003</span></td>
+      <td>Material Specifier</td>
+      <td><span class="int-type">Webhook Push</span></td>
+      <td><span class="sla-val">≤ 10 วินาที</span></td>
+      <td><span class="sla-pill sla-b">≥ 99.0%</span></td>
+      <td>≤ 1.0%</td>
+      <td>Nova</td>
+    </tr>
+    <tr>
+      <td><span class="aie-code">AIE-004</span></td>
+      <td>Mood Board Assembler</td>
+      <td><span class="int-type">Batch API</span></td>
+      <td><span class="sla-val">≤ 30 วินาที</span></td>
+      <td><span class="sla-pill sla-b">≥ 99.0%</span></td>
+      <td>≤ 1.0%</td>
+      <td>Nova</td>
+    </tr>
+    <tr>
+      <td><span class="aie-code">AIE-005</span></td>
+      <td>Client Presentation Renderer</td>
+      <td><span class="int-type">Streaming API</span></td>
+      <td><span class="sla-val">≤ 60 วินาที</span></td>
+      <td><span class="sla-pill sla-b">≥ 99.0%</span></td>
+      <td>≤ 2.0%</td>
+      <td>Nova + Aria</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- PAGE BREAK -->
+<div class="page-break"></div>
+
+<!-- Page Header (page 2) -->
+<div class="page-header">
+  <div class="brand">MONOLITH DAPH Decor · AI Agent Programme · SOP v2.5</div>
+  <div class="doc-meta">
+    <div>เอกสาร: Thai Vendor Onboarding Brief · S52</div>
+    <div>วันที่: 4 กันยายน 2569 · หน้า 2/2</div>
+  </div>
+</div>
+
+<!-- Section 3: 90-Day Hypercare Escalation Matrix -->
+<div class="section-hdr">
+  <h2>3. Escalation Matrix — 90-Day Hypercare Period</h2>
+  <span class="hbadge">S52 · 52.6</span>
+</div>
+
+<div class="info-box">
+  <strong>ระยะ Hypercare:</strong> 90 วันนับจากวัน Go-Live (V-CHK-09 COMPLETE) — ช่วงนี้ vendor ต้องรักษา enhanced support level
+  และ MONOLITH มีสิทธิ์เรียกใช้ remediation obligations โดยไม่ต้องยื่น change request ทั่วไป
+</div>
+
+<div class="esc-grid">
+  <div class="esc-card">
+    <div class="ec-level">L1 — Initial Triage</div>
+    <div class="ec-who">Signal<br>Technology Lead</div>
+    <div class="ec-ack"><strong>P1:</strong> ≤ 30 นาที ack</div>
+    <div class="ec-ack"><strong>P2:</strong> ≤ 2 ชั่วโมง ack</div>
+    <div class="ec-ack"><strong>P3:</strong> ≤ 4 ชั่วโมง ack</div>
+    <div class="ec-trigger">ทุก incident เริ่มที่ L1 — Signal รับและ triage ก่อนส่งต่อ</div>
+  </div>
+  <div class="esc-card">
+    <div class="ec-level">L2 — Technical Escalation</div>
+    <div class="ec-who">Vendor Module Lead<br>+ Signal</div>
+    <div class="ec-ack"><strong>P1:</strong> ≤ 2 ชั่วโมง resolution</div>
+    <div class="ec-ack"><strong>P2:</strong> ≤ 1 วันทำการ resolution</div>
+    <div class="ec-ack"><strong>P3:</strong> ≤ 5 วันทำการ</div>
+    <div class="ec-trigger">Trigger: P1 ไม่ได้รับการแก้ไขใน 30 นาที หรือ P2 ที่ซับซ้อน</div>
+  </div>
+  <div class="esc-card">
+    <div class="ec-level">L3 — Programme Escalation</div>
+    <div class="ec-who">Programme Director<br>+ Vendor Account Director</div>
+    <div class="ec-ack"><strong>P1:</strong> ≤ 4 ชั่วโมง resolution</div>
+    <div class="ec-ack"><strong>P2:</strong> ≤ 2 วันทำการ</div>
+    <div class="ec-ack">&nbsp;</div>
+    <div class="ec-trigger">Trigger: P1 ≥ 2 ชั่วโมง unresolved; pattern P2 ≥ 3 ใน 7 วัน</div>
+  </div>
+  <div class="esc-card">
+    <div class="ec-level">L4 — Executive Escalation</div>
+    <div class="ec-who">SC Chair<br>+ Vendor CEO</div>
+    <div class="ec-ack"><strong>P1:</strong> ≤ 4 ชั่วโมง (unresolved)</div>
+    <div class="ec-ack"><strong>Pattern:</strong> P2 ≥ 3/7 วัน</div>
+    <div class="ec-ack">&nbsp;</div>
+    <div class="ec-trigger">Trigger: P1 เกิน 4 ชั่วโมงโดยไม่แก้ได้; ซ้ำหลายครั้ง; data integrity issue</div>
+  </div>
+</div>
+
+<!-- Section 4: Hypercare Milestones -->
+<div class="section-hdr">
+  <h2>4. Hypercare Milestones &amp; ตัวชี้วัดความสำเร็จ</h2>
+  <span class="hbadge">S52 · 52.6 · V-CHK-09–12</span>
+</div>
+
+<div class="hc-timeline">
+  <div class="hc-card">
+    <div class="hc-period">Day 0 — Entry</div>
+    <div class="hc-title">เริ่ม Hypercare</div>
+    <div class="hc-sla">V-CHK-09</div>
+    <ul class="hc-items">
+      <li>Nova monitoring live</li>
+      <li>Emergency contacts ยืนยัน</li>
+      <li>Baseline metrics บันทึก</li>
+      <li>Joint daily stand-up เริ่ม (09:00 ICT)</li>
+    </ul>
+    <div class="hc-chk">GL-CHK-06 ← ปิดวันนี้</div>
+  </div>
+  <div class="hc-card">
+    <div class="hc-period">Day 30 — Review</div>
+    <div class="hc-title">30-Day Hypercare Review</div>
+    <div class="hc-sla">V-CHK-10</div>
+    <ul class="hc-items">
+      <li>Availability ≥ 99.5%</li>
+      <li>Zero P1 incidents ที่เปิดอยู่</li>
+      <li>P2 backlog ≤ 5 รายการ</li>
+      <li>SC briefing note โดย Signal</li>
+    </ul>
+    <div class="hc-chk">GL-CHK-07 ← ปิดวันนี้</div>
+  </div>
+  <div class="hc-card">
+    <div class="hc-period">Day 60 — Assessment</div>
+    <div class="hc-title">60-Day Performance Assessment</div>
+    <div class="hc-sla">V-CHK-11</div>
+    <ul class="hc-items">
+      <li>AIE-001–005 performance stable</li>
+      <li>Weekly report compliance 100%</li>
+      <li>Pre-BAU planning เริ่ม</li>
+      <li>Runbook draft โดย Signal</li>
+    </ul>
+    <div class="hc-chk">GL-CHK-07 ← ตรวจสอบ</div>
+  </div>
+  <div class="hc-card">
+    <div class="hc-period">Day 90 — Exit</div>
+    <div class="hc-title">Hypercare Exit &amp; BAU Handoff</div>
+    <div class="hc-sla">V-CHK-12</div>
+    <ul class="hc-items">
+      <li>Formal sign-off Programme Director</li>
+      <li>DPA countersigned &amp; filed (Core)</li>
+      <li>BAU SLA ≥ 99.5% ยืนยัน</li>
+      <li>Runbooks &amp; playbooks ส่งมอบ</li>
+    </ul>
+    <div class="hc-chk">GL-CHK-08 ← ปิดวันนี้</div>
+  </div>
+</div>
+
+<!-- Agents -->
+<div class="section-hdr" style="margin-top:6pt">
+  <h2>Agents รับผิดชอบ Onboarding &amp; Integration</h2>
+  <span class="hbadge">Ownership</span>
+</div>
+
+<div class="agents-row">
+  <span class="agent-chip ag-a">Signal — Technology Integration Lead</span>
+  <span class="agent-chip ag-a">Aria — Procurement &amp; Compliance Lead</span>
+  <span class="agent-chip ag-a">Core — Finance, Legal &amp; DPA</span>
+  <span class="agent-chip ag-b">Nova — KPI Monitoring (V-CHK-09–12)</span>
+  <span class="agent-chip ag-b">Nexus — SIEM &amp; Security Audit</span>
+  <span class="agent-chip ag-b">Guardian — Compliance Monitoring</span>
+  <span class="agent-chip ag-c">Phase 2 Programme Director</span>
+  <span class="agent-chip ag-d">SC Chair (L4 Escalation)</span>
+</div>
+
+<!-- Footer -->
+<div class="page-footer">
+  <div class="pf-left">
+    <strong>MONOLITH DAPH Decor AI Agent Programme</strong> · SOP v2.5 · S52 Vendor Onboarding Protocol Brief
+  </div>
+  <div class="pf-right">
+    <div>MONOLITH-S52-ONB-001 v1.0 · V-CHK-01–12 · AIE-001–005</div>
+    <div>จัดทำโดย Scispace Agent · 4 กันยายน 2569</div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>MONOLITH LINE Flex Studio — Operator Guide</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1>MONOLITH LINE Flex Studio — Operator Guide</h1>
+<ul>
+<li>Status: approved standalone prototype guidance</li>
+<li>Edition: English</li>
+<li>Verified against the local Studio and official LINE documentation on 2026-08-02</li>
+</ul>
+<h2>1. Purpose and safety boundary</h2>
+<p>LINE Flex Studio is a local authoring and review surface for one Flex Message bubble. It helps an operator select a governed preset, edit Header, Hero, Body and Footer content, inspect a responsive preview, validate the generated JSON, and rehearse an exact-action review in Mock LIFF.</p>
+<p>The Studio is not a Messaging API sender, production LIFF app, system of record, authorization engine or signing service. It contains demo tenant and recipient references only. Do not enter customer personal data, a channel secret, channel access token, bearer token or other production secret. The authoritative revision, permission, workflow and audit records remain in MONOLITH.</p>
+<blockquote><p>Standalone result: no message was sent and no business state changed. “Verification Receipt — Demo” is not a production signature.</p></blockquote>
+<h2>2. Quick start with a local static server</h2>
+<p>From the parent repository root, start a local static server:</p>
+<pre><code class="language-powershell">python -m http.server 4177 --directory LineOS</code></pre>
+<p>Open <code>http://localhost:4177/line-flex-studio.html</code>. Keep the terminal open while using the Studio and stop the server when finished. Use only localhost for this prototype. Do not add a production token or secret to the command, URL, JSON or browser storage.</p>
+<h2>3. Studio Console map</h2>
+<div class="tablewrap"><table><thead><tr><th>Area</th><th>What it does</th><th>Operator check</th></tr></thead><tbody>
+<tr><td>App header</td><td>Shows <code>Daph Studio · Secured by MONOLITH</code> and changes TH/EN</td><td>Confirm the demo tenant and language before editing.</td></tr>
+<tr><td>Editor</td><td>Chooses one of five presets and edits Header, Hero, Body and Footer</td><td>Confirm audience, revision, requester, deadline and consequence.</td></tr>
+<tr><td>LINE Preview</td><td>Shows the local visual approximation and starts Mock LIFF</td><td>Treat it as a design aid, not official-client proof.</td></tr>
+<tr><td>JSON Preview</td><td>Updates generated JSON and UTF-8 bubble bytes in real time</td><td>Review payload and validation before copy or download.</td></tr>
+<tr><td>Validation</td><td>Shows severity, rule ID, source classification and source link</td><td>Resolve every <code>error</code>; assess each <code>warning</code> and <code>guidance</code> item.</td></tr>
+</tbody></table></div>
+<p>On a narrow screen, Editor, Preview and JSON &amp; Validation become keyboard-operable tabs.</p>
+<h2>4. Choose one of the five presets</h2>
+<p>Select the preset whose business intent matches the journey; do not repurpose wording while leaving the action intent unchanged.</p>
+<div class="tablewrap"><table><thead><tr><th>Preset ID</th><th>Use it for</th><th>Default action boundary</th></tr></thead><tbody>
+<tr><td><code>design-approval</code></td><td>“Design ready for review” for a named revision</td><td>High risk: URI opening LIFF for exact revision review and explicit confirmation.</td></tr>
+<tr><td><code>quote-order</code></td><td>Quote, scope and order-intent review</td><td>High risk: LIFF; chat text is not order truth.</td></tr>
+<tr><td><code>sla-escalation</code></td><td>Personal internal SLA acknowledgement</td><td>Low-risk postback acknowledges receipt only; monetary approval opens the work item.</td></tr>
+<tr><td><code>site-update</code></td><td>Curated customer-facing site progress</td><td>Read-only URI; internal group photos are not automatically customer evidence.</td></tr>
+<tr><td><code>issue-evidence</code></td><td>Acknowledge quarantined field evidence</td><td>Low-risk postback; a human verifies actor and project before promote/reject.</td></tr>
+</tbody></table></div>
+<p>Changing preset or language creates a fresh preset draft and invalidates any in-page demo transaction or receipt.</p>
+<h2>5. Edit Header, Hero, Body and Footer</h2>
+<p>Use the block tabs in order:</p>
+<ol>
+<li><strong>Header:</strong> edit eyebrow, title, status and <code>altText</code>. Make the message recognizable without the image. <code>altText</code> is mandatory and limited to 1,500 characters by LINE.</li>
+<li><strong>Hero:</strong> set the exported HTTPS URL, aspect ratio and aspect mode. The preview uses a bundled local SVG substitute; exported JSON uses the HTTPS URL. A production image must be published separately under approved media controls.</li>
+<li><strong>Body:</strong> verify project, revision, requester, amount/scope, deadline, summary and trust note. Never imply that a chat message is authoritative business state.</li>
+<li><strong>Footer:</strong> write one clear primary CTA, use a secondary CTA sparingly, and verify the requested action type. High-risk intent must not use Message or Postback as final authorization.</li>
+</ol>
+<p>Every input updates the preview, JSON, byte count and findings from the same in-memory draft.</p>
+<h2>6. Preview widths and bilingual wrapping</h2>
+<p>Use browser responsive mode to inspect the page and card at <strong>320</strong>, <strong>360</strong> and <strong>390</strong> CSS pixels. The v1 phone frame scales responsively up to 360 px; the three widths are test conditions, not three official LINE client emulators.</p>
+<p>At every width, test:</p>
+<ul>
+<li>Thai and English editions;</li>
+<li>long project and person names;</li>
+<li>Thai line breaking without spaces;</li>
+<li>English word wrapping, numbers, currency and emoji;</li>
+<li>large system font settings;</li>
+<li>hero cover cropping and CTA visibility.</li>
+</ul>
+<p>Official LINE clients can render the same Flex Message differently by OS, LINE version, resolution, language and font. Complete real-client checks before controlled delivery.</p>
+<h2>7. JSON copy and download</h2>
+<p>The JSON panel is the current generated Flex payload. The byte indicator measures the bubble definition:</p>
+<ul>
+<li>at or below 24 KB: within the MONOLITH soft budget;</li>
+<li>above 24 KB through 30 KB: warning zone; simplify before release;</li>
+<li>above 30 KB: LINE hard-limit <code>error</code> and export is blocked.</li>
+</ul>
+<p><code>Copy JSON</code>, <code>Download JSON</code> and <code>Run Journey</code> are disabled while any blocking <code>error</code> exists. This prevents a known-invalid or unsafe draft from becoming a handoff artifact. Warnings and guidance stay visible but do not alone block export. After copy or download, treat the file as untrusted input to a controlled integration; it contains no authority to send.</p>
+<p>The v1 action URI and Hero export URL use <code>example.com</code> demo placeholders. A controlled server integration must resolve approved environment-specific LIFF and media URLs; never send the standalone export directly to a customer.</p>
+<h2>8. Read validation findings</h2>
+<div class="tablewrap"><table><thead><tr><th>Severity</th><th>Meaning</th><th>Required response</th></tr></thead><tbody>
+<tr><td><code>error</code></td><td>Violates a required LINE constraint or an approved MONOLITH safety boundary</td><td>Fix before export or Mock LIFF. Use the Fix button to focus the field.</td></tr>
+<tr><td><code>warning</code></td><td>Exceeds a MONOLITH usability/safety budget or needs deliberate review</td><td>Record the decision and normally remediate before release.</td></tr>
+<tr><td><code>guidance</code></td><td>Calls out preview substitutions or future production controls</td><td>Verify the downstream production owner and evidence.</td></tr>
+</tbody></table></div>
+<p>Source classifications are explicit:</p>
+<ul>
+<li><code>official_constraint</code> links to current LINE Developers documentation.</li>
+<li><code>monolith_best_practice</code> links to the approved MONOLITH design specification.</li>
+</ul>
+<p>The source link supports the rule; it does not certify the current draft or a production deployment.</p>
+<h2>9. Rehearse the Mock LIFF exact-action review</h2>
+<ol>
+<li>Resolve all blocking errors.</li>
+<li>Select <code>design-approval</code> without a live LIFF connection; the standalone rehearsal ends with <strong>Verification Receipt — Demo</strong></li>
+<li>Choose <strong>Run Journey</strong>.</li>
+<li>In <strong>PRIVATE REVIEW — DEMO</strong>, compare tenant, recipient, project, revision, canonical action, consequence, action mode and expiry with the card.</li>
+<li>Cancel if any value is unexpected. If values are exact, choose <strong>Confirm demo intent</strong> once.</li>
+<li>Editing a bound field, expiry, tampering or mismatching a transaction makes the confirmation fail closed and requires a new review.</li>
+</ol>
+<p>For real service, initialize with <code>liff.init()</code> and use <code>liff.login()</code> when the documented external/in-app-browser path requires login. Send the <strong>raw <code>liff.getIDToken()</code> ID token or access token</strong> to the server over HTTPS, then <strong>verify using LINE's documented server flow</strong> before mapping the verified LINE subject to the stored MONOLITH principal. <strong>Direct LINE Login authorization requests inside the LIFF browser are not guaranteed</strong>; keep the supported LIFF login path instead of constructing a direct authorization request inside LIFF.</p>
+<p>Keep identity, routing, authorization correlation and business transaction authority separate:</p>
+<div class="tablewrap"><table><thead><tr><th>Concept</th><th>Meaning and required handling</th></tr></thead><tbody>
+<tr><td>MONOLITH transaction reference</td><td>A server-created, server-stored, high-entropy opaque reference with CSRF/session binding; bound to tenant, principal/audience, resource, revision, action, expiry and exact return target; one-time consumed atomically. It is not an ID-token nonce.</td></tr>
+<tr><td>LINE-managed liff.state</td><td>Additional LIFF URL information carried by LINE; untrusted routing input; not OAuth state, not permission and not the MONOLITH transaction reference. Process routing only after <code>liff.init()</code> resolves.</td></tr>
+<tr><td>OAuth state</td><td>CSRF correlation for a separate supported authorization flow; created and stored by that flow; not liff.state and not business permission.</td></tr>
+<tr><td>OIDC nonce</td><td>ID-token replay/correlation input; compare only when a separate supported authorization flow lets MONOLITH supply it and LINE returns the ID-token claim.</td></tr>
+</tbody></table></div>
+<p>After identity verification, the server must reload the authoritative revision and permission, bind the exact-action review to the MONOLITH transaction reference, perform MONOLITH step-up for consequential actions, atomically consume the reference with the command result, and append immutable audit evidence. Forwarded URLs and <code>liff.state</code> can propose routing only; they cannot grant permission or select authoritative tenant/resource/revision/action values.</p>
+<h2>10. Interpret Verification Receipt — Demo</h2>
+<p>The demo receipt binds a generated transaction ID to demo tenant, recipient, revision, canonical action, outcome and confirmation time, then displays a local digest. The ribbon states <code>DEMO — NOT A PRODUCTION SIGNATURE</code>.</p>
+<p>It proves only that the current browser demo completed its local exact-value path. It is not a LINE delivery receipt, human identity proof, legal signature, MONOLITH audit record or authorization decision. A production Signed Receipt requires the Trust Kernel, authoritative server records, approved signer and key management, one-time transaction consumption and durable audit.</p>
+<h2>11. Keyboard operation</h2>
+<ul>
+<li>Use <code>Tab</code> and <code>Shift+Tab</code> to reach controls; activate a button with <code>Enter</code> or <code>Space</code>.</li>
+<li>On Header/Hero/Body/Footer tabs, use <code>ArrowLeft</code>, <code>ArrowRight</code>, <code>Home</code> and <code>End</code>.</li>
+<li>On narrow-screen Editor/Preview/JSON tabs, use the same arrow, Home and End keys.</li>
+<li>Use the skip link to move to the work area.</li>
+<li>Native dialogs keep focus inside while open; use Cancel or <code>Escape</code> to leave the review, then focus returns to Run Journey.</li>
+<li>Do not use the preview CTA itself: it is deliberately excluded from keyboard focus because Run Journey is the controlled demo trigger.</li>
+</ul>
+<h2>12. Clear demo state</h2>
+<ul>
+<li>Choose <strong>Reset</strong> to restore the current preset. The browser asks for confirmation only when the draft differs from its preset baseline.</li>
+<li>Switching preset or TH/EN rebuilds the draft and clears the in-page transaction/receipt.</li>
+<li>Reload the page to discard all current-page memory. The v1 Studio does not use persistence for the draft.</li>
+<li>Delete any JSON file you downloaded if it is no longer approved for use; handle it under the organization’s normal document-retention rule.</li>
+</ul>
+<h2>13. Troubleshooting</h2>
+<div class="tablewrap"><table><thead><tr><th>Symptom</th><th>Check</th><th>Safe response</th></tr></thead><tbody>
+<tr><td>Empty preview</td><td>Confirm the static server is running and the page loaded over localhost rather than opening modules as a raw file</td><td>Reload from the localhost URL; inspect browser console only in a development environment.</td></tr>
+<tr><td>Broken hero</td><td>Local preview and exported URL are different. Check <code>LineOS/assets/line-flex-studio/</code> for preview and the Hero HTTPS URL for export</td><td>Restore the preset; for future production, publish a valid HTTPS JPEG/PNG and retest.</td></tr>
+<tr><td>Invalid URL</td><td>The Hero export URL must start with HTTPS and stay within the documented URL limit</td><td>Fix the Hero field; never replace it with <code>data:</code>, base64 or a secret-bearing URL.</td></tr>
+<tr><td>Over-budget payload</td><td>Byte status is warning above 24 KB or error above 30 KB</td><td>Shorten copy, remove decorative nesting and retest; do not bypass the block.</td></tr>
+<tr><td>Clipboard denial</td><td>Browser policy or permission denied clipboard access</td><td>Select the visible JSON and copy manually, or use Download JSON after validation. Do not weaken browser security settings.</td></tr>
+<tr><td>Journey does not open</td><td>Blocking validation or required Web Crypto/dialog APIs are unavailable</td><td>Fix errors or use a current browser. This is not evidence of a live LIFF failure.</td></tr>
+</tbody></table></div>
+<h2>14. Completion statement</h2>
+<p>After a successful rehearsal, record the preset, language, widths checked, findings disposition and demo receipt digest in the review notes. The correct conclusion remains: <strong>no message was sent and no business state changed</strong>. Live customer delivery remains disabled until MONOLITH Trust P0 gates pass with fresh evidence.</p>
+<h2>Official sources</h2>
+<p>Retrieved 2026-08-02:</p>
+<ul>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/using-flex-messages/" target="_blank" rel="noopener">Send Flex Messages and rendering variability</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/using-flex-message-simulator/" target="_blank" rel="noopener">Flex Message Simulator tutorial</a></li>
+<li><a href="https://developers.line.biz/en/reference/messaging-api/nojs/" target="_blank" rel="noopener">Messaging API reference</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/actions/" target="_blank" rel="noopener">Messaging API actions</a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/registering-liff-apps/" target="_blank" rel="noopener">Adding a LIFF app</a></li>
+<li><a href="https://developers.line.biz/en/reference/liff/" target="_blank" rel="noopener">LIFF API reference: initialization and login</a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/developing-liff-apps/" target="_blank" rel="noopener">Developing a LIFF app</a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/opening-liff-app/" target="_blank" rel="noopener">Opening a LIFF app and <code>liff.state</code></a></li>
+<li><a href="https://developers.line.biz/en/reference/line-login/" target="_blank" rel="noopener">LINE Login API reference: server token verification</a></li>
+</ul>
+</main></body>
+</html>

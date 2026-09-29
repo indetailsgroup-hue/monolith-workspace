@@ -1,0 +1,254 @@
+{
+  "_schema_version": "1.0.0",
+  "_comment": "MONOLITH Platform — Client Configuration File — Daph Decor",
+  "_generated": "2025-Q2",
+  "_platform": "MONOLITH",
+
+  "client_id": "daph",
+  "client_name": "Daph Decor",
+  "client_name_th": "ดาฟ เดคอร์",
+  "domain": "interior_decoration",
+  "language": "th",
+  "timezone": "Asia/Bangkok",
+
+  "line": {
+    "channel_access_token": "<daph_channel_access_token>",
+    "channel_secret": "<daph_channel_secret>",
+    "messaging_api_endpoint": "https://api.line.me/v2/bot/message",
+    "webhook_url": "https://api.monolith.app/clients/daph/webhook/line",
+    "liff_ids": {
+      "status":   "1234567890-xxxxxxxx",
+      "schedule": "1234567890-yyyyyyyy",
+      "gallery":  "1234567890-zzzzzzzz",
+      "approval": "1234567890-aaaaaaaa",
+      "review":   "1234567890-bbbbbbbb"
+    },
+    "rich_menu_ids": {
+      "default":  "richmenu-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "project":  "richmenu-yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+      "approval": "richmenu-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+      "install":  "richmenu-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "complete": "richmenu-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  },
+
+  "supabase": {
+    "url": "https://<daph-project>.supabase.co",
+    "anon_key": "<daph_anon_key>",
+    "service_role_key": "<daph_service_role_key>",
+    "db_schema": "public",
+    "tables": {
+      "projects":      "projects",
+      "pfmea_risks":   "pfmea_risk_rows",
+      "installations": "installation_jobs",
+      "messages":      "line_messages"
+    }
+  },
+
+  "agents": [
+    {
+      "id": "sale_agent",
+      "name": "Sale Agent",
+      "role": "รับ inquiry ผ่าน LINE, ส่ง quotation, follow-up ลูกค้า",
+      "enabled": true,
+      "tools": [
+        "send_line_message",
+        "create_project",
+        "send_quotation",
+        "follow_up_customer",
+        "send_flex_message"
+      ],
+      "kpis": {
+        "first_response_max_hours": 4,
+        "conversion_rate_min_pct": 30
+      },
+      "mcp_events": ["new_inquiry", "brief_received", "project_created"]
+    },
+    {
+      "id": "designer_agent",
+      "name": "Designer Agent",
+      "role": "วัดพื้นที่, สร้าง 3D design, ส่งขออนุมัติแบบ",
+      "enabled": true,
+      "tools": [
+        "upload_design",
+        "request_approval",
+        "send_flex_approval",
+        "create_3d_design",
+        "measure_area"
+      ],
+      "kpis": {
+        "design_delivery_max_hours": 48,
+        "approval_rate_min_pct": 80
+      },
+      "mcp_events": ["approval_request"]
+    },
+    {
+      "id": "factory_agent",
+      "name": "Factory Agent",
+      "role": "รับ BOM, แจ้งสถานะผลิต, QC checkpoint",
+      "enabled": true,
+      "tools": [
+        "update_production_status",
+        "qc_checkpoint",
+        "stock_alert",
+        "receive_bom",
+        "send_production_update"
+      ],
+      "kpis": {
+        "on_time_production_min_pct": 95,
+        "qc_pass_rate_min_pct": 99
+      },
+      "mcp_events": ["bom_received", "qc_checkpoint", "stock_alert"]
+    },
+    {
+      "id": "install_agent",
+      "name": "Install Agent",
+      "role": "นัดติดตั้ง, GPS check-in, capture defect, sign-off",
+      "enabled": true,
+      "tools": [
+        "capture_defect",
+        "update_installation_status",
+        "trigger_qc_inspection",
+        "gps_checkin",
+        "sign_off_job"
+      ],
+      "kpis": {
+        "site_accuracy_max_mm": 2,
+        "sign_off_rate_pct": 100
+      },
+      "mcp_events": ["job_scheduled", "status_update", "halt_alert", "job_complete"],
+      "critical_test_cases": ["TC-INSTALL-02", "TC-INSTALL-05"]
+    },
+    {
+      "id": "pm_agent",
+      "name": "PM Agent",
+      "role": "ดู dashboard โปรเจค, ประสาน team, escalate halt",
+      "enabled": true,
+      "tools": [
+        "get_project_status",
+        "escalate_halt",
+        "update_project",
+        "send_status_report",
+        "assign_task"
+      ],
+      "kpis": {
+        "halt_resolution_max_hours": 2,
+        "dashboard_accuracy_pct": 100
+      },
+      "mcp_events": ["halt_alert", "status_update", "first_response_4h"]
+    },
+    {
+      "id": "procurement_agent",
+      "name": "Procurement Agent",
+      "role": "สั่งซื้อ materials, track delivery, stock alert",
+      "enabled": true,
+      "tools": [
+        "create_purchase_order",
+        "track_delivery",
+        "stock_alert",
+        "receive_materials",
+        "update_inventory"
+      ],
+      "kpis": {
+        "on_time_procurement_min_pct": 98,
+        "stock_out_allowed": 0
+      },
+      "mcp_events": ["stock_alert", "bom_received"]
+    }
+  ],
+
+  "pfmea": {
+    "kb_file": "daph_pfmea_risk_rows.json",
+    "total_rows": 122,
+    "critical_sev_threshold": 8,
+    "critical_test_cases": [
+      {
+        "id": "TC-INSTALL-02",
+        "description": "Sev-9 defect not captured during installation",
+        "score": 4,
+        "severity": "CRITICAL",
+        "agent": "install_agent"
+      },
+      {
+        "id": "TC-INSTALL-05",
+        "description": "Dimension mismatch detected at installation site",
+        "score": 4,
+        "severity": "CRITICAL",
+        "agent": "install_agent"
+      }
+    ],
+    "agent_step_mapping": {
+      "Sale": "sale_agent",
+      "Area Measurement": "designer_agent",
+      "Designer": "designer_agent",
+      "3D_Presentation": "designer_agent",
+      "3D_Rendering_Final": "designer_agent",
+      "Production Planning": "factory_agent",
+      "Laminate HPL": "factory_agent",
+      "Cutting": "factory_agent",
+      "Edging": "factory_agent",
+      "CNC": "factory_agent",
+      "Assembly": "factory_agent",
+      "Packing": "factory_agent",
+      "Installation": "install_agent",
+      "QC Inspection": "install_agent"
+    },
+    "row_counts_by_agent": {
+      "sale_agent": 6,
+      "designer_agent": 44,
+      "factory_agent": 50,
+      "install_agent": 22
+    },
+    "severity_summary": {
+      "sev_9_critical": 6,
+      "sev_8_high": 53,
+      "requires_human_review": 105
+    }
+  },
+
+  "field_app": {
+    "app_type": "pwa_installation",
+    "accent_color": "#5b4fcf",
+    "mcp_endpoint": "https://api.monolith.app/clients/daph/mcp",
+    "gps_required": true,
+    "offline_mode": true,
+    "checklist_items": [
+      { "id": "CHK-01", "label": "GPS check-in ณ สถานที่ติดตั้ง", "required": true },
+      { "id": "CHK-02", "label": "ถ่ายภาพก่อนติดตั้ง (Before photos)", "required": true },
+      { "id": "CHK-03", "label": "ตรวจสอบขนาดชิ้นงานกับ BOM", "required": true },
+      { "id": "CHK-04", "label": "ติดตั้งและประกอบชิ้นงาน", "required": true },
+      { "id": "CHK-05", "label": "QC ตรวจสอบความเรียบร้อย (≤2mm tolerance)", "required": true },
+      { "id": "CHK-06", "label": "ถ่ายภาพหลังติดตั้ง (After photos)", "required": true },
+      { "id": "CHK-07", "label": "บันทึก defect ถ้าพบ (ต้องทำทันที)", "required": false },
+      { "id": "CHK-08", "label": "ลูกค้า sign-off ผ่าน LIFF", "required": true }
+    ]
+  },
+
+  "branding": {
+    "primary_color": "#1f2d5a",
+    "accent_color": "#5b4fcf",
+    "secondary_color": "#c9a84c",
+    "font_family": "Sarabun",
+    "font_cdn": "https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap",
+    "logo_url": "https://assets.monolith.app/clients/daph/logo.png",
+    "brand_name_th": "ดาฟ เดคอร์",
+    "brand_name_en": "Daph Decor"
+  },
+
+  "customer_journey": {
+    "stages": 10,
+    "channel": "LINE OA",
+    "flow": [
+      { "stage": 1, "name": "Add LINE OA",       "mcp_event": "new_inquiry",    "agent": "sale_agent",      "line_action": "Welcome Flex Message" },
+      { "stage": 2, "name": "สนใจสินค้า/สอบถาม", "mcp_event": "brief_received", "agent": "sale_agent",      "line_action": "Acknowledgment Flex" },
+      { "stage": 3, "name": "รับใบเสนอราคา",      "mcp_event": "project_created","agent": "sale_agent",      "line_action": "Quotation Flex + PDF" },
+      { "stage": 4, "name": "อนุมัติ/ปฏิเสธ",    "mcp_event": "approval_request","agent": "designer_agent", "line_action": "Approval Request Flex + LIFF" },
+      { "stage": 5, "name": "ชำระเงิน",           "mcp_event": "first_response_4h","agent": "pm_agent",     "line_action": "Payment Confirmation" },
+      { "stage": 6, "name": "ออกแบบ 3D",          "mcp_event": "approval_request","agent": "designer_agent", "line_action": "Design Ready + LIFF Approval" },
+      { "stage": 7, "name": "ผลิต",               "mcp_event": "bom_received",   "agent": "factory_agent",   "line_action": "Production Status Updates" },
+      { "stage": 8, "name": "นัดติดตั้ง",         "mcp_event": "job_scheduled",  "agent": "install_agent",   "line_action": "Job Scheduled Flex" },
+      { "stage": 9, "name": "ติดตั้ง",            "mcp_event": "status_update",  "agent": "install_agent",   "line_action": "PWA Field App → LIFF Status" },
+      { "stage": 10,"name": "Installation Complete","mcp_event": "job_complete",  "agent": "install_agent",   "line_action": "Job Complete Flex + Review LIFF" }
+    ]
+  }
+}

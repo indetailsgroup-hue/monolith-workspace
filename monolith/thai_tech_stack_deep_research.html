@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MONOLITH — Deep Research: Technology Stack Build</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Sarabun', sans-serif;
+    background: #f0f2f8;
+    color: #1a1a2e;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  /* ── HEADER ── */
+  .hero {
+    background: linear-gradient(135deg, #1f2d5a 0%, #162040 60%, #0d1428 100%);
+    color: #fff;
+    padding: 52px 40px 44px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 80% 20%, rgba(201,168,76,0.12) 0%, transparent 60%);
+  }
+  .hero-label {
+    display: inline-block;
+    background: rgba(201,168,76,0.18);
+    border: 1px solid rgba(201,168,76,0.45);
+    color: #c9a84c;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .hero h1 {
+    font-size: 30px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.25;
+    margin-bottom: 10px;
+  }
+  .hero h1 span { color: #c9a84c; }
+  .hero-sub {
+    font-size: 15px;
+    color: rgba(255,255,255,0.72);
+    max-width: 700px;
+    margin-bottom: 28px;
+  }
+  .hero-stats {
+    display: flex;
+    gap: 28px;
+    flex-wrap: wrap;
+  }
+  .hstat {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    padding: 12px 20px;
+    text-align: center;
+    min-width: 110px;
+  }
+  .hstat-n { font-size: 24px; font-weight: 800; color: #c9a84c; line-height: 1; }
+  .hstat-l { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 4px; }
+
+  /* ── ALERT BOX ── */
+  .alert {
+    margin: 28px 40px;
+    background: #fff8e6;
+    border: 2px solid #c9a84c;
+    border-left: 6px solid #c9a84c;
+    border-radius: 10px;
+    padding: 20px 24px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  .alert-icon { font-size: 28px; flex-shrink: 0; line-height: 1.2; }
+  .alert-title { font-size: 16px; font-weight: 700; color: #1f2d5a; margin-bottom: 6px; }
+  .alert-body { font-size: 14px; color: #444; line-height: 1.65; }
+  .alert.red { background: #fff0f0; border-color: #d9534f; }
+  .alert.green { background: #f0faf4; border-color: #2d7a4f; }
+
+  /* ── SECTION ── */
+  .section {
+    margin: 0 40px 36px;
+    background: #fff;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(31,45,90,0.07);
+  }
+  .section-header {
+    background: linear-gradient(90deg, #1f2d5a, #2a3d72);
+    padding: 18px 28px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .section-header.gold  { background: linear-gradient(90deg, #8a6a1a, #c9a84c); }
+  .section-header.green { background: linear-gradient(90deg, #1e5536, #2d7a4f); }
+  .section-header.red   { background: linear-gradient(90deg, #7a1e1e, #c0392b); }
+  .section-header.teal  { background: linear-gradient(90deg, #1a5a5a, #2d9a8a); }
+  .section-header.purple{ background: linear-gradient(90deg, #3d1f6e, #6a3ca8); }
+  .layer-badge {
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 12px;
+    letter-spacing: 1px;
+  }
+  .section-header h2 { font-size: 18px; font-weight: 700; color: #fff; }
+  .section-header .sh-sub { font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 2px; }
+  .section-body { padding: 28px; }
+
+  /* ── ALREADY BUILT TABLE ── */
+  .built-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .built-card {
+    border: 1.5px solid #e8eedc;
+    border-radius: 10px;
+    padding: 16px 18px;
+    background: #f8fdf5;
+  }
+  .built-card.missing { background: #fff7f0; border-color: #ffe0c0; }
+  .built-card-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #2d7a4f;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .built-card.missing .built-card-label { color: #d45d00; }
+  .built-card h4 { font-size: 15px; font-weight: 700; color: #1f2d5a; margin-bottom: 6px; }
+  .built-card p { font-size: 13px; color: #555; line-height: 1.55; }
+  .built-card .files {
+    margin-top: 8px;
+    font-size: 11.5px;
+    color: #666;
+    background: rgba(0,0,0,0.04);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-family: 'Courier New', monospace;
+  }
+
+  /* ── LAYER CARD ── */
+  .layer-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-bottom: 22px;
+  }
+  .option-card {
+    border: 1.5px solid #e0e4f0;
+    border-radius: 10px;
+    padding: 16px 18px;
+    position: relative;
+    background: #fff;
+  }
+  .option-card.recommended {
+    border-color: #1f2d5a;
+    background: #f5f7ff;
+  }
+  .option-card.winner {
+    border-color: #2d7a4f;
+    background: #f3faf5;
+  }
+  .option-card.caution {
+    border-color: #c9a84c;
+    background: #fdf8ec;
+  }
+  .option-card.avoid {
+    border-color: #d9534f;
+    background: #fff5f5;
+    opacity: 0.85;
+  }
+  .option-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .badge-winner  { background: #2d7a4f; color: #fff; }
+  .badge-rec     { background: #1f2d5a; color: #fff; }
+  .badge-alt     { background: #5a7ab0; color: #fff; }
+  .badge-caution { background: #c9a84c; color: #fff; }
+  .badge-avoid   { background: #d9534f; color: #fff; }
+  .badge-existing{ background: #c9a84c; color: #1f2d5a; }
+  .option-card h4 { font-size: 15px; font-weight: 700; color: #1f2d5a; margin-bottom: 6px; }
+  .option-card p  { font-size: 13px; color: #555; line-height: 1.55; }
+  .option-card .price-tag {
+    margin-top: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #2d7a4f;
+    background: #ecf7f0;
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: inline-block;
+  }
+  .option-card .price-tag.orange { color: #c87700; background: #fff5e0; }
+  .option-card .price-tag.red    { color: #c0392b; background: #fff0ef; }
+
+  /* ── COMPARISON TABLE ── */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    margin-bottom: 20px;
+  }
+  .compare-table th {
+    background: #1f2d5a;
+    color: #fff;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+  }
+  .compare-table th:first-child { border-radius: 8px 0 0 0; }
+  .compare-table th:last-child  { border-radius: 0 8px 0 0; }
+  .compare-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #edf0f8;
+    vertical-align: middle;
+  }
+  .compare-table tr:nth-child(even) td { background: #f7f9fd; }
+  .compare-table tr:hover td { background: #eef2fa; }
+  .yes  { color: #2d7a4f; font-weight: 600; }
+  .no   { color: #c0392b; font-weight: 600; }
+  .warn { color: #c87700; font-weight: 600; }
+
+  /* ── DECISION BOX ── */
+  .decision {
+    background: linear-gradient(135deg, #1f2d5a 0%, #263d78 100%);
+    border-radius: 12px;
+    padding: 22px 26px;
+    margin-bottom: 20px;
+    color: #fff;
+  }
+  .decision h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #c9a84c;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .decision ul { list-style: none; padding: 0; }
+  .decision ul li {
+    font-size: 14px;
+    color: rgba(255,255,255,0.88);
+    padding: 5px 0;
+    padding-left: 20px;
+    position: relative;
+    line-height: 1.55;
+  }
+  .decision ul li::before {
+    content: '▸';
+    position: absolute;
+    left: 0;
+    color: #c9a84c;
+  }
+
+  /* ── TIMELINE ── */
+  .timeline { position: relative; padding-left: 32px; margin-bottom: 24px; }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 0; bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, #1f2d5a, #c9a84c, #2d7a4f);
+  }
+  .tl-item { position: relative; margin-bottom: 22px; }
+  .tl-dot {
+    position: absolute;
+    left: -26px;
+    top: 4px;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #c9a84c;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px #c9a84c;
+  }
+  .tl-item h4 { font-size: 14px; font-weight: 700; color: #1f2d5a; margin-bottom: 4px; }
+  .tl-item p { font-size: 13px; color: #555; }
+  .tl-item .tl-tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 9px;
+    border-radius: 10px;
+    margin-right: 6px;
+    margin-bottom: 6px;
+  }
+  .tag-done   { background: #2d7a4f; color: #fff; }
+  .tag-build  { background: #1f2d5a; color: #fff; }
+  .tag-soon   { background: #c9a84c; color: #fff; }
+  .tag-future { background: #aaa; color: #fff; }
+
+  /* ── PRICING MATRIX ── */
+  .price-matrix {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .price-box {
+    border: 1.5px solid #e0e6f0;
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+  .price-box.highlight { border-color: #2d7a4f; background: #f3faf5; }
+  .price-box h5 { font-size: 13px; font-weight: 700; color: #1f2d5a; margin-bottom: 8px; }
+  .price-box .price { font-size: 22px; font-weight: 800; color: #c9a84c; }
+  .price-box .unit  { font-size: 11px; color: #888; margin-top: 2px; }
+  .price-box .note  { font-size: 12px; color: #555; margin-top: 8px; line-height: 1.4; }
+
+  /* ── ARCH DIAGRAM ── */
+  .arch-diagram {
+    background: #0d1428;
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 20px;
+  }
+  .arch-title { color: #c9a84c; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px; text-align: center; }
+  .arch-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    flex-wrap: wrap;
+  }
+  .arch-box {
+    background: rgba(255,255,255,0.08);
+    border: 1.5px solid rgba(201,168,76,0.35);
+    border-radius: 10px;
+    padding: 12px 18px;
+    text-align: center;
+    min-width: 120px;
+  }
+  .arch-box.active { border-color: #2d7a4f; background: rgba(45,122,79,0.2); }
+  .arch-box.existing { border-color: #c9a84c; background: rgba(201,168,76,0.12); }
+  .arch-box .ab-layer { font-size: 9px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px; }
+  .arch-box .ab-name  { font-size: 13px; font-weight: 700; color: #fff; }
+  .arch-box .ab-tech  { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 3px; }
+  .arch-arrow {
+    color: #c9a84c;
+    font-size: 20px;
+    padding: 0 6px;
+  }
+  .arch-flow-row { display: flex; align-items: center; justify-content: center; gap: 0; flex-wrap: wrap; margin-bottom: 12px; }
+
+  /* ── RISK TABLE ── */
+  .risk-row { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid #edf0f8; }
+  .risk-row:last-child { border-bottom: none; }
+  .risk-num {
+    width: 28px; height: 28px; flex-shrink: 0;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #fff;
+  }
+  .r-high   { background: #d9534f; }
+  .r-med    { background: #c9a84c; }
+  .r-low    { background: #2d7a4f; }
+  .risk-content h5 { font-size: 14px; font-weight: 700; color: #1f2d5a; margin-bottom: 4px; }
+  .risk-content p { font-size: 13px; color: #555; }
+
+  /* ── FOOTER ── */
+  .footer {
+    background: #1f2d5a;
+    color: rgba(255,255,255,0.6);
+    text-align: center;
+    padding: 24px 40px;
+    font-size: 12px;
+    margin-top: 40px;
+  }
+  .footer span { color: #c9a84c; font-weight: 700; }
+
+  /* ── UTILITY ── */
+  .chip {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 12px;
+    margin: 2px;
+  }
+  .chip-navy   { background: #1f2d5a; color: #fff; }
+  .chip-gold   { background: #c9a84c; color: #fff; }
+  .chip-green  { background: #2d7a4f; color: #fff; }
+  .chip-blue   { background: #3a7bd5; color: #fff; }
+  .chip-gray   { background: #8a9bba; color: #fff; }
+
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, #c9a84c40, transparent); margin: 24px 0; }
+  h3.subsec { font-size: 16px; font-weight: 700; color: #1f2d5a; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #edf0f8; }
+  p.lead { font-size: 15px; color: #333; line-height: 1.7; margin-bottom: 16px; }
+  .note-box {
+    background: #f5f7ff;
+    border-left: 4px solid #1f2d5a;
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #333;
+    margin-bottom: 16px;
+  }
+  .spacer { height: 24px; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ HERO ══════════════════ -->
+<div class="hero">
+  <div class="hero-label">Deep Research Report · MONOLITH DAPH Decor</div>
+  <h1>Technology Stack — <span>สร้างขึ้นมาเอง</span></h1>
+  <p class="hero-sub">การวิเคราะห์เชิงลึก: ระบบที่มีอยู่แล้ว, สิ่งที่ต้องสร้างเพิ่ม, และสถาปัตยกรรมที่เหมาะสมที่สุดสำหรับ 28 AI Agents บน MONOLITH Platform</p>
+  <div class="hero-stats">
+    <div class="hstat"><div class="hstat-n">4,722</div><div class="hstat-l">ไฟล์ใน repo</div></div>
+    <div class="hstat"><div class="hstat-n">6</div><div class="hstat-l">kiro specs ที่ออกแบบไว้</div></div>
+    <div class="hstat"><div class="hstat-n">3</div><div class="hstat-l">AI modules spec'd</div></div>
+    <div class="hstat"><div class="hstat-n">28</div><div class="hstat-l">process steps (JSON)</div></div>
+    <div class="hstat"><div class="hstat-n">29</div><div class="hstat-l">field app screens</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════ ALERT: BIG DISCOVERY ══════════════════ -->
+<div class="alert" style="margin-top:28px;">
+  <div class="alert-icon">🔍</div>
+  <div>
+    <div class="alert-title">ข้อค้นพบสำคัญจากการ Deep Research ใน GitHub Repo</div>
+    <div class="alert-body">
+      หลังจากวิเคราะห์ repo <code>indetailsgroup-hue/monolith-workspace</code> อย่างละเอียด (4,722 files, TypeScript + Supabase) พบว่า <strong>Monolith มีสถาปัตยกรรมส่วนใหญ่อยู่แล้ว</strong> — LINE OA spec เสร็จแล้ว, MCP Layer ออกแบบแล้ว, Knowledge Base (daph-second-brain) มี JSON export แล้ว, Field App PWA (29 screens) build แล้ว<br>
+      คำแนะนำใน Build & Deploy Roadmap เดิมบางส่วน <strong>ไม่ตรงกับ tech stack ที่ใช้จริง</strong> — รายงานนี้จะ correct ทุกจุดและให้ทิศทางที่ถูกต้อง
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ SECTION 0: WHAT'S ALREADY BUILT ══════════════════ -->
+<div class="section">
+  <div class="section-header green">
+    <div>
+      <div class="layer-badge">EXISTING</div>
+      <h2>สิ่งที่มีอยู่แล้วใน Monolith Repo</h2>
+      <div class="sh-sub">ก่อนสร้างอะไรใหม่ — ต้องรู้ว่าอะไรมีอยู่แล้ว</div>
+    </div>
+  </div>
+  <div class="section-body">
+    <p class="lead">การตรวจสอบ repo พบว่ามี modules ที่ <strong>ออกแบบ หรือ build ไว้แล้ว</strong> — หลายอย่างไม่ต้องสร้างใหม่ แค่ต้องเชื่อมต่อและ deploy:</p>
+    <div class="built-grid">
+      <div class="built-card">
+        <div class="built-card-label">✅ ออกแบบแล้ว + บาง implementation</div>
+        <h4>LINE OA Commerce (Module B5)</h4>
+        <p>Webhook ingestion, signature verification, conversation routing, design approval flow (A1 sandbox → A2 gates), Flex Messages, outbound sender via Supabase Edge Functions</p>
+        <div class="files">LineOS/ · .kiro/specs/line-oa-commerce/<br>design.md 35KB · requirements.md 29KB · tasks.md 22KB</div>
+      </div>
+      <div class="built-card">
+        <div class="built-card-label">✅ ออกแบบแล้ว (97KB design doc)</div>
+        <h4>AI Workflow Copilot</h4>
+        <p>Process handoff engine, approval resolver (RACI), one-click approval via LINE, escalation evaluator, notification engine ≤200 chars Thai, audit trail — ทุกอย่างอยู่ใน kiro spec แล้ว</p>
+        <div class="files">.kiro/specs/monolith-workflow-copilot/<br>design.md 97KB · requirements.md 101KB</div>
+      </div>
+      <div class="built-card">
+        <div class="built-card-label">✅ ออกแบบแล้ว — MCP Protocol</div>
+        <h4>MCP Layer (AI ↔ Platform Bridge)</h4>
+        <p>Model Context Protocol layer ที่ expose Monolith RPCs เป็น MCP Tools — Read/Write/Approval tools, Human-in-the-loop invariant, PDPA redaction ก่อนส่งไป External LLM</p>
+        <div class="files">.kiro/specs/monolith-mcp-layer/<br>design.md 21KB · requirements.md 70KB · tasks.md 28KB</div>
+      </div>
+      <div class="built-card">
+        <div class="built-card-label">✅ มีข้อมูลพร้อม embed</div>
+        <h4>Knowledge Base (daph-second-brain)</h4>
+        <p>28 process steps + 122 PFMEA risk rows + RACI matrix + approval quorum ทุก step — export เป็น JSON แล้ว, Obsidian vault structure พร้อม</p>
+        <div class="files">daph-second-brain/_knowledge-export.json 113KB<br>_inventory.json · 2,615 structured lines</div>
+      </div>
+      <div class="built-card">
+        <div class="built-card-label">✅ PWA build แล้ว 29 screens</div>
+        <h4>Custom Mobile App (Field App PWA)</h4>
+        <p>React + Vite PWA ที่มี screens ครบ: DesignerHome, FactoryHome, FactoryOpsHome, SaleHome, ProjectDetail, PhotoSendCard, RequirementForm, ContractPanel, VariationPanel…</p>
+        <div class="files">packages/field-app/src/screens/ — 29 screens<br>public/sw.js (service worker)</div>
+      </div>
+      <div class="built-card">
+        <div class="built-card-label">✅ IoT / Machine monitoring</div>
+        <h4>Digital Shadow Service</h4>
+        <p>IoT digital twin สำหรับเครื่องจักรในโรงงาน (Biesse, Homag, KDT) — MQTT, OPC-UA, anomaly detection, predictive maintenance, Grafana dashboard</p>
+        <div class="files">packages/digital-shadow-service/<br>Docker + src/services/ (14 services)</div>
+      </div>
+    </div>
+
+    <div class="built-grid">
+      <div class="built-card missing">
+        <div class="built-card-label">🔴 ยังไม่มี — ต้องสร้าง</div>
+        <h4>Prompt Engineering + Agent Logic</h4>
+        <p>System prompts สำหรับ 28 agents ยังไม่มี — นี่คืองานหลักที่ต้องทำ: แปลง SOP S1–S58 เป็น prompt instructions ต่อ agent</p>
+      </div>
+      <div class="built-card missing">
+        <div class="built-card-label">🔴 ยังไม่มี — ต้องสร้าง</div>
+        <h4>Vector Embeddings (RAG)</h4>
+        <p>daph-second-brain มี JSON แต่ยังไม่ได้ embed ลง pgvector — ต้องสร้าง embedding pipeline และ match_documents RPC</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ SECTION: ARCHITECTURE ══════════════════ -->
+<div class="section">
+  <div class="section-header gold">
+    <div>
+      <div class="layer-badge">ARCHITECTURE</div>
+      <h2>สถาปัตยกรรมที่ถูกต้องสำหรับ Monolith</h2>
+      <div class="sh-sub">ไม่ใช่ n8n / LangChain — คือ TypeScript + Supabase + MCP</div>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="alert red" style="margin:0 0 22px;">
+      <div class="alert-icon">⚠️</div>
+      <div>
+        <div class="alert-title">การแก้ไขคำแนะนำเดิม — สำคัญมาก</div>
+        <div class="alert-body">
+          Build & Deploy Roadmap เดิมแนะนำ <strong>n8n + LangChain + FastAPI</strong> — แต่นั่น <strong>ผิดสำหรับ Monolith</strong><br>
+          Monolith ใช้ <strong>TypeScript + Supabase Edge Functions (Deno)</strong> ทั้งหมด — การนำ n8n (Node.js) หรือ LangChain (Python) มาใช้จะสร้าง tech debt และ double infrastructure<br>
+          <strong>Architecture ที่ถูกต้องคือ: Supabase Edge Functions → MCP Layer → GPT-4o → pgvector</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="arch-diagram">
+      <div class="arch-title">Monolith AI Architecture — Target State</div>
+      <div class="arch-flow-row">
+        <div class="arch-box existing">
+          <div class="ab-layer">Layer 6 — UI</div>
+          <div class="ab-name">LINE OA</div>
+          <div class="ab-tech">Messaging API<br>Flex Message</div>
+        </div>
+        <div class="arch-arrow">+</div>
+        <div class="arch-box existing">
+          <div class="ab-layer">Layer 6 — UI</div>
+          <div class="ab-name">Field App</div>
+          <div class="ab-tech">React PWA<br>29 screens</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box existing">
+          <div class="ab-layer">Layer 2 — Orchestration</div>
+          <div class="ab-name">Supabase<br>Edge Functions</div>
+          <div class="ab-tech">Deno / TypeScript<br>webhook → RPC</div>
+        </div>
+      </div>
+      <div style="text-align:center;color:#c9a84c;font-size:20px;margin:8px 0;">↓</div>
+      <div class="arch-flow-row">
+        <div class="arch-box active">
+          <div class="ab-layer">MCP Layer</div>
+          <div class="ab-name">MCP Tools</div>
+          <div class="ab-tech">Read / Write / Approval<br>Human-in-loop</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box">
+          <div class="ab-layer">Layer 1 — AI Model</div>
+          <div class="ab-name">GPT-4o</div>
+          <div class="ab-tech">Thai + Vision<br>$2.50/1M tokens</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box existing">
+          <div class="ab-layer">Layer 3 — Knowledge</div>
+          <div class="ab-name">pgvector</div>
+          <div class="ab-tech">Supabase PostgreSQL<br>daph-second-brain</div>
+        </div>
+      </div>
+      <div style="text-align:center;color:#c9a84c;font-size:20px;margin:8px 0;">↓</div>
+      <div class="arch-flow-row">
+        <div class="arch-box existing">
+          <div class="ab-layer">Layer 5 — Integration</div>
+          <div class="ab-name">Monolith DB</div>
+          <div class="ab-tech">Supabase PostgreSQL<br>Jobs / Quotations / RACI</div>
+        </div>
+        <div class="arch-arrow">+</div>
+        <div class="arch-box">
+          <div class="ab-layer">Layer 4 — Vision</div>
+          <div class="ab-name">GPT-4o Vision</div>
+          <div class="ab-tech">Floor plan / Drawing<br>+ Azure Doc Intel</div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:14px;font-size:11px;color:rgba(255,255,255,0.45);">
+        🟡 มีอยู่แล้วใน repo &nbsp;·&nbsp; ⬜ ต้องสร้าง/เปิดใช้
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ LAYER 1: AI MODEL ══════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div>
+      <div class="layer-badge">LAYER 1</div>
+      <h2>AI Model — Vision + Language</h2>
+      <div class="sh-sub">การเลือก LLM ที่เหมาะกับ Monolith use case และงบประมาณ</div>
+    </div>
+  </div>
+  <div class="section-body">
+    <h3 class="subsec">ราคา API ปี 2026 (ข้อมูลจริงจาก IntuitionLabs)</h3>
+    <div class="price-matrix">
+      <div class="price-box highlight">
+        <h5>GPT-4o</h5>
+        <div class="price">$2.50</div>
+        <div class="unit">per 1M input tokens</div>
+        <div class="note">Output: $10/1M<br>Vision: รองรับ<br><strong>Thai: ดีมาก</strong><br>Structured JSON: ✅</div>
+      </div>
+      <div class="price-box">
+        <h5>Claude Sonnet 3.5/4</h5>
+        <div class="price">$3.00</div>
+        <div class="unit">per 1M input tokens</div>
+        <div class="note">Output: $15/1M<br>Vision: รองรับ<br>Thai: ดี<br>Long context: ✅</div>
+      </div>
+      <div class="price-box">
+        <h5>Gemini Pro</h5>
+        <div class="price">$1.25</div>
+        <div class="unit">per 1M input tokens</div>
+        <div class="note">Output: $5/1M<br>Vision: รองรับ<br>Thai: ปานกลาง<br>Multimodal: ✅</div>
+      </div>
+    </div>
+
+    <table class="compare-table">
+      <tr>
+        <th>ตัวชี้วัด</th>
+        <th>GPT-4o</th>
+        <th>Claude 3.5 Sonnet</th>
+        <th>Gemini 1.5 Pro</th>
+      </tr>
+      <tr>
+        <td>ภาษาไทย</td>
+        <td class="yes">ดีเยี่ยม</td>
+        <td class="yes">ดีมาก</td>
+        <td class="warn">ปานกลาง</td>
+      </tr>
+      <tr>
+        <td>Floor plan / Drawing parsing</td>
+        <td class="yes">ดีมาก</td>
+        <td class="yes">ดี</td>
+        <td class="yes">ดีมาก</td>
+      </tr>
+      <tr>
+        <td>JSON structured output</td>
+        <td class="yes">Native (function calling)</td>
+        <td class="yes">ดี</td>
+        <td class="warn">ต้องตั้งค่า</td>
+      </tr>
+      <tr>
+        <td>Supabase MCP integration</td>
+        <td class="yes">Official SDK + TypeScript</td>
+        <td class="yes">Anthropic SDK</td>
+        <td class="warn">Google SDK</td>
+      </tr>
+      <tr>
+        <td>Cost (10M tokens/เดือน)</td>
+        <td class="yes">~$25–$100</td>
+        <td class="warn">~$30–$150</td>
+        <td class="yes">~$12–$50</td>
+      </tr>
+      <tr>
+        <td>PDPA / Data residency</td>
+        <td class="warn">ต้องตั้งค่า</td>
+        <td class="yes">Privacy controls ดี</td>
+        <td class="warn">ต้องตั้งค่า</td>
+      </tr>
+      <tr>
+        <td>Multimodal (image + text)</td>
+        <td class="yes">GPT-4o Vision</td>
+        <td class="yes">Claude Vision</td>
+        <td class="yes">Native multimodal</td>
+      </tr>
+    </table>
+
+    <div class="decision">
+      <h3>🎯 คำแนะนำสำหรับ Monolith</h3>
+      <ul>
+        <li><strong>Primary: GPT-4o</strong> — Thai support ดีที่สุด, TypeScript SDK สมบูรณ์, function calling ตรงกับ MCP Tools pattern ใน monolith-mcp-layer spec, PDPA redaction before call รองรับได้</li>
+        <li><strong>Vision tasks: GPT-4o Vision API</strong> — ใช้ PhotoSendCard.tsx ที่มีอยู่แล้วใน field-app ส่ง image → Edge Function → GPT-4o Vision → structured JSON output</li>
+        <li><strong>Fallback / cost saving: Gemini Flash</strong> — สำหรับ simple queries ที่ไม่ต้อง Thai-heavy, ราคา $0.075/1M input (Gemini Flash)</li>
+        <li><strong>Fine-tuned local model: ไม่แนะนำในระยะแรก</strong> — ค่า maintenance สูง, ต้อง GPU server, Thai tokenization ซับซ้อน</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ LAYER 2: ORCHESTRATION ══════════════════ -->
+<div class="section">
+  <div class="section-header teal">
+    <div>
+      <div class="layer-badge">LAYER 2</div>
+      <h2>Orchestration — Agent Pipeline</h2>
+      <div class="sh-sub">คำตอบที่แท้จริงสำหรับ Monolith ไม่ใช่ n8n หรือ LangChain</div>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="alert red" style="margin:0 0 20px;">
+      <div class="alert-icon">🚫</div>
+      <div>
+        <div class="alert-title">n8n + LangChain ไม่เหมาะกับ Monolith — นี่คือเหตุผล</div>
+        <div class="alert-body">
+          n8n = Node.js workflow automaton ที่ไม่รู้จัก Supabase schema, Monolith RPC, หรือ D2 Autonomy Ladder<br>
+          LangChain = Python framework — Monolith เป็น TypeScript ทั้งหมด (1,701 .ts files)<br>
+          การนำ n8n หรือ LangChain มาใช้ = สร้าง parallel infrastructure ที่ไม่เชื่อมกับระบบจริง + ต้องดูแล 2 stacks
+        </div>
+      </div>
+    </div>
+
+    <div class="layer-grid">
+      <div class="option-card winner">
+        <div class="option-badge badge-winner">✅ ใช้สิ่งที่มีอยู่แล้ว</div>
+        <h4>Supabase Edge Functions + MCP Layer</h4>
+        <p>Orchestration engine ที่ถูกต้องสำหรับ Monolith — ออกแบบไว้ใน <code>.kiro/specs/monolith-mcp-layer/</code> แล้ว: MCP Tools (Read/Write/Approval), Pending Invocation state machine, Human-in-the-loop, audit trail</p>
+        <div class="price-tag">Included ใน Supabase plan</div>
+      </div>
+      <div class="option-card recommended">
+        <div class="option-badge badge-rec">แนะนำ (เสริม)</div>
+        <h4>Vercel AI SDK (TypeScript)</h4>
+        <p>TypeScript-native AI SDK ที่ design มาสำหรับ Edge Functions — รองรับ OpenAI + Anthropic + Gemini, streaming, tool calling, structured output — ไม่ต้องเปลี่ยน language stack</p>
+        <div class="price-tag">Open source + Free</div>
+      </div>
+      <div class="option-card caution">
+        <div class="option-badge badge-caution">ทางเลือก (limited use)</div>
+        <h4>n8n (self-hosted)</h4>
+        <p>ใช้ได้สำหรับ external integrations เท่านั้น (email triggers, webhook relays) — ไม่ควรเป็น core orchestration engine ของ Monolith</p>
+        <div class="price-tag orange">$50-200/เดือน (self-hosted server)</div>
+      </div>
+      <div class="option-card avoid">
+        <div class="option-badge badge-avoid">❌ ไม่เหมาะ</div>
+        <h4>LangChain / LangGraph</h4>
+        <p>Python framework — ไม่ compatible กับ Monolith TypeScript codebase, Supabase Edge Functions (Deno), หรือ existing MCP spec</p>
+        <div class="price-tag red">Tech debt สูง</div>
+      </div>
+    </div>
+
+    <div class="decision">
+      <h3>🎯 Orchestration Stack สำหรับ Monolith</h3>
+      <ul>
+        <li><strong>Core:</strong> Supabase Edge Functions (Deno/TypeScript) เป็น agent runtime — ทำงานอยู่แล้ว ใน line-oa-commerce</li>
+        <li><strong>AI calling:</strong> Vercel AI SDK หรือ OpenAI TypeScript SDK ใน Edge Function</li>
+        <li><strong>Tool protocol:</strong> MCP Layer spec ที่ออกแบบไว้ใน <code>.kiro/specs/monolith-mcp-layer/</code> — implement ตาม spec ที่มีอยู่แล้ว</li>
+        <li><strong>State management:</strong> Pending_Invocation table ใน Supabase PostgreSQL (async approval workflow)</li>
+        <li><strong>n8n use case:</strong> ถ้าจะใช้ ให้ใช้แค่สำหรับ external notification relays เท่านั้น</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ LAYER 3: KNOWLEDGE BASE ══════════════════ -->
+<div class="section">
+  <div class="section-header purple">
+    <div>
+      <div class="layer-badge">LAYER 3</div>
+      <h2>Knowledge Base — RAG + Vector Store</h2>
+      <div class="sh-sub">ข้อมูลมีอยู่แล้ว — แค่ต้องฝัง embedding ลง pgvector</div>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="note-box">
+      <strong>สถานะปัจจุบัน:</strong> <code>daph-second-brain/_knowledge-export.json</code> (113KB) มี 28 process steps, 122 PFMEA rows, RACI matrix ครบแล้ว — เป็น structured JSON ที่พร้อม embed เป็น vectors ได้ทันที
+    </div>
+
+    <h3 class="subsec">Vector Database Benchmark (ข้อมูลจาก OpenHelm, Sep 2025)</h3>
+    <table class="compare-table">
+      <tr>
+        <th>Database</th>
+        <th>1M vectors p50</th>
+        <th>10M vectors p50</th>
+        <th>Recall@10</th>
+        <th>ราคา/เดือน</th>
+        <th>Monolith fit</th>
+      </tr>
+      <tr>
+        <td><strong>pgvector (Supabase)</strong></td>
+        <td>15ms</td>
+        <td>35ms</td>
+        <td>97.8%</td>
+        <td class="yes">~$75</td>
+        <td class="yes"><strong>ดีที่สุด</strong></td>
+      </tr>
+      <tr>
+        <td>Qdrant (self-hosted)</td>
+        <td>8ms</td>
+        <td>14ms</td>
+        <td>98.0%</td>
+        <td class="warn">~$150-200</td>
+        <td class="warn">ดี แต่ overkill</td>
+      </tr>
+      <tr>
+        <td>Pinecone (managed)</td>
+        <td>12ms</td>
+        <td>18ms</td>
+        <td>97.8%</td>
+        <td class="no">~$260</td>
+        <td class="no">แพง / vendor lock</td>
+      </tr>
+      <tr>
+        <td>Weaviate (cloud)</td>
+        <td>22ms</td>
+        <td>38ms</td>
+        <td>96.9%</td>
+        <td class="warn">~$200</td>
+        <td class="warn">ใช้ถ้าต้องการ hybrid search</td>
+      </tr>
+    </table>
+
+    <div class="layer-grid">
+      <div class="option-card winner">
+        <div class="option-badge badge-winner">✅ ใช้เลย — มีอยู่แล้ว</div>
+        <h4>pgvector บน Supabase</h4>
+        <p>Supabase ที่ Monolith ใช้อยู่แล้ว รองรับ pgvector extension — ไม่ต้องเพิ่ม service ใหม่เลย, SQL JOINs กับ Monolith schema ได้, transactions, backup ไปกับ DB ปกติ</p>
+        <p style="margin-top:8px"><strong>Code ที่ต้องเพิ่ม:</strong> <code>CREATE EXTENSION vector;</code> + embedding column + HNSW index + <code>match_documents</code> RPC</p>
+        <div class="price-tag">ฟรี (ใน Supabase Pro plan ที่มีอยู่)</div>
+      </div>
+      <div class="option-card recommended">
+        <div class="option-badge badge-rec">Scale-up path</div>
+        <h4>Qdrant (self-hosted)</h4>
+        <p>ถ้าวันหนึ่ง vector dataset ใหญ่ขึ้นมาก (>10M vectors) หรือต้องการ real-time performance — migrate จาก pgvector ไป Qdrant ได้ด้วย code ง่ายๆ</p>
+        <div class="price-tag">~$150/เดือน (Docker on VPS)</div>
+      </div>
+    </div>
+
+    <div class="decision">
+      <h3>🎯 RAG Pipeline สำหรับ Monolith</h3>
+      <ul>
+        <li><strong>Step 1:</strong> Enable <code>pgvector</code> extension ใน Supabase project</li>
+        <li><strong>Step 2:</strong> Parse <code>daph-second-brain/_knowledge-export.json</code> → chunk เป็น process step + PFMEA row แต่ละ record</li>
+        <li><strong>Step 3:</strong> Embed ด้วย OpenAI Embeddings API (<code>text-embedding-3-small</code> = $0.02/1M tokens)</li>
+        <li><strong>Step 4:</strong> Store ใน <code>knowledge_documents</code> table ที่มี <code>embedding vector(1536)</code> column</li>
+        <li><strong>Step 5:</strong> สร้าง <code>match_documents</code> RPC (TypeScript pattern ใน Supabase แล้ว)</li>
+        <li><strong>Workflow Copilot Req 19 (Knowledge Query Tool):</strong> ใช้ RPC นี้ผ่าน MCP Read_Tool</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ LAYER 4: VISION PROCESSING ══════════════════ -->
+<div class="section">
+  <div class="section-header red">
+    <div>
+      <div class="layer-badge">LAYER 4</div>
+      <h2>Vision Processing — Drawing + Image Parse</h2>
+      <div class="sh-sub">Floor plan, technical drawing, site photo — 3 use cases ที่แตกต่างกัน</div>
+    </div>
+  </div>
+  <div class="section-body">
+    <p class="lead">Monolith ต้องการ Vision ใน 3 บริบท: (1) <strong>Design approval</strong> — รูปแบบห้องจาก LINE, (2) <strong>Technical drawing parsing</strong> — floor plan / AutoCAD DWG, (3) <strong>Site photos</strong> — field app PhotoSendCard</p>
+
+    <div class="layer-grid">
+      <div class="option-card winner">
+        <div class="option-badge badge-winner">✅ Use Case 1&3 — Design + Photos</div>
+        <h4>GPT-4o Vision API</h4>
+        <p>ส่ง image (JPG/PNG) จาก LINE OA หรือ Field App → Edge Function → GPT-4o Vision → structured JSON output พร้อม Thai description — Design Approval sandbox A1 ใน LineOS ออกแบบมาสำหรับ flow นี้แล้ว</p>
+        <div class="price-tag">$0.00255/image (1080px) + output tokens</div>
+      </div>
+      <div class="option-card recommended">
+        <div class="option-badge badge-rec">Use Case 2 — Documents</div>
+        <h4>Azure Document Intelligence</h4>
+        <p>สำหรับ PDF floor plan, สเปคเทคนิค, ใบเสนอราคา — extract tables, measurements, text blocks ได้แม่นยำกว่า GPT-4o สำหรับ structured documents</p>
+        <div class="price-tag">$1.50/1,000 pages (Layout model)</div>
+      </div>
+      <div class="option-card recommended">
+        <div class="option-badge badge-rec">Use Case 2 — DWG Files</div>
+        <h4>AutoCAD + ezdxf (Python)</h4>
+        <p>DWG/DXF files ต้องการ AutoCAD API หรือ ezdxf library เพื่อ extract geometry → convert เป็น PNG → ส่งไป GPT-4o Vision — repo มี <code>server/src/export/exporters/dxfR12/</code> อยู่แล้ว!</p>
+        <div class="price-tag">ezdxf = Open source</div>
+      </div>
+      <div class="option-card caution">
+        <div class="option-badge badge-caution">Optional</div>
+        <h4>Google Cloud Vision</h4>
+        <p>ใช้ได้สำหรับ text extraction จากรูป site แต่ GPT-4o Vision ให้ semantic understanding ดีกว่าสำหรับ design context</p>
+        <div class="price-tag orange">$1.50/1,000 images</div>
+      </div>
+    </div>
+
+    <div class="note-box">
+      <strong>ข้อค้นพบ:</strong> <code>server/src/export/exporters/dxfR12/</code> ใน repo มี DXF export engine แล้ว — หมายความว่า Monolith สามารถ export cabinet design เป็น DXF ได้ และ reverse path (DXF → parse → AI) ทำได้เช่นกัน
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ LAYER 5: INTEGRATION ══════════════════ -->
+<div class="section">
+  <div class="section-header green">
+    <div>
+      <div class="layer-badge">LAYER 5</div>
+      <h2>Integration — CRM / ERP / Storage</h2>
+      <div class="sh-sub">Monolith IS the CRM — ไม่ต้องซื้อ HubSpot หรือ Zoho</div>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="alert green" style="margin:0 0 20px;">
+      <div class="alert-icon">💡</div>
+      <div>
+        <div class="alert-title">Monolith เป็น CRM ของตัวเองอยู่แล้ว</div>
+        <div class="alert-body">
+          README.md ระบุ module ครบ: <code>tenant/, jobs/, quotation/, ledger/, factory/, designer/, nesting/, export/</code><br>
+          Roles: OWNER, ADMIN, DESIGNER, FACTORY, INSTALLER, FINANCE, VIEWER<br>
+          การซื้อ HubSpot / Zoho = ซ้ำซ้อน + ต้องซิงค์ข้อมูล 2 ทาง = tech debt
+        </div>
+      </div>
+    </div>
+
+    <div class="layer-grid">
+      <div class="option-card winner">
+        <div class="option-badge badge-winner">✅ ใช้อยู่แล้ว</div>
+        <h4>Supabase PostgreSQL (Monolith DB)</h4>
+        <p>Jobs, Quotations, Designers, Installers, Finance ทั้งหมดอยู่ใน Supabase แล้ว — AI agents เข้าถึงผ่าน MCP Read_Tool → <code>rpc_query_*</code> โดยตรง</p>
+        <div class="price-tag">Included</div>
+      </div>
+      <div class="option-card winner">
+        <div class="option-badge badge-winner">✅ ใช้อยู่แล้ว</div>
+        <h4>LINE OA Commerce</h4>
+        <p>Customer-facing channel ที่ออกแบบไว้ใน <code>line-oa-commerce</code> spec — รับ order ผ่าน LINE, design approval, notification — ไม่ต้องซิงค์กับ CRM ภายนอก</p>
+        <div class="price-tag">Included</div>
+      </div>
+      <div class="option-card recommended">
+        <div class="option-badge badge-rec">แนะนำ (เพิ่ม)</div>
+        <h4>Google Workspace (Documents)</h4>
+        <p>สำหรับ design files, proposals, contracts — ใช้ Google Drive API เพื่อ link project documents กับ Monolith Job records</p>
+        <div class="price-tag">$12/user/เดือน (Business Starter)</div>
+      </div>
+      <div class="option-card recommended">
+        <div class="option-badge badge-rec">Thai ERP</div>
+        <h4>FlowAccount (Thai)</h4>
+        <p>สำหรับ e-Tax, ใบกำกับภาษี, payroll — ต่อกับ Monolith ledger module ผ่าน API เพื่อ sync financial data ที่ต้องการ compliance ไทย</p>
+        <div class="price-tag">~฿1,490-3,490/เดือน</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ LAYER 6: USER INTERFACE ══════════════════ -->
+<div class="section">
+  <div class="section-header gold">
+    <div>
+      <div class="layer-badge">LAYER 6</div>
+      <h2>User Interface — ช่องทาง User Input</h2>
+      <div class="sh-sub">LINE OA พร้อมแล้ว · Custom App = PWA ที่ build แล้ว</div>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="layer-grid">
+      <div class="option-card winner">
+        <div class="option-badge badge-winner">✅ มีอยู่แล้ว — ต้อง connect</div>
+        <h4>LINE OA (Messaging API)</h4>
+        <p>
+          <code>LineOS/</code> มี Flex Studio, Design Approval (A1 sandbox), Flex Action vs LIFF guides ครบ<br>
+          <code>.kiro/specs/line-oa-commerce/</code> มี spec ครบ 29,936 bytes<br>
+          ต้องทำ: implement tasks จาก tasks.md (9 waves), connect webhook → MCP Layer
+        </p>
+        <div class="price-tag">FREE Plan: 500 push/เดือน · Standard: ฿3,000/เดือน ไม่จำกัด reply</div>
+      </div>
+      <div class="option-card winner">
+        <div class="option-badge badge-winner">✅ PWA build แล้ว 29 screens</div>
+        <h4>Custom Field App (PWA)</h4>
+        <p>
+          <code>packages/field-app/</code> มี React + Vite PWA พร้อม service worker<br>
+          Screens: DesignerHome, FactoryHome, SaleHome, ProjectDetail, PhotoSendCard, RequirementForm, ContractPanel, VariationPanel + 21 อื่นๆ<br>
+          ต้องทำ: เชื่อม AI response panel เข้ากับ existing screens
+        </p>
+        <div class="price-tag">Build cost ต่ำ — มีโครงสร้างอยู่แล้ว</div>
+      </div>
+    </div>
+
+    <h3 class="subsec">LINE OA vs Native App — เลือกอย่างไร</h3>
+    <table class="compare-table">
+      <tr>
+        <th>ประเด็น</th>
+        <th>LINE OA</th>
+        <th>PWA (Field App)</th>
+        <th>Native iOS/Android</th>
+      </tr>
+      <tr>
+        <td>User adoption (ไทย)</td>
+        <td class="yes">สูงมาก — LINE ใช้ทุกวัน</td>
+        <td class="warn">ปานกลาง — ต้อง install</td>
+        <td class="warn">ต่ำ — ต้อง App Store</td>
+      </tr>
+      <tr>
+        <td>Development cost</td>
+        <td class="yes">ต่ำ — มีอยู่แล้ว</td>
+        <td class="yes">ต่ำ — มีอยู่แล้ว</td>
+        <td class="no">สูงมาก — ต้องสร้างใหม่</td>
+      </tr>
+      <tr>
+        <td>Camera / photo upload</td>
+        <td class="yes">รองรับ</td>
+        <td class="yes">รองรับ (service worker)</td>
+        <td class="yes">รองรับ (native)</td>
+      </tr>
+      <tr>
+        <td>Rich UI (drag, draw)</td>
+        <td class="no">จำกัดใน Flex</td>
+        <td class="yes">Full HTML/React</td>
+        <td class="yes">Full native</td>
+      </tr>
+      <tr>
+        <td>Push notification</td>
+        <td class="yes">Native LINE push</td>
+        <td class="warn">Web push (limited iOS)</td>
+        <td class="yes">Full push</td>
+      </tr>
+      <tr>
+        <td>Monolith สถานะ</td>
+        <td class="yes">Spec + sandbox ready</td>
+        <td class="yes">29 screens built</td>
+        <td class="no">ยังไม่มี</td>
+      </tr>
+    </table>
+
+    <div class="decision">
+      <h3>🎯 UI Strategy สำหรับ Monolith</h3>
+      <ul>
+        <li><strong>Customer-facing:</strong> LINE OA — Thai users คุ้นเคย, design approval, order intake, notifications</li>
+        <li><strong>Staff-facing (Designer/Factory/Installer):</strong> Field App PWA — ใช้ <code>packages/field-app/</code> ที่มีอยู่, เพิ่ม AI response panel</li>
+        <li><strong>Management:</strong> Monolith web dashboard (React app ปัจจุบัน)</li>
+        <li><strong>Native app:</strong> ไม่แนะนำในระยะ 12 เดือนแรก — ROI ต่ำเมื่อเทียบกับ PWA ที่มีอยู่แล้ว</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ BUILD PRIORITY ══════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div>
+      <div class="layer-badge">BUILD PLAN</div>
+      <h2>ลำดับการ Build — What to Build First</h2>
+      <div class="sh-sub">จาก repo analysis: 4 งานหลักที่ต้องทำ ตามลำดับ</div>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-tag tag-build">Sprint 1–2 (4 สัปดาห์)</div>
+        <h4>Implement MCP Layer</h4>
+        <p>Follow <code>.kiro/specs/monolith-mcp-layer/tasks.md</code> — 7 waves: MCP server setup → Tool catalog → Auth → D2 enforcement → Read tools → Write tools → Audit trail. นี่คือ "backbone" ของ AI agents ทั้งหมด</p>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-tag tag-build">Sprint 2–3 (4 สัปดาห์)</div>
+        <h4>Knowledge Base RAG</h4>
+        <p>Enable pgvector → Embed <code>_knowledge-export.json</code> (28 process steps + 122 PFMEA rows) → สร้าง <code>match_documents</code> RPC → เชื่อมกับ MCP Knowledge Query Tool (Req 6)</p>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-tag tag-build">Sprint 3–5 (6 สัปดาห์)</div>
+        <h4>Prompt Engineering — 28 Agents</h4>
+        <p>แปลง SOP S1–S58 เป็น system prompts ต่อ agent — ใช้ GPT-4o + function calling (MCP Tools) + RAG context injection. เริ่มจาก Office agents (Sale, Designer, 3D) ก่อน</p>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-tag tag-build">Sprint 4–6 (6 สัปดาห์)</div>
+        <h4>LINE OA + Workflow Copilot</h4>
+        <p>Implement tasks จาก <code>line-oa-commerce/tasks.md</code> (9 waves) + <code>monolith-workflow-copilot/tasks.md</code> — webhook → MCP → agent → approval → LINE response</p>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-tag tag-soon">Sprint 6–8 (4 สัปดาห์)</div>
+        <h4>Vision Pipeline</h4>
+        <p>PhotoSendCard → Edge Function → GPT-4o Vision → structured JSON → Monolith DB update. Plus: DXF export → image → Vision parse สำหรับ technical drawings</p>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-tag tag-future">Sprint 8+ (Ongoing)</div>
+        <h4>Digital Shadow + Factory AI</h4>
+        <p>เชื่อม <code>packages/digital-shadow-service/</code> กับ AI agents — anomaly alert → agent analysis → work item creation → approval → factory action</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ COST ESTIMATE ══════════════════ -->
+<div class="section">
+  <div class="section-header green">
+    <div>
+      <div class="layer-badge">COST</div>
+      <h2>ประมาณการค่าใช้จ่าย — Monthly Operating Cost</h2>
+      <div class="sh-sub">ราคาจริงปี 2026 จากทุก provider</div>
+    </div>
+  </div>
+  <div class="section-body">
+    <table class="compare-table">
+      <tr>
+        <th>Layer</th>
+        <th>Service</th>
+        <th>ราคา/เดือน</th>
+        <th>หมายเหตุ</th>
+      </tr>
+      <tr>
+        <td>L1 — AI Model</td>
+        <td>GPT-4o API</td>
+        <td class="yes">$50–$200</td>
+        <td>ขึ้นกับจำนวน conversations (~5M tokens/เดือน)</td>
+      </tr>
+      <tr>
+        <td>L2 — Orchestration</td>
+        <td>Supabase Edge Functions</td>
+        <td class="yes">ฟรี–$25</td>
+        <td>Included ใน Supabase Pro plan</td>
+      </tr>
+      <tr>
+        <td>L3 — Vector DB</td>
+        <td>pgvector (Supabase)</td>
+        <td class="yes">ฟรี</td>
+        <td>Included ใน Supabase Pro — ไม่ต้องจ่ายเพิ่ม</td>
+      </tr>
+      <tr>
+        <td>L3 — Embeddings</td>
+        <td>text-embedding-3-small</td>
+        <td class="yes">$1–$5</td>
+        <td>one-time cost mostly, re-embed เมื่อ knowledge update</td>
+      </tr>
+      <tr>
+        <td>L4 — Vision</td>
+        <td>GPT-4o Vision API</td>
+        <td class="yes">$20–$100</td>
+        <td>~1,000-5,000 images/เดือน</td>
+      </tr>
+      <tr>
+        <td>L4 — Documents</td>
+        <td>Azure Document Intelligence</td>
+        <td class="warn">$30–$75</td>
+        <td>~2,000-5,000 pages PDF/เดือน</td>
+      </tr>
+      <tr>
+        <td>L5 — Database</td>
+        <td>Supabase Pro</td>
+        <td class="yes">$25</td>
+        <td>PostgreSQL + Auth + Realtime + Edge Functions</td>
+      </tr>
+      <tr>
+        <td>L6 — LINE OA</td>
+        <td>LINE Official Account</td>
+        <td class="yes">ฟรี–$90</td>
+        <td>Free plan 500 push; Standard ฿3,000 ไม่จำกัด reply</td>
+      </tr>
+      <tr style="background:#f0faf4;font-weight:700;">
+        <td colspan="2"><strong>รวมทั้งหมด (ประมาณ)</strong></td>
+        <td class="yes"><strong>$175–$500/เดือน</strong></td>
+        <td><strong>~฿6,000–18,000/เดือน</strong></td>
+      </tr>
+    </table>
+
+    <div class="alert green" style="margin:0;">
+      <div class="alert-icon">💰</div>
+      <div>
+        <div class="alert-title">เปรียบเทียบกับ Roadmap เดิม</div>
+        <div class="alert-body">
+          ถ้าใช้ n8n + Pinecone + LangChain server ตาม Roadmap เดิม: ~$600–$1,500/เดือน<br>
+          ด้วย TypeScript + Supabase + pgvector ที่มีอยู่แล้ว: ~$175–$500/เดือน<br>
+          <strong>ประหยัดได้ 60–70% ต่อเดือน</strong> พร้อม technical debt ต่ำกว่ามาก
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ RISKS ══════════════════ -->
+<div class="section">
+  <div class="section-header red">
+    <div>
+      <div class="layer-badge">RISKS</div>
+      <h2>ความเสี่ยงที่ต้องระวัง</h2>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="risk-row">
+      <div class="risk-num r-high">1</div>
+      <div class="risk-content">
+        <h5>PDPA Compliance — ข้อมูลลูกค้าออกนอกประเทศ</h5>
+        <p>GPT-4o ส่งข้อมูลไป OpenAI (US) — MCP Layer spec ระบุไว้แล้ว: ต้องมี <strong>Data_Minimization_Boundary</strong> + Redaction_Policy ก่อน call External_LLM และ Consent_Record check ทุก PII request<br>
+        <strong>Mitigation:</strong> Implement Req 9–10 จาก monolith-mcp-layer requirements.md ก่อน production</p>
+      </div>
+    </div>
+    <div class="risk-row">
+      <div class="risk-num r-high">2</div>
+      <div class="risk-content">
+        <h5>kiro specs มีขนาดใหญ่มาก — implementation ต้องมี resource</h5>
+        <p>monolith-workflow-copilot spec = 101KB requirements + 97KB design — เป็น system ที่ซับซ้อนมาก ถ้า implement พร้อมกันทุก req อาจใช้เวลา 6+ months<br>
+        <strong>Mitigation:</strong> Start with MVP (5–7 agents) ก่อน full 28 agents</p>
+      </div>
+    </div>
+    <div class="risk-row">
+      <div class="risk-num r-med">3</div>
+      <div class="risk-content">
+        <h5>AI hallucination ใน design recommendations</h5>
+        <p>ถ้า AI recommend วัสดุหรือ dimension ผิด และส่งไป production — cost สูงมาก<br>
+        <strong>Mitigation:</strong> D2 Autonomy Ladder ใน spec กำหนดไว้แล้ว — Write_Tools ทุกตัวต้องผ่าน Human_Approval_Gate</p>
+      </div>
+    </div>
+    <div class="risk-row">
+      <div class="risk-num r-med">4</div>
+      <div class="risk-content">
+        <h5>LINE OA channel quota</h5>
+        <p>Free plan = 500 messages/เดือน — ถ้า scale เร็วจะ hit limit ทันที<br>
+        <strong>Mitigation:</strong> Budget LINE Standard plan (฿3,000/เดือน) ตั้งแต่ early production</p>
+      </div>
+    </div>
+    <div class="risk-row">
+      <div class="risk-num r-low">5</div>
+      <div class="risk-content">
+        <h5>daph-second-brain staleness</h5>
+        <p>Knowledge export timestamp = July 2026 (reviewStatus: "draft") — ถ้า process เปลี่ยน knowledge ใน pgvector จะ stale<br>
+        <strong>Mitigation:</strong> MCP Knowledge Query Tool แนบ source_version + imported_at กับทุก response — low_confidence flag สำหรับ draft knowledge</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ SUMMARY TABLE ══════════════════ -->
+<div class="section">
+  <div class="section-header gold">
+    <div>
+      <div class="layer-badge">SUMMARY</div>
+      <h2>สรุป — ตัดสินใจสุดท้าย</h2>
+      <div class="sh-sub">ระบบที่ควรใช้จริงสำหรับ Monolith DAPH AI Agents</div>
+    </div>
+  </div>
+  <div class="section-body">
+    <table class="compare-table">
+      <tr>
+        <th>Layer</th>
+        <th>คำแนะนำเดิม</th>
+        <th>คำแนะนำใหม่ (หลัง research)</th>
+        <th>เหตุผล</th>
+      </tr>
+      <tr>
+        <td><strong>L1 AI Model</strong></td>
+        <td>GPT-4o / Claude 3.5</td>
+        <td class="yes"><strong>GPT-4o</strong> (primary)<br>Gemini Flash (cost-save)</td>
+        <td>Thai ดีที่สุด + TypeScript SDK + MCP compatible</td>
+      </tr>
+      <tr>
+        <td><strong>L2 Orchestration</strong></td>
+        <td>n8n + LangChain</td>
+        <td class="yes"><strong>Supabase Edge Functions</strong><br>+ Vercel AI SDK</td>
+        <td>Monolith ใช้ TypeScript — n8n/LangChain = wrong stack</td>
+      </tr>
+      <tr>
+        <td><strong>L3 Knowledge</strong></td>
+        <td>Pinecone (cloud)</td>
+        <td class="yes"><strong>pgvector (Supabase)</strong></td>
+        <td>ฟรี, SQL JOINs, ไม่ต้องเพิ่ม service — เพียงพอสำหรับ DAPH scale</td>
+      </tr>
+      <tr>
+        <td><strong>L4 Vision</strong></td>
+        <td>GPT-4o Vision<br>Azure Doc Intel</td>
+        <td class="yes"><strong>GPT-4o Vision</strong> (design/photos)<br><strong>Azure Doc Intel</strong> (PDFs)<br><strong>ezdxf</strong> (DWG — repo มีอยู่แล้ว)</td>
+        <td>ครบ 3 use cases — ใช้ tool ที่เหมาะกับแต่ละ format</td>
+      </tr>
+      <tr>
+        <td><strong>L5 Integration</strong></td>
+        <td>HubSpot / Zoho CRM</td>
+        <td class="yes"><strong>Monolith DB (Supabase)</strong><br>+ FlowAccount (eTax only)</td>
+        <td>Monolith IS the CRM — ไม่ต้องซื้อ CRM ภายนอก</td>
+      </tr>
+      <tr>
+        <td><strong>L6 UI</strong></td>
+        <td>LINE OA<br>Custom mobile app</td>
+        <td class="yes"><strong>LINE OA</strong> (customers)<br><strong>Field App PWA</strong> (staff — built!)</td>
+        <td>ทั้งสองมีอยู่แล้ว — ต้อง connect เท่านั้น</td>
+      </tr>
+    </table>
+
+    <div class="spacer"></div>
+    <div class="decision">
+      <h3>🚀 Next Steps — สิ่งที่ต้องทำทันที</h3>
+      <ul>
+        <li><strong>Week 1–2:</strong> Enable pgvector extension + embed daph-second-brain JSON → สร้าง match_documents RPC</li>
+        <li><strong>Week 2–4:</strong> Implement MCP Server (7 waves จาก monolith-mcp-layer/tasks.md) — นี่คือ foundation ของทุกอย่าง</li>
+        <li><strong>Month 2:</strong> Prompt engineering สำหรับ 5 agents แรก (Sale, Designer, 3D, Production Planning, Factory Supervisor)</li>
+        <li><strong>Month 2–3:</strong> Connect LINE OA webhook → MCP → agent → approval flow (implement line-oa-commerce tasks.md)</li>
+        <li><strong>Month 3+:</strong> Scale ไป 28 agents ตาม SOP S1–S58</li>
+        <li><strong>ตลอดเวลา:</strong> PDPA Data Minimization Boundary ต้อง implement ก่อน production — ไม่มีข้อยกเว้น</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <strong>MONOLITH — IIMOS Manufacturing OS</strong> &nbsp;·&nbsp; <span>Deep Research: Technology Stack Build</span> &nbsp;·&nbsp; DAPH Decor AI Agent Programme &nbsp;·&nbsp; September 2026<br>
+  Sources: GitHub repo analysis (4,722 files), IntuitionLabs LLM Pricing 2026, OpenHelm Vector DB Benchmark Sep 2025, LINE Developers Documentation, Supabase pgvector documentation
+</div>
+
+</body>
+</html>

@@ -64,19 +64,19 @@ interface CsvColumn {
 const CSV_COLUMNS: CsvColumn[] = [
   { header: 'ROW_NO', getValue: (_, idx) => idx },
   { header: 'PART_ID', getValue: (r) => r.partId },
-  { header: 'CABINET_ID', getValue: (r) => r.cabinetId },
+  { header: 'CABINET_ID', getValue: (r) => r.cabinetId ?? '' },
   { header: 'MATERIAL_ID', getValue: (r) => r.materialId },
   { header: 'QTY', getValue: (r) => r.qty },
 
   // Finish dimensions
-  { header: 'FINISH_W', getValue: (r) => r.finishW },
-  { header: 'FINISH_H', getValue: (r) => r.finishH },
+  { header: 'FINISH_W', getValue: (r) => r.finishW ?? 0 },
+  { header: 'FINISH_H', getValue: (r) => r.finishH ?? 0 },
 
   // Edge banding
-  { header: 'EDGE_L', getValue: (r) => r.edgeL },
-  { header: 'EDGE_R', getValue: (r) => r.edgeR },
-  { header: 'EDGE_T', getValue: (r) => r.edgeT },
-  { header: 'EDGE_B', getValue: (r) => r.edgeB },
+  { header: 'EDGE_L', getValue: (r) => r.edgeL ?? 0 },
+  { header: 'EDGE_R', getValue: (r) => r.edgeR ?? 0 },
+  { header: 'EDGE_T', getValue: (r) => r.edgeT ?? 0 },
+  { header: 'EDGE_B', getValue: (r) => r.edgeB ?? 0 },
 
   // Premill (SPEC-08 v8.2)
   { header: 'PREMILL_L', getValue: (r) => r.premillL },
@@ -91,6 +91,10 @@ const CSV_COLUMNS: CsvColumn[] = [
   // Metadata
   { header: 'GRAIN', getValue: (r) => r.grain ?? 'NONE' },
   { header: 'NOTE', getValue: (r) => r.note ?? '' },
+
+  // Curved panel fields (blank when not a curved panel)
+  { header: 'DEV_LENGTH', getValue: (r) => r.developedLength ?? '' },
+  { header: 'KERF_COUNT', getValue: (r) => r.kerfCount ?? '' },
 ];
 
 // ============================================
@@ -142,7 +146,7 @@ function buildCsvRow(
 function sortCutListRows(rows: CutListRow[]): CutListRow[] {
   return [...rows].sort((a, b) => {
     // First by cabinet ID
-    const cabinetCompare = a.cabinetId.localeCompare(b.cabinetId);
+    const cabinetCompare = (a.cabinetId ?? '').localeCompare(b.cabinetId ?? '');
     if (cabinetCompare !== 0) return cabinetCompare;
 
     // Then by part ID

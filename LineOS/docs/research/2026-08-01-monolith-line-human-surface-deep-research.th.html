@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>MONOLITH + LINE Human Surface: รายงานวิจัยเชิงลึกสำหรับบอร์ด</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1>MONOLITH + LINE Human Surface: รายงานวิจัยเชิงลึกสำหรับบอร์ด</h1>
+<ul>
+<li><strong>ฉบับภาษา:</strong> ไทย (TH)</li>
+<li><strong>วันที่ใช้ตัดสินใจ:</strong> 2 สิงหาคม 2026</li>
+<li><strong>ขอบเขตการตัดสินใจ:</strong> ทิศทางผลิตภัณฑ์ที่มี governance และ pilot หนึ่ง tenant; เอกสารนี้ไม่ใช่หลักฐานรับรอง production deployment และไม่ใช่คำแนะนำทางกฎหมาย</li>
+</ul>
+<h2>1. คำตัดสินสำหรับบอร์ด</h2>
+<p><strong>ข้อเสนอคือ conditional GO เฉพาะ local prototype work; NO-GO for broader customer messaging</strong> Daph is one pilot tenant ไม่ใช่ขอบเขตของผลิตภัณฑ์ Daph customer messaging ยัง gated จน Trust P0 ทุกข้อในหัวข้อ 8 fresh pass ใน target environment และการขยายพ้น Daph ต้องผ่าน board gates ระยะถัดไปด้วย</p>
+<ul>
+<li><strong>[Proposal]</strong> กำหนด MONOLITH เป็น multi-tenant, revision-controlled project and product operating system และกำหนด LINE เป็น Human Surface adapter ที่เปลี่ยนทดแทนได้เหนือ governed domain services ไม่ใช่ system of record</li>
+<li><strong>[Verified local fact]</strong> parent Git root มี LINE Flex Studio แบบ standalone ครอบคลุม model, presets, JSON builder, validator, action transaction, demo receipt, DOM shell และ tests ที่ parent commit <code>eca050ac8e7b76a1cb690e5d2cc4e3687c476bd7</code> (<code>LineOS/line-flex-*.mjs</code>, <code>LineOS/line-flex-studio.html</code>, <code>LineOS/tests/line-flex-*.test.mjs</code>) ข้อนี้ยืนยันเฉพาะการมี source/test ใน root นี้</li>
+<li><strong>[Verified local fact]</strong> nested active-product Git root มี source สำหรับ LINE ingress/outbound, audit/schema migrations, acceptance, notification และ security tests ที่ nested commit <code>a1e9006add32fe3ce5346eb6ca94e8bdce1d13ab</code> (<code>supabase/functions/line-webhook/index.ts</code>, <code>supabase/functions/line-outbound-sender/index.ts</code>, migrations ที่เกี่ยวข้อง และ <code>tests/line-oa-commerce/</code>) ข้อนี้เป็นหลักฐานใน repository ไม่ใช่หลักฐานของ target environment</li>
+<li><strong>[Inference]</strong> สอง root มีส่วนประกอบด้าน presentation และ trust foundation ที่มีประโยชน์ แต่คำตัดสิน release ยังต้องใช้หลักฐาน cross-root integration, tenant isolation, operational telemetry, accessibility และ recovery drill</li>
+<li><strong>[Unknown]</strong> สถานะ live LINE, Supabase, identity provider และ production signature ของ target tenant อยู่นอกชุดหลักฐานที่ตรวจ</li>
+</ul>
+<h2>2. วิธีวิจัยและวินัยด้านหลักฐาน</h2>
+<p>Perplexity Deep Research สาม track—LINE technical lifecycle; trust/security/human factors; และ interior-design lifecycle/ecosystem—ถูกสังเคราะห์ไว้ใน approved design specification วันที่ 1 สิงหาคม 2026 แหล่งสังเคราะห์ที่เก็บถาวรเป็นหลักคือไฟล์ parent root <code>LineOS/docs/superpowers/specs/2026-08-01-monolith-line-flex-studio-design.en.md</code> ที่ parent commit <code>eca050ac8e7b76a1cb690e5d2cc4e3687c476bd7</code> พร้อมฉบับไทยข้างกัน วันที่ 2 สิงหาคมมีการเรียกเครื่องมือ Perplexity ใหม่แยกทั้งสาม track แต่ทุกครั้งหยุดที่ <code>401 insufficient_quota</code> ก่อนคืนผล รายงานนี้จึงใช้ approved specification เป็น archived synthesis และตรวจคำกล่าวเชิงเทคนิคอีกครั้งกับ primary sources ที่ลิงก์ไว้ Raw Perplexity transcripts ไม่ได้ถูกเก็บเป็น artifact แยก ช่องว่าง provenance นี้ยังเป็น <strong>[Unknown]</strong></p>
+<p>ใช้ evidence label ห้าชนิดเท่านั้น:</p>
+<div class="tablewrap"><table><thead><tr><th>Label</th><th>ความหมายในรายงานนี้</th></tr></thead><tbody>
+<tr><td><strong>Official constraint</strong></td><td>ข้อบังคับหรือขีดจำกัดจาก standards body, platform owner, regulator หรือ manufacturer installation/compatibility document; คำอธิบาย catalogue/tool capability เพียงอย่างเดียวไม่เข้า classification นี้</td></tr>
+<tr><td><strong>Verified local fact</strong></td><td>ไฟล์ test หรือ commit ที่ตรวจโดยตรงใน Git root ที่ระบุ</td></tr>
+<tr><td><strong>Inference</strong></td><td>ข้อสรุปแบบจำกัดขอบเขตจากหลักฐานที่อ้าง ไม่ใช่ platform guarantee</td></tr>
+<tr><td><strong>Proposal</strong></td><td>ทางเลือก control target หรือ workflow ที่รออนุมัติและลงมือทำ</td></tr>
+<tr><td><strong>Unknown</strong></td><td>หลักฐานยังไม่มี ยังไม่ตรวจ หรือขึ้นกับ environment</td></tr>
+</tbody></table></div>
+<p><strong>[Proposal]</strong> decision record ในอนาคตต้องเก็บ source URL, retrieval date, root/commit สำหรับหลักฐาน local, owner, expiry และ verification artifact ตัวเลข KPI ในหัวข้อ 16 เป็น hypothesis จนกว่าจะ baseline ตัวอย่าง manufacturer แสดงรูปทรงของ input เท่านั้น ไม่ใช่มาตรฐานตู้สากล</p>
+<h2>3. แผนที่ current state ของสอง Git root</h2>
+<p>ข้อสรุป topology อาศัยเอกสาร <strong>untracked working-tree evidence</strong> สองฉบับที่ inspected 2026-08-02 เอกสารทั้งสองไม่อยู่ใน parent commit <code>eca050ac8e7b76a1cb690e5d2cc4e3687c476bd7</code> และเป็น <strong>not commit or deployment evidence</strong>: <code>CONTEXT.md</code> มี SHA-256 <code>715E4865B1A4498AC08C6E9AC7A0C7881A54645A645C088B130FE0572A92DE99</code>; <code>docs/reports/2026-07-21-ima-schelling-monolith-repository-scope-correction.en.md</code> มี SHA-256 <code>6966AB9BB1C3B97E3856A66A35190E2D404627E5B88BFFE720462E96C296FD42</code> เนื้อหาที่ hash เหล่านี้ระบุ parent เป็น governance/bootstrap และ <code>determined-williams/</code> เป็น active-product Git root แยกต่างหาก รายงานรักษา provisional provenance นี้และไม่ได้ promote เอกสารทั้งสองเข้าสู่ commit history</p>
+<div class="tablewrap"><table><thead><tr><th>Root และหลักฐาน</th><th>สิ่งที่รองรับ</th><th>ข้อสรุปที่บอร์ดใช้ได้</th></tr></thead><tbody>
+<tr><td>Parent <code>C:\Users\thai3\determined-williams (2)</code> @ <code>eca050a…</code>: <code>LineOS/line-flex-model.mjs</code>, presets, JSON, validator, actions, receipt, studio และ tests</td><td>contract สำหรับ local Flex composition/demo แบบ deterministic; preset ห้ารายการ; ป้าย demo receipt ที่ปลอดภัย</td><td><strong>[Verified local fact]</strong> มี standalone source/test capability ใน governance root</td></tr>
+<tr><td>Nested <code>C:\Users\thai3\determined-williams (2)\determined-williams</code> @ <code>a1e9006…</code>: webhook/sender, LINE migrations, <code>tests/line-oa-commerce/</code>, <code>src/workflow/notification/quiet-hours.ts</code></td><td>source ฝั่ง product สำหรับ signature, ingest/outbound, audit, acceptance และ notification controls</td><td><strong>[Verified local fact]</strong> มี product ingredients ใน active-product root</td></tr>
+<tr><td>Cross-root runtime, live credentials, deployed migrations, telemetry, accessibility study, recovery drill</td><td>ไม่ได้รับ target-environment evidence ในการตรวจครั้งนี้</td><td><strong>[Unknown]</strong> สรุป release maturity จาก source inventory ไม่ได้</td></tr>
+</tbody></table></div>
+<p><strong>[Inference]</strong> รูปแบบ migration ที่เหมาะคือ adapter integration ไม่ใช่คัดลอก parent studio ไปสร้าง domain model ชุดที่สองใน nested product Domain objects, authorization, revision state, audit และ outbox ต้องอยู่หลัง application boundary ที่คงที่ ส่วน Human Surface มีหน้าที่ render และส่ง command ผ่าน boundary นี้</p>
+<h2>4. LINE ในฐานะ Human Surface ที่เปลี่ยนทดแทนได้</h2>
+<p>LINE รองรับ reply และ push ไปยัง user, group และ multi-person room; สมาชิกทุกคนใน group/room เห็นข้อความ bot และหนึ่ง group มี LINE Official Account ได้หนึ่งบัญชี Narrowcast ใช้กับ user ไม่ใช่ group <strong>[Official constraint]</strong> แหล่ง: <a href="https://developers.line.biz/en/docs/messaging-api/sending-messages/" target="_blank" rel="noopener">sending messages</a> และ <a href="https://developers.line.biz/en/docs/messaging-api/group-chats/" target="_blank" rel="noopener">group chats</a></p>
+<p><strong>[Proposal]</strong> Adapter boundary คือ:</p>
+<ol>
+<li>รับ platform event ที่ตรวจ signature แล้ว</li>
+<li>resolve <code>tenant + principal + conversation</code> ผ่าน server-side binding</li>
+<li>authorize named command ต่อ resource และ revision</li>
+<li>append immutable intent/audit evidence และ enqueue outbox item</li>
+<li>render channel response จาก governed data</li>
+<li>บันทึก delivery acceptance แยกจาก business completion</li>
+</ol>
+<p><strong>[Inference]</strong> Boundary นี้ทำให้ web, email หรือ chat surface อื่นแทน LINE ได้โดยไม่ย้าย project truth Conversation ID และ user ID เป็น routing identifier ไม่ใช่ tenant authority Platform มีหลายวิธีให้ได้ user ID และ provider boundary มีผลต่อความสอดคล้องของ identifier <strong>[Official constraint]</strong> แหล่ง: <a href="https://developers.line.biz/en/docs/messaging-api/getting-user-ids/" target="_blank" rel="noopener">getting user IDs</a> และ <a href="https://developers.line.biz/en/faq/tags/line-login/" target="_blank" rel="noopener">LINE Login FAQ</a></p>
+<p><strong>[Proposal]</strong> ค่าเริ่มต้นของ group chat เป็น low-noise: status digest, explicit mention, safe read-only card และ deep link การยอมรับราคา scope change release-to-manufacture refund credential และ privacy action ต้องย้ายไป authenticated surface ที่มี assurance สูงกว่าและยืนยัน revision</p>
+<h2>5. Contract การโต้ตอบของ Flex Message และ LIFF</h2>
+<p>Flex message ต้องมี <code>type</code>, <code>altText</code>, <code>contents</code>; <code>altText</code> ได้สูงสุด 1,500 ตัวอักษร Bubble JSON จำกัด 30 KB, carousel 50 KB และ carousel สูงสุด 12 bubbles Image URL ต้องเป็น HTTPS/TLS 1.2 ขึ้นไปพร้อมข้อจำกัด JPEG/PNG Postback data และ display text ได้อย่างละ 300 ตัวอักษร URI ได้ 1,000 ตัวอักษร <strong>[Official constraint]</strong> แหล่ง: <a href="https://developers.line.biz/en/reference/messaging-api/nojs/" target="_blank" rel="noopener">Messaging API reference</a> ภาพรวม action element และวิธีใช้ Flex อยู่ที่ <a href="https://developers.line.biz/en/docs/messaging-api/" target="_blank" rel="noopener">Messaging API</a>, <a href="https://developers.line.biz/en/docs/messaging-api/actions/" target="_blank" rel="noopener">actions</a>, <a href="https://developers.line.biz/en/docs/messaging-api/flex-message-elements/" target="_blank" rel="noopener">Flex elements</a> และ <a href="https://developers.line.biz/en/docs/messaging-api/using-flex-messages/" target="_blank" rel="noopener">using Flex messages</a></p>
+<div class="tablewrap"><table><thead><tr><th>Interaction</th><th>Channel contract</th><th>วิธีใช้ใน MONOLITH</th></tr></thead><tbody>
+<tr><td>Read-only status card</td><td>alt text กระชับ; แสดง owner/revision/state; primary action หนึ่งรายการ</td><td><strong>[Proposal]</strong> ใช้ได้ใน 1:1 และ group ที่อนุมัติเมื่อ tenant binding ผ่าน</td></tr>
+<tr><td>Postback command</td><td>opaque command reference; server resolve resource/revision ปัจจุบัน</td><td><strong>[Proposal]</strong> Client payload ไม่บรรจุ authority, price truth หรือ personal data</td></tr>
+<tr><td>URI/deep link</td><td>HTTPS พร้อม server-side authenticated resolution</td><td><strong>[Proposal]</strong> ใช้สำหรับงานซับซ้อน sensitive หรือ assurance สูง</td></tr>
+<tr><td>LIFF form</td><td>LINE Login channel, declared scopes, HTTPS endpoint, server token verification</td><td><strong>[Official constraint]</strong> Scope และ endpoint rule อยู่ใน <a href="https://developers.line.biz/en/reference/liff-server/" target="_blank" rel="noopener">LIFF server API</a></td></tr>
+</tbody></table></div>
+<p>LIFF guidance ให้ส่ง access token หรือ ID token ไป server แล้ว verify กับ LINE แทนการเชื่อ profile data จาก client หลีกเลี่ยง sensitive data ใน LIFF URL และการ tracking/linking ข้ามบริการต้องมี consent ที่เหมาะสม <strong>[Official constraint]</strong> แหล่ง: <a href="https://developers.line.biz/en/docs/liff/using-user-profile/" target="_blank" rel="noopener">using profile information</a> และ <a href="https://developers.line.biz/en/docs/liff/development-guidelines/" target="_blank" rel="noopener">LIFF development guidelines</a></p>
+<p><strong>[Unknown]</strong> เอกสาร LIFF บางส่วนปัจจุบันแนะนำ LINE MINI App สำหรับงานใหม่ ทางเลือกผลิตภัณฑ์และ migration horizon ต้องตรวจ platform ณ เวลาลงมือจริง แหล่ง: <a href="https://developers.line.biz/en/reference/liff-server/" target="_blank" rel="noopener">LIFF server API</a></p>
+<h2>6. Developer Console และ channel lifecycle</h2>
+<p>ตั้งแต่กันยายน 2024 ต้องเปิดใช้ Messaging API channel จาก LINE Official Account ใน Official Account Manager แทนการสร้างตรงใน Developers Console และ provider ที่เลือกแล้วย้ายภายหลังไม่ได้ <strong>[Official constraint]</strong> แหล่ง: <a href="https://developers.line.biz/en/docs/messaging-api/getting-started/" target="_blank" rel="noopener">Messaging API getting started</a> LIFF app อยู่ใน LINE Login channel และ user ID ที่สอดคล้องกันระหว่าง Messaging API กับ LINE Login ต้องอาศัย channels ใต้ provider เดียวกัน <strong>[Official constraint]</strong> แหล่ง: <a href="https://developers.line.biz/en/docs/line-login/getting-started/" target="_blank" rel="noopener">LINE Login getting started</a> และ <a href="https://developers.line.biz/en/faq/tags/line-login/" target="_blank" rel="noopener">LINE Login FAQ</a></p>
+<p><strong>[Proposal]</strong> กำกับ lifecycle เป็น change ที่มีหลักฐาน:</p>
+<div class="tablewrap"><table><thead><tr><th>ระยะ</th><th>หลักฐานบังคับ</th><th>Stop condition</th></tr></thead><tbody>
+<tr><td>Provider/channel design</td><td>tenant owner, data class, region, name, provider relation, least scopes</td><td>ownership หรือ credential boundary คลุมเครือ</td></tr>
+<tr><td>Credential issuance</td><td>custodian, secret-store reference, rotation date, environment แยก</td><td>secret ปรากฏใน source/chat/browser storage/report</td></tr>
+<tr><td>Webhook activation</td><td>HTTPS endpoint, signature test, empty-event verify, replay/idempotency test</td><td>unsigned/transformed-body path เข้าสู่ business processing</td></tr>
+<tr><td>LIFF publication</td><td>exact redirect URI, PKCE/nonce, scopes, consent copy, accessibility check</td><td>scope กว้างหรือเชื่อ client identity</td></tr>
+<tr><td>Operations</td><td>delivery/error dashboard, owner, quiet hours, incident/rollback runbook</td><td>ไม่มี alert owner หรือ tenant boundary ตรวจไม่ได้</td></tr>
+<tr><td>Retirement</td><td>disable webhook, revoke token, เก็บ audit ตามนโยบาย, ยืนยัน routing shutdown</td><td>credential ยัง active หรือ queued work ไม่ resolve</td></tr>
+</tbody></table></div>
+<p>Platform รองรับการปิด Use webhook และ revoke channel access token <strong>[Official constraint]</strong> แหล่ง: <a href="https://developers.line.biz/en/docs/messaging-api/stop-using-messaging-api/" target="_blank" rel="noopener">stop using the Messaging API</a></p>
+<p>Webhook activation ต้องมี delivery-lifecycle controls ด้วย: ตรวจ HMAC บน raw body ก่อน parse, acknowledge เร็วแล้ว process asynchronous, deduplicate redelivery ด้วย event ID, ใช้ retry key เฉพาะเงื่อนไขที่เอกสารกำหนด และ monitor webhook/error statistics <strong>[Official constraint]</strong> แหล่ง: <a href="https://developers.line.biz/en/docs/messaging-api/verify-webhook-signature/" target="_blank" rel="noopener">signature verification</a>, <a href="https://developers.line.biz/en/docs/messaging-api/receiving-messages/" target="_blank" rel="noopener">receiving/redelivery</a>, <a href="https://developers.line.biz/en/docs/messaging-api/retrying-api-request/" target="_blank" rel="noopener">retry keys</a> และ <a href="https://developers.line.biz/en/docs/messaging-api/check-webhook-error-statistics/" target="_blank" rel="noopener">error statistics</a></p>
+<h2>7. Operating model ของ Trust Kernel</h2>
+<p>NIST zero trust ยกเลิก implicit trust จาก network location และต้อง authenticate/authorize ก่อน session เข้าถึง resource; logical model เน้น per-session least-privilege access ต่อ resource รายตัว <strong>[Official constraint]</strong> แหล่ง: <a href="https://csrc.nist.gov/pubs/sp/800/207/final" target="_blank" rel="noopener">NIST SP 800-207</a> และ <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-207.pdf" target="_blank" rel="noopener">SP 800-207 PDF</a></p>
+<p><strong>[Proposal]</strong> Trust Kernel ประเมิน tuple <code>tenant, principal, role, resource, revision, command, grant, risk, assurance, time</code> และเก็บอย่างน้อย:</p>
+<ul>
+<li>tenant/project membership พร้อม effective dates</li>
+<li>principal binding สำหรับ LINE user/conversation และ stronger identity</li>
+<li>resource ownership และ revision lineage</li>
+<li>role, explicit grant, delegation, constraint และ expiry</li>
+<li>command risk tier กับ assurance ที่ต้องการ</li>
+<li>idempotency, intent, authorization decision, outbox, delivery และ business outcome evidence</li>
+<li>revocation, retention, export และ deletion state</li>
+</ul>
+<p><strong>[Proposal]</strong> Policy result มีสี่สถานะชัดเจน: <code>PERMIT</code> execute ตาม constraint ที่บันทึก; <code>DENY</code> ปฏิเสธพร้อมเหตุผล; <code>STEP_UP</code> ขอ authentication ที่สูงขึ้น approver เพิ่ม หรือ revision ปัจจุบัน; <code>QUARANTINE</code> เก็บ intent โดยยังไม่ execute จน operator ที่มีสิทธิ์แก้ ambiguity ค่า default และ evaluation error คือ <code>DENY</code> หรือ <code>QUARANTINE</code> ไม่ใช่ implicit permission</p>
+<p><strong>[Inference]</strong> Signed webhook ยืนยัน origin ไม่ได้ยืนยัน business authority ของมนุษย์ LINE profile ระบุ platform subject ไม่ใช่ MONOLITH tenant role และ send API success คือ platform acceptance ไม่ใช่ human receipt หรือ command completion การแยกสามชั้นนี้อิง signature, identity และ retry semantics ที่อ้างในหัวข้อ 4, 5 และ 9</p>
+<p>OAuth 2.0 security best current practice กำหนด exact redirect-URI matching และ PKCE สำหรับ public client พร้อมอธิบาย sender-constrained access token เพื่อลด token replay <strong>[Official constraint]</strong> แหล่ง: <a href="https://www.rfc-editor.org/rfc/rfc9700.html" target="_blank" rel="noopener">RFC 9700</a> LINE Login กำหนด matching <code>redirect_uri</code>, รองรับ PKCE และอธิบาย ID-token/nonce validation <strong>[Official constraint]</strong> แหล่ง: <a href="https://developers.line.biz/en/reference/line-login/" target="_blank" rel="noopener">LINE Login API reference</a> และ <a href="https://developers.line.biz/en/docs/line-login/secure-login-process/" target="_blank" rel="noopener">secure login process</a></p>
+<h2>8. Evidence ledger ของ Trust P0–P3</h2>
+<div class="tablewrap"><table><thead><tr><th>Priority</th><th>Control และ fresh pass evidence</th><th>กฎสำหรับบอร์ด</th></tr></thead><tbody>
+<tr><td>P0 — Trust foundation</td><td>Raw-body HMAC-SHA256 ก่อน parse; server-side tenant resolution; deny-by-default authz ต่อ resource/revision/command; idempotent webhook/command; transactional intent + outbox; secret isolation/rotation; immutable security audit; tested revocation; fail closed</td><td><strong>[Proposal]</strong> ทุกข้อผ่านใน target environment ก่อนส่ง customer message</td></tr>
+<tr><td>P0</td><td>Cross-tenant negative tests สำหรับ object access, conversation rebinding, stale revision, forged postback, replay, expired delegation และ admin override</td><td><strong>[Proposal]</strong> leak, ambiguous result หรือ missing log อย่างใดอย่างหนึ่งคือ release stop</td></tr>
+<tr><td>P1 — Governed experience</td><td>Delivery/error observability, quiet hours/digest, accessible alternative, incident runbook, restore/reconciliation drill, export/deletion workflow</td><td><strong>[Proposal]</strong> ต้องผ่านก่อนขยาย scenario ภายใน Daph pilot</td></tr>
+<tr><td>P2 — Lifecycle intelligence</td><td>Per-tenant template/policy, delegated approval, recovery journey, role analytics, multilingual governance และ revision-linked project/product insight</td><td><strong>[Proposal]</strong> ต้องผ่านก่อนเพิ่ม tenant ที่สอง</td></tr>
+<tr><td>P3 — Controlled scale</td><td>Channel optimization, machine-assisted composition, advanced personalization, Human Surface เพิ่ม</td><td><strong>[Proposal]</strong> ทำได้เมื่อ P0–P2 มีหลักฐานแข็งแรงต่อเนื่อง</td></tr>
+</tbody></table></div>
+<p>Webhook signature ใช้ HMAC-SHA256 กับ request body ตามที่รับจริงและ channel secret ต้อง validate ก่อน deserialize และ invalid request ต้องไม่ถูก process <strong>[Official constraint]</strong> แหล่ง: <a href="https://developers.line.biz/en/docs/messaging-api/verify-webhook-signature/" target="_blank" rel="noopener">verify webhook signature</a></p>
+<p>Webhook redelivery อาจทำให้ event ซ้ำและลำดับเปลี่ยน และไม่รับประกันว่าจะ redeliver; <code>webhookEventId</code> กับ <code>isRedelivery</code> ช่วยตรวจ duplicate <strong>[Official constraint]</strong> แหล่ง: <a href="https://developers.line.biz/en/docs/messaging-api/receiving-messages/" target="_blank" rel="noopener">receiving messages</a> Retry key ทำ repeated API execution ปลอดภัยขึ้นสำหรับ server error/timeout บางชนิด แต่ accepted request ยังอาจไม่ถึง user <strong>[Official constraint]</strong> แหล่ง: <a href="https://developers.line.biz/en/docs/messaging-api/retrying-api-request/" target="_blank" rel="noopener">retrying an API request</a></p>
+<h2>9. Threat model และ failure containment</h2>
+<div class="tablewrap"><table><thead><tr><th>Threat/failure</th><th>กลไก</th><th>Control และหลักฐานที่ต้องมี</th></tr></thead><tbody>
+<tr><td>Forged webhook</td><td>ผู้โจมตีสร้าง event</td><td><strong>[Proposal]</strong> raw-body signature test, invalid denial, secret rotation drill</td></tr>
+<tr><td>Cross-tenant confused deputy</td><td>routing ID ถูกใช้เป็น authority</td><td><strong>[Proposal]</strong> server binding, tenant-scoped query, negative isolation tests</td></tr>
+<tr><td>Replay/duplicate execution</td><td>webhook redelivery หรือ client retry</td><td><strong>[Proposal]</strong> unique event/command key, atomic transition, deterministic replay result</td></tr>
+<tr><td>Stale approval</td><td>Flex card เก่าเรียก resource ปัจจุบัน</td><td><strong>[Proposal]</strong> expected revision ฝั่ง server; mismatch ไป read-only refresh</td></tr>
+<tr><td>Forwarded link</td><td>authenticated link ไปถึงคนหรือ context อื่น</td><td><strong>[Proposal]</strong> short life, audience binding, single-use/nonce ตามเหมาะสม และ server reauthorization</td></tr>
+<tr><td>Unknown group actor</td><td>principal binding ใน shared group ยัง unresolved</td><td><strong>[Proposal]</strong> ตอบ read-only; <code>STEP_UP</code> ใน 1:1/authenticated web; actor authority ต้องใช้ explicit principal binding</td></tr>
+<tr><td>Wrong audience</td><td>ข้อมูล sensitive/tenant-specific ส่งผิด recipient/conversation</td><td><strong>[Proposal]</strong> audience class, recipient preview, server binding, minimum-data template, reconciliation/incident route</td></tr>
+<tr><td>duplicate-send</td><td>webhook redelivery, client retry หรือ sender retry execute ซ้ำ</td><td><strong>[Proposal]</strong> เก็บ stable retry key; บังคับ sender idempotency และ command uniqueness; วัด zero duplicate business execution</td></tr>
+<tr><td>unknown-after-send</td><td>timeout หรือ ambiguous response ทำให้ delivery acceptance ยัง unresolved</td><td><strong>[Proposal]</strong> Persist request/retry identifiers and acceptance state; reconcile outcome; ส่ง ambiguity ไป operator resolution; never blind resend <strong>[Official constraint]</strong> LINE ระบุว่า accepted retry ยังอาจไม่ถึง user: <a href="https://developers.line.biz/en/docs/messaging-api/retrying-api-request/" target="_blank" rel="noopener">retry semantics</a></td></tr>
+<tr><td>Identity substitution</td><td>เชื่อ client profile หรือ redirect result</td><td><strong>[Proposal]</strong> server token validation, nonce, PKCE, exact redirect, short-lived command token</td></tr>
+<tr><td>Notification abuse</td><td>prompt มากเกินสร้างแรงกดดัน</td><td><strong>[Proposal]</strong> quiet hours, digest, role relevance, opt-down, escalation cap, complaint/recovery</td></tr>
+<tr><td>Vendor/channel outage</td><td>LINE ใช้งานไม่ได้หรือ account ถูกปิด</td><td><strong>[Proposal]</strong> durable queue, web fallback, operator runbook, replaceable adapter</td></tr>
+<tr><td>Audit tampering</td><td>ผู้กระทำแก้หรือลบ decision history</td><td><strong>[Proposal]</strong> append-only/immutable controls, restricted query, integrity monitoring, retention, independent review</td></tr>
+<tr><td>Unsafe manufacture release</td><td>approval ข้าม revision/compatibility evidence</td><td><strong>[Proposal]</strong> step-up, four-eyes gate, frozen BOM/drawing/CAM package, signed release record</td></tr>
+</tbody></table></div>
+<p>LINE มี webhook delivery statistics และ error causes รวมถึง response-time/error classes; เอกสารกำหนดให้ตอบ webhook เร็วและ process แบบ asynchronous <strong>[Official constraint]</strong> แหล่ง: <a href="https://developers.line.biz/en/docs/messaging-api/receiving-messages/" target="_blank" rel="noopener">receiving messages</a> และ <a href="https://developers.line.biz/en/docs/messaging-api/check-webhook-error-statistics/" target="_blank" rel="noopener">webhook error statistics</a></p>
+<h2>10. Human factors, accessibility และ ethical retention</h2>
+<p>Randomized field experiment หนึ่งวันกับผู้เข้าร่วม 247 คนพบว่า การปิด smartphone notification ลด interruption/strain และปรับ performance ใน setting นั้น <strong>[Inference]</strong> ผลนี้สนับสนุนการทดลอง quiet hours และ digest แต่ไม่ใช่ MONOLITH baseline หรือผลสากล แหล่ง: <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10244611/" target="_blank" rel="noopener">peer-reviewed original study</a></p>
+<p>WCAG 2.2 AA มีข้อกำหนดที่เกี่ยวข้อง เช่น programmatic relationship, keyboard operation, focus visibility/not-obscured, minimum target size, error identification, ลด redundant entry และ accessible authentication <strong>[Official constraint]</strong> แหล่ง: <a href="https://www.w3.org/TR/WCAG22/" target="_blank" rel="noopener">WCAG 2.2</a></p>
+<p><strong>[Proposal]</strong> Human-surface policy:</p>
+<ul>
+<li>หนึ่ง primary action ต่อ card; ภาษาชัดเจนเรื่องผลลัพธ์ owner due date revision และ undo/recovery</li>
+<li>alt text สื่อ task และ urgency ได้โดยไม่พึ่ง visual layout</li>
+<li>web fallback ที่ใช้ keyboard/screen reader ได้ และช่องทาง non-chat สำหรับงาน sensitive</li>
+<li>quiet hours ตาม tenant/role; digest เป็น default สำหรับ noncritical group update; จำกัด escalation และ opt-down ชัดเจน</li>
+<li>แยก service message จาก marketing; อธิบายเหตุผลที่ติดต่อ; หลีกเลี่ยง countdown pressure, disguised ad, forced continuity และ obstructed cancellation</li>
+<li>complaint, correction, export และ deletion path พร้อม service owner</li>
+<li>portable project/customer export ใน format ที่มีเอกสาร และ channel-independent route เพื่อทำงานต่อหรือออกได้โดยไม่มี punitive friction</li>
+</ul>
+<p>US FTC อธิบาย interface pattern ที่หลอกหรือชักจูง เช่น disguised advertising, buried terms, cancellation ที่ยาก และ data-extraction tricks <strong>[Official constraint]</strong> ใช้เป็น policy evidence ไม่ใช่ข้อวินิจฉัยกฎหมายเฉพาะเขต แหล่ง: <a href="https://www.ftc.gov/reports/bringing-dark-patterns-light" target="_blank" rel="noopener">FTC report</a> ISO 10002 อธิบาย complaint handling ที่เปิด ใช้งานได้ และนำ complaint analysis ไปปรับบริการ <strong>[Official constraint]</strong> แหล่ง: <a href="https://www.iso.org/standard/71580.html" target="_blank" rel="noopener">ISO 10002:2018</a></p>
+<h2>11. Interior-design lifecycle และ revision spine</h2>
+<p>RIBA Plan of Work จัดงาน built environment ตั้งแต่ strategic definition, preparation/brief, concept, spatial coordination, technical design, manufacturing/construction, handover ถึง use <strong>[Official constraint]</strong> รายงานนี้ใช้เป็น lifecycle analogue ไม่ใช่ข้อบังคับสากลของ studio แหล่ง: <a href="https://www.architecture.com/-/media/GatherContent/Test-resources-page/Additional-Documents/2020RIBAPlanofWorktemplatepdf.pdf" target="_blank" rel="noopener">RIBA Plan of Work 2020</a></p>
+<p><strong>[Proposal]</strong> Project states และ control points ของ MONOLITH โดย LINE is not the system of record: route ด้านล่างพาผู้ใช้ไปยัง action แต่ authoritative object และ decision ยัง revisioned อยู่ใน MONOLITH</p>
+<div class="tablewrap"><table><thead><tr><th>State</th><th>Human Surface path</th><th>Authoritative MONOLITH record/fields</th><th>Required revision evidence</th><th>High-risk exit gate</th></tr></thead><tbody>
+<tr><td>Lead / qualify</td><td>OA 1:1 intake; personal push หลัง consent เท่านั้น</td><td>tenant, project/lead, customer, consent, conversation, principal, owner, intent</td><td>source, consent version, qualification revision</td><td>accepted brief owner</td></tr>
+<tr><td>Discover / survey</td><td>OA 1:1 assignment; groups สำหรับ field coordination ที่อนุมัติ; Flex→LIFF เพื่อ upload survey</td><td>tenant/project, resource/revision, survey/evidence, principal, issue owner</td><td>site, datum, units, tolerances, photos, constraints</td><td>survey approval และ issue log</td></tr>
+<tr><td>Brief / concept</td><td>OA 1:1 และ personal push สำหรับ task; groups สำหรับ read-only coordination; Flex→LIFF เพื่อ selection</td><td>project/customer, consent, resource/revision, brief, option, decision, audit</td><td>requirements, options, assumptions, room/product links</td><td>selected concept และ budget band</td></tr>
+<tr><td>Spatial coordination</td><td>groups สำหรับ approved-team digest; OA 1:1 สำหรับ assigned issue; Flex→LIFF เพื่อ resolution</td><td>project, resource/revision, drawing/evidence, issue, decision, audit</td><td>dimensions, interfaces, clashes, utilities, accessibility</td><td>coordinated revision</td></tr>
+<tr><td>Technical design</td><td>personal push สำหรับ assigned review; groups สำหรับ safe digest; Flex→LIFF สำหรับ high-risk approval</td><td>project, resource/revision, drawing, spec, BOM, grant, decision, audit</td><td>drawings, specs, schedules, compatibility, approvals</td><td>frozen issue package</td></tr>
+<tr><td>Price / contract / change</td><td>OA 1:1 summary และ personal push; Flex→LIFF สำหรับ price/change acceptance</td><td>tenant/project/customer, price, change, resource/revision, grant, decision, audit</td><td>priced revision, inclusions, exclusions, taxes, dependencies</td><td>authorized commercial baseline</td></tr>
+<tr><td>Procurement / manufacture</td><td>personal push สำหรับ exception; groups สำหรับ approved operations; Flex→LIFF เพื่อ release</td><td>project, BOM, drawing, spec, supplier evidence, revision, grant, decision, audit, outbox</td><td>supplier, lead-time, CAM/CNC package, QA plan</td><td>release to manufacture</td></tr>
+<tr><td>Logistics / install</td><td>personal push สำหรับ assigned event; groups สำหรับ approved crew; Flex→LIFF เพื่อ exception/acceptance</td><td>project, logistics, delivery, install, QA/evidence, revision, outbox, audit</td><td>pack/location IDs, condition, site readiness, install checks</td><td>installed acceptance</td></tr>
+<tr><td>Handover / warranty / referral</td><td>OA 1:1 service; consented personal push; Flex→LIFF สำหรับ defect, acceptance หรือ privacy choice</td><td>tenant/project/customer, consent, as-built, warranty, defect, delivery, decision, audit</td><td>as-built, manuals, defects, warranty, consented follow-up</td><td>closeout และ service ownership</td></tr>
+</tbody></table></div>
+<p>ISO 19650-1 กล่าวถึงการแลกเปลี่ยน บันทึก version และจัดระบบข้อมูลตลอด asset lifecycle; ฉบับ 2018 ที่เผยแพร่ถูกทำเครื่องหมายว่ารอ revision <strong>[Official constraint]</strong> แหล่ง: <a href="https://www.iso.org/standard/68078.html" target="_blank" rel="noopener">ISO 19650-1</a> ISO 10007 กล่าวถึง configuration management ตลอด product/service lifecycle <strong>[Official constraint]</strong> แหล่ง: <a href="https://www.iso.org/standard/70400.html" target="_blank" rel="noopener">ISO 10007:2017</a></p>
+<h2>12. Product-family และ parameter model</h2>
+<p><strong>[Proposal]</strong> Product family คือ governed schema ไม่ใช่ fixed width table Field ขั้นต่ำคือ family/version, source URL/document revision, market, application, geometry, material/finish, hardware/appliance interface, clearance/ventilation/service zone, load/tolerance assumptions, manufacturing method, certifications, effective dates, substitutions และ approval evidence</p>
+<div class="tablewrap"><table><thead><tr><th>Family</th><th>ตัวอย่าง parameter</th><th>กฎหลักฐาน</th></tr></thead><tbody>
+<tr><td>Base, wall, tall/larder, vanity, wardrobe, media, office, island, shelving, custom</td><td>width/height/depth, carcass, reveal, plinth, back, scribe, service/equipment/cable void</td><td><strong>[Proposal]</strong> ค่าอ้าง current market/manufacturer/project source; custom ยังต้องมี project engineering/source evidence</td></tr>
+<tr><td>Door, drawer, lift-up, sliding, pocket</td><td>front geometry, overlay/inset, gap, mass, hinge/runner/lift, opening envelope</td><td><strong>[Proposal]</strong> compatibility ตรง hardware family/revision</td></tr>
+<tr><td>Sink, hob, hood, oven, refrigerator, dishwasher, laundry</td><td>cutout, ventilation, heat/moisture clearance, utilities, service access</td><td><strong>[Proposal]</strong> installation document ของ appliance เป็นหลัก; ใช้ safety clearance ที่มากกว่า</td></tr>
+<tr><td>Panel, stone, glass, metal, upholstery, finish</td><td>stock size, thickness, grain, edge, radius, seam, batch, care</td><td><strong>[Proposal]</strong> source/batch/revision เดินทางเข้า BOM และ QA</td></tr>
+</tbody></table></div>
+<p><strong>Primary-source capability fact:</strong> IKEA Thailand METOD buying guide แสดง base, wall, high cabinet หลายขนาด เป็นตัวอย่างที่มีวันที่และเฉพาะตลาด ไม่ใช่มาตรฐานสากล แหล่ง: <a href="https://www.ikea.com/th/en/files/pdf/ea/22/ea22e971/metod_bg_apr21_th.pdf" target="_blank" rel="noopener">METOD guide</a> Blum เผยแพร่ product data, technical drawing, CAD และ configurator collision checks; Häfele เผยแพร่ connector family ตาม application แหล่ง: <a href="https://www.blum.com/gb/en/services/planning-construction-product-selection/product-database/" target="_blank" rel="noopener">Blum product database</a>, <a href="https://www.blum.com/gb/en/services/planning-construction-product-selection/cabinet-configurator/index.html" target="_blank" rel="noopener">Blum configurator</a>, <a href="https://www.hafele.com/us/en/products/furniture-fittings-living-solutions/connectors-shelf-supports/connectors/50/" target="_blank" rel="noopener">Häfele connectors</a> คำอธิบาย catalogue/configurator นี้รองรับ schema/workflow design แต่ installation compatibility ต้องตรวจจาก current product/project document</p>
+<p><strong>[Inference]</strong> Configuration ต้องเป็น data ที่มี provenance และ compatibility rules งานที่ generate แล้วยังคงเป็น revisioned instance ของ sourced parameters ไม่ใช่หลักฐานว่าขนาดของ brand หนึ่งใช้ได้กับทุก market/application</p>
+<h2>13. Materials, survey, CAD/BIM, CAM/CNC และ factory chain</h2>
+<p>RICS measured-survey guidance กำหนดให้ client กับ surveyor ตกลง purpose, accuracy, control, datum, content และ deliverables <strong>[Official constraint]</strong> แหล่ง: <a href="https://www.rics.org/profession-standards/rics-standards-and-guidance/sector-standards/land-standards/measured-surveys-of-land-buildings-and-utilities" target="_blank" rel="noopener">RICS measured surveys</a> IFC เป็น open vendor-neutral schema สำหรับ built-environment data โดย IFC 4.3 ADD2 เผยแพร่เป็น ISO 16739-1:2024 <strong>[Official constraint]</strong> แหล่ง: <a href="https://www.buildingsmart.org/standards/bsi-standards/industry-foundation-classes/?lang=en" target="_blank" rel="noopener">buildingSMART IFC</a></p>
+<p><strong>Primary-source capability fact:</strong> HOMAG อธิบาย SmartWOP ว่าสร้าง CNC programs, panel-cutting parts lists, fitting lists และ technical drawings และส่ง production data ไป machine/production apps; woodWOP CAM import external 3D model พร้อมจำลอง machining/collision แหล่ง: <a href="https://digital.homag.com/en/smart-wop/" target="_blank" rel="noopener">HOMAG SmartWOP</a> และ <a href="https://www.homag.com/en/software-detail/software/work-preparation/woodwop-cam-plugin" target="_blank" rel="noopener">woodWOP CAM plugin</a> Biesse อธิบาย B_SOLID เป็น 3D CAD/CAM พร้อม machining simulation และ virtual prototyping แหล่ง: <a href="https://biesse.com/gb/en/software/b_solid/" target="_blank" rel="noopener">Biesse B_SOLID</a> Vendor capability เหล่านี้ไม่ qualify งาน MONOLITH, machine, tooling, material หรือ post-processor รายตัว</p>
+<p><strong>[Proposal]</strong> Evidence chain คือ <code>survey source → coordinated model → approved product revision → drawing/specification/BOM → machine-specific post-process → simulation → first-article/QA → pack/location → installation → as-built/warranty</code> Native และ exchange file เชื่อมด้วย revision/checksum ผู้ควบคุมเครื่องอนุมัติ post-processed program สำหรับ machine/tooling/material ที่ระบุ CAD/BIM exchange เป็น coordination evidence ส่วน CAM output เป็น machine-context evidence</p>
+<p>Appliance instruction อาจกำหนด ventilation, clearance, local-condition check และให้ใช้ safety distance ที่มากกว่า <strong>[Official constraint]</strong> แหล่ง: <a href="https://media3.bosch-home.com/Documents/9000952998_A.pdf" target="_blank" rel="noopener">Bosch installation instructions</a> FSC chain-of-custody อาศัยการระบุ แยก และติดตาม certified material ตลอด supply chain <strong>[Official constraint]</strong> แหล่ง: <a href="https://connect.fsc.org/certification/chain-custody-certification" target="_blank" rel="noopener">FSC chain of custody</a></p>
+<h2>14. Role และ accountability scorecard</h2>
+<div class="tablewrap"><table><thead><tr><th>Role</th><th>Accountable outcomes</th><th>Human Surface default</th><th>Step-up events</th></tr></thead><tbody>
+<tr><td>Executive / board / product owner</td><td>risk appetite, investment, tenant boundary, stop rules</td><td>portfolio digest</td><td>expansion/risk acceptance</td></tr>
+<tr><td>Tenant owner / studio director</td><td>policy, membership, retention, escalation</td><td>operational digest</td><td>role/grant/retention change</td></tr>
+<tr><td>Sales / relationship lead</td><td>qualified lead, consented contact, handoff</td><td>task/reminder</td><td>offer/discount approval</td></tr>
+<tr><td>Project manager</td><td>baseline, scope, schedule, dependency, change</td><td>exception/approval cards</td><td>baseline/change release</td></tr>
+<tr><td>Designer / architect</td><td>brief, model, drawing, coordinated revision</td><td>review card</td><td>design freeze</td></tr>
+<tr><td>Surveyor</td><td>datum, accuracy, constraints, signed survey</td><td>checklist</td><td>survey acceptance</td></tr>
+<tr><td>Estimator / QS</td><td>quantity, rate, assumption, exclusion</td><td>variance card</td><td>commercial baseline</td></tr>
+<tr><td>Procurement / supplier</td><td>approved item, provenance, lead time, substitution</td><td>exception card</td><td>substitution acceptance</td></tr>
+<tr><td>Engineer / technical checker</td><td>compatibility, structural/services constraints</td><td>issue card</td><td>technical release</td></tr>
+<tr><td>CAM/CNC programmer / factory planner</td><td>post-process, setup, simulation, cut list</td><td>release queue</td><td>manufacture release</td></tr>
+<tr><td>QA / logistics / installer</td><td>inspection, pack/location, readiness, as-built</td><td>checklist/exception</td><td>shipment/install acceptance</td></tr>
+<tr><td>Finance</td><td>invoice, allocation, refund evidence</td><td>status only</td><td>refund/write-off</td></tr>
+<tr><td>Partner / consultant / trade contractor</td><td>bounded deliverable, interface, evidence, expiry</td><td>assigned package/issue only</td><td>delegation/substitution/release</td></tr>
+<tr><td>Customer approver</td><td>explicit scope/design/price acceptance</td><td>summary + secure link</td><td>binding approval</td></tr>
+<tr><td>Customer-of-customer / occupant</td><td>consented update, access need, defect report</td><td>minimum necessary update</td><td>identity/privacy action</td></tr>
+<tr><td>Support / warranty / privacy / security</td><td>recovery, complaint, rights request, incident</td><td>routed case</td><td>override/deletion/disclosure/breach</td></tr>
+</tbody></table></div>
+<p><strong>[Proposal]</strong> แต่ละ scorecard entry ต้อง resolve ไป named commands, data fields, assurance, service level, escalation และ substitute owner “Administrator” ไม่ใช่ universal authority; override ต้อง resource-scoped, time-bounded, reason-coded และ independent review</p>
+<h2>15. Capability matrix: now, next และ later</h2>
+<div class="tablewrap"><table><thead><tr><th>Capability และ current local evidence</th><th>Gap</th><th>Owner</th><th>Dependency</th><th>Principal risk</th><th>Measurable outcome</th></tr></thead><tbody>
+<tr><td>Flex composition — <strong>[Verified local fact]</strong> Parent @ <code>eca050a…</code>: presets/JSON/validator</td><td>governed domain adapter และ tenant templates</td><td>Human Surface lead</td><td>stable resource/revision API</td><td>presentation กลายเป็น truth ชุดที่สอง</td><td>deterministic render + template version ทุก card</td></tr>
+<tr><td>Demo actions — <strong>[Verified local fact]</strong> Parent @ <code>eca050a…</code>: actions/receipt; <code>DEMO — NOT A PRODUCTION SIGNATURE</code></td><td>server command/current authz/production evidence</td><td>Trust lead</td><td>identity/grants/revision/audit</td><td>demo ถูกเข้าใจเป็น approval</td><td>high-risk 100% bind authorized expected revision</td></tr>
+<tr><td>Webhook/outbound/audit — <strong>[Verified local fact]</strong> Nested @ <code>a1e9006…</code>: functions/migrations/tests</td><td>deployed P0 และ reconciliation telemetry</td><td>Platform/security lead</td><td>target environment/secret custody</td><td>forgery/replay/cross-tenant send</td><td>P0 fresh pass 100%; duplicate business execution 0</td></tr>
+<tr><td>Quiet hours — <strong>[Verified local fact]</strong> Nested @ <code>a1e9006…</code>: quiet-hours source/tests</td><td>tenant/role policy และ digest experiment</td><td>Service design lead</td><td>consent/preferences/scheduler</td><td>fatigue หรือ missed urgent work</td><td>baseline burden/opt-out; critical bypass มี owner</td></tr>
+<tr><td>Project/product truth — <strong>[Verified local fact]</strong> Nested เป็น active-product root ตาม scope correction</td><td>stable API สำหรับ revision/grants/audit</td><td>Product/domain lead</td><td>command/resource ontology</td><td>cross-root drift</td><td>authoritative revision หนึ่งชุดทุก surface</td></tr>
+<tr><td>Product/factory chain — <strong>[Proposal]</strong> หัวข้อ 12–13</td><td>family/supplier/machine/first article ที่คุมได้</td><td>Technical/factory lead</td><td>survey/catalogue/CAM/QA</td><td>unsafe/untraceable release</td><td>release provenance ครบและ first-article sign-off</td></tr>
+</tbody></table></div>
+<p>การมี source ไม่ได้พิสูจน์ deployment หรือความพร้อมใช้งานจริงระดับ production</p>
+<p><strong>[Unknown]</strong> Single executable cross-root pilot path, deployed-schema state, live credentials และ target telemetry รอการตรวจ Matrix นี้แยก repository presence จาก operational proof อย่างตั้งใจ</p>
+<h2>16. KPI hypotheses และ baseline plan</h2>
+<p>ตัวเลขทุกค่าด้านล่างเป็น <strong>[Proposal]</strong> hypothesis ไม่ใช่ current result หรือ commitment ให้ baseline สี่สัปดาห์ใน cohort ภายใน/เฉพาะ Daph ที่มี consent เก็บ median/P90 ตามเหมาะสม แล้วกำหนด threshold จาก distribution จริงและ risk appetite</p>
+<div class="tablewrap"><table><thead><tr><th>KPI hypothesis</th><th>นิยาม</th><th>Hypothesis เริ่มต้นเพื่อทดสอบ</th></tr></thead><tbody>
+<tr><td>Trust P0 pass rate</td><td>fresh P0 checks ที่ผ่าน / ที่ใช้ได้</td><td>100% เท่านั้นจึง promote</td></tr>
+<tr><td>Cross-tenant isolation</td><td>unauthorized success / negative attempt</td><td>0 success</td></tr>
+<tr><td>Duplicate business execution</td><td>command ที่เกิดมากกว่าหนึ่ง business transition / commands</td><td>0</td></tr>
+<tr><td>Revision-safe completion</td><td>high-risk command ตรง authorized expected revision / completed</td><td>100%</td></tr>
+<tr><td>Message usefulness</td><td>ผู้รับที่ให้ useful / surveyed recipients</td><td>baseline ก่อน; เพิ่มโดยไม่สร้างแรงกดดัน</td></tr>
+<tr><td>Notification burden</td><td>noncritical messages ต่อ active person/workday และ after-hours</td><td>baseline ตาม role; ลด P90 ด้วย digest/quiet hours</td></tr>
+<tr><td>Accessibility completion</td><td>representative task ที่ทำสำเร็จด้วย keyboard/screen reader / attempts</td><td>baseline กับ users; critical task ทุกงานมี viable path</td></tr>
+<tr><td>Recovery time</td><td>เวลาจาก failed/withdrawn action ถึง reconciled state</td><td>baseline ตาม scenario; ซ้อม P0 recovery</td></tr>
+<tr><td>Design-to-release rework</td><td>revision ที่ reopen หลัง technical/manufacturing release / releases</td><td>baseline ตามเหตุ; ไม่กดการแก้ที่จำเป็น</td></tr>
+<tr><td>Evidence completeness</td><td>required provenance/revision/owner field ที่ครบ / controlled objects</td><td>100% ที่ release gate</td></tr>
+<tr><td>Complaint closure quality</td><td>resolved พร้อม reason/remedy/owner/recurrence tag / closed complaints</td><td>evidence 100%; satisfaction วัดแยก</td></tr>
+<tr><td>Conversion</td><td>qualified/consented leads ที่ถึง named next state / qualified/consented leads</td><td>baseline ตาม journey; อ่านคู่ burden/complaint</td></tr>
+<tr><td>Approval latency</td><td>เวลาจาก approval-ready revision ถึง valid decision</td><td>baseline median/P90 ตาม risk; ห้ามข้าม review เพื่อเร่ง</td></tr>
+<tr><td>Notification opt-out</td><td>ผู้รับที่ลด/หยุด nonessential notification / ผู้รับที่ได้ control</td><td>baseline ตาม role/journey; ตรวจ pressure/irrelevance</td></tr>
+<tr><td>Quarantine age</td><td>เวลาที่ unresolved command อยู่ใน <code>QUARANTINE</code></td><td>baseline median/P90; ทุก item มี owner/expiry</td></tr>
+<tr><td>SLA breach</td><td>owned case ที่พลาด service target / eligible cases</td><td>baseline ตาม severity/tenant พร้อม cause/recovery</td></tr>
+<tr><td>Delivery reliability</td><td>intended message ที่ reconcile และรู้ acceptance/delivery outcome / queued messages</td><td>baseline ตาม result; acceptance ไม่ใช่ human receipt</td></tr>
+<tr><td>Service recovery</td><td>case ที่คืน agreed state พร้อม reason/remedy / recoverable failures</td><td>baseline outcome/time และ review recurrence</td></tr>
+<tr><td>Adoption</td><td>eligible active roles ที่จบ governed journey / eligible active roles</td><td>baseline หลัง access/usability; voluntary use เท่านั้น</td></tr>
+</tbody></table></div>
+<p><strong>[Proposal]</strong> จับคู่ conversion/speed metrics กับ burden, complaint, accessibility, override และ recovery metrics Growth outcome ห้าม override trust stop rule</p>
+<h2>17. Phased roadmap และ migration sequence</h2>
+<div class="tablewrap"><table><thead><tr><th>Phase</th><th>Deliverable</th><th>Exit evidence</th></tr></thead><tbody>
+<tr><td>P0 Trust closure</td><td>freeze boundary; implement signature, binding/authz, idempotency, intent/outbox, secret/audit/revocation; negative/recovery drills</td><td>P0 fresh pass ทุกข้อใน target environment, threat/data map และ rollback owner</td></tr>
+<tr><td>Bounded Daph pilot</td><td>low-risk workflow และ product family อย่างละหนึ่ง; read-only ก่อน controlled command</td><td>consented cohort, telemetry, accessibility/recovery evidence, P1 exception มี owner</td></tr>
+<tr><td>Five governed journeys</td><td>qualify/brief; design/revision review; commercial change; procurement/manufacture release; handover/warranty</td><td>role/evidence schema/service/recovery target และ fresh gate ต่อ journey</td></tr>
+<tr><td>Tenant-2 shadow</td><td>replay sanitized/consented events โดยไม่ external message หรือ business mutation</td><td>independent isolation/portability review, policy/config diff, cross-tenant result 0</td></tr>
+<tr><td>Controlled scale</td><td>board-authorized tenant ที่สองและ/หรือ Human Surface เพิ่ม</td><td>P0–P2 current ตลอด observation window; incident/complaint/reliability/adoption review</td></tr>
+</tbody></table></div>
+<p><strong>[Proposal]</strong> Migration ใช้ strangler seams: adapter interface ก่อน ตามด้วย read-only view, low-risk command และ high-risk command สุดท้าย แต่ละขั้นมี routing rollback, queued-work reconciliation และ evidence expiry Parent demo ใช้อ้าง presentation contract ส่วน nested domain/trust เป็น product authority</p>
+<h2>18. Board GO/NO-GO gates และ rollback</h2>
+<p><strong>GO ตอนนี้</strong> สำหรับ research, architecture, P0 implementation, local tests, controlled source integration และ non-customer Daph rehearsal <strong>Conditional GO</strong> สำหรับ Daph customer messaging เมื่อ P0 ทุกข้อ fresh pass ใน target environment และเจ้าของยอมรับ P1 risk ที่เหลือ <strong>NO-GO for broader customer messaging</strong> จน P0 เขียวตลอด observation window ที่กำหนดและ P1 operational/accessibility/recovery evidence ได้อนุมัติ Daph is one pilot tenant.</p>
+<p>Stop ทันทีเมื่อเกิด signature bypass, tenant ambiguity, cross-tenant access, stale-revision execution, unowned/exposed credential, double business execution, missing immutable audit, unreconciled outbox, critical path ที่เข้าไม่ถึง, coercive/unconsented messaging, missing incident/rollback owner หรือ manufacture release โดยไม่มี frozen evidence</p>
+<div class="tablewrap"><table><thead><tr><th>Mandatory gate</th><th>Owner</th><th>Required evidence</th><th>Failure response</th><th>Rollback</th></tr></thead><tbody>
+<tr><td>Trust P0</td><td>Trust/security lead + independent reviewer</td><td>fresh target P0 ledger และ negative tests</td><td>หยุด messaging และ quarantine ambiguity</td><td>disable command/outbound; เก็บ queue/audit</td></tr>
+<tr><td>Tenant/audience isolation</td><td>Platform lead</td><td>cross-tenant, group actor, forwarded link, wrong audience tests</td><td>incident triage/affected-tenant review</td><td>revoke binding/token; reconcile send</td></tr>
+<tr><td>Revision/high-risk approval</td><td>Product/domain + business owner</td><td>expected revision, step-up, four-eyes, immutable decision</td><td>deny release; reopen revision</td><td>invalidate link; restore approved baseline</td></tr>
+<tr><td>Human/accessibility</td><td>Service design/accessibility owner</td><td>representative critical tasks, quiet hours/opt-down, complaint route</td><td>pause journey; assisted alternative</td><td>accessible web/operator support</td></tr>
+<tr><td>Delivery/recovery</td><td>Operations lead</td><td>outbox reconciliation, dashboard, restore/retirement drill</td><td>stop expansion; recover ambiguity</td><td>pause worker, reconcile, disable webhook/revoke token</td></tr>
+<tr><td>Manufacture release</td><td>Technical/factory/QA leads</td><td>frozen survey/model/BOM/drawing/CAM, simulation, first article</td><td>quarantine package; stop machine release</td><td>last signed package; re-post-process/reapprove</td></tr>
+</tbody></table></div>
+<p><strong>[Proposal]</strong> Rollback: ปิด command policy ที่กระทบ; หยุด outbound worker โดยเก็บ durable queue; รักษา intent/audit; reconcile ambiguous requests; ส่งผู้ใช้ไป authenticated web/operator support; revoke/rotate credential เมื่อสงสัย compromise; ปิด webhook สำหรับ retirement; แจ้ง tenant owner ตาม incident process; และต้องสร้าง P0 evidence ใหม่ก่อน restore Platform retirement controls อยู่ที่ <a href="https://developers.line.biz/en/docs/messaging-api/stop-using-messaging-api/" target="_blank" rel="noopener">stop using the Messaging API</a></p>
+<h2>19. Evidence ledger</h2>
+<div class="tablewrap"><table><thead><tr><th>URL/evidence</th><th>Publisher</th><th>Date/version</th><th>Classification</th><th>Supported claim</th><th>Caveat</th></tr></thead><tbody>
+<tr><td><a href="https://developers.line.biz/en/docs/messaging-api/" target="_blank" rel="noopener">Messaging API</a>, <a href="https://developers.line.biz/en/reference/messaging-api/nojs/" target="_blank" rel="noopener">reference</a>, <a href="https://developers.line.biz/en/docs/messaging-api/verify-webhook-signature/" target="_blank" rel="noopener">signature</a>, <a href="https://developers.line.biz/en/docs/messaging-api/receiving-messages/" target="_blank" rel="noopener">redelivery</a>, <a href="https://developers.line.biz/en/docs/messaging-api/retrying-api-request/" target="_blank" rel="noopener">retry</a></td><td>LINE Developers</td><td>retrieved 2026-08-02</td><td>Official constraint</td><td>message types/limits, signature, redelivery/retry</td><td>rules เปลี่ยนได้; acceptance ไม่ใช่ human receipt</td></tr>
+<tr><td><a href="https://developers.line.biz/en/docs/messaging-api/getting-started/" target="_blank" rel="noopener">Getting started</a>, <a href="https://developers.line.biz/en/docs/line-login/getting-started/" target="_blank" rel="noopener">LINE Login</a>, <a href="https://developers.line.biz/en/reference/liff-server/" target="_blank" rel="noopener">LIFF</a></td><td>LINE Developers</td><td>retrieved 2026-08-02</td><td>Official constraint</td><td>provider/channel/LIFF lifecycle</td><td>current docs มี MINI App direction</td></tr>
+<tr><td><a href="https://csrc.nist.gov/pubs/sp/800/207/final" target="_blank" rel="noopener">SP 800-207</a></td><td>NIST</td><td>2020</td><td>Official constraint</td><td>zero-trust resource/session model</td><td>ไม่ใช่ implementation proof</td></tr>
+<tr><td><a href="https://www.rfc-editor.org/rfc/rfc9700.html" target="_blank" rel="noopener">RFC 9700</a></td><td>IETF/RFC Editor</td><td>2025</td><td>Official constraint</td><td>redirect/PKCE/token protection</td><td>ใช้ตาม client/threat model</td></tr>
+<tr><td><a href="https://www.w3.org/TR/WCAG22/" target="_blank" rel="noopener">WCAG 2.2</a></td><td>W3C</td><td>Recommendation 2023</td><td>Official constraint</td><td>accessible interaction</td><td>conformance ต้องตรวจ UI/content จริง</td></tr>
+<tr><td><a href="https://www.architecture.com/-/media/GatherContent/Test-resources-page/Additional-Documents/2020RIBAPlanofWorktemplatepdf.pdf" target="_blank" rel="noopener">RIBA</a>, <a href="https://www.iso.org/standard/68078.html" target="_blank" rel="noopener">ISO 19650-1</a>, <a href="https://www.rics.org/profession-standards/rics-standards-and-guidance/sector-standards/land-standards/measured-surveys-of-land-buildings-and-utilities" target="_blank" rel="noopener">RICS</a></td><td>RIBA / ISO / RICS</td><td>2020 / 2018 / current page</td><td>Official constraint</td><td>lifecycle/revision/survey framing</td><td>analogue/guidance; project rule ยังเป็นหลัก</td></tr>
+<tr><td><a href="https://www.ikea.com/th/en/files/pdf/ea/22/ea22e971/metod_bg_apr21_th.pdf" target="_blank" rel="noopener">IKEA METOD</a>, <a href="https://www.blum.com/gb/en/services/planning-construction-product-selection/product-database/" target="_blank" rel="noopener">Blum</a>, <a href="https://www.hafele.com/us/en/products/furniture-fittings-living-solutions/connectors-shelf-supports/connectors/50/" target="_blank" rel="noopener">Häfele</a>, <a href="https://digital.homag.com/en/smart-wop/" target="_blank" rel="noopener">HOMAG</a>, <a href="https://biesse.com/gb/en/software/b_solid/" target="_blank" rel="noopener">Biesse</a></td><td>official manufacturers</td><td>retrieved 2026-08-02; document-specific</td><td>Primary-source capability fact</td><td>catalogue dimensions, configuration, CAD/CAM tool capabilities</td><td>descriptive และ market/product/machine specific; ไม่ใช่ installation compatibility/qualification</td></tr>
+<tr><td><a href="https://media3.bosch-home.com/Documents/9000952998_A.pdf" target="_blank" rel="noopener">Bosch installation instructions</a>, <a href="https://connect.fsc.org/certification/chain-custody-certification" target="_blank" rel="noopener">FSC chain of custody</a></td><td>Bosch / FSC</td><td>retrieved 2026-08-02; document-specific</td><td>Official constraint</td><td>appliance installation clearance และ certified-material traceability</td><td>ใช้กับ exact product/certification scope และ current revision</td></tr>
+<tr><td>Parent <code>LineOS/line-flex-*.mjs</code>, studio/tests @ <code>eca050a…</code></td><td>local parent Git root</td><td>inspected 2026-08-02</td><td>Verified local fact</td><td>standalone demo contracts</td><td>repository evidence เท่านั้น</td></tr>
+<tr><td>Nested LINE functions/migrations/tests/quiet-hours @ <code>a1e9006…</code></td><td>local nested Git root</td><td>inspected 2026-08-02</td><td>Verified local fact</td><td>active-product ingredients</td><td>repository evidence; preserve dirty tree</td></tr>
+<tr><td>หัวข้อ 3–17</td><td>synthesis นี้</td><td>2026-08-02</td><td>Inference</td><td>boundary/priorities/lifecycle</td><td>ต้อง validate ใน context</td></tr>
+<tr><td>P0–P3, KPI, roadmap, gates</td><td>board proposal</td><td>2026-08-02</td><td>Proposal</td><td>authorization/verification plan</td><td>targets เป็น hypothesis</td></tr>
+<tr><td>Live deployment/telemetry/users/transcripts</td><td>unavailable evidence</td><td>2026-08-02</td><td>Unknown</td><td>บล็อก broader release</td><td>ต้องมี fresh artifacts</td></tr>
+</tbody></table></div>
+<h2>20. ข้อจำกัด คำถามเปิด และข้อสรุป</h2>
+<p>เอกสารนี้เป็น source-and-primary-research decision report ไม่ได้รับรอง production deployment, live LINE/Supabase integration, legal/regulatory conclusion, universal accessibility, universal furniture dimensions, real-machine qualification หรือ production receipt signature การเรียก Perplexity วันที่ 2 สิงหาคมติด quota; approved design specification วันที่ 1 สิงหาคมเป็น archived synthesis และ primary-source verification แสดงอยู่ในรายงาน Manufacturer document ขึ้นกับเวลา ตลาด product และ machine Standards/platform guidance เปลี่ยนได้ จึงต้อง revalidate ณ วัน implementation และ evidence expiry</p>
+<p>คำถามที่ยังเป็น <strong>[Unknown]</strong>: target tenant/legal entity/region; retention/lawful-basis; identity provider และ provider/channel ownership; command risk; deployed schema; secret custody; load/error budgets; LINE plan/account limits; accessibility participants; factory machine/post-processor; supplier market; recovery objectives; และผู้ลงนามอิสระของ P0 แต่ละข้อ</p>
+<p>บอร์ดควรอนุมัติโปรแกรมหลักฐานเฉพาะ Daph แต่งตั้ง Trust P0 owner หนึ่งคนและ independent reviewer หนึ่งคน เลือก low-risk workflow กับ product family อย่างละหนึ่ง และบังคับ decision record ใหม่ก่อนเพิ่ม tenant หรือ scenario</p>
+<p><strong>ข้อสรุป:</strong> MONOLITH should be a multi-tenant, revision-controlled project and product operating system. LINE is a replaceable Human Surface. Daph is one pilot tenant. Broader customer messaging remains NO-GO until every Trust P0 gate passes with fresh evidence.</p>
+</main></body>
+</html>

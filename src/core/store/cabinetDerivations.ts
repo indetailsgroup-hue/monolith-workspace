@@ -45,7 +45,6 @@ export interface CabinetForDerivation {
     bottomJoint: string;
     shelfCount: number;
     dividerCount: number;
-    [key: string]: unknown;
   };
   materials: {
     defaultCore: string;
@@ -54,7 +53,6 @@ export interface CabinetForDerivation {
   };
   panels: PanelForDerivation[];
   updatedAt: number;
-  [key: string]: unknown;
 }
 
 export interface PanelForDerivation {
@@ -84,9 +82,7 @@ export interface PanelForDerivation {
     edgeLength: number;
     cost: number;
     co2: number;
-    [key: string]: unknown;
   };
-  [key: string]: unknown;
 }
 
 export interface EdgeMaterialCatalog {
@@ -228,7 +224,7 @@ function recomputeCarcassGeometry(
  */
 export function validateCabinetDerived(
   cabinet: CabinetForDerivation,
-  edgeMaterials: EdgeMaterialCatalog
+  _edgeMaterials: EdgeMaterialCatalog
 ): string[] {
   const violations: string[] = [];
   const defaultSurfaceId = cabinet.materials?.defaultSurface ?? 'surf-mel-white';

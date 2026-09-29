@@ -21,6 +21,7 @@
  */
 
 import { spawnSync } from 'node:child_process';
+import * as fs from 'node:fs';
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, extname, join } from 'node:path';
@@ -28,6 +29,10 @@ import { basename, extname, join } from 'node:path';
 import * as XLSX from 'xlsx';
 
 import type { XlsConversionResult } from './types.js';
+
+// The official SheetJS ESM build does not bind Node's filesystem automatically.
+// Register it once so readFile/writeFile work in both the CLI and tests.
+XLSX.set_fs(fs);
 
 /** คำสั่งที่เป็นไปได้ของ LibreOffice headless ตามแพลตฟอร์ม */
 const LIBREOFFICE_CANDIDATES = ['soffice', 'libreoffice'] as const;

@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>MONOLITH LINE Design Approval Port A1 — แผนการดำเนินงาน</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1>MONOLITH LINE Design Approval Port A1 — แผนการดำเนินงาน</h1>
+<blockquote><p><strong>สำหรับ agentic workers:</strong> REQUIRED SUB-SKILL: ใช้ superpowers:subagent-driven-development (แนะนำหลังได้รับอนุมัติ execution อย่างชัดแจ้ง) หรือ superpowers:executing-plans เพื่อทำแผนนี้ทีละ task โดยใช้ checkbox (<code>- [ ]</code>) ติดตามสถานะ</p></blockquote>
+<ul>
+<li><strong>เป้าหมาย:</strong> สร้าง A1 <code>DesignApprovalPort</code> sandbox journey ตาม design ที่อนุมัติ ให้ preset Design Approval ตรวจ revision ที่ adapter เป็นเจ้าของและคืน record แบบไม่มีผลทางธุรกิจ โดยยังไม่เชื่อม MONOLITH runtime</li>
+<li><strong>จำนวน task โดยประมาณ:</strong> 8</li>
+<li><strong>เวลาโดยประมาณ:</strong> 7–10 ชั่วโมงทำงานแบบมีสมาธิ รวม review gates</li>
+<li><strong>ส่วนที่แตะ:</strong> Parent LineOS ES modules, standalone HTML/CSS, Node tests, เอกสารสองภาษา และ local browser evidence</li>
+<li><strong>Design ที่อนุมัติ:</strong> <code>LineOS/docs/superpowers/specs/2026-08-02-monolith-line-design-approval-port-a1-design.th.md</code></li>
+</ul>
+<h2>ปัญหาและระบบปัจจุบัน</h2>
+<p>Standalone Flex Studio ปัจจุบันส่งทุก preset ผ่าน browser-local demo path เดียว:</p>
+<p><code>editable draft -&gt; demo transaction -&gt; browser confirmation -&gt; SHA-256 Verification Receipt — Demo</code></p>
+<p>เส้นทางนี้ผูกค่าจาก fixture ที่แก้ไขได้ เช่น <code>tenantId</code>, recipient, target และ revision ถ้อยคำระบุความเป็น demo อย่างซื่อตรง แต่ยังไม่ใช่ A1 boundary ที่อนุมัติ ซึ่งต้องมี opaque review token, adapter-owned review snapshot, adapter-issued idempotency key, stale-revision checks, session-only duplicate suppression และ record ที่ระบุชัดว่าไม่มีผลทางธุรกิจ</p>
+<p>Nested MONOLITH repository มี product identity, customer design-view, approval RPC, RLS และ audit substrate อยู่แล้ว A1 ต้องไม่สร้างซ้ำหรือแก้ระบบนั้น A1 เป็น parent-only contract harness และยังไม่เชื่อม MONOLITH runtime</p>
+<h2>แนวทางที่เสนอ</h2>
+<p>เพิ่ม <code>DesignApprovalPort</code> แบบแคบและ dependency-free เฉพาะ preset <code>design-approval</code>:</p>
+<ol>
+<li>Flex JSON พา opaque sandbox review token ที่ไม่ใช่ secret ใน URI action เดิม</li>
+<li>Studio เปิด snapshot จาก sandbox adapter แทนการอนุมาน authority จาก editable draft</li>
+<li>Adapter ออก session/idempotency key, ตรวจ revision/version/expiry ใหม่ และบันทึก session-only attempt เพียงหนึ่งรายการ</li>
+<li>Record builder แยกสร้าง <code>Sandbox Verification Record — Demo · No Business Effect</code> ที่ deeply frozen พร้อม deterministic SHA-256 integrity metadata</li>
+<li>Presets อีกสี่รายการคง demo journey เดิมใน A1</li>
+<li>Static และ browser checks พิสูจน์ zero external requests, ไม่มี persistent secret/token storage, forbidden-field handling ที่แน่นอน, bilingual accessibility และ nested-product scope ไม่เปลี่ยน</li>
+</ol>
+<p>ไม่มี dependency, service, generic gateway, database table, Supabase mutation, LINE SDK, credential หรือ production signature ใหม่</p>
+<h2>เปรียบเทียบก่อนและหลัง</h2>
+<div class="tablewrap"><table><thead><tr><th>สถานการณ์</th><th>ก่อน A1</th><th>หลัง A1</th></tr></thead><tbody>
+<tr><td>เปิด Design Approval</td><td>Review มาจาก editable Flex draft</td><td>Review มาจาก <code>DesignApprovalPort.openReview(reviewToken)</code></td></tr>
+<tr><td>Identity/scope display</td><td>Demo <code>tenantId</code> และ recipient ดูคล้าย receipt authority</td><td>Adapter-owned <code>providerContext</code>/<code>scopeContext</code>; tenant authority อยู่นอกขอบเขต A1</td></tr>
+<tr><td>Confirmation</td><td>Browser confirm local demo transaction</td><td>Browser ส่งคืนเฉพาะ session, adapter-issued key, expected revision และ <code>confirm</code></td></tr>
+<tr><td>Duplicate submit</td><td>มีเพียง UI guard และ local transaction binding</td><td>Adapter single-flight และ session ledger คืน record เดิมหนึ่งรายการ</td></tr>
+<tr><td>Revision เปลี่ยน</td><td>เปรียบเทียบ draft values เท่านั้น</td><td>Adapter ตรวจ revision ID, manifest digest, workflow version และ expiry ใหม่</td></tr>
+<tr><td>Receipt</td><td><code>Verification Receipt — Demo</code></td><td><code>Sandbox Verification Record — Demo · No Business Effect</code></td></tr>
+<tr><td>Presets อื่น</td><td>Demo journey เดิม</td><td>ไม่เปลี่ยนใน A1</td></tr>
+<tr><td>MONOLITH runtime</td><td>ยังไม่เชื่อม</td><td>ยังคงไม่เชื่อม; contract-ready เท่านั้น</td></tr>
+</tbody></table></div>
+<h2>สมมติฐานและความเสี่ยง</h2>
+<ul>
+<li><strong>สมมติ:</strong> Node.js 22.20.0 ขึ้นไปและ browser Web Crypto ยังพร้อมใช้; ตอนวางแผนพบ Node <code>v22.21.1</code> และ npm <code>11.6.2</code></li>
+<li><strong>สมมติ:</strong> Five-preset Flex model, validator, shell resource allowlist และ non-design demo journeys สี่รายการยังเป็น requirement</li>
+<li><strong>สมมติ:</strong> A1 review token เป็น opaque non-secret fixture reference และไม่พา customer, tenant, role, recipient, project หรือ authorization claim</li>
+<li><strong>สมมติ:</strong> Session-only ledger reset หลัง reload ได้ โดย UI ต้องเปิดเผยข้อจำกัด</li>
+<li><strong>ความเสี่ยง:</strong> Journey สองแบบอาจ drift จำกัด branch ให้เป็น preset predicate ชุดเดียวและใช้ shared rendering helpers เท่าที่จำเป็น</li>
+<li><strong>ความเสี่ยง:</strong> การเรียก browser digest ว่า signature จะสร้าง false authority Schema/copy tests ต้องปฏิเสธถ้อยคำ signature/approval</li>
+<li><strong>ความเสี่ยง:</strong> Editable draft อาจไหลกลับเข้า Design Approval record Tests ต้อง mutate authority-like fields ทุกตัวแล้วพิสูจน์ว่า snapshot/record คงเดิม</li>
+<li><strong>ความเสี่ยง:</strong> Concurrent confirm แข่งกันระหว่าง async digest Adapter ต้องมี per-key single-flight ไม่ใช่เพียง <code>Map.has</code></li>
+<li><strong>ความเสี่ยง:</strong> Parent/nested worktrees มีงานค้าง Execution ต้องใช้ isolated parent worktree และ exact-path checks ส่วน nested เป็น read-only</li>
+<li><strong>ความเสี่ยง:</strong> เอกสารเดิมอธิบาย legacy demo path A1 guide ต้องแยก Design Approval ออกจาก presets อีกสี่รายการ</li>
+</ul>
+<h2>ผลกระทบ</h2>
+<ul>
+<li>Design Approval preset ได้ A1 contract และ truthful sandbox semantics ตามอนุมัติ</li>
+<li>Flex generation เดิมและ presets อีกสี่รายการคงเสถียร</li>
+<li>ไม่เพิ่ม customer, workflow, tenant, audit หรือ signing authority</li>
+<li>การตัดสินใจ A2 จะมี contract/browser evidence จริง แทน generic integration abstraction</li>
+</ul>
+<h2>เงื่อนไขก่อน execution และ guardrails กลาง</h2>
+<ol>
+<li>REQUIRED SUB-SKILL: ใช้ <code>superpowers:using-git-worktrees</code> ก่อน Task 1 สร้าง isolated parent worktree จาก starting commit ที่อนุมัติ ไม่สร้าง nested-product worktree เพราะ A1 ไม่แก้ nested source</li>
+<li>บันทึก parent/nested branch, full SHA, status count, Node/npm version และ baseline LineOS test summary ใหม่ Planning baseline คือ parent <code>aae611a6a</code>, nested <code>a1e9006add32</code>, parent 206 entries, nested 67 entries และ LineOS 72/72 ผ่าน</li>
+<li>รักษางานที่ไม่เกี่ยวข้องทั้งหมด โดยเฉพาะ <code>supabase/functions/_shared/order-adapter.ts</code> และ <code>tests/line-oa-commerce/ts/orderNormalization.property.test.ts</code> อยู่นอก scope</li>
+<li>แผนนี้ไม่อนุญาต commit, push, merge, PR, deploy, ส่ง LINE หรือใช้ production credentials หากเจ้าของยังไม่อนุมัติแยก</li>
+<li>ทุก production-code task ต้องโหลด <code>superpowers:test-driven-development</code> และมีหลักฐาน RED -&gt; GREEN -&gt; REFACTOR</li>
+<li>ห้ามลดความเข้ม HTML resource allowlist หรือเพิ่ม npm dependency</li>
+<li>เอกสาร project-facing ทุกชุดต้องมี <code>.en.md</code>, <code>.th.md</code>, <code>.en.html</code>, <code>.th.html</code> ที่ตรงกัน</li>
+<li>หลัง Task 1–8 ใช้ <code>superpowers:requesting-code-review</code>, <code>superpowers:scrutinize</code> และ <code>superpowers:verification-before-completion</code> ก่อน completion claim</li>
+</ol>
+<h2>แผนที่ไฟล์</h2>
+<div class="tablewrap"><table><thead><tr><th>ไฟล์</th><th>ความรับผิดชอบ</th></tr></thead><tbody>
+<tr><td><code>LineOS/line-design-approval-contract.mjs</code></td><td>Allowed shapes, forbidden authority fields, outcomes และ canonical contract validation</td></tr>
+<tr><td><code>LineOS/line-design-approval-record.mjs</code></td><td>สร้าง deterministic sandbox record, digest, deep freeze และ bilingual visible rows</td></tr>
+<tr><td><code>LineOS/line-design-approval-sandbox.mjs</code></td><td>A1 fixture source, review sessions, expiry/revision/version checks, idempotency และ single-flight ledger</td></tr>
+<tr><td><code>LineOS/line-flex-presets.mjs</code></td><td>เพิ่ม non-secret Design Approval review token เท่านั้น</td></tr>
+<tr><td><code>LineOS/line-flex-json.mjs</code></td><td>ใส่ opaque token ใน Design Approval URI โดยไม่พา authority fields</td></tr>
+<tr><td><code>LineOS/line-flex-studio.mjs</code></td><td>Route เฉพาะ Design Approval ผ่าน port; รักษา legacy journeys สี่รายการ</td></tr>
+<tr><td><code>LineOS/line-flex-studio.html</code></td><td>Static sandbox disclosure และ semantic review/record hooks</td></tr>
+<tr><td><code>LineOS/line-flex-studio.css</code></td><td>Trust Concierge sandbox, state, digest และ responsive styles</td></tr>
+<tr><td><code>LineOS/tests/line-design-approval-contract.test.mjs</code></td><td>Contract และ Flex-token RED/GREEN tests</td></tr>
+<tr><td><code>LineOS/tests/line-design-approval-record.test.mjs</code></td><td>Record integrity, forbidden-field และ bilingual-row tests</td></tr>
+<tr><td><code>LineOS/tests/line-design-approval-sandbox.test.mjs</code></td><td>Session, stale, expiry, idempotency, replay และ concurrency tests</td></tr>
+<tr><td><code>LineOS/tests/line-design-approval-security.test.mjs</code></td><td>Static no-network/no-storage/forbidden-authority inventory</td></tr>
+<tr><td>Existing LineOS tests</td><td>Regression และ shell/controller integration coverage</td></tr>
+</tbody></table></div>
+<h2>ภาพรวม Tasks</h2>
+<blockquote><p><strong>สำหรับ implementation tasks:</strong> REQUIRED SUB-SKILL: ใช้ superpowers:test-driven-development ก่อนแก้ production code ทุก task เป็น RED -&gt; GREEN -&gt; REFACTOR slice <strong>Parallel-first:</strong> หลังอนุมัติ execution ให้ spawn sub-agents แยกเฉพาะ lanes ที่เป็นอิสระ ห้าม parallel tasks ที่ชนไฟล์, generated HTML, evidence artifacts หรือ shared tests</p></blockquote>
+<ol>
+<li><strong>Contract และ safe Flex review token</strong> — Lane A | Can run together: none | Must wait for: execution preflight | TDD: tests ที่ยังไม่มี -&gt; validators/URI token ขั้นต่ำ -&gt; targeted green</li>
+<li><strong>Sandbox verification record</strong> — Lane B | Can run together: Task 4 | Must wait for: Task 1 | TDD: bounded record ที่ยังไม่มี -&gt; deterministic frozen record -&gt; targeted green</li>
+<li><strong>Sandbox port, ledger และ single-flight</strong> — Lane B | Can run together: Task 4 | Must wait for: Task 2 | TDD: session/replay/stale/concurrency failures -&gt; minimal adapter -&gt; targeted green</li>
+<li><strong>Trust Concierge sandbox shell</strong> — Lane C | Can run together: Tasks 2–3 | Must wait for: Task 1 | TDD: semantic disclosure hooks ที่ขาด -&gt; minimal HTML/CSS -&gt; structure green</li>
+<li><strong>Design Approval controller integration</strong> — Lane A | Can run together: none | Must wait for: Tasks 3–4 | TDD: legacy draft-derived journey -&gt; preset-scoped port routing -&gt; controller/regression green</li>
+<li><strong>Security inventory และ automated gate เต็มชุด</strong> — Lane D | Can run together: Task 7 | Must wait for: Task 5 | TDD: fail-closed inventory ที่ขาด -&gt; exact static/security tests/scripts -&gt; core/full green</li>
+<li><strong>คู่มือ A1 สองภาษาและ document contract</strong> — Lane E | Can run together: Task 6 | Must wait for: Task 5 | TDD: A1 guide manifest ที่ขาด -&gt; aligned docs/HTML/assertions -&gt; docs green</li>
+<li><strong>Browser evidence, implementation report และ final review gates</strong> — Sequential | Can run together: none | Must wait for: Tasks 6–7 | TDD: evidence/report contract ที่ขาด -&gt; observed artifacts/bounded report -&gt; full verification</li>
+</ol>
+<hr>
+<h3>Task 1: Contract และ Safe Flex Review Token</h3>
+<p><strong>ไฟล์:</strong></p>
+<ul>
+<li>Create: <code>LineOS/line-design-approval-contract.mjs</code></li>
+<li>Create: <code>LineOS/tests/line-design-approval-contract.test.mjs</code></li>
+<li>Modify: <code>LineOS/line-flex-presets.mjs:38-74</code></li>
+<li>Modify: <code>LineOS/line-flex-json.mjs:3-14</code></li>
+<li>Modify: <code>LineOS/tests/line-flex-json-validator.test.mjs:149-175</code></li>
+</ul>
+<p><strong>REQUIRED SUB-SKILL:</strong> ใช้ <code>superpowers:test-driven-development</code> สำหรับ production task นี้</p>
+<p><strong>Parallelization:</strong></p>
+<ul>
+<li>Can run with: <code>none</code></li>
+<li>Must wait for: isolated-worktree และ baseline preflight</li>
+<li>Race risk: contract/URI shape เป็น dependency ของทุก task ถัดไป</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 0: โหลด TDD discipline</strong></li>
+</ul>
+<p>ใช้ <code>superpowers:test-driven-development</code> ก่อนแก้ production code</p>
+<ul>
+<li>[ ] <strong>Step 1: เขียน failing contract tests</strong></li>
+</ul>
+<p>ครอบคลุม behavior ที่แน่นอน:</p>
+<ul>
+<li>Design Approval preset มี opaque non-secret <code>reviewToken</code> หนึ่งค่า และไม่พา <code>tenant</code>, customer, role, recipient, project หรือ approval data</li>
+<li>Built URI มีเพียง approved demo path, preset และ encoded review token</li>
+<li><code>assertReviewSnapshot</code> บังคับ approved A1 fields และ <code>mode: sandbox</code> / <code>businessEffect: none</code></li>
+<li>ปฏิเสธ top-level/nested authority fields เช่น tenant assertions, customer identity, approval status, signature และ key material</li>
+<li><code>assertConfirmReviewInput</code> รับเพียง session, adapter-issued key, expected revision และ <code>decision: confirm</code></li>
+<li>Allowed outcome registry ตรง written spec และ deeply frozen</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 2: รัน RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-design-approval-contract.test.mjs tests/line-flex-json-validator.test.mjs</code></pre>
+<p>คาดหวัง: FAIL เพราะ module/token/contract behavior ยังไม่มี โดย existing Flex tests ต้องยัง execute</p>
+<ul>
+<li>[ ] <strong>Step 3: Implement contract และ URI change ขั้นต่ำ</strong></li>
+</ul>
+<p>Reuse <code>canonicalize</code>/<code>deepFreeze</code> จาก <code>line-flex-model.mjs</code> ไม่เพิ่ม schema library และไม่เปิด token ให้แก้ใน Studio field list รักษา action selection และ JSON ของ non-design presets ให้คงเดิม</p>
+<ul>
+<li>[ ] <strong>Step 4: รัน GREEN และ regressions</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-design-approval-contract.test.mjs tests/line-flex-json-validator.test.mjs tests/line-flex-model.test.mjs</code></pre>
+<p>คาดหวัง: Targeted tests ผ่านทั้งหมด Design Approval ยังคงเป็น <code>uri</code> action และ authority field ไม่เข้า Flex JSON</p>
+<ul>
+<li>[ ] <strong>Step 5: Refactor หลัง green</strong></li>
+</ul>
+<p>คง validators ให้ pure, own-property based และ fail-closed แล้ว rerun command เดิม</p>
+<h3>Task 2: Sandbox Verification Record</h3>
+<p><strong>ไฟล์:</strong></p>
+<ul>
+<li>Create: <code>LineOS/line-design-approval-record.mjs</code></li>
+<li>Create: <code>LineOS/tests/line-design-approval-record.test.mjs</code></li>
+<li>Read-only reference: <code>LineOS/line-flex-receipt.mjs</code></li>
+<li>Read-only reference: <code>LineOS/line-flex-model.mjs</code></li>
+</ul>
+<p><strong>REQUIRED SUB-SKILL:</strong> ใช้ <code>superpowers:test-driven-development</code> สำหรับ production task นี้</p>
+<p><strong>Parallelization:</strong></p>
+<ul>
+<li>Can run with: <code>Task 4</code></li>
+<li>Must wait for: <code>Task 1</code></li>
+<li>Race risk: none; เป็นโมดูลและ test ใหม่</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 0: โหลด TDD discipline</strong></li>
+</ul>
+<p>ใช้ <code>superpowers:test-driven-development</code></p>
+<ul>
+<li>[ ] <strong>Step 1: เขียน failing record tests</strong></li>
+</ul>
+<p>บังคับชื่อ <code>Sandbox Verification Record — Demo · No Business Effect</code>, exact mode/effect, bounded identifiers, revision/manifest, canonicalization version, timestamps, requested action, outcome และ SHA-256 digest พร้อมพิสูจน์ว่า:</p>
+<ul>
+<li>canonical input เดิมให้ digest เดิม</li>
+<li>Bound field ทุกตัวเปลี่ยน digest</li>
+<li>Key order ไม่เปลี่ยน digest</li>
+<li>Record/descendants frozen</li>
+<li>Record keys และ TH/EN rows ตัด approval, signature, key, tenant, token และ product-audit claims</li>
+<li>Render ใช้ textContent-ready scalar values เท่านั้น</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 2: รัน RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-design-approval-record.test.mjs</code></pre>
+<p>คาดหวัง: FAIL เพราะ record builder ยังไม่มี</p>
+<ul>
+<li>[ ] <strong>Step 3: Implement record builder ขั้นต่ำ</strong></li>
+</ul>
+<p>ใช้ browser/Node Web Crypto และ canonicalization helper เดิม Digest เป็น integrity metadata เท่านั้น ห้าม import/call <code>ApprovalSigner</code>, LINE, Supabase, storage หรือ network API</p>
+<ul>
+<li>[ ] <strong>Step 4: รัน GREEN</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-design-approval-record.test.mjs tests/line-flex-actions-receipt.test.mjs</code></pre>
+<p>คาดหวัง: New record tests และ legacy receipt tests ผ่าน</p>
+<ul>
+<li>[ ] <strong>Step 5: Refactor หลัง green</strong></li>
+</ul>
+<p>แยก record construction ออกจาก DOM rendering และ rerun targeted command</p>
+<h3>Task 3: Sandbox Port, Ledger และ Single-Flight</h3>
+<p><strong>ไฟล์:</strong></p>
+<ul>
+<li>Create: <code>LineOS/line-design-approval-sandbox.mjs</code></li>
+<li>Create: <code>LineOS/tests/line-design-approval-sandbox.test.mjs</code></li>
+<li>Use: <code>LineOS/line-design-approval-contract.mjs</code></li>
+<li>Use: <code>LineOS/line-design-approval-record.mjs</code></li>
+</ul>
+<p><strong>REQUIRED SUB-SKILL:</strong> ใช้ <code>superpowers:test-driven-development</code> สำหรับ production task นี้</p>
+<p><strong>Parallelization:</strong></p>
+<ul>
+<li>Can run with: <code>Task 4</code></li>
+<li>Must wait for: <code>Task 2</code></li>
+<li>Race risk: ไม่ชน Task 4; ห้ามแก้ shell/controller files</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 0: โหลด TDD discipline</strong></li>
+</ul>
+<p>ใช้ <code>superpowers:test-driven-development</code></p>
+<ul>
+<li>[ ] <strong>Step 1: เขียน failing adapter tests</strong></li>
+</ul>
+<p>สร้าง deterministic injection สำหรับ clock, ID factory, fixture source และ ledger แล้วทดสอบ:</p>
+<ul>
+<li>Valid/invalid review token โดยไม่เปิด resource enumeration</li>
+<li>Adapter-issued session/idempotency key</li>
+<li>Immutable adapter-owned snapshot ที่ editable draft เปลี่ยนไม่ได้</li>
+<li>Exact expiry boundary และ post-expiry rejection</li>
+<li>Stale revision ID, changed manifest และ workflow version conflict</li>
+<li>Key/payload เดิม replay แล้วได้ record เดิม</li>
+<li>Key เดิม/payload ต่างคืน <code>idempotency_conflict</code></li>
+<li><code>Promise.all</code> concurrent confirms สร้าง ledger entry/record เดียว</li>
+<li>Pre-record failure retry ด้วย key เดิมได้</li>
+<li>ไม่ใช้ browser persistence API และ adapter ใหม่มี ledger ว่าง</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 2: รัน RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-design-approval-sandbox.test.mjs</code></pre>
+<p>คาดหวัง: FAIL เพราะ adapter ยังไม่มี</p>
+<ul>
+<li>[ ] <strong>Step 3: Implement adapter ขั้นต่ำ</strong></li>
+</ul>
+<p>เปิด <code>createSandboxDesignApprovalPort(dependencies)</code> และใช้ per-key pending-promise/single-flight เพื่อกัน async digest double-record เก็บ fixture identity เป็น private และคืน neutral bounded errors</p>
+<ul>
+<li>[ ] <strong>Step 4: รัน GREEN</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-design-approval-sandbox.test.mjs tests/line-design-approval-record.test.mjs</code></pre>
+<p>คาดหวัง: PASS, concurrent case มี ledger entry เดียว และไม่มี skip</p>
+<ul>
+<li>[ ] <strong>Step 5: Refactor หลัง green</strong></li>
+</ul>
+<p>แยก snapshot recheck, ledger resolution และ error mapping เฉพาะเมื่อช่วยลด duplication แล้ว rerun</p>
+<h3>Task 4: Trust Concierge Sandbox Shell</h3>
+<p><strong>ไฟล์:</strong></p>
+<ul>
+<li>Modify: <code>LineOS/line-flex-studio.html:44-53</code></li>
+<li>Modify: <code>LineOS/line-flex-studio.css:36-80</code></li>
+<li>Modify: <code>LineOS/tests/line-flex-structure.test.mjs:208-267</code></li>
+</ul>
+<p><strong>REQUIRED SUB-SKILL:</strong> ใช้ <code>superpowers:test-driven-development</code> สำหรับ production task นี้</p>
+<p><strong>Parallelization:</strong></p>
+<ul>
+<li>Can run with: <code>Tasks 2–3</code></li>
+<li>Must wait for: <code>Task 1</code></li>
+<li>Race risk: Task 5 ใช้ DOM hooks ชุดนี้และต้องรอ</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 0: โหลด TDD discipline</strong></li>
+</ul>
+<p>ใช้ <code>superpowers:test-driven-development</code></p>
+<ul>
+<li>[ ] <strong>Step 1: เขียน failing semantic-shell tests</strong></li>
+</ul>
+<p>บังคับ local semantic elements สำหรับ:</p>
+<ul>
+<li><code>SANDBOX — NO BUSINESS EFFECT</code> warning ที่อยู่ตลอดใน dialog</li>
+<li>mode/effect provenance</li>
+<li>review expiry และ digest display</li>
+<li>bounded outcome/error region</li>
+<li>sandbox record title/disclosure</li>
+<li>accessible dialog labels/live-region behavior</li>
+<li>ไม่มี script, image, inline handler, remote resource หรือ CSS URL ใหม่</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 2: รัน RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-flex-structure.test.mjs</code></pre>
+<p>คาดหวัง: FAIL ที่ sandbox hooks ที่ขาด ไม่ใช่ existing resource parser</p>
+<ul>
+<li>[ ] <strong>Step 3: Implement HTML/CSS ขั้นต่ำ</strong></li>
+</ul>
+<p>รักษา one stylesheet/one module allowlist ให้ warning เด่นบน desktop/mobile/reduced motion ห้ามใช้ <code>innerHTML</code> หรือ dynamic style attributes</p>
+<ul>
+<li>[ ] <strong>Step 4: รัน GREEN</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-flex-structure.test.mjs</code></pre>
+<p>คาดหวัง: Structure/resource/responsive tests ผ่านทั้งหมด</p>
+<ul>
+<li>[ ] <strong>Step 5: Refactor หลัง green</strong></li>
+</ul>
+<p>รวมเฉพาะ sandbox styles ที่ซ้ำ แล้ว rerun test</p>
+<h3>Task 5: Design Approval Controller Integration</h3>
+<p><strong>ไฟล์:</strong></p>
+<ul>
+<li>Modify: <code>LineOS/line-flex-studio.mjs:1-8,115-218,297-417,484-752</code></li>
+<li>Modify: <code>LineOS/tests/line-flex-studio-state.test.mjs:1-106</code></li>
+<li>Modify: <code>LineOS/tests/line-flex-actions-receipt.test.mjs:24-40</code> เฉพาะเมื่อ routing regression ต้องมี assertion ที่แม่น</li>
+<li>Use: Design Approval modules ใหม่ทั้งสาม</li>
+</ul>
+<p><strong>REQUIRED SUB-SKILL:</strong> ใช้ <code>superpowers:test-driven-development</code> สำหรับ production task นี้</p>
+<p><strong>Parallelization:</strong></p>
+<ul>
+<li>Can run with: <code>none</code></li>
+<li>Must wait for: <code>Tasks 3–4</code></li>
+<li>Race risk: central controller/shared bilingual copy ต้องมี owner เดียว</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 0: โหลด TDD discipline</strong></li>
+</ul>
+<p>ใช้ <code>superpowers:test-driven-development</code></p>
+<ul>
+<li>[ ] <strong>Step 1: เขียน failing controller/state tests</strong></li>
+</ul>
+<p>เพิ่ม pure exports เท่าที่จำเป็น และพิสูจน์ว่า:</p>
+<ul>
+<li>เฉพาะ <code>presetId === "design-approval"</code> เลือก port journey</li>
+<li>Preset IDs อีกสี่รายการคง legacy demo path</li>
+<li>Design Approval visible rows มาจาก adapter snapshot/record ไม่ใช่ editable draft</li>
+<li>Switch preset/language, edit field, cancel, close, stale error และ expiry ล้าง active review อย่างปลอดภัย</li>
+<li>Adapter errors map ไป neutral TH/EN messages ที่แน่นอน</li>
+<li>Confirm button busy/disabled ระหว่าง submit แต่ adapter idempotency เป็น authority</li>
+<li>Final title/copy เป็น approved sandbox record และบอกว่า workflow state ไม่เปลี่ยน</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 2: รัน RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-flex-studio-state.test.mjs tests/line-design-approval-sandbox.test.mjs</code></pre>
+<p>คาดหวัง: FAIL เพราะ controller ยังใช้ legacy transaction สำหรับ Design Approval</p>
+<ul>
+<li>[ ] <strong>Step 3: Implement preset-scoped routing ขั้นต่ำ</strong></li>
+</ul>
+<p>ให้ <code>bindStudio(doc, options)</code> รับ injected port สำหรับ tests และสร้าง default sandbox port เฉพาะ browser binding ใช้ safe DOM APIs ห้ามลบ legacy modules หรือ migrate presets อื่น</p>
+<ul>
+<li>[ ] <strong>Step 4: รัน GREEN และ focused regression</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-flex-studio-state.test.mjs tests/line-design-approval-contract.test.mjs tests/line-design-approval-record.test.mjs tests/line-design-approval-sandbox.test.mjs tests/line-flex-actions-receipt.test.mjs</code></pre>
+<p>คาดหวัง: Targeted tests ผ่านทั้งหมด รวม legacy receipt behavior</p>
+<ul>
+<li>[ ] <strong>Step 5: Refactor หลัง green</strong></li>
+</ul>
+<p>Extract เฉพาะ journey-selection/row-render helpers ขนาดเล็กเมื่อช่วยลดความกำกวม แล้ว rerun command เดิม</p>
+<h3>Task 6: Security Inventory และ Complete Automated Gate</h3>
+<p><strong>ไฟล์:</strong></p>
+<ul>
+<li>Create: <code>LineOS/tests/line-design-approval-security.test.mjs</code></li>
+<li>Modify: <code>LineOS/package.json:6-10</code></li>
+<li>Modify: existing tests เฉพาะที่มี exact security invariant ใหม่</li>
+</ul>
+<p><strong>REQUIRED SUB-SKILL:</strong> ใช้ <code>superpowers:test-driven-development</code> สำหรับ production task นี้</p>
+<p><strong>Parallelization:</strong></p>
+<ul>
+<li>Can run with: <code>Task 7</code></li>
+<li>Must wait for: <code>Task 5</code></li>
+<li>Race risk: ห้ามแก้ <code>docs-contract.test.mjs</code>; Task 7 เป็น owner</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 0: โหลด TDD discipline</strong></li>
+</ul>
+<p>ใช้ <code>superpowers:test-driven-development</code></p>
+<ul>
+<li>[ ] <strong>Step 1: เขียน failing inventory tests</strong></li>
+</ul>
+<p>ตรวจ A1 modules/shell แบบ recursive สำหรับ:</p>
+<ul>
+<li><code>fetch</code>, XHR, WebSocket, EventSource, <code>sendBeacon</code>, LINE SDK, Supabase, authorization headers, service keys, token logging, <code>localStorage</code>, <code>sessionStorage</code>, IndexedDB, cookies และ dynamic remote imports</li>
+<li>Forbidden record authority keys และ production-claim copy</li>
+<li>Draft-to-record authority leakage</li>
+<li>Unclassified network-capable/persistent-storage calls</li>
+<li>Exact local module/resource inventory</li>
+</ul>
+<p>Test ต้อง fail closed เมื่อใส่ synthetic unsafe fixture</p>
+<ul>
+<li>[ ] <strong>Step 2: รัน RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-design-approval-security.test.mjs</code></pre>
+<p>คาดหวัง: FAIL ที่ missing inventory/allowlist behavior</p>
+<ul>
+<li>[ ] <strong>Step 3: Implement tests/scripts ขั้นต่ำ</strong></li>
+</ul>
+<p>เพิ่ม <code>test:design-approval</code> และรวม tests ใหม่ใน <code>test:core</code> โดยไม่ขยาย external-resource allowlists</p>
+<ul>
+<li>[ ] <strong>Step 4: รัน GREEN และ full suite</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test:design-approval
+npm.cmd --prefix LineOS run test:core
+npm.cmd --prefix LineOS run test</code></pre>
+<p>คาดหวัง: Complete untruncated summaries, zero failures/skips/todos และ baseline 72 tests เดิมบวก tests ใหม่</p>
+<ul>
+<li>[ ] <strong>Step 5: Refactor หลัง green</strong></li>
+</ul>
+<p>ลบ scanner code ที่ซ้ำโดยไม่ลด exact source inventories แล้ว rerun ทั้งสาม commands</p>
+<h3>Task 7: คู่มือ A1 สองภาษาและ Document Contract</h3>
+<p><strong>ไฟล์:</strong></p>
+<ul>
+<li>Create: <code>LineOS/docs/guides/line-design-approval-sandbox-a1-guide.en.md</code></li>
+<li>Create: <code>LineOS/docs/guides/line-design-approval-sandbox-a1-guide.th.md</code></li>
+<li>Generate: matching <code>.en.html</code> และ <code>.th.html</code></li>
+<li>Modify: <code>LineOS/tests/docs-contract.test.mjs</code></li>
+<li>Read: A1 spec ที่อนุมัติและแผนนี้</li>
+</ul>
+<p><strong>Parallelization:</strong></p>
+<ul>
+<li>Can run with: <code>Task 6</code></li>
+<li>Must wait for: <code>Task 5</code></li>
+<li>Race risk: Task 8 จะต่อ <code>docs-contract.test.mjs</code> และต้องรอ</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 0: ระบุ docs/config exception</strong></li>
+</ul>
+<p>Task นี้แก้เอกสารและ executable manifest ใช้ failing docs-contract assertion แทน production-code TDD test</p>
+<ul>
+<li>[ ] <strong>Step 1: เพิ่ม failing document-contract assertions</strong></li>
+</ul>
+<p>บังคับ A1 spec/plan/guide แบบ TH/EN Markdown/HTML พร้อมข้อความแน่นอนเรื่อง:</p>
+<ul>
+<li>Contract-ready แต่ runtime-disconnected</li>
+<li>Design Approval-only A1 routing</li>
+<li>Opaque non-secret review token</li>
+<li>Session-only reset limitation</li>
+<li><code>providerContext</code> แทน tenant authority</li>
+<li>Exact sandbox record title</li>
+<li>ไม่มี workflow mutation, LINE send, database write, signature หรือ audit claim</li>
+<li>Future A2 promotion gates</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 2: รัน failing contract</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/docs-contract.test.mjs</code></pre>
+<p>คาดหวัง: FAIL เพราะ guide editions ใหม่ยังไม่มี</p>
+<ul>
+<li>[ ] <strong>Step 3: เขียน TH/EN guides ที่ตรงกันและ render HTML</strong></li>
+</ul>
+<pre><code class="language-powershell">python tools/render_docs.py LineOS/docs/guides/line-design-approval-sandbox-a1-guide.en.md LineOS/docs/guides/line-design-approval-sandbox-a1-guide.th.md LineOS/docs/superpowers/plans/2026-08-02-monolith-line-design-approval-port-a1-implementation.en.md LineOS/docs/superpowers/plans/2026-08-02-monolith-line-design-approval-port-a1-implementation.th.md</code></pre>
+<ul>
+<li>[ ] <strong>Step 4: รัน docs GREEN gates</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/docs-contract.test.mjs
+python tools/lint_claims.py LineOS/docs/guides/line-design-approval-sandbox-a1-guide.en.md LineOS/docs/guides/line-design-approval-sandbox-a1-guide.th.md LineOS/docs/superpowers/specs/2026-08-02-monolith-line-design-approval-port-a1-design.en.md LineOS/docs/superpowers/specs/2026-08-02-monolith-line-design-approval-port-a1-design.th.md</code></pre>
+<p>คาดหวัง: Docs contract ผ่าน; claim lint exit 0 โดยไม่มี debt ใหม่</p>
+<ul>
+<li>[ ] <strong>Step 5: ตรวจ Markdown/HTML parity</strong></li>
+</ul>
+<p>ตรวจ language tags, headings, tables, key claims, standalone resources, trailing whitespace และ replacement characters</p>
+<h3>Task 8: Browser Evidence, Implementation Report และ Final Review Gates</h3>
+<p><strong>ไฟล์:</strong></p>
+<ul>
+<li>Create: <code>LineOS/artifacts/line-design-approval-a1/desktop-1440.png</code></li>
+<li>Create: <code>LineOS/artifacts/line-design-approval-a1/mobile-390.png</code></li>
+<li>Create: <code>LineOS/artifacts/line-design-approval-a1/verification-summary.json</code></li>
+<li>Create: <code>LineOS/docs/reports/2026-08-02-line-design-approval-port-a1-implementation-report.en.md</code></li>
+<li>Create: <code>LineOS/docs/reports/2026-08-02-line-design-approval-port-a1-implementation-report.th.md</code></li>
+<li>Generate: matching report <code>.en.html</code> และ <code>.th.html</code></li>
+<li>Modify: <code>LineOS/tests/docs-contract.test.mjs</code></li>
+<li>Do not modify: nested MONOLITH product source</li>
+</ul>
+<p><strong>Parallelization:</strong></p>
+<ul>
+<li>Can run with: <code>none</code></li>
+<li>Must wait for: <code>Tasks 6–7</code></li>
+<li>Race risk: shared evidence summary/report/docs contract ต้องมี owner เดียว</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 0: โหลด verification และ browser disciplines</strong></li>
+</ul>
+<p>ใช้ <code>superpowers:webapp-testing</code>, <code>superpowers:requesting-code-review</code>, <code>superpowers:scrutinize</code> และ <code>superpowers:verification-before-completion</code> ตาม gates</p>
+<ul>
+<li>[ ] <strong>Step 1: เพิ่ม failing evidence/report contract</strong></li>
+</ul>
+<p>ต่อ <code>docs-contract.test.mjs</code> ให้บังคับ:</p>
+<ul>
+<li>Exact repository commit/worktree provenance และ dirty-scope disclosure</li>
+<li>Automated command และ complete pass/fail/skip/todo counts</li>
+<li>TH/EN, desktop/mobile, keyboard journey results</li>
+<li>Successful sandbox confirmation, replay, stale revision, expiry, cancellation และ legacy-preset regression</li>
+<li>Zero external requests และ zero console/page errors</li>
+<li>Receipt forbidden-field scan</li>
+<li>Nested HEAD และ targeted status evidence</li>
+<li>Explicit <code>NO-GO_RUNTIME_INTEGRATION</code> และ A2 blockers</li>
+</ul>
+<ul>
+<li>[ ] <strong>Step 2: รัน RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/docs-contract.test.mjs</code></pre>
+<p>คาดหวัง: FAIL เพราะ fresh evidence/reports ยังไม่มี</p>
+<ul>
+<li>[ ] <strong>Step 3: รัน automated suite เต็มก่อน browser evidence</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test
+python tools/lint_claims.py LineOS/docs
+git diff --check</code></pre>
+<p>บันทึก complete untruncated summaries ห้ามสร้าง JSON summary จากค่าคาดหมาย</p>
+<ul>
+<li>[ ] <strong>Step 4: Serve local และเก็บ browser evidence</strong></li>
+</ul>
+<p>Serve <code>LineOS/</code> ผ่าน localhost ไม่ใช้ <code>file://</code> ตรวจอย่างน้อย width 1440/390 ทั้งสองภาษา Exercise Design Approval success/replay/stale/expired/cancel, non-design legacy journey หนึ่งรายการ, keyboard focus return, reduced-motion และ record readability จับทุก request และพิสูจน์ว่าเป็น localhost ทั้งหมด มี zero external requests พร้อม capture console/page errors</p>
+<ul>
+<li>[ ] <strong>Step 5: เขียน observed evidence เท่านั้น</strong></li>
+</ul>
+<p>สร้าง <code>verification-summary.json</code> จากค่าที่สังเกตด้วย <code>apply_patch</code> ผูกกับ exact hashes ของ screenshots และ final source/commit snapshot ระบุ sandbox และ runtime integration เป็น false</p>
+<ul>
+<li>[ ] <strong>Step 6: เขียน implementation reports สองภาษาและ render HTML</strong></li>
+</ul>
+<p>รวม scope, two-root provenance, changed files, TDD evidence, complete test counts, browser matrix, network record, review findings/fixes, residual risks, A2 gates และ exact decision <code>NO-GO_RUNTIME_INTEGRATION</code></p>
+<pre><code class="language-powershell">python tools/render_docs.py LineOS/docs/reports/2026-08-02-line-design-approval-port-a1-implementation-report.en.md LineOS/docs/reports/2026-08-02-line-design-approval-port-a1-implementation-report.th.md</code></pre>
+<ul>
+<li>[ ] <strong>Step 7: รัน review gates และแก้ findings แบบ test-first</strong></li>
+</ul>
+<p>Request task-scoped code review แล้ว whole-change scrutiny ทุก accepted behavioral fix ต้องเริ่มจากหรืออัปเดต failing regression test และ rerun affected tests</p>
+<ul>
+<li>[ ] <strong>Step 8: รัน final fresh complete gate</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test
+python tools/lint_claims.py LineOS/docs
+git diff --check
+git status --short
+git -C determined-williams rev-parse HEAD
+git -C determined-williams status --short</code></pre>
+<p>คาดหวัง: Full LineOS suite ผ่านพร้อม complete counts; claim lint exit 0 โดยไม่มี debt ใหม่; diff check ไม่มี output; parent status มีเฉพาะ authorized A1 files บวก pre-existing changes; nested HEAD คง baseline และไม่มี A1 path</p>
+<h2>Checklist ตรวจแผน</h2>
+<ul>
+<li>[ ] ทุก production task มี RED -&gt; GREEN -&gt; REFACTOR และ exact command</li>
+<li>[ ] Tasks 2/3 กับ 4 มี write scope แยกและ parallel ได้; central controller เป็น sequential</li>
+<li>[ ] ไม่มี task แก้ nested runtime, migrations, dirty order adapter หรือ production credentials</li>
+<li>[ ] Legacy preset journeys สี่รายการเป็น explicit regression scope</li>
+<li>[ ] Session-only replay limitation และ no-business-effect copy เป็น acceptance criteria ที่ทดสอบได้</li>
+<li>[ ] Record digest แยกจาก production signature</li>
+<li>[ ] Tenant, customer identity, workflow status และ audit authority อยู่นอก browser control</li>
+<li>[ ] Project-facing docs วางแผนเป็น TH/EN Markdown และ standalone HTML</li>
+<li>[ ] ไม่มี task สั่ง implementer commit หรือ push</li>
+<li>[ ] A2 blockers ระบุชัดและไม่ซ่อนใน A1 tasks</li>
+</ul>
+</main></body>
+</html>

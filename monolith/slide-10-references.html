@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+@page { margin: 0; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: Arial, Helvetica, sans-serif; }
+.slide-container {
+    width: 1280px;
+    min-width: 100%;
+    height: 720px;
+    overflow: hidden;
+    background-color: #f5f6fa;
+    color: #1a1a2e;
+    display: flex;
+    flex-direction: column;
+    border-left: 6px solid #1f2d5a;
+    border-right: 6px solid #1f2d5a;
+}
+.slide-header {
+    background-color: #1f2d5a;
+    padding: 22px 60px 18px;
+}
+.slide-header h2 { font-size: 36px; font-weight: 800; color: #ffffff; }
+.content-area {
+    flex: 1;
+    padding: 24px 60px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.ref-item {
+    background-color: #ffffff;
+    border-radius: 6px;
+    padding: 12px 18px;
+    border-left: 4px solid #1f2d5a;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+.ref-item:nth-child(even) { border-left-color: #c9a84c; }
+.ref-num {
+    font-size: 14px;
+    font-weight: 800;
+    color: #1f2d5a;
+    min-width: 28px;
+    padding-top: 1px;
+}
+.ref-text p { font-size: 15px; color: #1a1a2e; line-height: 1.5; }
+.ref-text p span { font-style: italic; color: #2e75b6; }
+.slide-footer {
+    margin-top: auto;
+    padding: 8px 60px;
+    border-top: 1px solid rgba(0,0,0,0.1);
+    color: rgba(0,0,0,0.45);
+    font-size: 11px;
+}
+</style>
+</head>
+<body>
+<div class="slide-container">
+    <div class="slide-header">
+        <h2>References &amp; Source Documents</h2>
+    </div>
+    <div class="content-area">
+        <div class="ref-item">
+            <p class="ref-num">1.</p>
+            <div class="ref-text">
+                <p>MONOLITH DAPH Programme Team. (2032). <span>MONOLITH DAPH Decor AI Agent Programme — AMD-004 Final Report, Sections 1–49.</span> MONOLITH SOP DOCX v2.5. monolith_project_summary_v25_accepted.docx</p>
+            </div>
+        </div>
+        <div class="ref-item">
+            <p class="ref-num">2.</p>
+            <div class="ref-text">
+                <p>MONOLITH DAPH Programme Team. (2032). <span>Section 49 — AMD-004 Programme Closure &amp; Phase 2 Gateway.</span> MONOLITH SOP DOCX v2.5, S49. AMD4-CLOSE-01–05. Phase 1 Completion Certificate.</p>
+            </div>
+        </div>
+        <div class="ref-item">
+            <p class="ref-num">3.</p>
+            <div class="ref-text">
+                <p>MONOLITH DAPH Programme Team. (2032). <span>Section 50 — Phase 2 Programme Definition Document (PDD).</span> MONOLITH SOP DOCX v2.5, S50. SC-2032-XX. GAP-05/06/09/10/11/12 Workplan. THB 6.0M.</p>
+            </div>
+        </div>
+        <div class="ref-item">
+            <p class="ref-num">4.</p>
+            <div class="ref-text">
+                <p>MONOLITH DAPH Programme Team. (2032). <span>Section 48 — AMD-004 WS-E Human Capital &amp; Change Management.</span> TRN-001–004, CHG-001–004. THB 0.6M. Q1–Q2 2032.</p>
+            </div>
+        </div>
+        <div class="ref-item">
+            <p class="ref-num">5.</p>
+            <div class="ref-text">
+                <p>MONOLITH DAPH Programme Team. (2032). <span>Gap Register v2.5 — 15 Gaps across 3 Priority Levels.</span> sop_github_mapping.md, Section F. 8 HIGH / 4 MEDIUM / 3 LOW. Phase 1 closed: GAP-01/02/03/04/07/08.</p>
+            </div>
+        </div>
+        <div class="ref-item">
+            <p class="ref-num">6.</p>
+            <div class="ref-text">
+                <p>MONOLITH DAPH Programme Team. (2032). <span>KPI Framework KPI-001–024 — Phase 1 Performance Data.</span> src/dashboard/, MONOLITH GitHub Repository indetailsgroup-hue/monolith-workspace, SHA 14b90bc.</p>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer"><p>MONOLITH DAPH Decor AI Agent Programme · SC Review 2569 · All source documents in MONOLITH_SOP_Package_v2.5.zip</p></div>
+</div>
+</body>
+</html>

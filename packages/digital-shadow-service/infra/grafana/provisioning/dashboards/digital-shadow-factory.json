@@ -1,0 +1,482 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_INFLUXDB",
+      "label": "InfluxDB — Digital Shadow",
+      "description": "MONOLITH Digital Shadow InfluxDB 2.x datasource",
+      "type": "datasource",
+      "pluginId": "influxdb",
+      "pluginName": "InfluxDB"
+    }
+  ],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
+    { "type": "datasource", "id": "influxdb", "name": "InfluxDB", "version": "1.0.0" },
+    { "type": "panel", "id": "stat", "name": "Stat", "version": "" },
+    { "type": "panel", "id": "timeseries", "name": "Time series", "version": "" },
+    { "type": "panel", "id": "state-timeline", "name": "State timeline", "version": "" },
+    { "type": "panel", "id": "gauge", "name": "Gauge", "version": "" },
+    { "type": "panel", "id": "table", "name": "Table", "version": "" },
+    { "type": "panel", "id": "barchart", "name": "Bar chart", "version": "" }
+  ],
+  "id": null,
+  "uid": "monolith-digital-shadow-main",
+  "title": "MONOLITH Digital Shadow — Factory Floor",
+  "description": "Real-time machine state monitoring, telemetry visualization, and production KPIs for DAPH Decor factory floor",
+  "tags": ["monolith", "digital-shadow", "factory", "cnc", "opc-ua"],
+  "timezone": "Asia/Bangkok",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "fiscalYearStartMonth": 0,
+  "liveNow": true,
+  "templating": {
+    "list": [
+      {
+        "name": "machine",
+        "type": "query",
+        "label": "Machine",
+        "description": "Select machine to monitor",
+        "query": "import \"influxdata/influxdb/schema\"\nschema.tagValues(bucket: \"digital-shadow\", tag: \"machine_id\")",
+        "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "current": { "text": "All", "value": "$__all" }
+      },
+      {
+        "name": "vendor",
+        "type": "query",
+        "label": "Vendor",
+        "query": "import \"influxdata/influxdb/schema\"\nschema.tagValues(bucket: \"digital-shadow\", tag: \"vendor\")",
+        "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true
+      }
+    ]
+  },
+  "annotations": { "list": [] },
+  "panels": [
+    {
+      "id": 1,
+      "title": "🏭 Factory Overview",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false
+    },
+    {
+      "id": 2,
+      "title": "Machines Connected",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "targets": [
+        {
+          "query": "from(bucket: \"digital-shadow\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"machine_state\")\n  |> group(columns: [\"machine_id\"])\n  |> last()\n  |> group()\n  |> count()",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              { "value": null, "color": "red" },
+              { "value": 1, "color": "yellow" },
+              { "value": 3, "color": "green" }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Machines WORKING",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "targets": [
+        {
+          "query": "from(bucket: \"digital-shadow\")\n  |> range(start: -1m)\n  |> filter(fn: (r) => r._measurement == \"machine_state\" and r._field == \"state\")\n  |> last()\n  |> filter(fn: (r) => r._value == 3)\n  |> group()\n  |> count()",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "green" },
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Machines in ERROR",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "targets": [
+        {
+          "query": "from(bucket: \"digital-shadow\")\n  |> range(start: -1m)\n  |> filter(fn: (r) => r._measurement == \"machine_state\" and r._field == \"state\")\n  |> last()\n  |> filter(fn: (r) => r._value == 4)\n  |> group()\n  |> count()",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 1, "color": "red" }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Total Parts Today",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "targets": [
+        {
+          "query": "from(bucket: \"digital-shadow\")\n  |> range(start: today())\n  |> filter(fn: (r) => r._measurement == \"sensor_telemetry\" and r._field == \"value\" and r.measurement_type == \"part_count\")\n  |> group(columns: [\"machine_id\"])\n  |> last()\n  |> group()\n  |> sum()",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "fixed", "fixedColor": "blue" }, "unit": "short" }
+      }
+    },
+    {
+      "id": 6,
+      "title": "OEE (Overall Equipment Effectiveness)",
+      "type": "gauge",
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "targets": [
+        {
+          "query": "working = from(bucket: \"digital-shadow\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"machine_state\" and r._field == \"state\")\n  |> filter(fn: (r) => r.machine_id =~ /${machine}/)\n  |> toFloat()\n  |> map(fn: (r) => ({r with _value: if r._value == 3.0 then 1.0 else 0.0}))\n  |> mean()\n  |> yield(name: \"oee\")",
+          "refId": "A"
+        }
+      ],
+      "options": { "showThresholdLabels": false, "showThresholdMarkers": true },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "steps": [
+              { "value": null, "color": "red" },
+              { "value": 0.5, "color": "yellow" },
+              { "value": 0.75, "color": "green" }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Alarms (Last Hour)",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "targets": [
+        {
+          "query": "from(bucket: \"digital-shadow\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"machine_event\" and r.event_type == \"alarm\")\n  |> count()",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 1, "color": "orange" },
+              { "value": 5, "color": "red" }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 10,
+      "title": "⚙️ Machine States & Telemetry",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "collapsed": false
+    },
+    {
+      "id": 11,
+      "title": "Machine State Timeline",
+      "description": "WwUnitState over time: OFFLINE(0)=gray, STANDBY(1)=blue, READY(2)=yellow, WORKING(3)=green, ERROR(4)=red",
+      "type": "state-timeline",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 6 },
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "targets": [
+        {
+          "query": "from(bucket: \"digital-shadow\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"machine_state\" and r._field == \"state\")\n  |> filter(fn: (r) => r.machine_id =~ /${machine}/)\n  |> aggregateWindow(every: 10s, fn: last, createEmpty: false)",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showValue": "auto",
+        "rowHeight": 0.8,
+        "alignValue": "center"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "OFFLINE", "color": "dark-gray" } } },
+            { "type": "value", "options": { "1": { "text": "STANDBY", "color": "dark-blue" } } },
+            { "type": "value", "options": { "2": { "text": "READY", "color": "dark-yellow" } } },
+            { "type": "value", "options": { "3": { "text": "WORKING", "color": "dark-green" } } },
+            { "type": "value", "options": { "4": { "text": "ERROR", "color": "dark-red" } } }
+          ],
+          "thresholds": {
+            "steps": [
+              { "value": null, "color": "gray" },
+              { "value": 1, "color": "blue" },
+              { "value": 2, "color": "yellow" },
+              { "value": 3, "color": "green" },
+              { "value": 4, "color": "red" }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 12,
+      "title": "Spindle Speed / Override",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 12 },
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "targets": [
+        {
+          "query": "from(bucket: \"digital-shadow\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"sensor_telemetry\" and r._field == \"value\")\n  |> filter(fn: (r) => r.measurement_type == \"spindle_override\" or r.measurement_type == \"spindle_speed\")\n  |> filter(fn: (r) => r.machine_id =~ /${machine}/)\n  |> aggregateWindow(every: 5s, fn: mean, createEmpty: false)",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max", "last"] }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "rpm",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 15,
+            "gradientMode": "scheme",
+            "showPoints": "never",
+            "lineWidth": 2
+          },
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+    {
+      "id": 13,
+      "title": "Feed Rate / Override",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 12 },
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "targets": [
+        {
+          "query": "from(bucket: \"digital-shadow\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"sensor_telemetry\" and r._field == \"value\")\n  |> filter(fn: (r) => r.measurement_type == \"feed_override\" or r.measurement_type == \"feed_rate\" or r.measurement_type == \"feed_speed\")\n  |> filter(fn: (r) => r.machine_id =~ /${machine}/)\n  |> aggregateWindow(every: 5s, fn: mean, createEmpty: false)",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max", "last"] }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "lineWidth": 2
+          },
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+    {
+      "id": 14,
+      "title": "Parts Produced (Cumulative)",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 19 },
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "targets": [
+        {
+          "query": "from(bucket: \"digital-shadow\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"sensor_telemetry\" and r._field == \"value\")\n  |> filter(fn: (r) => r.measurement_type == \"part_count\" or r.measurement_type == \"parts_today\")\n  |> filter(fn: (r) => r.machine_id =~ /${machine}/)\n  |> aggregateWindow(every: 1m, fn: last, createEmpty: false)",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "table", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "fillOpacity": 20,
+            "showPoints": "auto",
+            "lineWidth": 2,
+            "stacking": { "mode": "none" }
+          },
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+    {
+      "id": 15,
+      "title": "Machine Utilization (% WORKING per machine)",
+      "type": "barchart",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 19 },
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "targets": [
+        {
+          "query": "from(bucket: \"digital-shadow\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"machine_state\" and r._field == \"state\")\n  |> filter(fn: (r) => r.machine_id =~ /${machine}/)\n  |> toFloat()\n  |> map(fn: (r) => ({r with _value: if r._value == 3.0 then 1.0 else 0.0}))\n  |> group(columns: [\"machine_id\"])\n  |> mean()\n  |> group()\n  |> map(fn: (r) => ({r with _value: r._value * 100.0}))",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "barWidth": 0.7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              { "value": null, "color": "red" },
+              { "value": 50, "color": "yellow" },
+              { "value": 75, "color": "green" }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 20,
+      "title": "📋 Events & Alarms",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 26 },
+      "collapsed": false
+    },
+    {
+      "id": 21,
+      "title": "Recent Machine Events",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 14, "x": 0, "y": 27 },
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "targets": [
+        {
+          "query": "from(bucket: \"digital-shadow\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"machine_event\")\n  |> filter(fn: (r) => r.machine_id =~ /${machine}/)\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> sort(columns: [\"_time\"], desc: true)\n  |> limit(n: 50)",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "displayName": "_time", "desc": true }]
+      },
+      "fieldConfig": {
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "severity" },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  { "type": "value", "options": { "CRITICAL": { "color": "red" } } },
+                  { "type": "value", "options": { "WARNING": { "color": "orange" } } },
+                  { "type": "value", "options": { "INFO": { "color": "blue" } } }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 22,
+      "title": "Alarm Frequency (by Machine)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 10, "x": 14, "y": 27 },
+      "datasource": { "type": "influxdb", "uid": "${DS_INFLUXDB}" },
+      "targets": [
+        {
+          "query": "from(bucket: \"digital-shadow\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"machine_event\" and r.event_type == \"alarm\")\n  |> filter(fn: (r) => r.machine_id =~ /${machine}/)\n  |> group(columns: [\"machine_id\"])\n  |> aggregateWindow(every: 5m, fn: count, createEmpty: true)",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "tooltip": { "mode": "multi" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "barAlignment": 0,
+            "stacking": { "mode": "normal" }
+          },
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    }
+  ]
+}

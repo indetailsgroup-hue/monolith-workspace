@@ -46,3 +46,13 @@ export {
   formatRange,
   formatBounds,
 } from './cabinetBounds';
+
+// Kerf Zone Filter — Phase 4 Curved Panel System
+export {
+  filterDrillMapForKerfZones,
+  DEFAULT_KERF_ZONE_FILTER_OPTIONS,
+  type KerfZonesByPanelId,
+  type KerfZoneFilterOptions,
+  type KerfFilterPanelSummary,
+  type KerfFilterResult,
+} from './kerfZoneFilter';

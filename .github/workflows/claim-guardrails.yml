@@ -45,11 +45,17 @@ name: claim-guardrails
 
 on:
   push:
+    branches: [main]
   pull_request:
+    branches: [main]
   schedule:
     # Nightly deep sweep (UTC). The deep job below gates itself on this event.
     - cron: "17 2 * * *"
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -60,9 +66,10 @@ jobs:
     # corroborated, within the committed allowlist. Runs on every push and PR.
     name: claim + certification linters (local mode)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: negative-claim linter
@@ -76,13 +83,14 @@ jobs:
     name: deep absence re-verification (schedule + on demand)
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
           # Full history so the deep sweep's git-grep / git-log searches are
           # complete rather than shallow.
           fetch-depth: 0
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: deep re-verification of every recorded absence

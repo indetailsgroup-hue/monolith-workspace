@@ -1,69 +1,70 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Playwright E2E Test Configuration
+ * Playwright config for Chromatic visual regression tests.
  *
- * Usage:
- * - Run all tests: npx playwright test
- * - Run smoke tests: npx playwright test --grep "@smoke"
- * - Run with UI: npx playwright test --ui
- * - Debug mode: npx playwright test --debug
+ * Tests in `*.visual.spec.ts` use `@chromatic-com/playwright` to take
+ * named snapshots that are uploaded to Chromatic via:
+ *   npx chromatic --playwright --project-token=$CHROMATIC_PLAYWRIGHT_PROJECT_TOKEN
+ *
+ * Target: Storybook static build served on port 6006.
+ * In CI the Storybook is pre-built by a prior step (storybook-static/).
+ * Locally, `npm run storybook` is started automatically.
  */
+
+const CI = !!process.env.CI;
+const STORYBOOK_PORT = 6007; // offset from dev server to avoid collision
+
 export default defineConfig({
-  testDir: './e2e',
+  // Only match visual spec files — keep separate from unit tests
+  testDir: './src',
+  testMatch: '**/*.visual.spec.ts',
 
-  /* Run tests in files in parallel */
-  fullyParallel: true,
+  // Visual tests must run sequentially (one browser at a time for Chromatic)
+  fullyParallel: false,
+  workers: 1,
 
-  /* Fail the build on CI if you accidentally left test.only in the source code */
-  forbidOnly: !!process.env.CI,
+  // Retry once in CI to reduce flakiness from animation timing
+  retries: CI ? 1 : 0,
+  forbidOnly: CI,
 
-  /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
+  reporter: CI
+    ? [['github'], ['html', { open: 'never' }]]
+    : 'html',
 
-  /* Opt out of parallel tests on CI */
-  workers: process.env.CI ? 1 : undefined,
-
-  /* Reporter to use */
-  reporter: [
-    ['html', { outputFolder: 'playwright-report' }],
-    ['list'],
-  ],
-
-  /* Shared settings for all the projects below */
   use: {
-    /* Base URL to use in actions like `await page.goto('/')` */
-    baseURL: process.env.BASE_URL || 'http://localhost:5173',
-
-    /* Collect trace when retrying the failed test */
+    baseURL: `http://localhost:${STORYBOOK_PORT}`,
+    // Capture trace on retry so failures are diagnosable
     trace: 'on-first-retry',
-
-    /* Screenshot on failure */
-    screenshot: 'only-on-failure',
+    // Stable viewport for visual consistency
+    viewport: { width: 1280, height: 720 },
+    // Wait for network to settle before snapshots
+    actionTimeout: 15_000,
   },
 
-  /* Configure projects for major browsers */
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: 'chromium-desktop',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1280, height: 720 },
+      },
     },
-    // Uncomment to test on more browsers
-    // {
-    //   name: 'firefox',
-    //   use: { ...devices['Desktop Firefox'] },
-    // },
-    // {
-    //   name: 'webkit',
-    //   use: { ...devices['Desktop Safari'] },
-    // },
   ],
 
-  /* Run your local dev server before starting the tests */
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
-  },
+  webServer: CI
+    ? {
+        // In CI: serve pre-built storybook-static directory
+        command: `npx http-server storybook-static --port ${STORYBOOK_PORT} --silent --cors`,
+        url: `http://localhost:${STORYBOOK_PORT}`,
+        reuseExistingServer: false,
+        timeout: 60_000,
+      }
+    : {
+        // Locally: start Storybook dev server (reuse if already running)
+        command: `npm run storybook -- --port ${STORYBOOK_PORT} --no-open`,
+        url: `http://localhost:${STORYBOOK_PORT}`,
+        reuseExistingServer: true,
+        timeout: 120_000,
+      },
 });

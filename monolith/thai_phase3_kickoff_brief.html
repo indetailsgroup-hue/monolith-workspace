@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Phase 3 Kickoff Brief — S54 MONOLITH DAPH Decor AI Agent Programme</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 13mm 13mm 11mm 13mm; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Sarabun', sans-serif; font-size: 9pt; color: #1a2240; background: #fff; line-height: 1.42; }
+
+  /* ── page header ── */
+  .page-header { border-bottom: 3pt solid #1f2d5a; padding-bottom: 6pt; margin-bottom: 9pt;
+    display: flex; justify-content: space-between; align-items: flex-end; }
+  .page-header .brand { font-size: 8pt; font-weight: 700; color: #1f2d5a; letter-spacing: .5px; text-transform: uppercase; }
+  .page-header .doc-meta { font-size: 7pt; color: #7a8ab2; text-align: right; }
+
+  /* ── title block ── */
+  .title-block { background: #1f2d5a; color: #fff; padding: 10pt 12pt; border-radius: 4pt; margin-bottom: 9pt; }
+  .title-block .doc-tag { font-size: 6.5pt; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #c9a84c; margin-bottom: 3pt; }
+  .title-block h1 { font-size: 13.5pt; font-weight: 800; line-height: 1.2; margin-bottom: 2pt; }
+  .title-block h1 span { color: #c9a84c; }
+  .title-block .title-sub { font-size: 8pt; color: rgba(255,255,255,.6); }
+  .title-block .kpi-row { display: flex; gap: 10pt; margin-top: 8pt; padding-top: 7pt;
+    border-top: 1pt solid rgba(201,168,76,.3); flex-wrap: wrap; }
+  .kpi-item { text-align: center; }
+  .kpi-item .kval { font-size: 15pt; font-weight: 800; color: #c9a84c; line-height: 1; }
+  .kpi-item .klbl { font-size: 6.5pt; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .7px; margin-top: 1.5pt; }
+  .kpi-sep { width: 1pt; background: rgba(201,168,76,.25); align-self: stretch; }
+
+  /* ── section header ── */
+  .section-hdr { display: flex; align-items: center; gap: 7pt;
+    border-left: 3pt solid #c9a84c; padding-left: 7pt; margin-bottom: 5pt; margin-top: 8pt; }
+  .section-hdr h2 { font-size: 10pt; font-weight: 700; color: #1f2d5a; }
+  .section-hdr .hbadge { font-size: 6.5pt; font-weight: 700; letter-spacing: .8px; text-transform: uppercase;
+    background: #c9a84c; color: #1f2d5a; padding: 2pt 5pt; border-radius: 2pt; }
+
+  /* ── P3-CHK table ── */
+  table.chk-tbl { width: 100%; border-collapse: collapse; font-size: 7.8pt; margin-bottom: 8pt; }
+  table.chk-tbl th { background: #1f2d5a; color: rgba(255,255,255,.85); font-size: 7.5pt; font-weight: 700;
+    padding: 4.5pt 6pt; text-align: left; letter-spacing: .3px; }
+  table.chk-tbl td { padding: 4pt 6pt; border-bottom: .5pt solid #e5e8f0; vertical-align: top; }
+  table.chk-tbl tr:nth-child(even) td { background: #f8f9fc; }
+  table.chk-tbl tr:last-child td { border-bottom: none; }
+  .chk-id { font-size: 7.5pt; font-weight: 700; color: #c9a84c; white-space: nowrap; }
+  .cb { width: 9pt; height: 9pt; border: 1.2pt solid #7a8ab2; border-radius: 1.5pt; display: inline-block; }
+  .gate-badge { display: inline-block; font-size: 6pt; font-weight: 700; padding: 1.5pt 4pt;
+    border-radius: 2pt; text-transform: uppercase; letter-spacing: .4px; white-space: nowrap; }
+  .g-m1 { background: #e8f3ff; color: #1060a0; }
+  .g-m2 { background: #fff4e0; color: #a06010; }
+  .g-m3 { background: #eef2fa; color: #4060a0; }
+  .g-m4 { background: #e4f5ea; color: #1a6b35; }
+
+  /* ── Workstream GAP table ── */
+  table.ws-tbl { width: 100%; border-collapse: collapse; font-size: 7.8pt; margin-bottom: 8pt; }
+  table.ws-tbl th { padding: 4.5pt 6pt; font-size: 7.5pt; font-weight: 700; text-align: left; letter-spacing: .3px; }
+  table.ws-tbl th.ws-a { background: #1f2d5a; color: #fff; }
+  table.ws-tbl th.ws-b { background: #2e75b6; color: #fff; }
+  table.ws-tbl th.ws-c { background: #2d7a4f; color: #fff; }
+  table.ws-tbl th.ws-hdr { background: #3a4a70; color: rgba(255,255,255,.8); }
+  table.ws-tbl td { padding: 3.8pt 6pt; border-bottom: .5pt solid #e5e8f0; vertical-align: top; }
+  table.ws-tbl tr:nth-child(even) td { background: #f8f9fc; }
+  table.ws-tbl tr:last-child td { border-bottom: none; }
+  .gap-code { font-weight: 700; color: #c9a84c; white-space: nowrap; font-size: 7.5pt; }
+  .sla-val { font-size: 7pt; font-weight: 700; color: #2d7a4f; }
+  .budget-val { font-size: 7.5pt; font-weight: 700; color: #1f2d5a; }
+
+  /* ── Milestone timeline ── */
+  .milestone-row { display: flex; gap: 0; margin-bottom: 8pt; }
+  .ms-block { flex: 1; border: .5pt solid #d0d8ea; border-right: none; padding: 7pt 6pt;
+    background: #f8f9fc; position: relative; }
+  .ms-block:last-child { border-right: .5pt solid #d0d8ea; border-radius: 0 3pt 3pt 0; }
+  .ms-block:first-child { border-radius: 3pt 0 0 3pt; }
+  .ms-block.active { background: #1f2d5a; }
+  .ms-tag { font-size: 7.5pt; font-weight: 800; color: #c9a84c; margin-bottom: 2pt; }
+  .ms-period { font-size: 6.5pt; font-weight: 700; color: #7a8ab2; margin-bottom: 3pt; }
+  .ms-title { font-size: 8pt; font-weight: 700; color: #1f2d5a; margin-bottom: 4pt; line-height: 1.25; }
+  .ms-block.active .ms-period { color: rgba(255,255,255,.5); }
+  .ms-block.active .ms-title { color: #fff; }
+  .ms-point { font-size: 6.8pt; color: #4a5570; line-height: 1.4; padding-left: 7pt; position: relative; margin-bottom: 1.5pt; }
+  .ms-point::before { content: '▸'; position: absolute; left: 0; color: #c9a84c; font-size: 6pt; top: .5pt; }
+  .ms-block.active .ms-point { color: rgba(255,255,255,.7); }
+  .ms-gate { display: inline-block; margin-top: 4pt; font-size: 6pt; font-weight: 700;
+    background: rgba(201,168,76,.2); color: #c9a84c; padding: 1.5pt 4pt; border-radius: 2pt;
+    text-transform: uppercase; letter-spacing: .5px; border: .5pt solid rgba(201,168,76,.4); }
+  .ms-block.active .ms-gate { background: rgba(201,168,76,.3); }
+
+  /* ── Budget strip ── */
+  .budget-strip { display: flex; background: #f0f3fa; border: .5pt solid #d0d8ea;
+    border-radius: 3pt; overflow: hidden; margin-bottom: 8pt; }
+  .bgt-cell { flex: 1; padding: 6pt 5pt; text-align: center; border-right: .5pt solid #d0d8ea; }
+  .bgt-cell:last-child { border-right: none; }
+  .bgt-cell.total-cell { background: #1f2d5a; color: #fff; }
+  .bgt-gap { font-size: 6.5pt; font-weight: 700; color: #c9a84c; text-transform: uppercase; margin-bottom: 2pt; }
+  .bgt-cell.total-cell .bgt-gap { color: rgba(201,168,76,.8); }
+  .bgt-amount { font-size: 9pt; font-weight: 800; color: #1f2d5a; }
+  .bgt-cell.total-cell .bgt-amount { color: #c9a84c; font-size: 10pt; }
+  .bgt-label { font-size: 6pt; color: #7a8ab2; margin-top: 1pt; }
+  .bgt-cell.total-cell .bgt-label { color: rgba(255,255,255,.5); }
+  .contingency-cell { background: #fff8e8; }
+  .contingency-cell .bgt-amount { color: #a06010; }
+
+  /* ── SC Action box ── */
+  .sc-action-box { border: 1.5pt solid #c9a84c; border-radius: 3pt; padding: 8pt 10pt; margin-bottom: 8pt; background: #fffbf0; }
+  .sc-action-box .sc-title { font-size: 8.5pt; font-weight: 700; color: #1f2d5a; margin-bottom: 5pt; display: flex; align-items: center; gap: 6pt; }
+  .sc-action-box .sc-title::before { content: '★'; color: #c9a84c; font-size: 9pt; }
+  .sc-action-box ul { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 3pt 14pt; }
+  .sc-action-box li { font-size: 7.8pt; color: #2a3560; padding-left: 9pt; position: relative; }
+  .sc-action-box li::before { content: '→'; position: absolute; left: 0; color: #c9a84c; font-weight: 700; }
+
+  /* ── footer ── */
+  .page-footer { margin-top: 8pt; padding-top: 6pt; border-top: 1pt solid #d0d8ea;
+    display: flex; justify-content: space-between; align-items: center; }
+  .page-footer .ft-left { font-size: 6.5pt; color: #9aa3be; }
+  .page-footer .ft-right { font-size: 6.5pt; color: #9aa3be; text-align: right; }
+  .page-footer .ft-prog { font-size: 7pt; font-weight: 700; color: #1f2d5a; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 8pt; margin-bottom: 8pt; }
+  .panel { border: .5pt solid #d0d8ea; border-radius: 3pt; padding: 7pt 8pt; background: #f8f9fc; }
+  .panel .panel-title { font-size: 7.5pt; font-weight: 700; color: #1f2d5a; margin-bottom: 4pt;
+    border-bottom: .5pt solid #d0d8ea; padding-bottom: 3pt; }
+  .panel ul { list-style: none; }
+  .panel li { font-size: 7.5pt; color: #2a3560; padding-left: 9pt; position: relative; margin-bottom: 2pt; }
+  .panel li::before { content: '•'; position: absolute; left: 1pt; color: #c9a84c; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- ── Page Header ── -->
+<div class="page-header">
+  <div class="brand">MONOLITH DAPH Decor · AI Agent Programme · Phase 3 Kickoff Brief</div>
+  <div class="doc-meta">
+    MONOLITH-S54-P3PDD-001 v1.0<br>
+    SC-2033-P3 · อนุมัติโดย Steering Committee<br>
+    วันที่จัดทำ: 4 กันยายน 2569
+  </div>
+</div>
+
+<!-- ── Title Block ── -->
+<div class="title-block">
+  <div class="doc-tag">S54 · Phase 3 Programme Definition Document · Kickoff Brief</div>
+  <h1>แผนดำเนินงาน <span>Phase 3</span> — MONOLITH AI Agent Programme</h1>
+  <div class="title-sub">GAP-01/02/03/04/13/14/15 · Workstream A/B/C · Trigger: GL-CHK-10 Confirmed</div>
+  <div class="kpi-row">
+    <div class="kpi-item"><div class="kval">7</div><div class="klbl">GAPs Phase 3</div></div>
+    <div class="kpi-sep"></div>
+    <div class="kpi-item"><div class="kval">THB 7.0M</div><div class="klbl">งบประมาณ Phase 3</div></div>
+    <div class="kpi-sep"></div>
+    <div class="kpi-item"><div class="kval">92%</div><div class="klbl">Coverage เป้าหมาย</div></div>
+    <div class="kpi-sep"></div>
+    <div class="kpi-item"><div class="kval">Q2 2034</div><div class="klbl">P3-M4 MONOLITH BAU</div></div>
+    <div class="kpi-sep"></div>
+    <div class="kpi-item"><div class="kval">28</div><div class="klbl">AI Agents ครบชุด</div></div>
+    <div class="kpi-sep"></div>
+    <div class="kpi-item"><div class="kval">THB 18.2M</div><div class="klbl">Programme รวม P1+2+3</div></div>
+  </div>
+</div>
+
+<!-- ── Section 1: Milestones ── -->
+<div class="section-hdr">
+  <h2>Milestones P3-M1–M4</h2>
+  <span class="hbadge">Q3 2033 → Q2 2034</span>
+</div>
+<div class="milestone-row">
+  <div class="ms-block active">
+    <div class="ms-tag">P3-M1</div>
+    <div class="ms-period">Q3 2033</div>
+    <div class="ms-title">Phase 3 Kick-off &amp; Foundation</div>
+    <div class="ms-point">P3-CHK-01/02: GL-CHK-10 confirmed, PD appointed, งบ THB 7.0M released</div>
+    <div class="ms-point">WS-A &amp; WS-B teams onboarded — GAP-01/02/03/04 vendors contracted</div>
+    <div class="ms-point">Dev environments provisioned ทุก Workstream</div>
+    <div class="ms-point">GAP-13/14/15 RFP issued (WS-C vendor selection)</div>
+    <div class="ms-gate">P3-CHK-01–03 Gate</div>
+  </div>
+  <div class="ms-block">
+    <div class="ms-tag">P3-M2</div>
+    <div class="ms-period">Q4 2033</div>
+    <div class="ms-title">Core Development &amp; SIT</div>
+    <div class="ms-point">GAP-01 AI model SIT: accuracy ≥90%</div>
+    <div class="ms-point">GAP-02 Design Freeze Gate SIT: accuracy ≥95%</div>
+    <div class="ms-point">GAP-03 Sensory Automation SIT: recall ≥92%</div>
+    <div class="ms-point">GAP-04 POE AI SIT: completeness ≥95%</div>
+    <div class="ms-point">WS-C (GAP-13/14/15) commenced</div>
+    <div class="ms-gate">P3-CHK-04–07 Gate</div>
+  </div>
+  <div class="ms-block">
+    <div class="ms-tag">P3-M3</div>
+    <div class="ms-period">Q1 2034</div>
+    <div class="ms-title">UAT &amp; Phase 3 Integration</div>
+    <div class="ms-point">GAP-01/02/03/04 UAT complete — criteria ครบ</div>
+    <div class="ms-point">GAP-13: 28/28 agents CX coverage SIT</div>
+    <div class="ms-point">GAP-14: ESG scoring coverage ≥80% SIT</div>
+    <div class="ms-point">GAP-15: Drift alert ≤1h SIT</div>
+    <div class="ms-point">End-to-end integration AIE-001–005 PASS</div>
+    <div class="ms-gate">P3-CHK-08–11 Gate</div>
+  </div>
+  <div class="ms-block">
+    <div class="ms-tag">P3-M4</div>
+    <div class="ms-period">Q2 2034</div>
+    <div class="ms-title">Go-Live &amp; MONOLITH BAU</div>
+    <div class="ms-point">Phase 3 cutover: GAPs ทั้ง 7 ข้อ Live in production</div>
+    <div class="ms-point">Coverage 92%, 28 agents operational</div>
+    <div class="ms-point">GAP-15 Model Governance Engine active</div>
+    <div class="ms-point">SC Programme completion sign-off</div>
+    <div class="ms-point">MONOLITH BAU Governance เริ่มต้น</div>
+    <div class="ms-gate">P3-CHK-12 — Programme COMPLETE</div>
+  </div>
+</div>
+
+<!-- ── Section 2: P3-CHK Checklist ── -->
+<div class="section-hdr">
+  <h2>P3-CHK-01–12 — Phase 3 Readiness Checklist</h2>
+  <span class="hbadge">MONOLITH-S54-P3PDD-001 v1.0</span>
+</div>
+<table class="chk-tbl">
+  <thead>
+    <tr>
+      <th style="width:7%">รหัส</th>
+      <th style="width:55%">รายการตรวจสอบ (ภาษาไทย)</th>
+      <th style="width:20%">ผู้รับผิดชอบ</th>
+      <th style="width:12%">Milestone Gate</th>
+      <th style="width:6%">สถานะ</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td class="chk-id">P3-CHK-01</td><td>SC อนุมัติ GL-CHK-10 ยืนยันแล้ว — Phase 3 PDD ได้รับอนุมัติอย่างเป็นทางการจาก Steering Committee</td><td>SC Chair / Rex</td><td><span class="gate-badge g-m1">P3-M1 Kick-off</span></td><td><div class="cb"></div></td></tr>
+    <tr><td class="chk-id">P3-CHK-02</td><td>แต่งตั้ง Phase 3 Programme Director แล้ว และ Finance อนุมัติปล่อยงบ THB 7.0M</td><td>SC Chair / Finance</td><td><span class="gate-badge g-m1">P3-M1 Kick-off</span></td><td><div class="cb"></div></td></tr>
+    <tr><td class="chk-id">P3-CHK-03</td><td>Phase 3 development และ test environments ถูก provision และ validate โดย Technical Lead</td><td>Core / Technical Lead</td><td><span class="gate-badge g-m1">P3-M1 Kick-off</span></td><td><div class="cb"></div></td></tr>
+    <tr><td class="chk-id">P3-CHK-04</td><td>ลงนามสัญญา GAP-01/02 vendor/team ครบแล้ว — Workstream A kickoff สำเร็จ</td><td>Programme Director / Aria</td><td><span class="gate-badge g-m2">P3-M2 SIT</span></td><td><div class="cb"></div></td></tr>
+    <tr><td class="chk-id">P3-CHK-05</td><td>ลงนามสัญญา GAP-03/04 vendor/team ครบแล้ว — Workstream B kickoff สำเร็จ</td><td>Programme Director / Signal</td><td><span class="gate-badge g-m2">P3-M2 SIT</span></td><td><div class="cb"></div></td></tr>
+    <tr><td class="chk-id">P3-CHK-06</td><td>คัดเลือก vendor GAP-13/14/15 เสร็จแล้ว — ลงนามสัญญา Workstream C</td><td>Programme Director / Nexus</td><td><span class="gate-badge g-m2">P3-M2 SIT</span></td><td><div class="cb"></div></td></tr>
+    <tr><td class="chk-id">P3-CHK-07</td><td>SIT ของ GAP-01/02/03/04 ครบ — ผ่านเกณฑ์การยอมรับทั้งหมด (P3-M2 gate)</td><td>WS-A/B Leads / Vega</td><td><span class="gate-badge g-m2">P3-M2 SIT</span></td><td><div class="cb"></div></td></tr>
+    <tr><td class="chk-id">P3-CHK-08</td><td>SIT ของ GAP-13/14/15 ครบ — ผ่านเกณฑ์การยอมรับทั้งหมด (P3-M3 gate)</td><td>WS-C Leads / Vega</td><td><span class="gate-badge g-m3">P3-M3 UAT</span></td><td><div class="cb"></div></td></tr>
+    <tr><td class="chk-id">P3-CHK-09</td><td>End-to-end integration test ระหว่าง Phase 3 system และ AIE-001–005 backbone: PASS</td><td>Core / Technical Lead</td><td><span class="gate-badge g-m3">P3-M3 UAT</span></td><td><div class="cb"></div></td></tr>
+    <tr><td class="chk-id">P3-CHK-10</td><td>UAT Phase 3 กับ client stakeholders ครบ — GAPs ทั้ง 7 ข้อ accepted</td><td>Programme Director / Ops</td><td><span class="gate-badge g-m3">P3-M3 UAT</span></td><td><div class="cb"></div></td></tr>
+    <tr><td class="chk-id">P3-CHK-11</td><td>Phase 3 go-live readiness gate ยืนยัน: P3-CHK-01–10 ครบ, Programme Director sign-off</td><td>Programme Director</td><td><span class="gate-badge g-m3">P3-M3 UAT</span></td><td><div class="cb"></div></td></tr>
+    <tr><td class="chk-id">P3-CHK-12</td><td>SC Phase 3 go-live authorisation — Steering Committee อนุมัติ production deployment อย่างเป็นทางการ</td><td>SC Chair</td><td><span class="gate-badge g-m4">P3-M4 BAU</span></td><td><div class="cb"></div></td></tr>
+  </tbody>
+</table>
+
+<!-- ── Section 3: GAP Workplan by Workstream ── -->
+<div class="section-hdr">
+  <h2>GAP Workplan — WS-A / WS-B / WS-C</h2>
+  <span class="hbadge">Phase 3 · 7 GAPs · THB 7.0M</span>
+</div>
+<table class="ws-tbl">
+  <thead>
+    <tr>
+      <th class="ws-hdr" style="width:8%">GAP</th>
+      <th class="ws-hdr" style="width:28%">ชื่อ / Deliverable</th>
+      <th class="ws-hdr" style="width:16%">Integration</th>
+      <th class="ws-hdr" style="width:28%">SLA Acceptance Criteria</th>
+      <th class="ws-hdr" style="width:10%">งบประมาณ</th>
+      <th class="ws-hdr" style="width:10%">Timeline</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background:#f0f4fa">
+      <td colspan="6" style="padding:4pt 6pt; font-size:7pt; font-weight:700; color:#1f2d5a; letter-spacing:.5px;">
+        WORKSTREAM A — GAP-01/02 · Lead: Aria · Co-lead: Core
+      </td>
+    </tr>
+    <tr>
+      <td class="gap-code">GAP-01</td>
+      <td style="font-size:7.8pt"><strong>Biophilic Design Enhancement</strong><br><span style="color:#6a7aaa;font-size:7pt">Level 2 AI automation; AIE-001 Aria Creative Engine</span></td>
+      <td style="font-size:7.5pt">AIE-001<br>Aria Creative Engine</td>
+      <td><span class="sla-val">Accuracy ≥90%</span> vs expert benchmark<br><span style="font-size:7pt;color:#6a7aaa">Latency ≤3s/analysis</span></td>
+      <td class="budget-val">THB 1.2M</td>
+      <td style="font-size:7.5pt;color:#4a5570">P3-M1<br>→ P3-M3</td>
+    </tr>
+    <tr>
+      <td class="gap-code">GAP-02</td>
+      <td style="font-size:7.8pt"><strong>Design Freeze Gate AI</strong><br><span style="color:#6a7aaa;font-size:7pt">Intelligent milestone locking; change-control enforcement</span></td>
+      <td style="font-size:7.5pt">AIE-002<br>Core API Gateway</td>
+      <td><span class="sla-val">Gate accuracy ≥95%</span><br><span style="font-size:7pt;color:#6a7aaa">False escalation ≤2% · SC notify ≤5 min</span></td>
+      <td class="budget-val">THB 0.8M</td>
+      <td style="font-size:7.5pt;color:#4a5570">P3-M1<br>→ P3-M2</td>
+    </tr>
+    <tr style="background:#f0f7f4">
+      <td colspan="6" style="padding:4pt 6pt; font-size:7pt; font-weight:700; color:#2d7a4f; letter-spacing:.5px;">
+        WORKSTREAM B — GAP-03/04 · Lead: Signal · Co-lead: Nova
+      </td>
+    </tr>
+    <tr>
+      <td class="gap-code">GAP-03</td>
+      <td style="font-size:7.8pt"><strong>Sensory Commissioning Full Automation</strong><br><span style="color:#6a7aaa;font-size:7pt">IoT sensor calibration automation; AI anomaly detection</span></td>
+      <td style="font-size:7.5pt">AIE-003<br>Signal Hub</td>
+      <td><span class="sla-val">Sign-off accuracy ≥97%</span><br><span style="font-size:7pt;color:#6a7aaa">Recall ≥92% · Manual override ≤3%</span></td>
+      <td class="budget-val">THB 1.0M</td>
+      <td style="font-size:7.5pt;color:#4a5570">P3-M1<br>→ P3-M3</td>
+    </tr>
+    <tr>
+      <td class="gap-code">GAP-04</td>
+      <td style="font-size:7.8pt"><strong>Post-Occupancy Evaluation AI</strong><br><span style="color:#6a7aaa;font-size:7pt">Longitudinal occupant satisfaction analytics</span></td>
+      <td style="font-size:7.5pt">AIE-004<br>Nova Analytics</td>
+      <td><span class="sla-val">Dashboard completeness ≥95%</span><br><span style="font-size:7pt;color:#6a7aaa">Predictive accuracy ≥85% · Report ≤24h</span></td>
+      <td class="budget-val">THB 0.7M</td>
+      <td style="font-size:7.5pt;color:#4a5570">P3-M1<br>→ P3-M3</td>
+    </tr>
+    <tr style="background:#eef5ef">
+      <td colspan="6" style="padding:4pt 6pt; font-size:7pt; font-weight:700; color:#1a6b35; letter-spacing:.5px;">
+        WORKSTREAM C — GAP-13/14/15 · Lead: Nexus · Co-lead: Guardian, Ledger
+      </td>
+    </tr>
+    <tr>
+      <td class="gap-code">GAP-13</td>
+      <td style="font-size:7.8pt"><strong>CX Intelligence Platform</strong><br><span style="color:#6a7aaa;font-size:7pt">Real-time CX scoring, NPS prediction, 28 agent touchpoints</span></td>
+      <td style="font-size:7.5pt">AIE-001–005<br>All endpoints</td>
+      <td><span class="sla-val">CX refresh ≤5 min</span><br><span style="font-size:7pt;color:#6a7aaa">NPS accuracy ≥80% · Coverage 28/28 agents</span></td>
+      <td class="budget-val">THB 0.9M</td>
+      <td style="font-size:7.5pt;color:#4a5570">P3-M2<br>→ P3-M4</td>
+    </tr>
+    <tr>
+      <td class="gap-code">GAP-14</td>
+      <td style="font-size:7.8pt"><strong>Sustainable Materials &amp; Procurement Intelligence</strong><br><span style="color:#6a7aaa;font-size:7pt">AI-assisted ESG supplier scoring; carbon estimator</span></td>
+      <td style="font-size:7.5pt">Ledger / Guardian<br>AIE-002 Core</td>
+      <td><span class="sla-val">ESG coverage ≥80%</span><br><span style="font-size:7pt;color:#6a7aaa">Carbon accuracy ±10% · Adoption ≥60%</span></td>
+      <td class="budget-val">THB 0.8M</td>
+      <td style="font-size:7.5pt;color:#4a5570">P3-M2<br>→ P3-M4</td>
+    </tr>
+    <tr>
+      <td class="gap-code">GAP-15</td>
+      <td style="font-size:7.8pt"><strong>Continuous Learning &amp; Model Governance Engine</strong><br><span style="color:#6a7aaa;font-size:7pt">Model retraining, drift detection, SC audit log</span></td>
+      <td style="font-size:7.5pt">AIE-001–005<br>Vega / Rex</td>
+      <td><span class="sla-val">Drift alert ≤1h</span><br><span style="font-size:7pt;color:#6a7aaa">Retraining success ≥95% · Audit log 100%</span></td>
+      <td class="budget-val">THB 0.7M</td>
+      <td style="font-size:7.5pt;color:#4a5570">P3-M2<br>→ P3-M4</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ── Budget Strip ── -->
+<div class="section-hdr" style="margin-top:6pt">
+  <h2>งบประมาณ Phase 3</h2>
+  <span class="hbadge">SC-2033-P3 Approved</span>
+</div>
+<div class="budget-strip">
+  <div class="bgt-cell"><div class="bgt-gap">GAP-01</div><div class="bgt-amount">1.2M</div><div class="bgt-label">Biophilic AI</div></div>
+  <div class="bgt-cell"><div class="bgt-gap">GAP-02</div><div class="bgt-amount">0.8M</div><div class="bgt-label">Freeze Gate AI</div></div>
+  <div class="bgt-cell"><div class="bgt-gap">GAP-03</div><div class="bgt-amount">1.0M</div><div class="bgt-label">Sensory Auto</div></div>
+  <div class="bgt-cell"><div class="bgt-gap">GAP-04</div><div class="bgt-amount">0.7M</div><div class="bgt-label">POE AI</div></div>
+  <div class="bgt-cell"><div class="bgt-gap">GAP-13</div><div class="bgt-amount">0.9M</div><div class="bgt-label">CX Intelligence</div></div>
+  <div class="bgt-cell"><div class="bgt-gap">GAP-14</div><div class="bgt-amount">0.8M</div><div class="bgt-label">ESG Procurement</div></div>
+  <div class="bgt-cell"><div class="bgt-gap">GAP-15</div><div class="bgt-amount">0.7M</div><div class="bgt-label">Model Governance</div></div>
+  <div class="bgt-cell contingency-cell"><div class="bgt-gap">Contingency</div><div class="bgt-amount">0.9M</div><div class="bgt-label">15% Reserve</div></div>
+  <div class="bgt-cell total-cell"><div class="bgt-gap">Phase 3 รวม</div><div class="bgt-amount">THB 7.0M</div><div class="bgt-label">Programme P1+2+3 = 18.2M</div></div>
+</div>
+
+<!-- ── SC Action Box ── -->
+<div class="sc-action-box">
+  <div class="sc-title">SC Action Items — Phase 3 Kickoff (P3-M1)</div>
+  <ul>
+    <li>ยืนยัน GL-CHK-10 อย่างเป็นทางการ → P3-CHK-01 COMPLETE</li>
+    <li>แต่งตั้ง Phase 3 Programme Director → P3-CHK-02</li>
+    <li>อนุมัติปล่อยงบ THB 7.0M จาก Finance → P3-CHK-02</li>
+    <li>อนุมัติ GAP-01/02 AI model design specifications</li>
+    <li>มอบหมาย WS-A (Aria/Core), WS-B (Signal/Nova) leads</li>
+    <li>อนุมัติ RFP-P3-WSA-001, RFP-P3-WSB-001 ออกประกวดราคา</li>
+    <li>อนุมัติ RFP-P3-WSC-001 สำหรับ GAP-13/14/15 vendor selection</li>
+    <li>กำหนดรอบ SC quarterly review: P3-M1/M2/M3/M4</li>
+  </ul>
+</div>
+
+<!-- ── Footer ── -->
+<div class="page-footer">
+  <div class="ft-left">
+    <div class="ft-prog">MONOLITH DAPH Decor AI Agent Programme</div>
+    MONOLITH-S54-P3PDD-001 v1.0 · Confidential — SC Distribution Only
+  </div>
+  <div class="ft-right">
+    Phase 1 COMPLETE (THB 5.2M) · Phase 2 COMPLETE (THB 6.0M) · Phase 3 PDD LOCKED (THB 7.0M)<br>
+    Coverage: Baseline 56% → P1 68% → P2 80% → <strong>P3 Target 92%</strong>
+  </div>
+</div>
+
+</body>
+</html>

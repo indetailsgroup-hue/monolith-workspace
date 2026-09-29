@@ -1,0 +1,168 @@
+name: "🐛 v17.0 Process Templates — Bug Report"
+description: Report a bug in ProcessTemplateList, BottleneckHeatmap, processTemplateStore, processTemplateTypes, or the Process Templates migration.
+title: "[PT Bug] <short description>"
+labels:
+  - "bug"
+  - "v17-process-templates"
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## v17.0 Process Templates — Bug Report
+        Please fill in all sections below. For **security issues** (RLS bypass, org_id isolation, plan gate circumvention) open a **Security Advisory** instead.
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected Component
+      description: Which component or file is exhibiting the bug?
+      multiple: false
+      options:
+        - "ProcessTemplateList (UI component)"
+        - "BottleneckHeatmap (UI component)"
+        - "processTemplateStore (Zustand)"
+        - "processTemplateTypes (TypeScript types)"
+        - "Migration / SQL (20261201_process_templates.sql)"
+        - "Storybook Stories / Interaction Tests"
+        - "CI / GitHub Actions"
+        - "Other (describe below)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: plan_tier
+    attributes:
+      label: Org Plan Tier
+      description: Which plan tier are you on when the bug occurs?
+      options:
+        - "FREE"
+        - "STARTER"
+        - "PROFESSIONAL"
+        - "ENTERPRISE"
+        - "Not plan-specific / unknown"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - "Critical — data loss / security / RLS bypass"
+        - "High — component broken / feature unusable"
+        - "Medium — degraded behaviour (plan gate, clone, filter)"
+        - "Low — cosmetic / minor"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of the bug.
+      placeholder: "When I click Clone on a global template in ProcessTemplateList (isAdmin=true), the cloneGlobalTemplate action fires but the new template does not appear in the list..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to Reproduce
+      description: Minimal steps to reproduce the behaviour.
+      placeholder: |
+        1. Navigate to Process Templates (STARTER+ plan)
+        2. Enable Admin view (isAdmin=true)
+        3. Click the Clone button on "ตู้ครัวมาตรฐาน" (global template)
+        4. Observe — cloned template is missing from the list
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behaviour
+      description: What should happen instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behaviour
+      description: What actually happens? Paste error messages or console output if relevant.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tenant
+    attributes:
+      label: Multi-Tenant Context
+      description: Is the bug specific to a tenant role or all tenants?
+      options:
+        - "All tenants / not tenant-specific"
+        - "OWNER role"
+        - "ADMIN role"
+        - "DESIGNER / FACTORY / INSTALLER role"
+        - "Cross-tenant isolation issue (RLS)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: plan_gate
+    attributes:
+      label: Plan Gate Behaviour
+      description: Is the plan gate (STARTER / PROFESSIONAL) involved in the bug?
+      options:
+        - "Not plan-gate related"
+        - "Plan gate wall shown when it should not be"
+        - "Plan gate wall NOT shown when it should be"
+        - "PROFESSIONAL feature accessible on STARTER plan"
+        - "BottleneckHeatmap visible/hidden incorrectly"
+    validations:
+      required: false
+
+  - type: textarea
+    id: test_coverage
+    attributes:
+      label: Existing Test Coverage
+      description: |
+        Reference the relevant test file(s) and test name(s) that should catch this, or note if coverage is missing.
+        Known test files: `processTemplateTypes.test.ts` (30 tests), `processTemplateStore.test.ts` (28 tests).
+        Known Storybook stories: `ProcessTemplateList.stories.tsx` (12 stories), `BottleneckHeatmap.stories.tsx` (11 stories).
+        Visual specs: `ProcessTemplateList.visual.spec.ts` (12 snapshots), `BottleneckHeatmap.visual.spec.ts` (14 snapshots).
+      placeholder: "No existing test covers the CloneFlowInteraction — the new play function story should catch this"
+
+  - type: input
+    id: storybook_story
+    attributes:
+      label: Related Storybook Story (if any)
+      description: Story name or Storybook ID from ProcessTemplateList.stories.tsx or BottleneckHeatmap.stories.tsx.
+      placeholder: "jobs-processtemplatelist--clone-flow-interaction"
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Branch, Node version, browser, and any relevant config.
+      placeholder: |
+        - Branch: main
+        - Node: 20.x
+        - Browser: Chrome 127
+        - Supabase local / prod (ssgncogmyrxhumgdtukk)
+        - Migration: 20261201_process_templates.sql
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      options:
+        - label: "I searched existing issues and this is not a duplicate"
+          required: true
+        - label: "This is NOT a security / RLS / plan-gate bypass issue (use Security Advisory for those)"
+          required: true
+        - label: "I can reproduce this on the `main` branch"
+          required: false
+        - label: "I have checked that `processTemplateTypes.test.ts` and `processTemplateStore.test.ts` do not already cover this case"
+          required: false

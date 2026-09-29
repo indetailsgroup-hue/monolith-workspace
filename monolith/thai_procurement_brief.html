@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>กรอบการจัดซื้อจัดจ้าง Phase 2 — RFP-GAP05-001 MONOLITH DAPH Decor</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 14mm 14mm 12mm 14mm; }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Sarabun', sans-serif;
+    font-size: 9.5pt;
+    color: #1a2240;
+    background: #ffffff;
+    line-height: 1.45;
+  }
+
+  /* ── Page header ── */
+  .page-header {
+    border-bottom: 3pt solid #1f2d5a;
+    padding-bottom: 7pt;
+    margin-bottom: 10pt;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .page-header .brand { font-size: 8.5pt; font-weight: 700; color: #1f2d5a; letter-spacing: .5px; text-transform: uppercase; }
+  .page-header .doc-meta { font-size: 7.5pt; color: #7a8ab2; text-align: right; }
+
+  /* ── Title block ── */
+  .title-block {
+    background: #1f2d5a;
+    color: #ffffff;
+    padding: 10pt 12pt;
+    border-radius: 4pt;
+    margin-bottom: 9pt;
+  }
+  .title-block .doc-tag {
+    font-size: 7pt; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+    color: #c9a84c; margin-bottom: 4pt;
+  }
+  .title-block h1 { font-size: 14pt; font-weight: 700; line-height: 1.2; margin-bottom: 3pt; }
+  .title-block h1 span { color: #c9a84c; }
+  .title-block .title-sub { font-size: 8.5pt; color: rgba(255,255,255,.65); }
+  .title-block .kpi-row {
+    display: flex; gap: 14pt; margin-top: 8pt; padding-top: 7pt;
+    border-top: 1pt solid rgba(201,168,76,.3); flex-wrap: wrap;
+  }
+  .kpi-item { text-align: center; }
+  .kpi-item .kval { font-size: 16pt; font-weight: 800; color: #c9a84c; line-height: 1; }
+  .kpi-item .klbl { font-size: 7pt; color: rgba(255,255,255,.55); text-transform: uppercase; letter-spacing: .8px; margin-top: 1pt; }
+
+  /* ── Section header ── */
+  .section-hdr {
+    display: flex; align-items: center; gap: 7pt;
+    border-left: 3pt solid #c9a84c; padding-left: 7pt;
+    margin-bottom: 6pt; margin-top: 9pt;
+  }
+  .section-hdr h2 { font-size: 10.5pt; font-weight: 700; color: #1f2d5a; }
+  .section-hdr .hbadge {
+    font-size: 7pt; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    background: #c9a84c; color: #1f2d5a; padding: 2pt 6pt; border-radius: 2pt;
+  }
+
+  /* ── RFP Summary table ── */
+  table.rfp-tbl {
+    width: 100%; border-collapse: collapse; font-size: 8.5pt;
+    margin-bottom: 9pt;
+  }
+  table.rfp-tbl th {
+    background: #1f2d5a; color: rgba(255,255,255,.85);
+    font-size: 7.5pt; font-weight: 700; padding: 5pt 6pt;
+    text-align: left; letter-spacing: .4px;
+  }
+  table.rfp-tbl td { padding: 5pt 6pt; border-bottom: .5pt solid #e5e8f0; vertical-align: top; }
+  table.rfp-tbl tr:nth-child(even) td { background: #f8f9fc; }
+  table.rfp-tbl tr:last-child td { border-bottom: none; }
+  .rfp-code { font-size: 7.5pt; font-weight: 700; color: #7a8ab2; white-space: nowrap; }
+  .rfp-name { font-weight: 600; color: #1f2d5a; }
+
+  /* ── 5-Stage timeline ── */
+  .stage-grid {
+    display: flex; gap: 6pt; margin-bottom: 9pt;
+  }
+  .stage-card {
+    flex: 1; border-radius: 4pt; padding: 7pt 8pt;
+    border-top: 3pt solid;
+    background: #f8f9fc;
+  }
+  .stage-card:nth-child(1) { border-color: #c0392b; }
+  .stage-card:nth-child(2) { border-color: #d4a017; }
+  .stage-card:nth-child(3) { border-color: #2e75b6; }
+  .stage-card:nth-child(4) { border-color: #7e3f8f; }
+  .stage-card:nth-child(5) { border-color: #2d7a4f; }
+  .stage-card .s-num {
+    font-size: 7pt; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    color: #7a8ab2; margin-bottom: 3pt;
+  }
+  .stage-card .s-title { font-size: 8.5pt; font-weight: 700; color: #1f2d5a; margin-bottom: 4pt; line-height: 1.25; }
+  .stage-card .s-dur {
+    font-size: 7pt; font-weight: 600; color: #ffffff;
+    background: #1f2d5a; border-radius: 2pt; padding: 1.5pt 5pt; display: inline-block; margin-bottom: 4pt;
+  }
+  .stage-card .s-items { font-size: 7.5pt; color: #3d4f7c; line-height: 1.4; }
+  .stage-card .s-items li { margin-left: 10pt; margin-bottom: 2pt; }
+
+  /* ── Evaluation criteria ── */
+  .eval-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7pt; margin-bottom: 9pt; }
+  .eval-card { border-radius: 4pt; padding: 7pt 8pt; }
+  .eval-card.tech  { background: #e8f0ff; border-top: 3pt solid #2e75b6; }
+  .eval-card.comm  { background: #fff7e0; border-top: 3pt solid #d4a017; }
+  .eval-card.strat { background: #e8f5ee; border-top: 3pt solid #2d7a4f; }
+  .eval-card .ec-pct {
+    font-size: 22pt; font-weight: 800; line-height: 1; margin-bottom: 2pt;
+  }
+  .eval-card.tech  .ec-pct { color: #2e75b6; }
+  .eval-card.comm  .ec-pct { color: #a07800; }
+  .eval-card.strat .ec-pct { color: #2d7a4f; }
+  .eval-card .ec-title { font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 5pt; }
+  .eval-card.tech  .ec-title { color: #2e75b6; }
+  .eval-card.comm  .ec-title { color: #a07800; }
+  .eval-card.strat .ec-title { color: #2d7a4f; }
+  .eval-card .ec-items { font-size: 7.5pt; color: #3d4f7c; line-height: 1.45; }
+  .eval-card .ec-items li { margin-left: 12pt; margin-bottom: 2pt; }
+
+  /* ── SLA KPI table ── */
+  table.sla-tbl {
+    width: 100%; border-collapse: collapse; font-size: 8.5pt;
+    margin-bottom: 9pt;
+  }
+  table.sla-tbl th {
+    background: #2d7a4f; color: rgba(255,255,255,.9);
+    font-size: 7.5pt; font-weight: 700; padding: 5pt 6pt;
+    text-align: left; letter-spacing: .4px;
+  }
+  table.sla-tbl td { padding: 5pt 6pt; border-bottom: .5pt solid #e5e8f0; vertical-align: middle; }
+  table.sla-tbl tr:nth-child(even) td { background: #f5faf7; }
+  table.sla-tbl tr:last-child td { border-bottom: none; }
+  .aie-code { font-size: 7.5pt; font-weight: 700; color: #2d7a4f; white-space: nowrap; }
+  .sla-val { font-weight: 700; color: #1f2d5a; }
+  .sla-pill {
+    display: inline-block; font-size: 7pt; font-weight: 700;
+    padding: 1.5pt 5pt; border-radius: 2pt;
+  }
+  .sla-a { background: #e8f5ee; color: #2d7a4f; }
+  .sla-b { background: #e8f0ff; color: #1f2d5a; }
+  .sla-c { background: #fff7e0; color: #a07800; }
+
+  /* ── Checklist ── */
+  .checklist { display: grid; grid-template-columns: 1fr 1fr; gap: 3pt; margin-bottom: 9pt; }
+  .chk-item { display: flex; gap: 5pt; align-items: flex-start; padding: 4pt 6pt; background: #f5f6fa; border-radius: 3pt; }
+  .chk-item .chk-box { width: 9pt; height: 9pt; border: 1.5pt solid #1f2d5a; border-radius: 2pt; flex-shrink: 0; margin-top: 1pt; }
+  .chk-item .chk-id { font-size: 7pt; font-weight: 700; color: #c9a84c; white-space: nowrap; }
+  .chk-item .chk-txt { font-size: 8pt; color: #3d4f7c; }
+
+  /* ── Info box ── */
+  .info-box {
+    background: #edf0f8; border-radius: 3pt; padding: 6pt 8pt;
+    font-size: 8pt; color: #3d4f7c; margin-bottom: 8pt;
+    border-left: 3pt solid #2e75b6;
+  }
+  .info-box strong { color: #1f2d5a; }
+
+  /* ── Two-col layout ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 7pt; margin-bottom: 9pt; }
+  .col-card { border-radius: 4pt; padding: 7pt 8pt; border: .5pt solid #dde0ea; }
+  .col-card .cc-title { font-size: 8pt; font-weight: 700; color: #1f2d5a; margin-bottom: 5pt;
+    border-bottom: 1pt solid #e5e8f0; padding-bottom: 3pt; }
+  .col-card .cc-items { font-size: 8pt; color: #3d4f7c; line-height: 1.5; }
+  .col-card .cc-items li { margin-left: 12pt; margin-bottom: 2.5pt; }
+
+  /* ── Agents row ── */
+  .agents-row { display: flex; flex-wrap: wrap; gap: 4pt; margin-bottom: 9pt; }
+  .agent-chip {
+    font-size: 7.5pt; font-weight: 600; padding: 2.5pt 7pt; border-radius: 10pt;
+    border: 1pt solid;
+  }
+  .ag-a { background: #e8f0ff; color: #1f2d5a; border-color: #bbc9e8; }
+  .ag-b { background: #e8f5ee; color: #2d7a4f; border-color: #9fd0b5; }
+  .ag-c { background: #fff7e0; color: #a07800; border-color: #ffe08a; }
+
+  /* ── Footer ── */
+  .page-footer {
+    margin-top: 10pt;
+    border-top: 1pt solid #c9a84c;
+    padding-top: 5pt;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 7pt; color: #7a8ab2;
+  }
+  .page-footer .pf-right { text-align: right; }
+  .page-footer strong { color: #1f2d5a; }
+
+  .page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<!-- Page Header -->
+<div class="page-header">
+  <div class="brand">MONOLITH DAPH Decor · AI Agent Programme · SOP v2.5</div>
+  <div class="doc-meta">
+    <div>เอกสาร: Thai Procurement Brief · S51</div>
+    <div>วันที่: 3 กันยายน 2569 · รุ่น: v1.0</div>
+  </div>
+</div>
+
+<!-- Title Block -->
+<div class="title-block">
+  <div class="doc-tag">Steering Committee Brief · Phase 2 · GAP-05</div>
+  <h1>กรอบการจัดซื้อจัดจ้าง Phase 2 —<br><span>RFP-GAP05-001 AI Creative Engine</span></h1>
+  <div class="title-sub">S51 Phase 2 Procurement &amp; Vendor Selection Framework สำหรับ GAP-05 AI Creative Engine (AIE-001–005)</div>
+  <div class="kpi-row">
+    <div class="kpi-item">
+      <div class="kval">1.5M</div>
+      <div class="klbl">งบประมาณ (THB)</div>
+    </div>
+    <div class="kpi-item">
+      <div class="kval">5</div>
+      <div class="klbl">ขั้นตอนคัดเลือก</div>
+    </div>
+    <div class="kpi-item">
+      <div class="kval">3</div>
+      <div class="klbl">ผู้ขาย Shortlist</div>
+    </div>
+    <div class="kpi-item">
+      <div class="kval">Q1 2033</div>
+      <div class="klbl">เป้าหมายประกาศผล</div>
+    </div>
+    <div class="kpi-item">
+      <div class="kval">5</div>
+      <div class="klbl">AIE Modules</div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 1: RFP Framework -->
+<div class="section-hdr">
+  <h2>1. กรอบ RFP-GAP05-001</h2>
+  <span class="hbadge">S51 · 51.4</span>
+</div>
+
+<div class="info-box">
+  <strong>บริบท:</strong> GAP-05 (AI Creative Engine) เป็นช่องว่างสำคัญระดับ Phase 2 — ยังไม่มีระบบ AI สำหรับการสร้างแนวคิดงานออกแบบโดยอัตโนมัติ
+  ทำให้ Agent ต้องพึ่งพาการสร้าง brief และ mood board ด้วยมือ ส่งผลให้เวลาส่งมอบล่าช้า 30–40% ต่อโครงการ
+</div>
+
+<table class="rfp-tbl">
+  <thead>
+    <tr>
+      <th style="width:18%">รหัสเอกสาร</th>
+      <th style="width:32%">รายการ</th>
+      <th style="width:30%">รายละเอียด</th>
+      <th style="width:20%">กำหนดการ</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="rfp-code">RFP-GAP05-001</span></td>
+      <td><span class="rfp-name">Request for Proposal — AI Creative Engine</span></td>
+      <td>ระบบ AI 5 โมดูล (AIE-001–005) สำหรับ Creative Workflow อัตโนมัติ</td>
+      <td>ออก RFP: P2-M1+2สัปดาห์</td>
+    </tr>
+    <tr>
+      <td><span class="rfp-code">PQ-GAP05-001</span></td>
+      <td><span class="rfp-name">Pre-Qualification Questionnaire</span></td>
+      <td>คัดกรองคุณสมบัติเบื้องต้น: ประสบการณ์ AI Generative Design ≥3 ปี</td>
+      <td>ปิดรับ: RFP+2สัปดาห์</td>
+    </tr>
+    <tr>
+      <td><span class="rfp-code">SOW-AIE-001</span></td>
+      <td><span class="rfp-name">Statement of Work — AIE-001 Concept Generator</span></td>
+      <td>ผลิต concept variants จาก project brief; latency ≤3s p95</td>
+      <td>แนบ RFP วันออก</td>
+    </tr>
+    <tr>
+      <td><span class="rfp-code">SOW-AIE-002</span></td>
+      <td><span class="rfp-name">Statement of Work — AIE-002 Style Harmoniser</span></td>
+      <td>Mapping style taxonomy ตาม MONOLITH style library v2.5; ≤5s p95</td>
+      <td>แนบ RFP วันออก</td>
+    </tr>
+    <tr>
+      <td><span class="rfp-code">SOW-AIE-003</span></td>
+      <td><span class="rfp-name">Statement of Work — AIE-003 Material Specifier</span></td>
+      <td>อ้างอิง SKU จาก approved supplier catalogue; webhook push model</td>
+      <td>แนบ RFP วันออก</td>
+    </tr>
+    <tr>
+      <td><span class="rfp-code">SOW-AIE-004</span></td>
+      <td><span class="rfp-name">Statement of Work — AIE-004 Mood Board Assembler</span></td>
+      <td>Batch API รวม output AIE-001–003; ผลิต PDF + asset bundle; ≤30s</td>
+      <td>แนบ RFP วันออก</td>
+    </tr>
+    <tr>
+      <td><span class="rfp-code">SOW-AIE-005</span></td>
+      <td><span class="rfp-name">Statement of Work — AIE-005 Client Presentation Renderer</span></td>
+      <td>Streaming API; HTML5 interactive; ≤60s first render; export 300dpi</td>
+      <td>แนบ RFP วันออก</td>
+    </tr>
+    <tr>
+      <td><span class="rfp-code">DPA-GAP05</span></td>
+      <td><span class="rfp-name">Data Processing Agreement</span></td>
+      <td>PDPA compliance; ประมวลผลในประเทศไทยหรือเขตอำนาจที่ได้รับอนุมัติ</td>
+      <td>แนบสัญญาหลัก</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Section 2: 5-Stage Selection Process -->
+<div class="section-hdr">
+  <h2>2. กระบวนการคัดเลือก 5 ขั้นตอน</h2>
+  <span class="hbadge">S51 · 51.5</span>
+</div>
+
+<div class="stage-grid">
+  <div class="stage-card">
+    <div class="s-num">ขั้นที่ 1</div>
+    <div class="s-title">Pre-Qualification &amp; Market Engagement</div>
+    <div class="s-dur">2 สัปดาห์</div>
+    <ul class="s-items">
+      <li>เผยแพร่ PQ-GAP05-001</li>
+      <li>ประเมินคุณสมบัติเบื้องต้น</li>
+      <li>ประกาศรายชื่อ Long-list</li>
+    </ul>
+  </div>
+  <div class="stage-card">
+    <div class="s-num">ขั้นที่ 2</div>
+    <div class="s-title">RFP Issue &amp; Clarification</div>
+    <div class="s-dur">4 สัปดาห์</div>
+    <ul class="s-items">
+      <li>ออก RFP-GAP05-001</li>
+      <li>Q&amp;A session สำหรับผู้ขาย</li>
+      <li>ปิดรับข้อเสนอ</li>
+    </ul>
+  </div>
+  <div class="stage-card">
+    <div class="s-num">ขั้นที่ 3</div>
+    <div class="s-title">Technical Evaluation</div>
+    <div class="s-dur">3 สัปดาห์</div>
+    <ul class="s-items">
+      <li>ประเมินข้อเสนอเทคนิค</li>
+      <li>Demo AIE-001–005</li>
+      <li>คัดเหลือ Shortlist 3 ราย</li>
+    </ul>
+  </div>
+  <div class="stage-card">
+    <div class="s-num">ขั้นที่ 4</div>
+    <div class="s-title">Commercial &amp; Strategic Review</div>
+    <div class="s-dur">2 สัปดาห์</div>
+    <ul class="s-items">
+      <li>เจรจาราคาและเงื่อนไข</li>
+      <li>ตรวจสอบอ้างอิงลูกค้า</li>
+      <li>ประเมิน strategic fit</li>
+    </ul>
+  </div>
+  <div class="stage-card">
+    <div class="s-num">ขั้นที่ 5</div>
+    <div class="s-title">Award &amp; Contract Execution</div>
+    <div class="s-dur">2 สัปดาห์</div>
+    <ul class="s-items">
+      <li>SC อนุมัติผลการคัดเลือก</li>
+      <li>ลงนาม MSA + SOW</li>
+      <li>เริ่ม onboarding S52</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Section 3: Vendor Evaluation Criteria -->
+<div class="section-hdr">
+  <h2>3. เกณฑ์การประเมินผู้ขาย</h2>
+  <span class="hbadge">S51 · 51.3</span>
+</div>
+
+<div class="eval-grid">
+  <div class="eval-card tech">
+    <div class="ec-pct">40%</div>
+    <div class="ec-title">Technical Score</div>
+    <ul class="ec-items">
+      <li>สมรรถนะ AI/ML สำหรับ Generative Design</li>
+      <li>Architecture ที่ scale ได้ (50+ concurrent)</li>
+      <li>Latency SLA ตาม AIE-001–005 spec</li>
+      <li>Integration กับ MONOLITH API Gateway v2.5</li>
+      <li>Security: ISO 27001; TLS 1.3; OAuth 2.0</li>
+    </ul>
+  </div>
+  <div class="eval-card comm">
+    <div class="ec-pct">30%</div>
+    <div class="ec-title">Commercial Score</div>
+    <ul class="ec-items">
+      <li>ราคารวม AIE-001–005 ≤ THB 1.5M</li>
+      <li>โครงสร้าง payment milestones</li>
+      <li>เงื่อนไขการรับประกันและ SLA penalty</li>
+      <li>TCO 3 ปี (license + support + upgrade)</li>
+      <li>ความยืดหยุ่นในการเจรจาสัญญา</li>
+    </ul>
+  </div>
+  <div class="eval-card strat">
+    <div class="ec-pct">30%</div>
+    <div class="ec-title">Strategic Score</div>
+    <ul class="ec-items">
+      <li>ประสบการณ์งาน Interior/Hospitality Design</li>
+      <li>Portfolio ลูกค้าอ้างอิงในอุตสาหกรรม</li>
+      <li>Roadmap ผลิตภัณฑ์ 3 ปีที่สอดคล้องกับ Phase 3</li>
+      <li>ความพร้อมทีม Support ในประเทศไทย</li>
+      <li>ความมั่นคงทางการเงิน (Dun &amp; Bradstreet)</li>
+    </ul>
+  </div>
+</div>
+
+<div class="info-box">
+  <strong>เกณฑ์ผ่าน:</strong> ผู้ขายต้องได้คะแนน Technical ≥ 60% (ก่อนถ่วงน้ำหนัก) จึงจะผ่านการคัดกรองขั้นที่ 3
+  และต้องได้คะแนนรวม ≥ 70% เพื่อเข้ารับการพิจารณาในขั้นที่ 4 — Aria เป็นประธานคณะกรรมการประเมิน
+</div>
+
+<!-- PAGE BREAK -->
+<div class="page-break"></div>
+
+<!-- Page Header (page 2) -->
+<div class="page-header">
+  <div class="brand">MONOLITH DAPH Decor · AI Agent Programme · SOP v2.5</div>
+  <div class="doc-meta">
+    <div>เอกสาร: Thai Procurement Brief · S51</div>
+    <div>วันที่: 3 กันยายน 2569 · หน้า 2/2</div>
+  </div>
+</div>
+
+<!-- Section 4: SLA KPIs for AIE-001–005 -->
+<div class="section-hdr">
+  <h2>4. SLA KPIs สำหรับ AIE-001–005</h2>
+  <span class="hbadge">S51 · 51.6</span>
+</div>
+
+<table class="sla-tbl">
+  <thead>
+    <tr>
+      <th style="width:12%">โมดูล</th>
+      <th style="width:22%">ชื่อโมดูล</th>
+      <th style="width:18%">Latency (p95)</th>
+      <th style="width:14%">Availability</th>
+      <th style="width:18%">Error Rate สูงสุด</th>
+      <th style="width:16%">ผู้ติดตาม SLA</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="aie-code">AIE-001</span></td>
+      <td>Concept Generator</td>
+      <td><span class="sla-val">≤ 3 วินาที</span></td>
+      <td><span class="sla-pill sla-a">≥ 99.5%</span></td>
+      <td>≤ 0.5%</td>
+      <td>Nova + Signal</td>
+    </tr>
+    <tr>
+      <td><span class="aie-code">AIE-002</span></td>
+      <td>Style Harmoniser</td>
+      <td><span class="sla-val">≤ 5 วินาที</span></td>
+      <td><span class="sla-pill sla-a">≥ 99.5%</span></td>
+      <td>≤ 0.5%</td>
+      <td>Nova + Signal</td>
+    </tr>
+    <tr>
+      <td><span class="aie-code">AIE-003</span></td>
+      <td>Material Specifier</td>
+      <td><span class="sla-val">≤ 10 วินาที</span></td>
+      <td><span class="sla-pill sla-b">≥ 99.0%</span></td>
+      <td>≤ 1.0%</td>
+      <td>Nova</td>
+    </tr>
+    <tr>
+      <td><span class="aie-code">AIE-004</span></td>
+      <td>Mood Board Assembler</td>
+      <td><span class="sla-val">≤ 30 วินาที</span></td>
+      <td><span class="sla-pill sla-b">≥ 99.0%</span></td>
+      <td>≤ 1.0%</td>
+      <td>Nova</td>
+    </tr>
+    <tr>
+      <td><span class="aie-code">AIE-005</span></td>
+      <td>Client Presentation Renderer</td>
+      <td><span class="sla-val">≤ 60 วินาที</span></td>
+      <td><span class="sla-pill sla-b">≥ 99.0%</span></td>
+      <td>≤ 2.0%</td>
+      <td>Nova + Aria</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="two-col">
+  <div class="col-card">
+    <div class="cc-title">SLA Penalty Schedule</div>
+    <ul class="cc-items">
+      <li>Availability &lt; 99.5% ในเดือนใด: service credit 5% ของค่า license เดือนนั้น</li>
+      <li>Availability &lt; 98.0%: service credit 15%; right to escalate to SC</li>
+      <li>Availability &lt; 95.0% ติดต่อกัน 2 เดือน: สิทธิ์บอกเลิกสัญญา</li>
+      <li>Latency เกิน SLA &gt; 5% ของ requests ในเดือน: service credit 3%</li>
+    </ul>
+  </div>
+  <div class="col-card">
+    <div class="cc-title">KPI Monitoring — Nova Dashboard</div>
+    <ul class="cc-items">
+      <li>Real-time availability tracking ทุก AIE module</li>
+      <li>Latency percentile charts: p50, p95, p99</li>
+      <li>Error rate monitoring พร้อม alert threshold</li>
+      <li>รายงาน SLA compliance รายเดือนต่อ SC</li>
+      <li>Hypercare period: enhanced 30-min reporting cycle</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Section 5: Contract Management & P2-CHK -->
+<div class="section-hdr">
+  <h2>5. การจัดการสัญญา &amp; รายการตรวจสอบ P2-CHK</h2>
+  <span class="hbadge">S51 · 51.7</span>
+</div>
+
+<div class="checklist">
+  <div class="chk-item">
+    <div class="chk-box"></div>
+    <div>
+      <span class="chk-id">P2-CHK-01</span>
+      <div class="chk-txt">ยืนยัน SC Resolution SC-2032-XX อนุมัติ Phase 2 Programme</div>
+    </div>
+  </div>
+  <div class="chk-item">
+    <div class="chk-box"></div>
+    <div>
+      <span class="chk-id">P2-CHK-02</span>
+      <div class="chk-txt">จัดสรรงบประมาณ THB 1.5M สำหรับ GAP-05 ยืนยันแล้ว (Core)</div>
+    </div>
+  </div>
+  <div class="chk-item">
+    <div class="chk-box"></div>
+    <div>
+      <span class="chk-id">P2-CHK-03</span>
+      <div class="chk-txt">เกณฑ์ประเมิน Technical/Commercial/Strategic อนุมัติโดย SC Chair</div>
+    </div>
+  </div>
+  <div class="chk-item">
+    <div class="chk-box"></div>
+    <div>
+      <span class="chk-id">P2-CHK-04</span>
+      <div class="chk-txt">SOW AIE-001–005 ร่างและตรวจสอบโดย Signal และ Aria แล้ว</div>
+    </div>
+  </div>
+  <div class="chk-item">
+    <div class="chk-box"></div>
+    <div>
+      <span class="chk-id">P2-CHK-05</span>
+      <div class="chk-txt">DPA template ผ่านการตรวจสอบ PDPA compliance โดย Core</div>
+    </div>
+  </div>
+  <div class="chk-item">
+    <div class="chk-box"></div>
+    <div>
+      <span class="chk-id">P2-CHK-06</span>
+      <div class="chk-txt">Long-list ผู้ขาย ≥ 5 ราย จาก Pre-Qualification PQ-GAP05-001</div>
+    </div>
+  </div>
+  <div class="chk-item">
+    <div class="chk-box"></div>
+    <div>
+      <span class="chk-id">P2-CHK-07</span>
+      <div class="chk-txt">คณะกรรมการประเมิน (Aria, Signal, Programme Director) ได้รับการแต่งตั้ง</div>
+    </div>
+  </div>
+  <div class="chk-item">
+    <div class="chk-box"></div>
+    <div>
+      <span class="chk-id">P2-CHK-08</span>
+      <div class="chk-txt">UAT acceptance criteria AIE-001–005 กำหนดและอนุมัติโดย Aria</div>
+    </div>
+  </div>
+</div>
+
+<!-- Agents Row -->
+<div class="section-hdr" style="margin-top:6pt">
+  <h2>Agents รับผิดชอบ Phase 2 Procurement</h2>
+  <span class="hbadge">Ownership</span>
+</div>
+
+<div class="agents-row">
+  <span class="agent-chip ag-a">Aria — Procurement Lead</span>
+  <span class="agent-chip ag-a">Signal — Technology Integration</span>
+  <span class="agent-chip ag-a">Core — Finance &amp; Legal</span>
+  <span class="agent-chip ag-b">Nova — KPI Monitoring</span>
+  <span class="agent-chip ag-b">Nexus — Security &amp; Audit</span>
+  <span class="agent-chip ag-b">Guardian — Compliance</span>
+  <span class="agent-chip ag-c">Phase 2 Programme Director</span>
+  <span class="agent-chip ag-c">SC Chair (อนุมัติขั้นสุดท้าย)</span>
+</div>
+
+<!-- Footer -->
+<div class="page-footer">
+  <div class="pf-left">
+    <strong>MONOLITH DAPH Decor AI Agent Programme</strong> · SOP v2.5 · S51 Procurement Framework Brief
+  </div>
+  <div class="pf-right">
+    <div>RFP-GAP05-001 · Phase 2 · GAP-05 AI Creative Engine</div>
+    <div>จัดทำโดย Scispace Agent · 3 กันยายน 2569</div>
+  </div>
+</div>
+
+</body>
+</html>

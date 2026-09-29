@@ -6,12 +6,9 @@ name: Lint
 # GATE POLICY (deliberate, two-stage):
 #   errors   -> BLOCKING from day one. The tree is at 0 errors, so any error is
 #               something the PR itself introduced.
-#   warnings -> REPORTED, NOT BLOCKING, for now. There are ~1187 pre-existing
-#               warnings (two mechanical rules account for ~1182 of them).
-#               Making them blocking today would red-line every open PR across
-#               the other worktrees for problems they did not introduce.
-#               Flip `continue-on-error` to false on the warning-budget job
-#               once the burn-down lands.
+#   warnings -> BLOCKING RATCHET at the measured baseline in package.json.
+#               The current debt is not accepted as done, but no PR may add to
+#               it while the remaining warnings are reduced incrementally.
 #
 # THE CEILING HAS ONE DEFINITION. It lives in package.json as
 # `lint:budget` ("eslint . --max-warnings <N>") and this workflow INVOKES that
@@ -23,12 +20,39 @@ name: Lint
 on:
   push:
     branches: [main, develop]
+    paths:
+      - 'src/**'
+      - 'server/**'
+      - '*.ts'
+      - '*.tsx'
+      - '*.js'
+      - '*.jsx'
+      - 'eslint.config.*'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig*.json'
+      - '.github/workflows/**'   # catch non-compliant secret names in new workflows
   pull_request:
+    paths:
+      - 'src/**'
+      - 'server/**'
+      - '*.ts'
+      - '*.tsx'
+      - '*.js'
+      - '*.jsx'
+      - 'eslint.config.*'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig*.json'
+      - '.github/workflows/**'   # catch non-compliant secret names in new workflows
   workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   eslint:
@@ -63,10 +87,9 @@ jobs:
         run: npm run lint
 
   warning-budget:
-    name: ESLint warning budget (report only)
+    name: ESLint warning budget (blocking ratchet)
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    continue-on-error: true # flip to false after the warning burn-down
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
@@ -116,3 +139,16 @@ jobs:
       # including in the CNC post-processor — would have shipped unnoticed.
       - name: Typecheck server
         run: npm run typecheck:server
+
+  secret-name-lint:
+    name: Secret name lint (MODULE_SERVICE_CREDENTIAL_TYPE)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    # Python 3 is pre-installed on ubuntu-latest — no setup-python needed.
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Validate secret names
+        run: python3 scripts/lint_secret_names.py

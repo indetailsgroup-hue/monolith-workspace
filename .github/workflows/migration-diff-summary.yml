@@ -1,0 +1,368 @@
+name: Migration Diff Summary
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+    types: [opened, synchronize, reopened]
+
+  # Manual trigger — useful for testing against an existing PR without waiting
+  # for a real migration change push.
+  # Required inputs:
+  #   pr_number  — PR to comment on (e.g. 52)
+  #   base_sha   — base branch tip SHA (find on the PR's "Commits" tab)
+  #   head_sha   — PR head commit SHA  (find on the PR's "Commits" tab)
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to comment on'
+        required: true
+        type: string
+      base_sha:
+        description: 'Base branch tip SHA (PR base)'
+        required: true
+        type: string
+      head_sha:
+        description: 'PR head commit SHA'
+        required: true
+        type: string
+
+permissions:
+  pull-requests: write
+  contents: read
+
+
+concurrency:
+  group: migration-diff-summary-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+jobs:
+  migration-summary:
+    name: Summarise SQL migration changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout (full history for diff)
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect and parse migration files
+        id: parse
+        env:
+          BASE_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.base_sha || github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.head_sha || github.event.pull_request.head.sha }}
+        run: |
+          python3 << 'PYEOF'
+          import subprocess, os, re, json, pathlib
+
+          base_sha = os.environ["BASE_SHA"]
+          head_sha = os.environ["HEAD_SHA"]
+
+          # ── Detect added/modified SQL files under supabase/migrations/ ────────
+          result = subprocess.run(
+              ["git", "diff", "--name-only", "--diff-filter=AM",
+               f"{base_sha}...{head_sha}", "--", "supabase/migrations/"],
+              capture_output=True, text=True, check=True,
+          )
+          changed_files = [f.strip() for f in result.stdout.splitlines() if f.strip().endswith(".sql")]
+
+          summary  = []
+          all_rls  = []
+          all_warnings = []
+
+          for filepath in changed_files:
+              p = pathlib.Path(filepath)
+              if not p.exists():
+                  continue
+
+              sql = p.read_text(encoding="utf-8", errors="replace")
+              fname = p.name
+
+              # ── DDL extraction ───────────────────────────────────────────────
+              tables       = re.findall(r"CREATE\s+TABLE(?:\s+IF\s+NOT\s+EXISTS)?\s+([\w\.\"]+)", sql, re.IGNORECASE)
+              views        = re.findall(r"CREATE\s+(?:OR\s+REPLACE\s+)?VIEW\s+([\w\.\"]+)", sql, re.IGNORECASE)
+              functions    = re.findall(r"CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+([\w\.\"]+)\s*\(", sql, re.IGNORECASE)
+              triggers     = re.findall(r"CREATE\s+(?:OR\s+REPLACE\s+)?TRIGGER\s+([\w\"]+)", sql, re.IGNORECASE)
+              indexes      = re.findall(r"CREATE\s+(?:UNIQUE\s+)?INDEX(?:\s+CONCURRENTLY)?(?:\s+IF\s+NOT\s+EXISTS)?\s+([\w\"]+)", sql, re.IGNORECASE)
+              extensions   = re.findall(r"CREATE\s+EXTENSION(?:\s+IF\s+NOT\s+EXISTS)?\s+([\w\"]+)", sql, re.IGNORECASE)
+              alter_tables = re.findall(r"ALTER\s+TABLE\s+([\w\.\"]+)", sql, re.IGNORECASE)
+              rls_enables  = re.findall(
+                  r"ALTER\s+TABLE\s+([\w\.\"]+)\s+ENABLE\s+ROW\s+LEVEL\s+SECURITY",
+                  sql, re.IGNORECASE,
+              )
+              policies = re.findall(
+                  r"CREATE\s+POLICY\s+([\w\"]+)\s+ON\s+([\w\.\"]+)(?:.*?(?:USING|WITH CHECK)\s*\((.+?)\))?",
+                  sql, re.IGNORECASE | re.DOTALL,
+              )
+
+              # ── Is this file new or modified? ────────────────────────────────
+              is_new = bool(subprocess.run(
+                  ["git", "diff", "--diff-filter=A", "--name-only",
+                   f"{base_sha}...{head_sha}", "--", filepath],
+                  capture_output=True, text=True,
+              ).stdout.strip())
+
+              label = "New" if is_new else "Modified"
+
+              # ── RLS policy list ──────────────────────────────────────────────
+              file_rls = []
+              for pol_name, pol_table, pol_expr in policies:
+                  expr_clean = re.sub(r"\s+", " ", pol_expr.strip())[:120] if pol_expr else ""
+                  file_rls.append({
+                      "policy": pol_name.strip('"'),
+                      "table":  pol_table.strip('"'),
+                      "expr":   expr_clean,
+                  })
+              all_rls.extend(file_rls)
+
+              # ── Warning: SECURITY DEFINER functions ──────────────────────────
+              # Split SQL into per-function blocks to isolate SECURITY DEFINER usage
+              sec_definer_funcs = []
+              func_blocks = re.split(
+                  r"(?=CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s)", sql, flags=re.IGNORECASE,
+              )
+              for block in func_blocks:
+                  m = re.match(
+                      r"CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+([\w\.\"]+)\s*\(",
+                      block, re.IGNORECASE,
+                  )
+                  if m and re.search(r"\bSECURITY\s+DEFINER\b", block, re.IGNORECASE):
+                      sec_definer_funcs.append(m.group(1).strip('"'))
+
+              if sec_definer_funcs:
+                  all_warnings.append({
+                      "level":   "WARN",
+                      "code":    "SECURITY_DEFINER",
+                      "file":    fname,
+                      "objects": sec_definer_funcs,
+                      "message": (
+                          f"SECURITY DEFINER function(s): "
+                          + ", ".join(f"`{f}`" for f in sec_definer_funcs)
+                      ),
+                      "detail":  (
+                          "Runs with the owner's privileges. "
+                          "Verify intent and ensure all inputs are sanitised to prevent privilege escalation."
+                      ),
+                  })
+
+              # ── Warning: new tables without RLS enabled ──────────────────────
+              # Only flag tables introduced in this diff (new file or net-new CREATE TABLE).
+              # A table without a matching ENABLE ROW LEVEL SECURITY in the same file
+              # is a security gap in Supabase projects.
+              rls_enabled_bare = {
+                  t.strip('"').split(".")[-1].strip('"').lower()
+                  for t in rls_enables
+              }
+              tables_without_rls = []
+              for table in tables:
+                  bare = table.strip('"').split(".")[-1].strip('"').lower()
+                  if bare not in rls_enabled_bare:
+                      tables_without_rls.append(table)
+
+              if tables_without_rls:
+                  all_warnings.append({
+                      "level":   "WARN",
+                      "code":    "MISSING_RLS",
+                      "file":    fname,
+                      "objects": tables_without_rls,
+                      "message": (
+                          f"Table(s) without RLS: "
+                          + ", ".join(f"`{t}`" for t in tables_without_rls)
+                      ),
+                      "detail":  (
+                          "Add `ALTER TABLE <name> ENABLE ROW LEVEL SECURITY;` "
+                          "and at least one policy, or grant explicit public access intentionally."
+                      ),
+                  })
+
+              summary.append({
+                  "file":         filepath,
+                  "fname":        fname,
+                  "label":        label,
+                  "tables":       tables,
+                  "views":        views,
+                  "functions":    functions,
+                  "triggers":     triggers,
+                  "indexes":      indexes,
+                  "extensions":   extensions,
+                  "alter_tables": alter_tables,
+                  "rls_enables":  rls_enables,
+                  "policies":     file_rls,
+                  "warnings":     [w for w in all_warnings if w["file"] == fname],
+              })
+
+          output = {
+              "changed_files": changed_files,
+              "summary":       summary,
+              "all_rls":       all_rls,
+              "all_warnings":  all_warnings,
+          }
+          pathlib.Path("migration-summary.json").write_text(json.dumps(output, indent=2))
+          warn_count = len(all_warnings)
+          print(f"Parsed {len(changed_files)} file(s), {len(all_rls)} RLS polic(ies), {warn_count} warning(s)")
+          PYEOF
+
+      - name: Upload migration summary artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: migration-summary
+          path: migration-summary.json
+          if-no-files-found: warn
+
+      - name: Post migration diff comment
+        if: always()
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs   = require('fs');
+            const path = require('path');
+
+            const MARKER = '<!-- migration-diff-summary -->';
+
+            // ── Resolve PR number (PR event or workflow_dispatch input) ────────
+            const prNumber = context.eventName === 'workflow_dispatch'
+              ? parseInt(context.payload.inputs.pr_number, 10)
+              : context.issue.number;
+
+            if (!prNumber || isNaN(prNumber)) {
+              core.setFailed('Could not determine PR number — pass pr_number input for workflow_dispatch.');
+              return;
+            }
+
+            // ── Load parsed summary ────────────────────────────────────────────
+            let data = null;
+            try {
+              data = JSON.parse(fs.readFileSync('migration-summary.json', 'utf8'));
+            } catch (_) { /* file missing */ }
+
+            let body;
+
+            if (!data || data.changed_files.length === 0) {
+              body = [
+                MARKER,
+                '## 🗄️ Migration Diff Summary',
+                '',
+                'No SQL migration files were added or modified in this PR, or the parser did not run.',
+              ].join('\n');
+            } else {
+              const lines = [MARKER, '## 🗄️ Migration Diff Summary', ''];
+
+              // ── Warnings section ───────────────────────────────────────────
+              const warnings = data.all_warnings || [];
+              if (warnings.length > 0) {
+                lines.push('### ⚠️ Security Warnings');
+                lines.push('');
+                lines.push('| Level | Code | File | Finding |');
+                lines.push('|---|---|---|---|');
+                for (const w of warnings) {
+                  lines.push(
+                    `| ⚠️ ${w.level} | \`${w.code}\` | \`${w.file}\` | ${w.message} |`
+                  );
+                }
+                lines.push('');
+                lines.push('<details>');
+                lines.push('<summary>Warning details & remediation</summary>');
+                lines.push('');
+                for (const w of warnings) {
+                  lines.push(`**\`${w.code}\` in \`${w.file}\`**`);
+                  lines.push('');
+                  lines.push(`> ${w.detail}`);
+                  lines.push('');
+                }
+                lines.push('</details>');
+                lines.push('');
+              }
+
+              // ── Overview table ─────────────────────────────────────────────
+              lines.push('### Overview');
+              lines.push('');
+              lines.push('| Status | File | Tables | Views | Functions | Triggers | Indexes | RLS Policies | Warnings |');
+              lines.push('|---|---|---|---|---|---|---|---|---|');
+              for (const f of data.summary) {
+                const statusEmoji = f.label === 'New' ? '🆕' : '✏️';
+                const warnCell    = f.warnings.length > 0
+                  ? `⚠️ ${f.warnings.length}`
+                  : '—';
+                lines.push(
+                  `| ${statusEmoji} ${f.label} | \`${f.fname}\`` +
+                  ` | ${f.tables.length   || '—'}` +
+                  ` | ${f.views.length    || '—'}` +
+                  ` | ${f.functions.length|| '—'}` +
+                  ` | ${f.triggers.length || '—'}` +
+                  ` | ${f.indexes.length  || '—'}` +
+                  ` | ${f.policies.length || '—'}` +
+                  ` | ${warnCell} |`
+                );
+              }
+
+              // ── Per-file details (collapsed) ───────────────────────────────
+              for (const f of data.summary) {
+                const sections = [];
+                if (f.tables.length)       sections.push(`**Tables created:** ${f.tables.map(t=>`\`${t}\``).join(', ')}`);
+                if (f.views.length)        sections.push(`**Views:** ${f.views.map(t=>`\`${t}\``).join(', ')}`);
+                if (f.functions.length)    sections.push(`**Functions:** ${f.functions.map(t=>`\`${t}\``).join(', ')}`);
+                if (f.triggers.length)     sections.push(`**Triggers:** ${f.triggers.map(t=>`\`${t}\``).join(', ')}`);
+                if (f.indexes.length)      sections.push(`**Indexes:** ${f.indexes.map(t=>`\`${t}\``).join(', ')}`);
+                if (f.extensions.length)   sections.push(`**Extensions:** ${f.extensions.map(t=>`\`${t}\``).join(', ')}`);
+                if (f.alter_tables.length) sections.push(`**Tables altered:** ${[...new Set(f.alter_tables)].map(t=>`\`${t}\``).join(', ')}`);
+                if (f.rls_enables.length)  sections.push(`**RLS enabled on:** ${f.rls_enables.map(t=>`\`${t}\``).join(', ')}`);
+                if (sections.length === 0) sections.push('_No parseable DDL statements detected._');
+
+                lines.push('');
+                lines.push('<details>');
+                lines.push(`<summary><strong>${f.fname}</strong> — ${f.label === 'New' ? '🆕 New' : '✏️ Modified'}</summary>`);
+                lines.push('');
+                lines.push(sections.join('\n\n'));
+                lines.push('');
+                lines.push('</details>');
+              }
+
+              // ── RLS policy detail (collapsed) ──────────────────────────────
+              if (data.all_rls.length > 0) {
+                lines.push('');
+                lines.push('<details>');
+                lines.push('<summary>🔒 RLS Policy Detail</summary>');
+                lines.push('');
+                lines.push('| Policy | Table | Expression (truncated) |');
+                lines.push('|---|---|---|');
+                for (const pol of data.all_rls) {
+                  const expr = pol.expr ? `\`${pol.expr}\`` : '—';
+                  lines.push(`| \`${pol.policy}\` | \`${pol.table}\` | ${expr} |`);
+                }
+                lines.push('');
+                lines.push('</details>');
+              }
+
+              body = lines.join('\n');
+            }
+
+            // ── Upsert comment ─────────────────────────────────────────────────
+            const { data: comments } = await github.rest.issues.listComments({
+              owner:        context.repo.owner,
+              repo:         context.repo.repo,
+              issue_number: prNumber,
+            });
+
+            const existing = comments.find(c => c.body && c.body.includes(MARKER));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner:      context.repo.owner,
+                repo:       context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+              console.log(`Updated existing comment ${existing.id} on PR #${prNumber}`);
+            } else {
+              await github.rest.issues.createComment({
+                owner:        context.repo.owner,
+                repo:         context.repo.repo,
+                issue_number: prNumber,
+                body,
+              });
+              console.log(`Created new comment on PR #${prNumber}`);
+            }

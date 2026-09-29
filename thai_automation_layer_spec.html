@@ -1,0 +1,1855 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Automation Layer Spec — LINE Messaging API + MCP Integration | MONOLITH</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:   #1f2d5a;
+    --gold:   #c9a84c;
+    --green:  #2d7a4f;
+    --red:    #c0392b;
+    --line-green: #06C755;
+    --bg:     #f8f9fc;
+    --card:   #ffffff;
+    --border: #e2e8f0;
+    --text:   #1e293b;
+    --muted:  #64748b;
+    --code-bg:#1e293b;
+    --code-text:#e2e8f0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Sarabun', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.7; }
+
+  /* HEADER */
+  .page-header {
+    background: linear-gradient(135deg, var(--navy) 0%, #2a3d7a 60%, #1a2550 100%);
+    color: #fff; padding: 40px 48px 36px; border-bottom: 4px solid var(--gold);
+  }
+  .page-header .badge {
+    display: inline-block; background: var(--line-green); color: #fff;
+    font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px;
+    letter-spacing: .5px; margin-bottom: 12px; text-transform: uppercase;
+  }
+  .page-header h1 { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+  .page-header p { font-size: 14px; opacity: .8; margin-bottom: 16px; }
+  .header-meta { display: flex; gap: 24px; flex-wrap: wrap; }
+  .header-meta span {
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+    padding: 4px 14px; border-radius: 20px; font-size: 12px;
+  }
+  .header-meta span b { color: var(--gold); }
+
+  /* DEPRECATION NOTICE */
+  .dep-notice {
+    background: #fff3cd; border-left: 4px solid #f39c12;
+    padding: 12px 20px; margin: 20px 48px 0; border-radius: 6px; font-size: 13px;
+  }
+  .dep-notice strong { color: #856404; }
+
+  /* TABS */
+  .tab-nav {
+    display: flex; gap: 0; background: var(--navy);
+    padding: 0 48px; overflow-x: auto;
+  }
+  .tab-btn {
+    background: none; border: none; color: rgba(255,255,255,.6);
+    padding: 14px 22px; font-family: 'Sarabun', sans-serif; font-size: 13px;
+    font-weight: 600; cursor: pointer; white-space: nowrap;
+    border-bottom: 3px solid transparent; transition: all .2s;
+  }
+  .tab-btn:hover { color: #fff; background: rgba(255,255,255,.07); }
+  .tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); background: rgba(255,255,255,.05); }
+
+  /* CONTENT */
+  .tab-content { display: none; padding: 36px 48px 60px; max-width: 1300px; }
+  .tab-content.active { display: block; }
+
+  /* SECTION TITLE */
+  .section-title {
+    font-size: 18px; font-weight: 700; color: var(--navy);
+    border-left: 4px solid var(--gold); padding-left: 14px;
+    margin-bottom: 20px; margin-top: 36px;
+  }
+  .section-title:first-child { margin-top: 0; }
+
+  /* CARDS */
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 24px; margin-bottom: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  }
+  .card-title {
+    font-size: 14px; font-weight: 700; color: var(--navy);
+    margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+  }
+
+  /* GRID */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+  /* ARCH DIAGRAM */
+  .arch-flow {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0; flex-wrap: wrap; padding: 28px 20px;
+    background: #f1f5f9; border-radius: 10px; margin-bottom: 20px;
+  }
+  .arch-box {
+    background: var(--navy); color: #fff;
+    padding: 12px 18px; border-radius: 8px; font-size: 12px; font-weight: 700;
+    text-align: center; min-width: 120px; line-height: 1.4;
+  }
+  .arch-box.line { background: var(--line-green); }
+  .arch-box.gold { background: var(--gold); color: var(--navy); }
+  .arch-box.green { background: var(--green); }
+  .arch-box sub { font-size: 10px; font-weight: 400; opacity: .85; display: block; }
+  .arch-arrow {
+    color: var(--muted); font-size: 20px; padding: 0 8px;
+  }
+
+  /* DEPARTMENT CHANNELS TABLE */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    background: var(--navy); color: #fff;
+    padding: 10px 14px; text-align: left; font-weight: 600;
+  }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even) td { background: #f8f9fc; }
+
+  /* STEP LIST */
+  .step-list { list-style: none; }
+  .step-list li {
+    display: flex; gap: 14px; align-items: flex-start;
+    padding: 14px 0; border-bottom: 1px solid var(--border);
+  }
+  .step-list li:last-child { border-bottom: none; }
+  .step-num {
+    background: var(--navy); color: #fff;
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; flex-shrink: 0; margin-top: 2px;
+  }
+  .step-body { flex: 1; }
+  .step-body strong { font-size: 14px; color: var(--navy); display: block; margin-bottom: 4px; }
+  .step-body p { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+
+  /* CODE BLOCKS */
+  .code-block {
+    background: var(--code-bg); color: var(--code-text);
+    border-radius: 8px; padding: 18px 20px; font-family: 'Courier New', monospace;
+    font-size: 12px; line-height: 1.7; overflow-x: auto;
+    margin: 10px 0;
+  }
+  .code-block .c { color: #94a3b8; } /* comment */
+  .code-block .k { color: #93c5fd; } /* keyword */
+  .code-block .s { color: #86efac; } /* string */
+  .code-block .n { color: #fde68a; } /* function name */
+  .code-block .v { color: #c4b5fd; } /* variable */
+  .code-block .g { color: var(--line-green); } /* LINE green highlight */
+
+  /* FLEX MESSAGE PREVIEW */
+  .flex-preview {
+    background: #f0f0f0; border-radius: 12px; padding: 20px;
+    max-width: 340px; box-shadow: 0 2px 8px rgba(0,0,0,.12);
+  }
+  .flex-bubble {
+    background: #fff; border-radius: 10px; overflow: hidden;
+    box-shadow: 0 1px 6px rgba(0,0,0,.15);
+  }
+  .flex-header {
+    padding: 14px 16px; color: #fff; font-weight: 700; font-size: 13px;
+  }
+  .flex-body { padding: 14px 16px; font-size: 12px; line-height: 1.6; }
+  .flex-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+  .flex-row .label { color: #888; }
+  .flex-row .value { font-weight: 600; color: var(--text); }
+  .flex-footer {
+    padding: 10px 16px; border-top: 1px solid #eee; display: flex; gap: 8px;
+  }
+  .flex-btn {
+    flex: 1; padding: 8px; border-radius: 6px; font-size: 11px;
+    font-weight: 700; text-align: center; cursor: pointer;
+  }
+  .flex-btn.primary { background: var(--line-green); color: #fff; }
+  .flex-btn.secondary { background: #f0f0f0; color: #333; }
+
+  /* DEPT TABS */
+  .dept-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
+  .dept-btn {
+    padding: 7px 16px; border-radius: 20px; border: 2px solid var(--border);
+    background: #fff; font-family: 'Sarabun', sans-serif; font-size: 12px;
+    font-weight: 600; cursor: pointer; transition: all .2s;
+  }
+  .dept-btn:hover { border-color: var(--navy); color: var(--navy); }
+  .dept-btn.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .dept-panel { display: none; }
+  .dept-panel.active { display: block; }
+
+  /* ENV TABLE */
+  .env-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .env-table th { background: #334155; color: #fff; padding: 8px 12px; text-align: left; }
+  .env-table td { padding: 8px 12px; border-bottom: 1px solid #334155; background: #1e293b; color: #e2e8f0; font-family: monospace; }
+  .env-table td.desc { color: #94a3b8; font-family: 'Sarabun', sans-serif; }
+
+  /* BADGE */
+  .badge-pill {
+    display: inline-block; padding: 2px 10px; border-radius: 12px;
+    font-size: 11px; font-weight: 700;
+  }
+  .badge-pill.green { background: #dcfce7; color: #166534; }
+  .badge-pill.red { background: #fee2e2; color: #991b1b; }
+  .badge-pill.gold { background: #fef9c3; color: #854d0e; }
+  .badge-pill.blue { background: #dbeafe; color: #1e40af; }
+  .badge-pill.line { background: #dcfce7; color: #06C755; }
+
+  /* INFO BOX */
+  .info-box {
+    background: #eff6ff; border: 1px solid #bfdbfe;
+    border-left: 4px solid #3b82f6; border-radius: 6px;
+    padding: 14px 18px; font-size: 13px; margin: 14px 0;
+  }
+  .warn-box {
+    background: #fffbeb; border: 1px solid #fde68a;
+    border-left: 4px solid #f59e0b; border-radius: 6px;
+    padding: 14px 18px; font-size: 13px; margin: 14px 0;
+  }
+
+  /* FOOTER */
+  .page-footer {
+    background: var(--navy); color: rgba(255,255,255,.5);
+    text-align: center; padding: 20px; font-size: 12px; margin-top: 40px;
+  }
+
+  @media (max-width: 768px) {
+    .page-header, .tab-content { padding: 24px 20px; }
+    .dep-notice { margin: 12px 20px 0; }
+    .tab-nav { padding: 0 12px; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <div class="badge">Layer 5 — Automation</div>
+  <h1>Automation Layer Spec — LINE Messaging API + MCP Integration</h1>
+  <p>FastAPI Notification Service · LINE Official Account · Flex Message Templates · Python Scaffold</p>
+  <div class="header-meta">
+    <span><b>n:</b>161</span>
+    <span><b>Version:</b> v2.5</span>
+    <span><b>Stack:</b> FastAPI + LINE Messaging API</span>
+    <span><b>Departments:</b> Sale / Designer / PM / Factory / Procurement / Install</span>
+    <span><b>Status:</b> <span style="color:#86efac">Draft Spec</span></span>
+  </div>
+</div>
+
+<div class="dep-notice">
+  ⚠️ <strong>LINE Notify เลิกให้บริการแล้วตั้งแต่ 31 มีนาคม 2025</strong> — ระบบนี้ใช้ <strong>LINE Messaging API</strong> เท่านั้น ห้ามใช้ LINE Notify โดยเด็ดขาด
+</div>
+
+<!-- TAB NAV -->
+<nav class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('overview', this)">01 ภาพรวมระบบ</button>
+  <button class="tab-btn" onclick="switchTab('setup', this)">02 LINE OA Setup</button>
+  <button class="tab-btn" onclick="switchTab('flex', this)">03 Flex Message Templates</button>
+  <button class="tab-btn" onclick="switchTab('code', this)">04 Python Code Scaffold</button>
+  <button class="tab-btn" onclick="switchTab('mcp', this)">05 MCP Integration</button>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     TAB 01: ภาพรวมระบบ
+═══════════════════════════════════════════════════════════════ -->
+<div id="tab-overview" class="tab-content active">
+
+  <div class="section-title">สถาปัตยกรรม Automation Layer</div>
+
+  <div class="arch-flow">
+    <div class="arch-box">MCP Event<sub>Agent Action Trigger</sub></div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-box gold">FastAPI<sub>Notification Service</sub></div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-box" style="background:#334155">Router<sub>dept / role / severity</sub></div>
+    <div class="arch-arrow">→</div>
+    <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
+      <div class="arch-box line">LINE Group<sub>Internal Teams</sub></div>
+      <div class="arch-box line">LINE OA<sub>Customer Channel</sub></div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">🏗️ Components หลัก</div>
+      <table>
+        <tr><th>Component</th><th>หน้าที่</th></tr>
+        <tr><td><code>webhook_handler.py</code></td><td>รับ POST จาก MCP Events</td></tr>
+        <tr><td><code>line_notifier.py</code></td><td>ส่ง message ไป LINE Group แต่ละแผนก</td></tr>
+        <tr><td><code>line_oa.py</code></td><td>ส่ง push message หาลูกค้าผ่าน LINE OA</td></tr>
+        <tr><td><code>flex_builder.py</code></td><td>สร้าง Flex Message JSON per event type</td></tr>
+        <tr><td><code>scheduler.py</code></td><td>APScheduler — remind / escalate / cron</td></tr>
+        <tr><td><code>line_signature.py</code></td><td>ตรวจสอบ X-Line-Signature (HMAC-SHA256)</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 การตัดสินใจ Platform</div>
+      <table>
+        <tr><th>Channel</th><th>ใช้สำหรับ</th><th>เหตุผล</th></tr>
+        <tr><td><span class="badge-pill line">LINE Group Bot</span></td><td>Internal Teams</td><td>ทุกคนใช้ LINE อยู่แล้ว</td></tr>
+        <tr><td><span class="badge-pill line">LINE OA Push</span></td><td>ลูกค้า</td><td>แจ้งสถานะ order / นัดหมาย</td></tr>
+        <tr><td><span class="badge-pill blue">Slack</span></td><td>Dev/Admin เท่านั้น</td><td>Log / Alert (optional)</td></tr>
+        <tr><td><span class="badge-pill red">LINE Notify</span></td><td>❌ ห้ามใช้</td><td>Deprecated มี.ค. 2025</td></tr>
+        <tr><td><span class="badge-pill gold">Email (SMTP)</span></td><td>เอกสารทางการ</td><td>ใบเสนอราคา / รายงาน</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="section-title">Department → LINE Channel Mapping</div>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Department</th>
+        <th>LINE Channel Type</th>
+        <th>ENV Variable</th>
+        <th>Event ที่รับ</th>
+        <th>ตัวอย่าง Notification</th>
+      </tr>
+      <tr>
+        <td><strong>Sale</strong></td>
+        <td>LINE Group (Bot)</td>
+        <td><code>LINE_GROUP_SALE</code></td>
+        <td>new_inquiry, handoff_complete, escalation</td>
+        <td>"ลูกค้าใหม่ — ห้องนอน 3 ชั้น — Budget 450K"</td>
+      </tr>
+      <tr>
+        <td><strong>Designer</strong></td>
+        <td>LINE Group (Bot)</td>
+        <td><code>LINE_GROUP_DESIGNER</code></td>
+        <td>brief_received, approval_request, revision</td>
+        <td>"Brief ใหม่รอ approve — ครบ 24h ใน: 23:15"</td>
+      </tr>
+      <tr>
+        <td><strong>PM</strong></td>
+        <td>LINE Group (Bot)</td>
+        <td><code>LINE_GROUP_PM</code></td>
+        <td>project_created, milestone, first_response_4h</td>
+        <td>"⚠️ first_response ครบ 4h ใน 30 นาที"</td>
+      </tr>
+      <tr>
+        <td><strong>Factory</strong></td>
+        <td>LINE Group (Bot)</td>
+        <td><code>LINE_GROUP_FACTORY</code></td>
+        <td>production_order, qc_checkpoint, halt_alert</td>
+        <td>"🛑 HALT — QC Fail — ลิ้นชักฝาหน้า lot 2024-A"</td>
+      </tr>
+      <tr>
+        <td><strong>Procurement</strong></td>
+        <td>LINE Group (Bot)</td>
+        <td><code>LINE_GROUP_PROCUREMENT</code></td>
+        <td>bom_received, budget_approval, stock_alert</td>
+        <td>"Stock Alert — วัสดุ MAT-0042 เหลือ 3 ชิ้น"</td>
+      </tr>
+      <tr>
+        <td><strong>Install</strong></td>
+        <td>LINE Group (Bot)</td>
+        <td><code>LINE_GROUP_INSTALL</code></td>
+        <td>job_scheduled, site_check, completion</td>
+        <td>"งานติดตั้งพรุ่งนี้ 09:00 — ลาดพร้าว 87"</td>
+      </tr>
+      <tr>
+        <td><strong>ลูกค้า</strong></td>
+        <td>LINE OA Push</td>
+        <td><code>LINE_OA_CHANNEL_TOKEN</code></td>
+        <td>order_status, appointment, delivery</td>
+        <td>"สินค้าของคุณพร้อมส่งแล้วครับ — นัดวันได้เลย"</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="section-title">Event Flow — ตัวอย่าง Sale → Designer Handoff</div>
+  <div class="card">
+    <div style="font-family:monospace;font-size:12px;background:#f1f5f9;padding:16px;border-radius:8px;line-height:2">
+      [1] Sale Agent → MCP Tool: <span style="color:var(--navy);font-weight:700">handoff_to_designer(brief_payload)</span><br>
+      [2] MCP Layer → POST /webhook/agent-event<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;body: { event: "brief_received", dept: "designer", payload: {...} }<br>
+      [3] FastAPI webhook_handler.py → ตรวจสอบ signature → route ไป line_notifier.py<br>
+      [4] flex_builder.py → สร้าง Flex Message "Brief ใหม่รอ Approve"<br>
+      [5] LINE Messaging API → ส่ง message ไป <span style="color:var(--line-green);font-weight:700">LINE_GROUP_DESIGNER</span><br>
+      [6] scheduler.py → ตั้ง reminder 20h (เตือนก่อน 4h)<br>
+      [7] ถ้าครบ 24h ไม่มีการ approve → escalate ไป PM Group
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     TAB 02: LINE OA Setup
+═══════════════════════════════════════════════════════════════ -->
+<div id="tab-setup" class="tab-content">
+
+  <div class="section-title">LINE OA + Messaging API Setup Guide</div>
+  <div class="info-box">
+    ต้องสร้าง 2 สิ่งพร้อมกัน: <strong>(1) LINE Official Account</strong> สำหรับ customer-facing และ <strong>(2) Messaging API Channel</strong> สำหรับ Bot ใน internal groups — ใช้ LINE Developer Console เดียวกัน
+  </div>
+
+  <div class="card">
+    <div class="card-title">📋 Prerequisites</div>
+    <table>
+      <tr><th>สิ่งที่ต้องมี</th><th>รายละเอียด</th></tr>
+      <tr><td>LINE Business Account</td><td>สมัครที่ <code>account.line.biz</code> ด้วย email บริษัท</td></tr>
+      <tr><td>LINE Developer Account</td><td>สมัครที่ <code>developers.line.biz</code> (ใช้ LINE login ได้)</td></tr>
+      <tr><td>HTTPS Domain</td><td>Webhook URL ต้องเป็น HTTPS — ใช้ Supabase Edge Function หรือ VPS + nginx</td></tr>
+      <tr><td>Python 3.11+</td><td><code>pip install line-bot-sdk==3.x</code></td></tr>
+      <tr><td>FastAPI + uvicorn</td><td>ติดตั้งอยู่แล้วใน stack</td></tr>
+    </table>
+  </div>
+
+  <div class="section-title">ขั้นตอน Setup LINE Messaging API (Internal Bot)</div>
+  <div class="card">
+    <ul class="step-list">
+      <li>
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>สร้าง Provider บน LINE Developers Console</strong>
+          <p>ไปที่ <code>developers.line.biz</code> → Create Provider → ตั้งชื่อ "DAPH Decor MONOLITH" → บันทึก Provider ID</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>สร้าง Messaging API Channel</strong>
+          <p>ใน Provider → Create Channel → เลือก "Messaging API" → กรอก Channel name: "MONOLITH Bot", Category: "Business Services" → Create</p>
+          <div class="code-block">
+Channel name : MONOLITH Notification Bot
+Description  : ระบบแจ้งเตือนภายใน DAPH Decor - MONOLITH AI Agent System
+Category     : Business Services
+Subcategory  : Consulting Services
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>เปิดใช้งาน Messaging API Settings</strong>
+          <p>ใน Channel → Messaging API tab → เปิด settings เหล่านี้:</p>
+          <table style="font-size:12px">
+            <tr><th>Setting</th><th>ค่า</th></tr>
+            <tr><td>Auto-reply messages</td><td>❌ Disabled</td></tr>
+            <tr><td>Greeting messages</td><td>❌ Disabled</td></tr>
+            <tr><td>Webhook</td><td>✅ Enabled</td></tr>
+            <tr><td>Allow bot to join group chats</td><td>✅ Enabled</td></tr>
+          </table>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>บันทึก Credentials</strong>
+          <p>จด 3 ค่านี้ไว้ใน <code>.env</code> ของ FastAPI:</p>
+          <div class="code-block">
+<span class="c"># LINE Messaging API — Internal Bot</span>
+<span class="v">LINE_CHANNEL_SECRET</span>=&lt;ค่าจาก Basic Settings → Channel secret&gt;
+<span class="v">LINE_CHANNEL_ACCESS_TOKEN</span>=&lt;ค่าจาก Messaging API → Channel access token&gt;
+<span class="c"># กด "Issue" ถ้ายังไม่มี token</span>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <strong>ตั้ง Webhook URL</strong>
+          <p>ใน Messaging API → Webhook settings → Webhook URL:</p>
+          <div class="code-block">
+https://api.monolith.daph.co.th/webhook/line
+<span class="c"># หรือ Supabase Edge Function URL:</span>
+https://&lt;project-ref&gt;.supabase.co/functions/v1/line-webhook
+          </div>
+          <p>กด <strong>Verify</strong> — ต้องได้ HTTP 200 ถึงจะ save ได้ (FastAPI ต้องรันอยู่ก่อน)</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">6</div>
+        <div class="step-body">
+          <strong>Add Bot เข้า Department LINE Groups</strong>
+          <p>แต่ละ Group Chat ของแผนก → เพิ่ม Bot เป็นสมาชิก → Bot จะส่ง event <code>join</code> มาพร้อม <code>groupId</code></p>
+          <div class="code-block">
+<span class="c"># Event ที่ได้เมื่อ Bot เข้า group:</span>
+{
+  "<span class="s">type</span>": "<span class="g">join</span>",
+  "<span class="s">source</span>": { "<span class="s">type</span>": "<span class="g">group</span>", "<span class="s">groupId</span>": "<span class="g">Cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</span>" }
+}
+<span class="c"># บันทึก groupId นี้ไว้ใน .env ตามแผนก</span>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">7</div>
+        <div class="step-body">
+          <strong>บันทึก Group IDs ทุกแผนก</strong>
+          <div class="code-block">
+<span class="v">LINE_GROUP_SALE</span>=Cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+<span class="v">LINE_GROUP_DESIGNER</span>=Cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+<span class="v">LINE_GROUP_PM</span>=Cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+<span class="v">LINE_GROUP_FACTORY</span>=Cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+<span class="v">LINE_GROUP_PROCUREMENT</span>=Cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+<span class="v">LINE_GROUP_INSTALL</span>=Cxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">8</div>
+        <div class="step-body">
+          <strong>ทดสอบ Push Message</strong>
+          <div class="code-block">
+<span class="k">import</span> os
+<span class="k">from</span> linebot.v3.messaging <span class="k">import</span> Configuration, ApiClient, MessagingApi
+<span class="k">from</span> linebot.v3.messaging.models <span class="k">import</span> PushMessageRequest, TextMessage
+
+config = Configuration(access_token=os.environ[<span class="s">"LINE_CHANNEL_ACCESS_TOKEN"</span>])
+<span class="k">with</span> ApiClient(config) <span class="k">as</span> api_client:
+    api = MessagingApi(api_client)
+    api.push_message(PushMessageRequest(
+        to=os.environ[<span class="s">"LINE_GROUP_SALE"</span>],
+        messages=[TextMessage(text=<span class="s">"✅ MONOLITH Bot พร้อมใช้งานแล้ว"</span>)]
+    ))
+          </div>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <div class="section-title">LINE Official Account Setup (Customer Channel)</div>
+  <div class="card">
+    <ul class="step-list">
+      <li>
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>สร้าง LINE Official Account</strong>
+          <p>ไปที่ <code>account.line.biz</code> → Create → กรอกข้อมูลบริษัท DAPH Decor → รอ verify (1–3 วันทำการ)</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>เชื่อม LINE OA กับ Messaging API Channel</strong>
+          <p>LINE OA Manager → Settings → Messaging API → Link to Messaging API Channel → เลือก Channel ที่สร้างใน Step 2 ข้างบน</p>
+          <div class="info-box" style="margin:8px 0">
+            หลังจาก Link แล้ว LINE OA และ Messaging API จะใช้ <strong>Channel Access Token เดียวกัน</strong> — Bot ส่ง message ได้ทั้ง internal groups และ customer push message
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>รับ userId ลูกค้า</strong>
+          <p>เมื่อลูกค้า add LINE OA เป็นเพื่อน → Bot ได้รับ <code>follow</code> event พร้อม <code>userId</code> → บันทึกลง Supabase <code>customers</code> table</p>
+          <div class="code-block">
+<span class="c"># Supabase: customers table</span>
+{
+  "customer_id":  "CUST-2026-0042",
+  "line_user_id": "<span class="g">Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</span>",
+  "display_name": "คุณสมชาย ใจดี",
+  "added_at":     "2026-09-04T10:00:00Z"
+}
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>ตั้ง Rich Menu (optional แต่แนะนำ)</strong>
+          <p>LINE OA Manager → Rich Menu → สร้าง menu สำหรับลูกค้า เช่น "ดูสถานะงาน | นัดหมาย | ติดต่อ Sale" — ช่วยลด inbound message ที่ต้อง handle</p>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <div class="section-title">Environment Variables Summary</div>
+  <div class="card">
+    <table class="env-table">
+      <tr><th>Variable</th><th>ค่า</th><th class="desc">หมายเหตุ</th></tr>
+      <tr><td>LINE_CHANNEL_SECRET</td><td>&lt;from console&gt;</td><td class="desc">ใช้ verify webhook signature</td></tr>
+      <tr><td>LINE_CHANNEL_ACCESS_TOKEN</td><td>&lt;from console&gt;</td><td class="desc">ใช้ push/reply message</td></tr>
+      <tr><td>LINE_GROUP_SALE</td><td>C...</td><td class="desc">Group ID แผนก Sale</td></tr>
+      <tr><td>LINE_GROUP_DESIGNER</td><td>C...</td><td class="desc">Group ID แผนก Designer</td></tr>
+      <tr><td>LINE_GROUP_PM</td><td>C...</td><td class="desc">Group ID แผนก PM</td></tr>
+      <tr><td>LINE_GROUP_FACTORY</td><td>C...</td><td class="desc">Group ID แผนก Factory</td></tr>
+      <tr><td>LINE_GROUP_PROCUREMENT</td><td>C...</td><td class="desc">Group ID แผนก Procurement</td></tr>
+      <tr><td>LINE_GROUP_INSTALL</td><td>C...</td><td class="desc">Group ID แผนก Install</td></tr>
+      <tr><td>LINE_OA_CHANNEL_TOKEN</td><td>&lt;same token&gt;</td><td class="desc">Push message ลูกค้า (ใช้ token เดียวกัน)</td></tr>
+    </table>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     TAB 03: Flex Message Templates
+═══════════════════════════════════════════════════════════════ -->
+<div id="tab-flex" class="tab-content">
+
+  <div class="section-title">Flex Message Templates — แยกตามแผนก</div>
+  <div class="info-box">
+    Flex Message คือ LINE message แบบ JSON ที่ปรับ layout ได้อิสระ — ใช้ <strong>Bubble</strong> (single card) หรือ <strong>Carousel</strong> (หลาย cards) ทุก template ด้านล่างใช้ Bubble type
+  </div>
+
+  <div class="dept-tabs">
+    <button class="dept-btn active" onclick="switchDept('sale', this)">💼 Sale</button>
+    <button class="dept-btn" onclick="switchDept('designer', this)">🎨 Designer</button>
+    <button class="dept-btn" onclick="switchDept('pm', this)">📋 PM</button>
+    <button class="dept-btn" onclick="switchDept('factory', this)">🏭 Factory</button>
+    <button class="dept-btn" onclick="switchDept('procurement', this)">📦 Procurement</button>
+    <button class="dept-btn" onclick="switchDept('install', this)">🔧 Install</button>
+    <button class="dept-btn" onclick="switchDept('customer', this)">👤 ลูกค้า</button>
+  </div>
+
+  <!-- SALE -->
+  <div id="dept-sale" class="dept-panel active">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">💼 Sale — New Customer Inquiry</div>
+        <div class="flex-preview">
+          <div class="flex-bubble">
+            <div class="flex-header" style="background:#1f2d5a">
+              💼 Sale Alert — ลูกค้าใหม่
+            </div>
+            <div class="flex-body">
+              <div class="flex-row"><span class="label">ชื่อลูกค้า</span><span class="value">คุณสมชาย ใจดี</span></div>
+              <div class="flex-row"><span class="label">Project</span><span class="value">ห้องนอน 3 ชั้น</span></div>
+              <div class="flex-row"><span class="label">Budget</span><span class="value">฿450,000</span></div>
+              <div class="flex-row"><span class="label">Channel</span><span class="value">LINE OA</span></div>
+              <div class="flex-row"><span class="label">Assigned</span><span class="value" style="color:#c9a84c">@SaleAgent-01</span></div>
+            </div>
+            <div class="flex-footer">
+              <div class="flex-btn primary">รับงาน</div>
+              <div class="flex-btn secondary">ดู Brief</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📄 JSON Template — Sale New Inquiry</div>
+        <div class="code-block" style="max-height:380px;overflow-y:auto">
+{
+  "<span class="s">type</span>": "<span class="g">flex</span>",
+  "<span class="s">altText</span>": "<span class="g">Sale Alert — ลูกค้าใหม่</span>",
+  "<span class="s">contents</span>": {
+    "<span class="s">type</span>": "<span class="g">bubble</span>",
+    "<span class="s">header</span>": {
+      "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">vertical</span>",
+      "<span class="s">backgroundColor</span>": "<span class="g">#1f2d5a</span>",
+      "<span class="s">contents</span>": [{
+        "<span class="s">type</span>": "<span class="g">text</span>",
+        "<span class="s">text</span>": "<span class="g">💼 Sale Alert — ลูกค้าใหม่</span>",
+        "<span class="s">color</span>": "<span class="g">#ffffff</span>", "<span class="s">weight</span>": "<span class="g">bold</span>",
+        "<span class="s">size</span>": "<span class="g">sm</span>"
+      }]
+    },
+    "<span class="s">body</span>": {
+      "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">vertical</span>",
+      "<span class="s">spacing</span>": "<span class="g">sm</span>",
+      "<span class="s">contents</span>": [
+        { "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">horizontal</span>",
+          "<span class="s">contents</span>": [
+            { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">ชื่อลูกค้า</span>", "<span class="s">color</span>": "<span class="g">#888888</span>", "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">flex</span>": 2 },
+            { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">{{customer_name}}</span>", "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">flex</span>": 3, "<span class="s">weight</span>": "<span class="g">bold</span>" }
+          ]
+        },
+        { "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">horizontal</span>",
+          "<span class="s">contents</span>": [
+            { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">Budget</span>", "<span class="s">color</span>": "<span class="g">#888888</span>", "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">flex</span>": 2 },
+            { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">{{budget}}</span>", "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">flex</span>": 3, "<span class="s">color</span>": "<span class="g">#c9a84c</span>", "<span class="s">weight</span>": "<span class="g">bold</span>" }
+          ]
+        }
+      ]
+    },
+    "<span class="s">footer</span>": {
+      "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">horizontal</span>", "<span class="s">spacing</span>": "<span class="g">sm</span>",
+      "<span class="s">contents</span>": [
+        { "<span class="s">type</span>": "<span class="g">button</span>", "<span class="s">action</span>": { "<span class="s">type</span>": "<span class="g">postback</span>", "<span class="s">label</span>": "<span class="g">รับงาน</span>", "<span class="s">data</span>": "<span class="g">action=accept&inquiry_id={{inquiry_id}}</span>" }, "<span class="s">style</span>": "<span class="g">primary</span>", "<span class="s">color</span>": "<span class="g">#06C755</span>" },
+        { "<span class="s">type</span>": "<span class="g">button</span>", "<span class="s">action</span>": { "<span class="s">type</span>": "<span class="g">uri</span>", "<span class="s">label</span>": "<span class="g">ดู Brief</span>", "<span class="s">uri</span>": "<span class="g">{{brief_url}}</span>" }, "<span class="s">style</span>": "<span class="g">secondary</span>" }
+      ]
+    }
+  }
+}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DESIGNER -->
+  <div id="dept-designer" class="dept-panel">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">🎨 Designer — Brief Approval Request</div>
+        <div class="flex-preview">
+          <div class="flex-bubble">
+            <div class="flex-header" style="background:#2d5a8e">
+              🎨 Brief ใหม่รอ Approve
+            </div>
+            <div class="flex-body">
+              <div class="flex-row"><span class="label">Project</span><span class="value">PROJ-2026-0142</span></div>
+              <div class="flex-row"><span class="label">Client</span><span class="value">คุณสมชาย ใจดี</span></div>
+              <div class="flex-row"><span class="label">Style</span><span class="value">Modern Minimal</span></div>
+              <div class="flex-row"><span class="label">Deadline</span><span class="value" style="color:#c0392b">ครบ 24h ใน: 21:30</span></div>
+              <div class="flex-row"><span class="label">Rule</span><span class="value">Unanimous Approval</span></div>
+            </div>
+            <div class="flex-footer">
+              <div class="flex-btn primary">Approve ✓</div>
+              <div class="flex-btn secondary">Request Changes</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📄 JSON Template — Designer Brief</div>
+        <div class="code-block" style="max-height:380px;overflow-y:auto">
+{
+  "<span class="s">type</span>": "<span class="g">flex</span>",
+  "<span class="s">altText</span>": "<span class="g">Brief ใหม่รอ Approve — {{project_id}}</span>",
+  "<span class="s">contents</span>": {
+    "<span class="s">type</span>": "<span class="g">bubble</span>",
+    "<span class="s">header</span>": {
+      "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">vertical</span>",
+      "<span class="s">backgroundColor</span>": "<span class="g">#2d5a8e</span>",
+      "<span class="s">contents</span>": [{
+        "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">🎨 Brief ใหม่รอ Approve</span>",
+        "<span class="s">color</span>": "<span class="g">#ffffff</span>", "<span class="s">weight</span>": "<span class="g">bold</span>", "<span class="s">size</span>": "<span class="g">sm</span>"
+      }]
+    },
+    "<span class="s">body</span>": {
+      "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">vertical</span>", "<span class="s">spacing</span>": "<span class="g">sm</span>",
+      "<span class="s">contents</span>": [
+        { "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">horizontal</span>",
+          "<span class="s">contents</span>": [
+            { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">Project</span>", "<span class="s">color</span>": "<span class="g">#888888</span>", "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">flex</span>": 2 },
+            { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">{{project_id}}</span>", "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">flex</span>": 3, "<span class="s">weight</span>": "<span class="g">bold</span>" }
+          ]
+        },
+        { "<span class="s">type</span>": "<span class="g">separator</span>" },
+        { "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">horizontal</span>",
+          "<span class="s">contents</span>": [
+            { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">⏰ Deadline</span>", "<span class="s">color</span>": "<span class="g">#888888</span>", "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">flex</span>": 2 },
+            { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">ครบ 24h ใน: {{hours_remaining}}h</span>", "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">color</span>": "<span class="g">#c0392b</span>", "<span class="s">weight</span>": "<span class="g">bold</span>", "<span class="s">flex</span>": 3 }
+          ]
+        }
+      ]
+    },
+    "<span class="s">footer</span>": {
+      "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">horizontal</span>", "<span class="s">spacing</span>": "<span class="g">sm</span>",
+      "<span class="s">contents</span>": [
+        { "<span class="s">type</span>": "<span class="g">button</span>", "<span class="s">action</span>": { "<span class="s">type</span>": "<span class="g">postback</span>", "<span class="s">label</span>": "<span class="g">Approve ✓</span>", "<span class="s">data</span>": "<span class="g">action=approve&brief_id={{brief_id}}</span>" }, "<span class="s">style</span>": "<span class="g">primary</span>", "<span class="s">color</span>": "<span class="g">#06C755</span>" },
+        { "<span class="s">type</span>": "<span class="g">button</span>", "<span class="s">action</span>": { "<span class="s">type</span>": "<span class="g">postback</span>", "<span class="s">label</span>": "<span class="g">Request Changes</span>", "<span class="s">data</span>": "<span class="g">action=revise&brief_id={{brief_id}}</span>" }, "<span class="s">style</span>": "<span class="g">secondary</span>" }
+      ]
+    }
+  }
+}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PM -->
+  <div id="dept-pm" class="dept-panel">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">📋 PM — first_response Alert (4h)</div>
+        <div class="flex-preview">
+          <div class="flex-bubble">
+            <div class="flex-header" style="background:#c9a84c;color:#1f2d5a">
+              ⚠️ PM — first_response เร่งด่วน
+            </div>
+            <div class="flex-body">
+              <div class="flex-row"><span class="label">Project</span><span class="value">PROJ-2026-0142</span></div>
+              <div class="flex-row"><span class="label">Rule</span><span class="value">first_response 4h</span></div>
+              <div class="flex-row"><span class="label">เหลือเวลา</span><span class="value" style="color:#c0392b;font-size:16px;font-weight:800">00:28:14</span></div>
+              <div class="flex-row"><span class="label">Status</span><span class="value">Waiting PM Response</span></div>
+            </div>
+            <div class="flex-footer">
+              <div class="flex-btn primary">Respond Now</div>
+              <div class="flex-btn secondary">Delegate</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📄 JSON Template — PM first_response Alert</div>
+        <div class="code-block" style="max-height:380px;overflow-y:auto">
+{
+  "<span class="s">type</span>": "<span class="g">flex</span>",
+  "<span class="s">altText</span>": "<span class="g">⚠️ first_response ครบ 4h ใน {{minutes_left}} นาที</span>",
+  "<span class="s">contents</span>": {
+    "<span class="s">type</span>": "<span class="g">bubble</span>",
+    "<span class="s">header</span>": {
+      "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">vertical</span>",
+      "<span class="s">backgroundColor</span>": "<span class="g">#c9a84c</span>",
+      "<span class="s">contents</span>": [{
+        "<span class="s">type</span>": "<span class="g">text</span>",
+        "<span class="s">text</span>": "<span class="g">⚠️ PM — first_response เร่งด่วน</span>",
+        "<span class="s">color</span>": "<span class="g">#1f2d5a</span>", "<span class="s">weight</span>": "<span class="g">bold</span>", "<span class="s">size</span>": "<span class="g">sm</span>"
+      }]
+    },
+    "<span class="s">body</span>": {
+      "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">vertical</span>", "<span class="s">spacing</span>": "<span class="g">md</span>",
+      "<span class="s">contents</span>": [
+        { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">{{countdown}}</span>",
+          "<span class="s">size</span>": "<span class="g">xxl</span>", "<span class="s">weight</span>": "<span class="g">bold</span>", "<span class="s">color</span>": "<span class="g">#c0392b</span>",
+          "<span class="s">align</span>": "<span class="g">center</span>" },
+        { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">Project: {{project_id}}</span>",
+          "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">align</span>": "<span class="g">center</span>", "<span class="s">color</span>": "<span class="g">#555555</span>" }
+      ]
+    }
+  }
+}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FACTORY -->
+  <div id="dept-factory" class="dept-panel">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">🏭 Factory — QC Halt Alert (Sev 9)</div>
+        <div class="flex-preview">
+          <div class="flex-bubble">
+            <div class="flex-header" style="background:#c0392b">
+              🛑 FACTORY HALT — QC Fail
+            </div>
+            <div class="flex-body">
+              <div class="flex-row"><span class="label">Step</span><span class="value">F-07 ฝาหน้าลิ้นชัก</span></div>
+              <div class="flex-row"><span class="label">Lot</span><span class="value">LOT-2026-A042</span></div>
+              <div class="flex-row"><span class="label">Defect</span><span class="value" style="color:#c0392b">รอยขีดข่วนพื้นผิว</span></div>
+              <div class="flex-row"><span class="label">Sev</span><span class="value" style="color:#c0392b;font-weight:800">9 — Critical</span></div>
+              <div class="flex-row"><span class="label">Action</span><span class="value">HALT — รอ QA</span></div>
+            </div>
+            <div class="flex-footer">
+              <div class="flex-btn" style="background:#c0392b;color:#fff">Report Defect</div>
+              <div class="flex-btn secondary">View SOP</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📄 JSON Template — Factory HALT Alert</div>
+        <div class="code-block" style="max-height:380px;overflow-y:auto">
+{
+  "<span class="s">type</span>": "<span class="g">flex</span>",
+  "<span class="s">altText</span>": "<span class="g">🛑 HALT — QC Fail: {{defect_type}} — {{lot_id}}</span>",
+  "<span class="s">contents</span>": {
+    "<span class="s">type</span>": "<span class="g">bubble</span>",
+    "<span class="s">header</span>": {
+      "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">vertical</span>",
+      "<span class="s">backgroundColor</span>": "<span class="g">#c0392b</span>",
+      "<span class="s">contents</span>": [{
+        "<span class="s">type</span>": "<span class="g">text</span>",
+        "<span class="s">text</span>": "<span class="g">🛑 FACTORY HALT — QC Fail</span>",
+        "<span class="s">color</span>": "<span class="g">#ffffff</span>", "<span class="s">weight</span>": "<span class="g">bold</span>", "<span class="s">size</span>": "<span class="g">sm</span>"
+      }]
+    },
+    "<span class="s">body</span>": {
+      "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">vertical</span>", "<span class="s">spacing</span>": "<span class="g">sm</span>",
+      "<span class="s">contents</span>": [
+        { "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">horizontal</span>",
+          "<span class="s">contents</span>": [
+            { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">Step</span>", "<span class="s">color</span>": "<span class="g">#888888</span>", "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">flex</span>": 2 },
+            { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">{{step_name}}</span>", "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">flex</span>": 3 }
+          ]
+        },
+        { "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">horizontal</span>",
+          "<span class="s">contents</span>": [
+            { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">Severity</span>", "<span class="s">color</span>": "<span class="g">#888888</span>", "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">flex</span>": 2 },
+            { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">{{severity}} — Critical</span>", "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">color</span>": "<span class="g">#c0392b</span>", "<span class="s">weight</span>": "<span class="g">bold</span>", "<span class="s">flex</span>": 3 }
+          ]
+        }
+      ]
+    }
+  }
+}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROCUREMENT -->
+  <div id="dept-procurement" class="dept-panel">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">📦 Procurement — Stock Alert</div>
+        <div class="flex-preview">
+          <div class="flex-bubble">
+            <div class="flex-header" style="background:#2d7a4f">
+              📦 Stock Alert — วัสดุใกล้หมด
+            </div>
+            <div class="flex-body">
+              <div class="flex-row"><span class="label">Material</span><span class="value">MAT-0042</span></div>
+              <div class="flex-row"><span class="label">ชื่อวัสดุ</span><span class="value">แผ่น MDF 18mm</span></div>
+              <div class="flex-row"><span class="label">คงเหลือ</span><span class="value" style="color:#c0392b">3 แผ่น</span></div>
+              <div class="flex-row"><span class="label">Min Stock</span><span class="value">10 แผ่น</span></div>
+              <div class="flex-row"><span class="label">Vendor</span><span class="value">ไทยวีนัส</span></div>
+            </div>
+            <div class="flex-footer">
+              <div class="flex-btn primary">สั่งซื้อเดี๋ยวนี้</div>
+              <div class="flex-btn secondary">ดู BOM</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📄 JSON Template — Procurement Stock Alert</div>
+        <div class="code-block" style="max-height:380px;overflow-y:auto">
+{
+  "<span class="s">type</span>": "<span class="g">flex</span>",
+  "<span class="s">altText</span>": "<span class="g">📦 Stock Alert — {{material_name}} เหลือ {{qty}} {{unit}}</span>",
+  "<span class="s">contents</span>": {
+    "<span class="s">type</span>": "<span class="g">bubble</span>",
+    "<span class="s">header</span>": {
+      "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">vertical</span>",
+      "<span class="s">backgroundColor</span>": "<span class="g">#2d7a4f</span>",
+      "<span class="s">contents</span>": [{
+        "<span class="s">type</span>": "<span class="g">text</span>",
+        "<span class="s">text</span>": "<span class="g">📦 Stock Alert — วัสดุใกล้หมด</span>",
+        "<span class="s">color</span>": "<span class="g">#ffffff</span>", "<span class="s">weight</span>": "<span class="g">bold</span>", "<span class="s">size</span>": "<span class="g">sm</span>"
+      }]
+    },
+    "<span class="s">body</span>": {
+      "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">vertical</span>", "<span class="s">spacing</span>": "<span class="g">sm</span>",
+      "<span class="s">contents</span>": [
+        { "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">horizontal</span>",
+          "<span class="s">contents</span>": [
+            { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">Material</span>", "<span class="s">color</span>": "<span class="g">#888888</span>", "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">flex</span>": 2 },
+            { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">{{material_code}}</span>", "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">flex</span>": 3, "<span class="s">weight</span>": "<span class="g">bold</span>" }
+          ]
+        },
+        { "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">horizontal</span>",
+          "<span class="s">contents</span>": [
+            { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">คงเหลือ</span>", "<span class="s">color</span>": "<span class="g">#888888</span>", "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">flex</span>": 2 },
+            { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">{{qty}} {{unit}}</span>", "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">color</span>": "<span class="g">#c0392b</span>", "<span class="s">weight</span>": "<span class="g">bold</span>", "<span class="s">flex</span>": 3 }
+          ]
+        }
+      ]
+    }
+  }
+}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INSTALL -->
+  <div id="dept-install" class="dept-panel">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">🔧 Install — Job Schedule Alert</div>
+        <div class="flex-preview">
+          <div class="flex-bubble">
+            <div class="flex-header" style="background:#5b4fcf">
+              🔧 งานติดตั้งพรุ่งนี้
+            </div>
+            <div class="flex-body">
+              <div class="flex-row"><span class="label">Project</span><span class="value">PROJ-2026-0142</span></div>
+              <div class="flex-row"><span class="label">สถานที่</span><span class="value">ลาดพร้าว 87 ซ.12</span></div>
+              <div class="flex-row"><span class="label">เวลา</span><span class="value" style="color:var(--navy);font-weight:800">09:00 — 17:00</span></div>
+              <div class="flex-row"><span class="label">ทีม</span><span class="value">ช่างสมศักดิ์ + ช่างวิชัย</span></div>
+              <div class="flex-row"><span class="label">Checklist</span><span class="value">8 items</span></div>
+            </div>
+            <div class="flex-footer">
+              <div class="flex-btn primary">เริ่มงาน</div>
+              <div class="flex-btn secondary">ดู Checklist</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📄 JSON Template — Install Job Alert</div>
+        <div class="code-block" style="max-height:380px;overflow-y:auto">
+{
+  "<span class="s">type</span>": "<span class="g">flex</span>",
+  "<span class="s">altText</span>": "<span class="g">🔧 งานติดตั้งพรุ่งนี้ — {{location}} เวลา {{start_time}}</span>",
+  "<span class="s">contents</span>": {
+    "<span class="s">type</span>": "<span class="g">bubble</span>",
+    "<span class="s">header</span>": {
+      "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">vertical</span>",
+      "<span class="s">backgroundColor</span>": "<span class="g">#5b4fcf</span>",
+      "<span class="s">contents</span>": [{
+        "<span class="s">type</span>": "<span class="g">text</span>",
+        "<span class="s">text</span>": "<span class="g">🔧 งานติดตั้งพรุ่งนี้</span>",
+        "<span class="s">color</span>": "<span class="g">#ffffff</span>", "<span class="s">weight</span>": "<span class="g">bold</span>", "<span class="s">size</span>": "<span class="g">sm</span>"
+      }]
+    },
+    "<span class="s">body</span>": {
+      "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">vertical</span>", "<span class="s">spacing</span>": "<span class="g">sm</span>",
+      "<span class="s">contents</span>": [
+        { "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">horizontal</span>",
+          "<span class="s">contents</span>": [
+            { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">สถานที่</span>", "<span class="s">color</span>": "<span class="g">#888888</span>", "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">flex</span>": 2 },
+            { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">{{location}}</span>", "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">flex</span>": 3 }
+          ]
+        },
+        { "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">horizontal</span>",
+          "<span class="s">contents</span>": [
+            { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">เวลา</span>", "<span class="s">color</span>": "<span class="g">#888888</span>", "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">flex</span>": 2 },
+            { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">{{start_time}} — {{end_time}}</span>", "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">weight</span>": "<span class="g">bold</span>", "<span class="s">color</span>": "<span class="g">#1f2d5a</span>", "<span class="s">flex</span>": 3 }
+          ]
+        },
+        { "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">horizontal</span>",
+          "<span class="s">contents</span>": [
+            { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">ทีม</span>", "<span class="s">color</span>": "<span class="g">#888888</span>", "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">flex</span>": 2 },
+            { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">{{team_names}}</span>", "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">flex</span>": 3 }
+          ]
+        }
+      ]
+    },
+    "<span class="s">footer</span>": {
+      "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">horizontal</span>", "<span class="s">spacing</span>": "<span class="g">sm</span>",
+      "<span class="s">contents</span>": [
+        { "<span class="s">type</span>": "<span class="g">button</span>", "<span class="s">action</span>": { "<span class="s">type</span>": "<span class="g">postback</span>", "<span class="s">label</span>": "<span class="g">เริ่มงาน</span>", "<span class="s">data</span>": "<span class="g">action=start_job&job_id={{job_id}}</span>" }, "<span class="s">style</span>": "<span class="g">primary</span>", "<span class="s">color</span>": "<span class="g">#06C755</span>" },
+        { "<span class="s">type</span>": "<span class="g">button</span>", "<span class="s">action</span>": { "<span class="s">type</span>": "<span class="g">uri</span>", "<span class="s">label</span>": "<span class="g">ดู Checklist</span>", "<span class="s">uri</span>": "<span class="g">{{checklist_url}}</span>" }, "<span class="s">style</span>": "<span class="g">secondary</span>" }
+      ]
+    }
+  }
+}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOMER -->
+  <div id="dept-customer" class="dept-panel">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">👤 ลูกค้า — Order Status Update (LINE OA)</div>
+        <div class="flex-preview">
+          <div class="flex-bubble">
+            <div class="flex-header" style="background:var(--line-green)">
+              ✅ อัปเดตสถานะงานของคุณ
+            </div>
+            <div class="flex-body">
+              <div class="flex-row"><span class="label">Order</span><span class="value">PROJ-2026-0142</span></div>
+              <div class="flex-row"><span class="label">สถานะ</span><span class="value" style="color:#2d7a4f;font-weight:700">ผลิตเสร็จแล้ว ✅</span></div>
+              <div class="flex-row"><span class="label">ส่งมอบได้</span><span class="value">ภายใน 7 วัน</span></div>
+              <div class="flex-row"><span class="label">ขั้นตอนถัดไป</span><span class="value">นัดวันติดตั้ง</span></div>
+            </div>
+            <div class="flex-footer">
+              <div class="flex-btn primary">นัดวันติดตั้ง</div>
+              <div class="flex-btn secondary">ดูรายละเอียด</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📄 JSON Template — Customer Order Status</div>
+        <div class="code-block" style="max-height:380px;overflow-y:auto">
+{
+  "<span class="s">type</span>": "<span class="g">flex</span>",
+  "<span class="s">altText</span>": "<span class="g">✅ อัปเดตสถานะงาน {{order_id}} — {{status_th}}</span>",
+  "<span class="s">contents</span>": {
+    "<span class="s">type</span>": "<span class="g">bubble</span>",
+    "<span class="s">header</span>": {
+      "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">vertical</span>",
+      "<span class="s">backgroundColor</span>": "<span class="g">#06C755</span>",
+      "<span class="s">contents</span>": [{
+        "<span class="s">type</span>": "<span class="g">text</span>",
+        "<span class="s">text</span>": "<span class="g">✅ อัปเดตสถานะงานของคุณ</span>",
+        "<span class="s">color</span>": "<span class="g">#ffffff</span>", "<span class="s">weight</span>": "<span class="g">bold</span>", "<span class="s">size</span>": "<span class="g">sm</span>"
+      }]
+    },
+    "<span class="s">body</span>": {
+      "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">vertical</span>", "<span class="s">spacing</span>": "<span class="g">sm</span>",
+      "<span class="s">contents</span>": [
+        { "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">horizontal</span>",
+          "<span class="s">contents</span>": [
+            { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">Order</span>", "<span class="s">color</span>": "<span class="g">#888888</span>", "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">flex</span>": 2 },
+            { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">{{order_id}}</span>", "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">flex</span>": 3, "<span class="s">weight</span>": "<span class="g">bold</span>" }
+          ]
+        },
+        { "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">horizontal</span>",
+          "<span class="s">contents</span>": [
+            { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">สถานะ</span>", "<span class="s">color</span>": "<span class="g">#888888</span>", "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">flex</span>": 2 },
+            { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">{{status_th}}</span>", "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">color</span>": "<span class="g">#2d7a4f</span>", "<span class="s">weight</span>": "<span class="g">bold</span>", "<span class="s">flex</span>": 3 }
+          ]
+        },
+        { "<span class="s">type</span>": "<span class="g">separator</span>" },
+        { "<span class="s">type</span>": "<span class="g">text</span>", "<span class="s">text</span>": "<span class="g">ขั้นตอนถัดไป: {{next_step}}</span>",
+          "<span class="s">size</span>": "<span class="g">sm</span>", "<span class="s">color</span>": "<span class="g">#555555</span>", "<span class="s">wrap</span>": true }
+      ]
+    },
+    "<span class="s">footer</span>": {
+      "<span class="s">type</span>": "<span class="g">box</span>", "<span class="s">layout</span>": "<span class="g">horizontal</span>", "<span class="s">spacing</span>": "<span class="g">sm</span>",
+      "<span class="s">contents</span>": [
+        { "<span class="s">type</span>": "<span class="g">button</span>", "<span class="s">action</span>": { "<span class="s">type</span>": "<span class="g">uri</span>", "<span class="s">label</span>": "<span class="g">นัดวันติดตั้ง</span>", "<span class="s">uri</span>": "<span class="g">{{booking_url}}</span>" }, "<span class="s">style</span>": "<span class="g">primary</span>", "<span class="s">color</span>": "<span class="g">#06C755</span>" },
+        { "<span class="s">type</span>": "<span class="g">button</span>", "<span class="s">action</span>": { "<span class="s">type</span>": "<span class="g">uri</span>", "<span class="s">label</span>": "<span class="g">ดูรายละเอียด</span>", "<span class="s">uri</span>": "<span class="g">{{detail_url}}</span>" }, "<span class="s">style</span>": "<span class="g">secondary</span>" }
+      ]
+    }
+  }
+}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     TAB 04: Python Code Scaffold
+═══════════════════════════════════════════════════════════════ -->
+<div id="tab-code" class="tab-content">
+
+  <div class="section-title">โครงสร้าง File</div>
+  <div class="card">
+    <div class="code-block">
+<span class="c"># FastAPI Service — Automation Layer</span>
+services/
+  __init__.py
+  <span class="n">webhook_handler.py</span>   <span class="c"># รับ POST จาก MCP + ตรวจ signature LINE</span>
+  <span class="n">line_notifier.py</span>     <span class="c"># push message ไป LINE Groups</span>
+  <span class="n">line_oa.py</span>           <span class="c"># push message ลูกค้าผ่าน LINE OA</span>
+  <span class="n">flex_builder.py</span>      <span class="c"># สร้าง Flex Message JSON per event</span>
+  <span class="n">scheduler.py</span>         <span class="c"># APScheduler — remind + escalate</span>
+  <span class="n">line_signature.py</span>    <span class="c"># verify X-Line-Signature</span>
+    </div>
+  </div>
+
+  <div class="section-title">webhook_handler.py</div>
+  <div class="card">
+    <div class="code-block">
+<span class="k">from</span> fastapi <span class="k">import</span> APIRouter, Request, HTTPException
+<span class="k">from</span> services.line_signature <span class="k">import</span> verify_signature
+<span class="k">from</span> services.line_notifier <span class="k">import</span> notify_department
+<span class="k">from</span> services.line_oa <span class="k">import</span> notify_customer
+<span class="k">from</span> services.flex_builder <span class="k">import</span> build_flex
+
+router = APIRouter()
+
+<span class="c"># รับ webhook จาก LINE (user postback actions)</span>
+@router.post(<span class="s">"/webhook/line"</span>)
+<span class="k">async def</span> <span class="n">line_webhook</span>(request: Request):
+    body = <span class="k">await</span> request.body()
+    signature = request.headers.get(<span class="s">"X-Line-Signature"</span>, <span class="s">""</span>)
+    <span class="k">if not</span> verify_signature(body, signature):
+        <span class="k">raise</span> HTTPException(status_code=400, detail=<span class="s">"Invalid signature"</span>)
+    events = (<span class="k">await</span> request.json()).get(<span class="s">"events"</span>, [])
+    <span class="k">for</span> event <span class="k">in</span> events:
+        <span class="k">await</span> handle_line_event(event)
+    <span class="k">return</span> {<span class="s">"status"</span>: <span class="s">"ok"</span>}
+
+<span class="c"># รับ internal event จาก MCP Layer</span>
+@router.post(<span class="s">"/webhook/agent-event"</span>)
+<span class="k">async def</span> <span class="n">agent_event</span>(request: Request):
+    data = <span class="k">await</span> request.json()
+    event_type = data.get(<span class="s">"event"</span>)
+    dept = data.get(<span class="s">"dept"</span>)
+    payload = data.get(<span class="s">"payload"</span>, {})
+
+    flex_msg = build_flex(event_type, payload)
+    <span class="k">if</span> dept == <span class="s">"customer"</span>:
+        <span class="k">await</span> notify_customer(payload[<span class="s">"line_user_id"</span>], flex_msg)
+    <span class="k">else</span>:
+        <span class="k">await</span> notify_department(dept, flex_msg)
+    <span class="k">return</span> {<span class="s">"status"</span>: <span class="s">"sent"</span>, <span class="s">"dept"</span>: dept}
+
+<span class="k">async def</span> <span class="n">handle_line_event</span>(event: dict):
+    <span class="c"># Handle postback actions from Flex Message buttons</span>
+    <span class="k">if</span> event[<span class="s">"type"</span>] == <span class="s">"postback"</span>:
+        data = dict(x.split(<span class="s">"="</span>) <span class="k">for</span> x <span class="k">in</span> event[<span class="s">"postback"</span>][<span class="s">"data"</span>].split(<span class="s">"&"</span>))
+        action = data.get(<span class="s">"action"</span>)
+        <span class="c"># route action → MCP tool call</span>
+        <span class="k">await</span> route_action_to_mcp(action, data)
+    </div>
+  </div>
+
+  <div class="section-title">line_notifier.py</div>
+  <div class="card">
+    <div class="code-block">
+<span class="k">import</span> os
+<span class="k">from</span> linebot.v3.messaging <span class="k">import</span> Configuration, ApiClient, MessagingApi
+<span class="k">from</span> linebot.v3.messaging.models <span class="k">import</span> PushMessageRequest, FlexMessage
+
+<span class="c"># Group ID mapping ตาม department</span>
+DEPT_GROUPS = {
+    <span class="s">"sale"</span>:        os.environ[<span class="s">"LINE_GROUP_SALE"</span>],
+    <span class="s">"designer"</span>:    os.environ[<span class="s">"LINE_GROUP_DESIGNER"</span>],
+    <span class="s">"pm"</span>:          os.environ[<span class="s">"LINE_GROUP_PM"</span>],
+    <span class="s">"factory"</span>:     os.environ[<span class="s">"LINE_GROUP_FACTORY"</span>],
+    <span class="s">"procurement"</span>: os.environ[<span class="s">"LINE_GROUP_PROCUREMENT"</span>],
+    <span class="s">"install"</span>:     os.environ[<span class="s">"LINE_GROUP_INSTALL"</span>],
+}
+
+_config = Configuration(access_token=os.environ[<span class="s">"LINE_CHANNEL_ACCESS_TOKEN"</span>])
+
+<span class="k">async def</span> <span class="n">notify_department</span>(dept: str, flex_message: dict):
+    <span class="s">"""ส่ง Flex Message ไป LINE Group ของแผนก"""</span>
+    group_id = DEPT_GROUPS.get(dept)
+    <span class="k">if not</span> group_id:
+        <span class="k">raise</span> ValueError(<span class="s">f"Unknown department: {dept}"</span>)
+    <span class="k">with</span> ApiClient(_config) <span class="k">as</span> api_client:
+        api = MessagingApi(api_client)
+        api.push_message(PushMessageRequest(
+            to=group_id,
+            messages=[FlexMessage(
+                alt_text=flex_message[<span class="s">"altText"</span>],
+                contents=flex_message[<span class="s">"contents"</span>]
+            )]
+        ))
+
+<span class="k">async def</span> <span class="n">notify_multiple</span>(depts: list[str], flex_message: dict):
+    <span class="s">"""ส่ง message พร้อมกันหลายแผนก (เช่น Factory + Procurement)"""</span>
+    <span class="k">for</span> dept <span class="k">in</span> depts:
+        <span class="k">await</span> notify_department(dept, flex_message)
+    </div>
+  </div>
+
+  <div class="section-title">line_oa.py — Customer Push</div>
+  <div class="card">
+    <div class="code-block">
+<span class="k">import</span> os
+<span class="k">from</span> linebot.v3.messaging <span class="k">import</span> Configuration, ApiClient, MessagingApi
+<span class="k">from</span> linebot.v3.messaging.models <span class="k">import</span> PushMessageRequest, FlexMessage
+
+_config = Configuration(access_token=os.environ[<span class="s">"LINE_OA_CHANNEL_TOKEN"</span>])
+
+<span class="k">async def</span> <span class="n">notify_customer</span>(line_user_id: str, flex_message: dict):
+    <span class="s">"""ส่ง Flex Message หาลูกค้าผ่าน LINE OA"""</span>
+    <span class="k">with</span> ApiClient(_config) <span class="k">as</span> api_client:
+        api = MessagingApi(api_client)
+        api.push_message(PushMessageRequest(
+            to=line_user_id,
+            messages=[FlexMessage(
+                alt_text=flex_message[<span class="s">"altText"</span>],
+                contents=flex_message[<span class="s">"contents"</span>]
+            )]
+        ))
+
+<span class="k">async def</span> <span class="n">save_customer_line_id</span>(customer_id: str, line_user_id: str, display_name: str):
+    <span class="s">"""บันทึก userId ลง Supabase เมื่อลูกค้า follow LINE OA"""</span>
+    <span class="k">from</span> db.supabase_client <span class="k">import</span> supabase
+    supabase.table(<span class="s">"customers"</span>).upsert({
+        <span class="s">"customer_id"</span>: customer_id,
+        <span class="s">"line_user_id"</span>: line_user_id,
+        <span class="s">"display_name"</span>: display_name,
+    }).execute()
+    </div>
+  </div>
+
+
+  <div class="section-title">flex_builder.py — Flex Message Builder (12 Event Types)</div>
+  <div class="card">
+
+    <table class="spec-table" style="margin-bottom:20px;">
+      <thead>
+        <tr><th>Event Type</th><th>ผู้รับ</th><th>Header Color</th><th>Footer Action</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>new_inquiry</code></td><td>Sale Team (LINE Group)</td><td><span style="color:#2d7a4f;font-weight:700;">■</span> Green #2d7a4f</td><td>เปิด CRM / ดูรายละเอียด</td></tr>
+        <tr><td><code>brief_received</code></td><td>Designer Team (LINE Group)</td><td><span style="color:#1f2d5a;font-weight:700;">■</span> Navy #1f2d5a</td><td>เปิด Brief / รับงาน</td></tr>
+        <tr><td><code>approval_request</code></td><td>PM + Designer</td><td><span style="color:#c9a84c;font-weight:700;">■</span> Gold #c9a84c</td><td>อนุมัติ ✓ / ปฏิเสธ ✗ / ดูแบบ</td></tr>
+        <tr><td><code>project_created</code></td><td>PM + Customer (OA)</td><td><span style="color:#1f2d5a;font-weight:700;">■</span> Navy #1f2d5a</td><td>ดูสถานะ / ติดต่อ PM</td></tr>
+        <tr><td><code>first_response_4h</code></td><td>Sale Agent (warning)</td><td><span style="color:#e07b39;font-weight:700;">■</span> Orange #e07b39</td><td>ตอบเลย / ส่งต่อ PM</td></tr>
+        <tr><td><code>qc_checkpoint</code></td><td>Factory + PM</td><td><span style="color:#2d7a4f;font-weight:700;">■</span> Green/Red (ตาม Pass/Fail)</td><td>ดูรายงาน / ถ่ายรูป</td></tr>
+        <tr><td><code>halt_alert</code></td><td>PM + Factory + CEO</td><td><span style="color:#c0392b;font-weight:700;">■</span> Red #c0392b</td><td>ดูข้อบกพร่อง / PFMEA Ref</td></tr>
+        <tr><td><code>bom_received</code></td><td>Procurement Team</td><td><span style="color:#5b4fcf;font-weight:700;">■</span> Purple #5b4fcf</td><td>Review BOM / สั่งซื้อ</td></tr>
+        <tr><td><code>stock_alert</code></td><td>Procurement + PM</td><td><span style="color:#e07b39;font-weight:700;">■</span> Orange #e07b39</td><td>สั่งซื้อเลย / ดู Inventory</td></tr>
+        <tr><td><code>job_scheduled</code></td><td>Install Team + Customer (OA)</td><td><span style="color:#5b4fcf;font-weight:700;">■</span> Purple #5b4fcf</td><td>ดูแผนที่ / ยืนยัน / เลื่อนนัด</td></tr>
+        <tr><td><code>job_complete</code></td><td>PM + Customer (OA)</td><td><span style="color:#2d7a4f;font-weight:700;">■</span> Green #2d7a4f</td><td>Sign-off / ดูรูปผลงาน</td></tr>
+        <tr><td><code>status_update</code></td><td>Customer (OA)</td><td><span style="color:#1f2d5a;font-weight:700;">■</span> Dynamic (ตาม stage)</td><td>ดูสถานะ / ติดต่อ PM</td></tr>
+        <tr style="background:#f0eeff;"><td><code>designer_reminder</code></td><td>Designer</td><td><span style="color:#e07b39;font-weight:700;">■</span> Orange</td><td>Push Approval / ขอเลื่อน</td></tr>
+        <tr style="background:#f0eeff;"><td><code>pm_first_response_warning</code></td><td>PM</td><td><span style="color:#c0392b;font-weight:700;">■</span> Red</td><td>Escalate / ดู Inquiry</td></tr>
+        <tr style="background:#f0eeff;"><td><code>critical_escalation</code></td><td>CEO + All Dept Heads</td><td><span style="color:#7b0000;font-weight:700;">■</span> Dark Red #7b0000</td><td>ดูรายละเอียด / รับทราบ</td></tr>
+      </tbody>
+    </table>
+    <div class="info-box" style="background:#f0eeff;border-left:4px solid #5b4fcf;margin-bottom:16px;">
+      <strong>หมายเหตุ:</strong> แถวสีม่วงอ่อน = supplementary events ที่ไม่อยู่ใน 12 core MCP events 
+      แต่จำเป็นสำหรับ SLA monitoring และ escalation chain |
+      <code>_bubble()</code> helper ใช้ซ้ำทุก event — เปลี่ยนแค่ <code>header_color</code>, <code>rows[]</code>, <code>actions[]</code>
+    </div>
+    <div class="code-block">
+<span class="c"># flex_builder.py — สร้าง LINE Flex Message JSON สำหรับทุก event type</span>
+<span class="c"># ใช้กับ LINE Messaging API v3  (line-bot-sdk-python &gt;= 3.0)</span>
+<span class="k">from</span> typing <span class="k">import</span> <span class="k">Dict</span>, <span class="k">Any</span>, <span class="k">Optional</span>
+
+<span class="c"># ─── Routing Function ─────────────────────────────────────────────────────────</span>
+<span class="k">def</span> <span class="n">build_flex</span>(event_type: <span class="k">str</span>, payload: <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]) -&gt; <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]:
+    &quot;&quot;&quot;Route event_type ไปยัง Flex Message builder ที่ถูกต้อง&quot;&quot;&quot;
+    builders = {
+        &quot;new_inquiry&quot;:               _flex_new_inquiry,
+        &quot;brief_received&quot;:            _flex_brief_received,
+        &quot;approval_request&quot;:          _flex_approval_request,
+        &quot;project_created&quot;:           _flex_project_created,
+        &quot;first_response_4h&quot;:         _flex_first_response_4h,
+        &quot;qc_checkpoint&quot;:             _flex_qc_checkpoint,
+        &quot;halt_alert&quot;:                _flex_halt_alert,
+        &quot;bom_received&quot;:              _flex_bom_received,
+        &quot;stock_alert&quot;:               _flex_stock_alert,
+        &quot;job_scheduled&quot;:             _flex_job_scheduled,
+        &quot;job_complete&quot;:              _flex_job_complete,
+        &quot;status_update&quot;:             _flex_status_update,
+        <span class="c"># supplementary</span>
+        &quot;designer_reminder&quot;:         _flex_designer_reminder,
+        &quot;pm_first_response_warning&quot;: _flex_pm_first_response_warning,
+        &quot;critical_escalation&quot;:       _flex_critical_escalation,
+    }
+    fn = builders.get(event_type)
+    <span class="k">if</span> fn <span class="k">is</span> <span class="k">None</span>:
+        <span class="k">raise</span> ValueError(f&quot;Unknown event_type: {event_type}&quot;)
+    <span class="k">return</span> fn(payload)
+
+<span class="c"># ─── Helpers ─────────────────────────────────────────────────────────────────</span>
+<span class="k">def</span> <span class="n">_bubble</span>(alt_text: <span class="k">str</span>, header_color: <span class="k">str</span>, icon: <span class="k">str</span>,
+            title: <span class="k">str</span>, rows: <span class="k">list</span>, actions: <span class="k">list</span>) -&gt; <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]:
+    &quot;&quot;&quot;Generic bubble container — ใช้ซ้ำได้ทุก event&quot;&quot;&quot;
+    <span class="k">return</span> {
+        &quot;type&quot;: &quot;flex&quot;,
+        &quot;altText&quot;: alt_text,
+        &quot;contents&quot;: {
+            &quot;type&quot;: &quot;bubble&quot;,
+            &quot;header&quot;: {
+                &quot;type&quot;: &quot;box&quot;, &quot;layout&quot;: &quot;horizontal&quot;,
+                &quot;backgroundColor&quot;: header_color,
+                &quot;paddingAll&quot;: &quot;16px&quot;,
+                &quot;contents&quot;: [
+                    {&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: icon, &quot;size&quot;: &quot;xl&quot;, &quot;flex&quot;: 0},
+                    {&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: title, &quot;color&quot;: &quot;#ffffff&quot;,
+                     &quot;weight&quot;: &quot;bold&quot;, &quot;size&quot;: &quot;md&quot;, &quot;wrap&quot;: <span class="k">True</span>, &quot;flex&quot;: 5}
+                ]
+            },
+            &quot;body&quot;: {
+                &quot;type&quot;: &quot;box&quot;, &quot;layout&quot;: &quot;vertical&quot;,
+                &quot;spacing&quot;: &quot;sm&quot;, &quot;paddingAll&quot;: &quot;16px&quot;,
+                &quot;contents&quot;: rows
+            },
+            &quot;footer&quot;: {
+                &quot;type&quot;: &quot;box&quot;, &quot;layout&quot;: &quot;vertical&quot;,
+                &quot;spacing&quot;: &quot;sm&quot;, &quot;paddingAll&quot;: &quot;12px&quot;,
+                &quot;contents&quot;: actions
+            }
+        }
+    }
+
+<span class="k">def</span> <span class="n">_row</span>(label: <span class="k">str</span>, value: <span class="k">str</span>) -&gt; <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]:
+    &quot;&quot;&quot;แถวข้อมูล label + value สำหรับ body section&quot;&quot;&quot;
+    <span class="k">return</span> {
+        &quot;type&quot;: &quot;box&quot;, &quot;layout&quot;: &quot;horizontal&quot;,
+        &quot;contents&quot;: [
+            {&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: label, &quot;color&quot;: &quot;#888888&quot;,
+             &quot;size&quot;: &quot;sm&quot;, &quot;flex&quot;: 3},
+            {&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: value, &quot;color&quot;: &quot;#111111&quot;,
+             &quot;size&quot;: &quot;sm&quot;, &quot;weight&quot;: &quot;bold&quot;, &quot;flex&quot;: 5, &quot;wrap&quot;: <span class="k">True</span>}
+        ]
+    }
+
+<span class="k">def</span> <span class="n">_btn</span>(label: <span class="k">str</span>, data: <span class="k">str</span>, style: <span class="k">str</span> = &quot;primary&quot;) -&gt; <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]:
+    &quot;&quot;&quot;Postback button สำหรับ footer actions&quot;&quot;&quot;
+    <span class="k">return</span> {
+        &quot;type&quot;: &quot;button&quot;, &quot;style&quot;: style, &quot;height&quot;: &quot;sm&quot;,
+        &quot;action&quot;: {&quot;type&quot;: &quot;postback&quot;, &quot;label&quot;: label, &quot;data&quot;: data}
+    }
+
+<span class="k">def</span> <span class="n">_uri_btn</span>(label: <span class="k">str</span>, uri: <span class="k">str</span>) -&gt; <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]:
+    &quot;&quot;&quot;URI button — เปิด LIFF หรือ URL ภายนอก&quot;&quot;&quot;
+    <span class="k">return</span> {
+        &quot;type&quot;: &quot;button&quot;, &quot;style&quot;: &quot;link&quot;, &quot;height&quot;: &quot;sm&quot;,
+        &quot;action&quot;: {&quot;type&quot;: &quot;uri&quot;, &quot;label&quot;: label, &quot;uri&quot;: uri}
+    }
+
+<span class="c"># ─── Event 01: new_inquiry ────────────────────────────────────────────────────</span>
+<span class="k">def</span> <span class="n">_flex_new_inquiry</span>(p: <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]) -&gt; <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]:
+    &quot;&quot;&quot;แจ้ง Sale Team — inquiry ใหม่ต้องตอบภายใน 4h&quot;&quot;&quot;
+    <span class="k">return</span> _bubble(
+        alt_text=f&quot;[Inquiry ใหม่] {p.get(&#x27;customer_name&#x27;,&#x27;ลูกค้า&#x27;)} — {p.get(&#x27;product_type&#x27;,&#x27;&#x27;)}&quot;,
+        header_color=&quot;#2d7a4f&quot;, icon=&quot;🆕&quot;,
+        title=f&quot;Inquiry ใหม่ #{p.get(&#x27;inquiry_id&#x27;,&#x27;&#x27;)}&quot;,
+        rows=[
+            _row(&quot;ลูกค้า&quot;,     p.get(&quot;customer_name&quot;, &quot;-&quot;)),
+            _row(&quot;สินค้า&quot;,     p.get(&quot;product_type&quot;,  &quot;-&quot;)),
+            _row(&quot;ช่องทาง&quot;,    p.get(&quot;channel&quot;,       &quot;-&quot;)),
+            _row(&quot;เวลา&quot;,       p.get(&quot;created_at&quot;,    &quot;-&quot;)),
+            _row(&quot;Deadline&quot;,   &quot;ตอบภายใน 4 ชั่วโมง&quot;),
+        ],
+        actions=[
+            _btn(&quot;เปิด CRM&quot;,      f&quot;action=open_crm&amp;inquiry_id={p.get(&#x27;inquiry_id&#x27;,&#x27;&#x27;)}&quot;),
+            _btn(&quot;ดูรายละเอียด&quot;, f&quot;action=view_inquiry&amp;id={p.get(&#x27;inquiry_id&#x27;,&#x27;&#x27;)}&quot;, &quot;secondary&quot;),
+        ]
+    )
+
+<span class="c"># ─── Event 02: brief_received ─────────────────────────────────────────────────</span>
+<span class="k">def</span> <span class="n">_flex_brief_received</span>(p: <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]) -&gt; <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]:
+    &quot;&quot;&quot;แจ้ง Designer Team — Brief ใหม่จาก Sale Agent&quot;&quot;&quot;
+    <span class="k">return</span> _bubble(
+        alt_text=f&quot;[Brief ใหม่] Project {p.get(&#x27;project_id&#x27;,&#x27;&#x27;)}&quot;,
+        header_color=&quot;#1f2d5a&quot;, icon=&quot;📋&quot;,
+        title=f&quot;Brief — {p.get(&#x27;project_name&#x27;,&#x27;&#x27;)}&quot;,
+        rows=[
+            _row(&quot;Project ID&quot;, p.get(&quot;project_id&quot;,    &quot;-&quot;)),
+            _row(&quot;ลูกค้า&quot;,    p.get(&quot;customer_name&quot;,  &quot;-&quot;)),
+            _row(&quot;สไตล์&quot;,     p.get(&quot;style&quot;,          &quot;-&quot;)),
+            _row(&quot;งบประมาณ&quot;,  p.get(&quot;budget&quot;,         &quot;-&quot;)),
+            _row(&quot;Deadline&quot;,   p.get(&quot;design_deadline&quot;,&quot;-&quot;)),
+        ],
+        actions=[
+            _btn(&quot;เปิด Brief&quot;, f&quot;action=open_brief&amp;project_id={p.get(&#x27;project_id&#x27;,&#x27;&#x27;)}&quot;),
+            _btn(&quot;รับงาน&quot;,    f&quot;action=accept_brief&amp;project_id={p.get(&#x27;project_id&#x27;,&#x27;&#x27;)}&quot;, &quot;secondary&quot;),
+        ]
+    )
+
+<span class="c"># ─── Event 03: approval_request ───────────────────────────────────────────────</span>
+<span class="k">def</span> <span class="n">_flex_approval_request</span>(p: <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]) -&gt; <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]:
+    &quot;&quot;&quot;ขอ approve design — ส่งหา PM และ/หรือ ลูกค้า (expire 24h)&quot;&quot;&quot;
+    <span class="k">return</span> _bubble(
+        alt_text=f&quot;[ขออนุมัติ] {p.get(&#x27;design_version&#x27;,&#x27;v1&#x27;)} — {p.get(&#x27;project_name&#x27;,&#x27;&#x27;)}&quot;,
+        header_color=&quot;#c9a84c&quot;, icon=&quot;✅&quot;,
+        title=f&quot;ขออนุมัติ Design {p.get(&#x27;design_version&#x27;,&#x27;v1&#x27;)}&quot;,
+        rows=[
+            _row(&quot;Project&quot;,   p.get(&quot;project_name&quot;,  &quot;-&quot;)),
+            _row(&quot;Rev&quot;,       p.get(&quot;design_version&quot;,&quot;-&quot;)),
+            _row(&quot;Designer&quot;,  p.get(&quot;designer_name&quot;, &quot;-&quot;)),
+            _row(&quot;ส่งเมื่อ&quot;, p.get(&quot;submitted_at&quot;,  &quot;-&quot;)),
+            _row(&quot;Expire&quot;,    p.get(&quot;expire_in&quot;,     &quot;24 ชั่วโมง&quot;)),
+        ],
+        actions=[
+            _btn(&quot;อนุมัติ ✓&quot;,  f&quot;action=approve&amp;project_id={p.get(&#x27;project_id&#x27;,&#x27;&#x27;)}&quot;),
+            _btn(&quot;ปฏิเสธ ✗&quot;,  f&quot;action=reject&amp;project_id={p.get(&#x27;project_id&#x27;,&#x27;&#x27;)}&quot;, &quot;secondary&quot;),
+            _uri_btn(&quot;ดูแบบ 3D&quot;, p.get(&quot;design_url&quot;,&quot;https://monolith.app/designs&quot;)),
+        ]
+    )
+
+<span class="c"># ─── Event 04: project_created ────────────────────────────────────────────────</span>
+<span class="k">def</span> <span class="n">_flex_project_created</span>(p: <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]) -&gt; <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]:
+    &quot;&quot;&quot;แจ้ง PM + ลูกค้าผ่าน LINE OA — Project เริ่มแล้ว&quot;&quot;&quot;
+    <span class="k">return</span> _bubble(
+        alt_text=f&quot;[Project ใหม่] {p.get(&#x27;project_id&#x27;,&#x27;&#x27;)} สร้างแล้ว&quot;,
+        header_color=&quot;#1f2d5a&quot;, icon=&quot;🏗️&quot;,
+        title=&quot;Project เริ่มต้นแล้ว!&quot;,
+        rows=[
+            _row(&quot;Project ID&quot;,   p.get(&quot;project_id&quot;,        &quot;-&quot;)),
+            _row(&quot;ชื่อโครงการ&quot;, p.get(&quot;project_name&quot;,       &quot;-&quot;)),
+            _row(&quot;PM&quot;,           p.get(&quot;pm_name&quot;,            &quot;-&quot;)),
+            _row(&quot;เริ่มงาน&quot;,    p.get(&quot;start_date&quot;,         &quot;-&quot;)),
+            _row(&quot;คาดแล้วเสร็จ&quot;,p.get(&quot;estimated_complete&quot;, &quot;-&quot;)),
+        ],
+        actions=[
+            _uri_btn(&quot;ดูสถานะโครงการ&quot;, p.get(&quot;project_url&quot;,&quot;https://monolith.app/projects&quot;)),
+            _btn(&quot;ติดต่อ PM&quot;,          f&quot;action=contact_pm&amp;project_id={p.get(&#x27;project_id&#x27;,&#x27;&#x27;)}&quot;, &quot;secondary&quot;),
+        ]
+    )
+
+<span class="c"># ─── Event 05: first_response_4h ──────────────────────────────────────────────</span>
+<span class="k">def</span> <span class="n">_flex_first_response_4h</span>(p: <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]) -&gt; <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]:
+    &quot;&quot;&quot;เตือน Sale — ใกล้ครบ SLA 4h first response&quot;&quot;&quot;
+    <span class="k">return</span> _bubble(
+        alt_text=f&quot;[SLA Warning] Inquiry {p.get(&#x27;inquiry_id&#x27;,&#x27;&#x27;)} ใกล้ครบ 4h&quot;,
+        header_color=&quot;#e07b39&quot;, icon=&quot;⚠️&quot;,
+        title=&quot;เตือน: SLA ใกล้ครบกำหนด&quot;,
+        rows=[
+            _row(&quot;Inquiry ID&quot;,  p.get(&quot;inquiry_id&quot;,   &quot;-&quot;)),
+            _row(&quot;ลูกค้า&quot;,     p.get(&quot;customer_name&quot;,&quot;-&quot;)),
+            _row(&quot;รับเมื่อ&quot;,   p.get(&quot;received_at&quot;,  &quot;-&quot;)),
+            _row(&quot;เหลือเวลา&quot;,  p.get(&quot;time_remaining&quot;,&quot;&lt; 1h&quot;)),
+            _row(&quot;Status&quot;,      p.get(&quot;status&quot;,       &quot;pending&quot;)),
+        ],
+        actions=[
+            _btn(&quot;ตอบเลย&quot;,   f&quot;action=reply_inquiry&amp;inquiry_id={p.get(&#x27;inquiry_id&#x27;,&#x27;&#x27;)}&quot;),
+            _btn(&quot;ส่งต่อ PM&quot;, f&quot;action=escalate&amp;inquiry_id={p.get(&#x27;inquiry_id&#x27;,&#x27;&#x27;)}&quot;, &quot;secondary&quot;),
+        ]
+    )
+
+<span class="c"># ─── Event 06: qc_checkpoint ──────────────────────────────────────────────────</span>
+<span class="k">def</span> <span class="n">_flex_qc_checkpoint</span>(p: <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]) -&gt; <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]:
+    &quot;&quot;&quot;รายงาน QC checkpoint จาก Factory Agent ไป PM&quot;&quot;&quot;
+    passed       = p.get(&quot;qc_passed&quot;, <span class="k">False</span>)
+    color        = &quot;#2d7a4f&quot; <span class="k">if</span> passed <span class="k">else</span> &quot;#c0392b&quot;
+    status_text  = &quot;ผ่าน ✓&quot;  <span class="k">if</span> passed <span class="k">else</span> &quot;ไม่ผ่าน ✗&quot;
+    <span class="k">return</span> _bubble(
+        alt_text=f&quot;[QC] {p.get(&#x27;checkpoint_name&#x27;,&#x27;&#x27;)} — {status_text}&quot;,
+        header_color=color, icon=&quot;🔍&quot;,
+        title=f&quot;QC: {p.get(&#x27;checkpoint_name&#x27;,&#x27;Checkpoint&#x27;)}&quot;,
+        rows=[
+            _row(&quot;Project ID&quot;,  p.get(&quot;project_id&quot;,    &quot;-&quot;)),
+            _row(&quot;Checkpoint&quot;,  p.get(&quot;checkpoint_name&quot;,&quot;-&quot;)),
+            _row(&quot;ผล QC&quot;,       status_text),
+            _row(&quot;หมายเหตุ&quot;,   p.get(&quot;notes&quot;,          &quot;—&quot;)),
+            _row(&quot;ตรวจเมื่อ&quot;,  p.get(&quot;checked_at&quot;,     &quot;-&quot;)),
+        ],
+        actions=[
+            _btn(&quot;ดูรายงาน QC&quot;, f&quot;action=view_qc&amp;project_id={p.get(&#x27;project_id&#x27;,&#x27;&#x27;)}&quot;),
+            _btn(&quot;ถ่ายรูป&quot;,     f&quot;action=photo_qc&amp;project_id={p.get(&#x27;project_id&#x27;,&#x27;&#x27;)}&quot;, &quot;secondary&quot;),
+        ]
+    )
+
+<span class="c"># ─── Event 07: halt_alert ─────────────────────────────────────────────────────</span>
+<span class="k">def</span> <span class="n">_flex_halt_alert</span>(p: <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]) -&gt; <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]:
+    &quot;&quot;&quot;CRITICAL — Production Halt แจ้ง PM + Factory + CEO ทันที&quot;&quot;&quot;
+    <span class="k">return</span> _bubble(
+        alt_text=f&quot;[HALT] Project {p.get(&#x27;project_id&#x27;,&#x27;&#x27;)} — Sev {p.get(&#x27;severity&#x27;,&#x27;&#x27;)}&quot;,
+        header_color=&quot;#c0392b&quot;, icon=&quot;🚨&quot;,
+        title=f&quot;PRODUCTION HALT — Sev {p.get(&#x27;severity&#x27;,&#x27;&#x27;)}&quot;,
+        rows=[
+            _row(&quot;Project ID&quot;,   p.get(&quot;project_id&quot;,  &quot;-&quot;)),
+            _row(&quot;Defect Code&quot;,  p.get(&quot;defect_code&quot;, &quot;-&quot;)),
+            _row(&quot;Severity&quot;,     f&quot;Sev-{p.get(&#x27;severity&#x27;,&#x27;&#x27;)}&quot;),
+            _row(&quot;ขั้นตอน&quot;,    p.get(&quot;stage&quot;,         &quot;-&quot;)),
+            _row(&quot;รายงานโดย&quot;,  p.get(&quot;reported_by&quot;,   &quot;-&quot;)),
+            _row(&quot;เวลา&quot;,        p.get(&quot;reported_at&quot;,  &quot;-&quot;)),
+        ],
+        actions=[
+            _btn(&quot;ดูข้อบกพร่อง&quot;,   f&quot;action=view_defect&amp;defect_id={p.get(&#x27;defect_id&#x27;,&#x27;&#x27;)}&quot;),
+            _btn(&quot;PFMEA Reference&quot;, f&quot;action=pfmea_ref&amp;code={p.get(&#x27;defect_code&#x27;,&#x27;&#x27;)}&quot;, &quot;secondary&quot;),
+        ]
+    )
+
+<span class="c"># ─── Event 08: bom_received ───────────────────────────────────────────────────</span>
+<span class="k">def</span> <span class="n">_flex_bom_received</span>(p: <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]) -&gt; <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]:
+    &quot;&quot;&quot;แจ้ง Procurement — BOM ใหม่จาก Factory Agent&quot;&quot;&quot;
+    <span class="k">return</span> _bubble(
+        alt_text=f&quot;[BOM] Project {p.get(&#x27;project_id&#x27;,&#x27;&#x27;)} — {p.get(&#x27;item_count&#x27;,0)} รายการ&quot;,
+        header_color=&quot;#5b4fcf&quot;, icon=&quot;📦&quot;,
+        title=f&quot;BOM ใหม่ — {p.get(&#x27;item_count&#x27;,0)} รายการ&quot;,
+        rows=[
+            _row(&quot;Project ID&quot;,  p.get(&quot;project_id&quot;,  &quot;-&quot;)),
+            _row(&quot;BOM Rev&quot;,     p.get(&quot;bom_version&quot;, &quot;-&quot;)),
+            _row(&quot;รายการ&quot;,      <span class="k">str</span>(p.get(&quot;item_count&quot;, 0))),
+            _row(&quot;มูลค่ารวม&quot;,  p.get(&quot;total_value&quot;,  &quot;-&quot;)),
+            _row(&quot;ส่งโดย&quot;,     p.get(&quot;sent_by&quot;,      &quot;Factory Agent&quot;)),
+        ],
+        actions=[
+            _btn(&quot;Review BOM&quot;, f&quot;action=review_bom&amp;project_id={p.get(&#x27;project_id&#x27;,&#x27;&#x27;)}&quot;),
+            _btn(&quot;สั่งซื้อ&quot;,   f&quot;action=create_po&amp;project_id={p.get(&#x27;project_id&#x27;,&#x27;&#x27;)}&quot;, &quot;secondary&quot;),
+        ]
+    )
+
+<span class="c"># ─── Event 09: stock_alert ────────────────────────────────────────────────────</span>
+<span class="k">def</span> <span class="n">_flex_stock_alert</span>(p: <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]) -&gt; <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]:
+    &quot;&quot;&quot;เตือน Procurement — วัสดุต่ำกว่า Reorder Point&quot;&quot;&quot;
+    <span class="k">return</span> _bubble(
+        alt_text=f&quot;[Stock Alert] {p.get(&#x27;material_name&#x27;,&#x27;&#x27;)} เหลือน้อย&quot;,
+        header_color=&quot;#e07b39&quot;, icon=&quot;📉&quot;,
+        title=f&quot;Stock ต่ำ: {p.get(&#x27;material_name&#x27;,&#x27;&#x27;)}&quot;,
+        rows=[
+            _row(&quot;วัสดุ&quot;,            p.get(&quot;material_name&quot;,          &quot;-&quot;)),
+            _row(&quot;SKU&quot;,               p.get(&quot;sku&quot;,                    &quot;-&quot;)),
+            _row(&quot;คงเหลือ&quot;,           <span class="k">str</span>(p.get(&quot;current_qty&quot;,        0))),
+            _row(&quot;Reorder Point&quot;,     <span class="k">str</span>(p.get(&quot;reorder_point&quot;,      0))),
+            _row(&quot;ต้องการโดยโครงการ&quot;, p.get(&quot;required_by_project&quot;,  &quot;-&quot;)),
+        ],
+        actions=[
+            _btn(&quot;สั่งซื้อเลย&quot;,  f&quot;action=reorder&amp;sku={p.get(&#x27;sku&#x27;,&#x27;&#x27;)}&quot;),
+            _btn(&quot;ดู Inventory&quot;, f&quot;action=view_stock&amp;sku={p.get(&#x27;sku&#x27;,&#x27;&#x27;)}&quot;, &quot;secondary&quot;),
+        ]
+    )
+
+<span class="c"># ─── Event 10: job_scheduled ──────────────────────────────────────────────────</span>
+<span class="k">def</span> <span class="n">_flex_job_scheduled</span>(p: <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]) -&gt; <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]:
+    &quot;&quot;&quot;แจ้ง Installation Team + ลูกค้า — วันนัดหมายติดตั้ง&quot;&quot;&quot;
+    <span class="k">return</span> _bubble(
+        alt_text=f&quot;[นัดหมาย] ติดตั้ง {p.get(&#x27;install_date&#x27;,&#x27;&#x27;)} — {p.get(&#x27;customer_name&#x27;,&#x27;&#x27;)}&quot;,
+        header_color=&quot;#5b4fcf&quot;, icon=&quot;📅&quot;,
+        title=&quot;นัดหมายติดตั้งแล้ว!&quot;,
+        rows=[
+            _row(&quot;Project ID&quot;,  p.get(&quot;project_id&quot;,   &quot;-&quot;)),
+            _row(&quot;วันติดตั้ง&quot;, p.get(&quot;install_date&quot;, &quot;-&quot;)),
+            _row(&quot;เวลา&quot;,        p.get(&quot;install_time&quot;, &quot;-&quot;)),
+            _row(&quot;ทีมช่าง&quot;,    p.get(&quot;team_lead&quot;,    &quot;-&quot;)),
+            _row(&quot;สถานที่&quot;,    p.get(&quot;site_address&quot;, &quot;-&quot;)),
+        ],
+        actions=[
+            _uri_btn(&quot;ดูแผนที่&quot;,     p.get(&quot;map_url&quot;,&quot;https://maps.google.com&quot;)),
+            _btn(&quot;ยืนยันนัดหมาย&quot;, f&quot;action=confirm_schedule&amp;job_id={p.get(&#x27;job_id&#x27;,&#x27;&#x27;)}&quot;),
+            _btn(&quot;เลื่อนนัด&quot;,      f&quot;action=reschedule&amp;job_id={p.get(&#x27;job_id&#x27;,&#x27;&#x27;)}&quot;, &quot;secondary&quot;),
+        ]
+    )
+
+<span class="c"># ─── Event 11: job_complete ───────────────────────────────────────────────────</span>
+<span class="k">def</span> <span class="n">_flex_job_complete</span>(p: <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]) -&gt; <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]:
+    &quot;&quot;&quot;แจ้ง PM + ลูกค้าผ่าน LINE OA — ติดตั้งเสร็จ พร้อมขอ Sign-off&quot;&quot;&quot;
+    <span class="k">return</span> _bubble(
+        alt_text=f&quot;[เสร็จสิ้น] Project {p.get(&#x27;project_id&#x27;,&#x27;&#x27;)} ติดตั้งเสร็จแล้ว!&quot;,
+        header_color=&quot;#2d7a4f&quot;, icon=&quot;🎉&quot;,
+        title=&quot;ติดตั้งเสร็จสมบูรณ์!&quot;,
+        rows=[
+            _row(&quot;Project ID&quot;,   p.get(&quot;project_id&quot;,  &quot;-&quot;)),
+            _row(&quot;ชื่อโครงการ&quot;, p.get(&quot;project_name&quot;, &quot;-&quot;)),
+            _row(&quot;ทีมช่าง&quot;,     p.get(&quot;team_lead&quot;,    &quot;-&quot;)),
+            _row(&quot;เสร็จเมื่อ&quot;,  p.get(&quot;completed_at&quot;, &quot;-&quot;)),
+            _row(&quot;SOP Steps&quot;,    p.get(&quot;sop_steps&quot;,   &quot;18/18 ✓&quot;)),
+        ],
+        actions=[
+            _btn(&quot;Sign-off ✓&quot;,    f&quot;action=sign_off&amp;job_id={p.get(&#x27;job_id&#x27;,&#x27;&#x27;)}&quot;),
+            _uri_btn(&quot;ดูรูปผลงาน&quot;, p.get(&quot;gallery_url&quot;,&quot;https://monolith.app/gallery&quot;)),
+            _btn(&quot;ให้คะแนน&quot;,      f&quot;action=review&amp;job_id={p.get(&#x27;job_id&#x27;,&#x27;&#x27;)}&quot;, &quot;secondary&quot;),
+        ]
+    )
+
+<span class="c"># ─── Event 12: status_update ─────────────────────────────────────────────────</span>
+<span class="k">def</span> <span class="n">_flex_status_update</span>(p: <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]) -&gt; <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]:
+    &quot;&quot;&quot;Generic status update — ส่งหาลูกค้าผ่าน LINE OA&quot;&quot;&quot;
+    stage_colors = {
+        &quot;design&quot;:       &quot;#1f2d5a&quot;,
+        &quot;production&quot;:   &quot;#c9a84c&quot;,
+        &quot;qc&quot;:           &quot;#2d7a4f&quot;,
+        &quot;delivery&quot;:     &quot;#5b4fcf&quot;,
+        &quot;installation&quot;: &quot;#5b4fcf&quot;,
+        &quot;complete&quot;:     &quot;#2d7a4f&quot;,
+    }
+    color = stage_colors.get(p.get(&quot;stage&quot;, &quot;&quot;), &quot;#1f2d5a&quot;)
+    <span class="k">return</span> _bubble(
+        alt_text=f&quot;[อัปเดต] {p.get(&#x27;project_id&#x27;,&#x27;&#x27;)} — {p.get(&#x27;stage_label&#x27;,&#x27;&#x27;)}&quot;,
+        header_color=color, icon=&quot;📢&quot;,
+        title=f&quot;อัปเดต: {p.get(&#x27;stage_label&#x27;,&#x27;&#x27;)}&quot;,
+        rows=[
+            _row(&quot;Project ID&quot;,  p.get(&quot;project_id&quot;,  &quot;-&quot;)),
+            _row(&quot;สถานะ&quot;,       p.get(&quot;stage_label&quot;, &quot;-&quot;)),
+            _row(&quot;ความคืบหน้า&quot;, p.get(&quot;progress&quot;,    &quot;-&quot;)),
+            _row(&quot;ข้อความ&quot;,     p.get(&quot;message&quot;,     &quot;-&quot;)),
+            _row(&quot;เวลา&quot;,        p.get(&quot;updated_at&quot;,  &quot;-&quot;)),
+        ],
+        actions=[
+            _uri_btn(&quot;ดูสถานะทั้งหมด&quot;, p.get(&quot;status_url&quot;,&quot;https://monolith.app/status&quot;)),
+            _btn(&quot;ติดต่อ PM&quot;,          f&quot;action=contact_pm&amp;project_id={p.get(&#x27;project_id&#x27;,&#x27;&#x27;)}&quot;, &quot;secondary&quot;),
+        ]
+    )
+
+<span class="c"># ─── Supplementary: designer_reminder ────────────────────────────────────────</span>
+<span class="k">def</span> <span class="n">_flex_designer_reminder</span>(p: <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]) -&gt; <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]:
+    &quot;&quot;&quot;เตือน Designer 4h ก่อนครบ deadline unanimous approval&quot;&quot;&quot;
+    <span class="k">return</span> _bubble(
+        alt_text=f&quot;[เตือน] Approval {p.get(&#x27;project_id&#x27;,&#x27;&#x27;)} อีก 4h ครบกำหนด&quot;,
+        header_color=&quot;#e07b39&quot;, icon=&quot;⏰&quot;,
+        title=&quot;เตือน: อีก 4h ครบ Approval Deadline&quot;,
+        rows=[
+            _row(&quot;Project ID&quot;,  p.get(&quot;project_id&quot;,    &quot;-&quot;)),
+            _row(&quot;Design Rev&quot;,  p.get(&quot;design_version&quot;,&quot;-&quot;)),
+            _row(&quot;Deadline&quot;,    p.get(&quot;deadline_at&quot;,   &quot;-&quot;)),
+            _row(&quot;เหลือ&quot;,      p.get(&quot;time_remaining&quot;,&quot;4h&quot;)),
+        ],
+        actions=[
+            _btn(&quot;Push Approval&quot;,    f&quot;action=push_approval&amp;project_id={p.get(&#x27;project_id&#x27;,&#x27;&#x27;)}&quot;),
+            _btn(&quot;ขอเลื่อน Deadline&quot;, f&quot;action=extend_deadline&amp;project_id={p.get(&#x27;project_id&#x27;,&#x27;&#x27;)}&quot;, &quot;secondary&quot;),
+        ]
+    )
+
+<span class="c"># ─── Supplementary: pm_first_response_warning ────────────────────────────────</span>
+<span class="k">def</span> <span class="n">_flex_pm_first_response_warning</span>(p: <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]) -&gt; <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]:
+    &quot;&quot;&quot;เตือน PM — Sale ยังไม่ตอบลูกค้าเกิน 4h SLA&quot;&quot;&quot;
+    <span class="k">return</span> _bubble(
+        alt_text=f&quot;[SLA Breach] Inquiry {p.get(&#x27;inquiry_id&#x27;,&#x27;&#x27;)} ยังไม่ได้รับการตอบ&quot;,
+        header_color=&quot;#c0392b&quot;, icon=&quot;⚠️&quot;,
+        title=&quot;SLA Breach: ยังไม่ตอบลูกค้า&quot;,
+        rows=[
+            _row(&quot;Inquiry ID&quot;,      p.get(&quot;inquiry_id&quot;,     &quot;-&quot;)),
+            _row(&quot;ลูกค้า&quot;,         p.get(&quot;customer_name&quot;,  &quot;-&quot;)),
+            _row(&quot;Sale ที่รับผิดชอบ&quot;, p.get(&quot;sale_name&quot;,   &quot;-&quot;)),
+            _row(&quot;รับงานเมื่อ&quot;,    p.get(&quot;received_at&quot;,    &quot;-&quot;)),
+            _row(&quot;เกิน SLA&quot;,       p.get(&quot;overdue_by&quot;,     &quot;-&quot;)),
+        ],
+        actions=[
+            _btn(&quot;Escalate ทันที&quot;, f&quot;action=escalate_pm&amp;inquiry_id={p.get(&#x27;inquiry_id&#x27;,&#x27;&#x27;)}&quot;),
+            _btn(&quot;ดู Inquiry&quot;,     f&quot;action=view_inquiry&amp;id={p.get(&#x27;inquiry_id&#x27;,&#x27;&#x27;)}&quot;, &quot;secondary&quot;),
+        ]
+    )
+
+<span class="c"># ─── Supplementary: critical_escalation ──────────────────────────────────────</span>
+<span class="k">def</span> <span class="n">_flex_critical_escalation</span>(p: <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]) -&gt; <span class="k">Dict</span>[<span class="k">str</span>, <span class="k">Any</span>]:
+    &quot;&quot;&quot;Critical Escalation — ส่งถึง CEO + ทุก Department Head&quot;&quot;&quot;
+    <span class="k">return</span> _bubble(
+        alt_text=f&quot;[CRITICAL] {p.get(&#x27;subject&#x27;,&#x27;&#x27;)} — ต้องการการตัดสินใจทันที&quot;,
+        header_color=&quot;#7b0000&quot;, icon=&quot;🔴&quot;,
+        title=&quot;CRITICAL ESCALATION&quot;,
+        rows=[
+            _row(&quot;เรื่อง&quot;,     p.get(&quot;subject&quot;,    &quot;-&quot;)),
+            _row(&quot;Project ID&quot;, p.get(&quot;project_id&quot;, &quot;-&quot;)),
+            _row(&quot;Impact&quot;,     p.get(&quot;impact&quot;,     &quot;-&quot;)),
+            _row(&quot;Agent&quot;,      p.get(&quot;agent_name&quot;, &quot;-&quot;)),
+            _row(&quot;เวลา&quot;,       p.get(&quot;reported_at&quot;,&quot;-&quot;)),
+        ],
+        actions=[
+            _btn(&quot;ดูรายละเอียด&quot;, f&quot;action=view_escalation&amp;id={p.get(&#x27;escalation_id&#x27;,&#x27;&#x27;)}&quot;),
+            _btn(&quot;รับทราบ&quot;,      f&quot;action=ack_escalation&amp;id={p.get(&#x27;escalation_id&#x27;,&#x27;&#x27;)}&quot;, &quot;secondary&quot;),
+        ]
+    )
+
+    </div>
+  </div>
+
+  <div class="section-title">scheduler.py — APScheduler (Remind + Escalate)</div>
+  <div class="card">
+    <div class="code-block">
+<span class="k">from</span> apscheduler.schedulers.asyncio <span class="k">import</span> AsyncIOScheduler
+<span class="k">from</span> apscheduler.triggers.date <span class="k">import</span> DateTrigger
+<span class="k">from</span> datetime <span class="k">import</span> datetime, timedelta
+<span class="k">from</span> services.line_notifier <span class="k">import</span> notify_department
+<span class="k">from</span> services.flex_builder <span class="k">import</span> build_flex
+
+scheduler = AsyncIOScheduler()
+
+<span class="k">def</span> <span class="n">schedule_designer_reminder</span>(brief_id: str, deadline: datetime):
+    <span class="s">"""เตือน Designer 4h ก่อนครบ 24h unanimous approval"""</span>
+    remind_at = deadline - timedelta(hours=4)
+    scheduler.add_job(
+        <span class="n">_send_designer_reminder</span>,
+        trigger=DateTrigger(run_date=remind_at),
+        args=[brief_id],
+        id=<span class="s">f"designer_remind_{brief_id}"</span>
+    )
+
+<span class="k">def</span> <span class="n">schedule_pm_first_response</span>(project_id: str, deadline: datetime):
+    <span class="s">"""เตือน PM 30 นาทีก่อนครบ 4h first_response"""</span>
+    remind_at = deadline - timedelta(minutes=30)
+    scheduler.add_job(
+        <span class="n">_send_pm_reminder</span>,
+        trigger=DateTrigger(run_date=remind_at),
+        args=[project_id],
+        id=<span class="s">f"pm_remind_{project_id}"</span>
+    )
+
+<span class="k">async def</span> <span class="n">_send_designer_reminder</span>(brief_id: str):
+    flex = build_flex(<span class="s">"designer_reminder"</span>, {<span class="s">"brief_id"</span>: brief_id})
+    <span class="k">await</span> notify_department(<span class="s">"designer"</span>, flex)
+
+<span class="k">async def</span> <span class="n">_send_pm_reminder</span>(project_id: str):
+    flex = build_flex(<span class="s">"pm_first_response_warning"</span>, {<span class="s">"project_id"</span>: project_id})
+    <span class="k">await</span> notify_department(<span class="s">"pm"</span>, flex)
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     TAB 05: MCP Integration
+═══════════════════════════════════════════════════════════════ -->
+<div id="tab-mcp" class="tab-content">
+
+  <div class="section-title">MCP Tool → LINE Notification Mapping</div>
+  <div class="card">
+    <table>
+      <tr><th>MCP Tool</th><th>Agent ที่เรียก</th><th>Event Type</th><th>แจ้งไปที่</th><th>Flex Template</th></tr>
+      <tr><td><code>create_customer_brief</code></td><td>Sale</td><td>new_inquiry</td><td>LINE_GROUP_SALE</td><td>Sale New Inquiry</td></tr>
+      <tr><td><code>handoff_to_designer</code></td><td>Sale</td><td>brief_received</td><td>LINE_GROUP_DESIGNER</td><td>Designer Brief Approval</td></tr>
+      <tr><td><code>submit_design_approval</code></td><td>Designer</td><td>approval_request</td><td>LINE_GROUP_DESIGNER</td><td>Designer Brief Approval</td></tr>
+      <tr><td><code>create_project_plan</code></td><td>PM</td><td>project_created</td><td>LINE_GROUP_PM + LINE_GROUP_FACTORY</td><td>PM Project Created</td></tr>
+      <tr><td><code>check_first_response</code></td><td>PM</td><td>first_response_4h</td><td>LINE_GROUP_PM</td><td>PM first_response Alert</td></tr>
+      <tr><td><code>log_qc_checkpoint</code></td><td>Factory</td><td>qc_checkpoint</td><td>LINE_GROUP_FACTORY</td><td>Factory QC Log</td></tr>
+      <tr><td><code>halt_production</code></td><td>Factory</td><td>halt_alert</td><td>LINE_GROUP_FACTORY + LINE_GROUP_PM</td><td>Factory HALT Alert</td></tr>
+      <tr><td><code>create_purchase_order</code></td><td>Procurement</td><td>bom_received</td><td>LINE_GROUP_PROCUREMENT</td><td>Procurement BOM Received</td></tr>
+      <tr><td><code>check_stock_level</code></td><td>Procurement</td><td>stock_alert</td><td>LINE_GROUP_PROCUREMENT + LINE_GROUP_FACTORY</td><td>Procurement Stock Alert</td></tr>
+      <tr><td><code>schedule_installation</code></td><td>Install</td><td>job_scheduled</td><td>LINE_GROUP_INSTALL</td><td>Install Job Alert</td></tr>
+      <tr><td><code>complete_installation</code></td><td>Install</td><td>job_complete</td><td>LINE_GROUP_PM + LINE OA (ลูกค้า)</td><td>Customer Order Status</td></tr>
+      <tr><td><code>update_order_status</code></td><td>PM/Sale</td><td>status_update</td><td>LINE OA (ลูกค้า)</td><td>Customer Order Status</td></tr>
+    </table>
+  </div>
+
+  <div class="section-title">MCP Tool Implementation — ส่วน Notification</div>
+  <div class="card">
+    <div class="card-title">TypeScript — MCP Tool notify call</div>
+    <div class="code-block">
+<span class="c">// ใน MCP tool handler — ส่วนที่ trigger LINE notification</span>
+<span class="k">async function</span> <span class="n">haltProduction</span>(params: HaltProductionParams) {
+  <span class="c">// 1. บันทึก halt ลง Supabase</span>
+  <span class="k">await</span> supabase.from(<span class="s">'production_logs'</span>).insert({ ...params, status: <span class="s">'halted'</span> })
+
+  <span class="c">// 2. Trigger LINE notification via FastAPI</span>
+  <span class="k">await</span> fetch(<span class="s">`${process.env.FASTAPI_URL}/webhook/agent-event`</span>, {
+    method: <span class="s">'POST'</span>,
+    headers: { <span class="s">'Content-Type'</span>: <span class="s">'application/json'</span> },
+    body: JSON.stringify({
+      event:   <span class="s">'halt_alert'</span>,
+      dept:    <span class="s">'factory'</span>,
+      payload: {
+        step_name:   params.stepName,
+        lot_id:      params.lotId,
+        defect_type: params.defectType,
+        severity:    params.severity,   <span class="c">// 9 = Critical</span>
+        project_id:  params.projectId,
+      }
+    })
+  })
+
+  <span class="c">// 3. ถ้า severity >= 9 → แจ้ง PM ด้วย</span>
+  <span class="k">if</span> (params.severity >= <span class="g">9</span>) {
+    <span class="k">await</span> fetch(<span class="s">`${process.env.FASTAPI_URL}/webhook/agent-event`</span>, {
+      method: <span class="s">'POST'</span>,
+      headers: { <span class="s">'Content-Type'</span>: <span class="s">'application/json'</span> },
+      body: JSON.stringify({
+        event:   <span class="s">'critical_escalation'</span>,
+        dept:    <span class="s">'pm'</span>,
+        payload: { ...params, source_dept: <span class="s">'factory'</span> }
+      })
+    })
+  }
+
+  <span class="k">return</span> { success: <span class="k">true</span>, halted_at: <span class="k">new</span> Date().toISOString() }
+}
+    </div>
+  </div>
+
+  <div class="section-title">Back-channel Notifications (Multi-dept)</div>
+  <div class="card">
+    <table>
+      <tr><th>Trigger</th><th>Primary Dept</th><th>Back-channel ไปที่</th><th>เหตุผล</th></tr>
+      <tr><td>Factory HALT (Sev 9)</td><td>Factory</td><td>PM + QA</td><td>PM ต้องทราบ, QA ต้องเข้าตรวจ</td></tr>
+      <tr><td>Stock Alert</td><td>Procurement</td><td>Factory</td><td>Factory ต้องหยุดรอถ้าวัสดุหมด</td></tr>
+      <tr><td>Installation Complete</td><td>Install</td><td>PM + LINE OA ลูกค้า</td><td>PM ปิด project, ลูกค้ารับทราบ</td></tr>
+      <tr><td>Design Approved</td><td>Designer</td><td>Sale + PM</td><td>Sale แจ้งลูกค้า, PM เริ่ม plan</td></tr>
+      <tr><td>BOM Error (0 missing)</td><td>Procurement</td><td>PM + Designer</td><td>แก้ spec ก่อนสั่งผลิต</td></tr>
+    </table>
+  </div>
+
+  <div class="section-title">Error Handling & Retry Policy</div>
+  <div class="card">
+    <div class="grid-2">
+      <div>
+        <div class="card-title">⚠️ LINE API Error Codes</div>
+        <table style="font-size:12px">
+          <tr><th>Code</th><th>ความหมาย</th><th>Action</th></tr>
+          <tr><td>400</td><td>Invalid request</td><td>Log + alert dev</td></tr>
+          <tr><td>401</td><td>Token expired</td><td>Refresh token + retry 1x</td></tr>
+          <tr><td>403</td><td>Bot ไม่ได้เป็น member</td><td>Alert admin ให้เพิ่ม bot เข้า group</td></tr>
+          <tr><td>429</td><td>Rate limit</td><td>Exponential backoff — retry 3x</td></tr>
+          <tr><td>500</td><td>LINE server error</td><td>Retry หลัง 60s — max 3x</td></tr>
+        </table>
+      </div>
+      <div>
+        <div class="card-title">🔄 Retry Logic</div>
+        <div class="code-block" style="font-size:11px">
+<span class="k">import</span> asyncio
+
+<span class="k">async def</span> <span class="n">send_with_retry</span>(fn, *args, max_retries=3):
+    <span class="k">for</span> attempt <span class="k">in</span> range(max_retries):
+        <span class="k">try</span>:
+            <span class="k">return await</span> fn(*args)
+        <span class="k">except</span> Exception <span class="k">as</span> e:
+            <span class="k">if</span> attempt == max_retries - 1:
+                <span class="k">raise</span>
+            wait = 2 ** attempt  <span class="c"># 1s, 2s, 4s</span>
+            <span class="k">await</span> asyncio.sleep(wait)
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="warn-box">
+    <strong>PDPA Note:</strong> LINE Group messages ไม่ควรมี PII ของลูกค้า (เลข ID บัตร, เบอร์โทร, ที่อยู่เต็ม) — ให้ใช้ internal project ID แทน และลิงก์ไปที่ระบบภายในสำหรับรายละเอียดเพิ่มเติม
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="page-footer">
+  MONOLITH DAPH Decor AI Agent System — Automation Layer Spec n:161 — v2.5 — 2026
+</div>
+
+<script>
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+function switchDept(id, btn) {
+  document.querySelectorAll('.dept-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.dept-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('dept-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>

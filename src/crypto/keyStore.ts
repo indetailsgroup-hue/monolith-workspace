@@ -10,6 +10,8 @@
  * v1.0: Initial key store
  */
 
+import { readRaw, remove, writeJson } from '../core/persistence/unsafeStorage';
+
 /** JWK key pair for storage */
 export interface JwkPair {
   publicJwk: JsonWebKey;
@@ -25,7 +27,7 @@ const LS_PREFIX = 'monolith.keys.';
  */
 export function loadKeyPair(keyId: string): JwkPair | null {
   try {
-    const raw = localStorage.getItem(LS_PREFIX + keyId);
+    const raw = readRaw(LS_PREFIX + keyId);
     if (!raw) return null;
     return JSON.parse(raw);
   } catch {
@@ -37,14 +39,14 @@ export function loadKeyPair(keyId: string): JwkPair | null {
  * Save key pair to localStorage.
  */
 export function saveKeyPair(keyId: string, pair: JwkPair): void {
-  localStorage.setItem(LS_PREFIX + keyId, JSON.stringify(pair));
+  writeJson(LS_PREFIX + keyId, pair);
 }
 
 /**
  * Delete key pair from localStorage.
  */
 export function deleteKeyPair(keyId: string): void {
-  localStorage.removeItem(LS_PREFIX + keyId);
+  remove(LS_PREFIX + keyId);
 }
 
 /**
@@ -65,5 +67,5 @@ export function listKeyIds(): string[] {
  * Check if key pair exists.
  */
 export function hasKeyPair(keyId: string): boolean {
-  return localStorage.getItem(LS_PREFIX + keyId) !== null;
+  return readRaw(LS_PREFIX + keyId) !== null;
 }

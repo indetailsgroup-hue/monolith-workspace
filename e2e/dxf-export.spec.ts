@@ -70,32 +70,22 @@ test.describe('DXF Export', () => {
             );
 
             // Try to find export button
-            const exportTriggerExists = await exportButton.first().isVisible().catch(() => false);
+            const button = exportButton.first();
+            await expect(button).toBeVisible();
+            const isDisabled = await button.isDisabled().catch(() => false);
 
-            if (exportTriggerExists) {
-                // Button exists - check if it shows gate status info
-                const button = exportButton.first();
-                const isDisabled = await button.isDisabled().catch(() => false);
-
-                if (isDisabled) {
-                    // Button is disabled due to gate status - this is expected behavior
-                    // Verify it has appropriate tooltip/title
-                    const title = await button.getAttribute('title');
-                    expect(title).toMatch(/FROZEN|RELEASED|export/i);
-                } else {
-                    // Button is enabled - click it to open panel
-                    await button.click();
-                    await page.waitForTimeout(500);
-
-                    // Check Export Panel is visible
-                    const exportPanel = page.locator('[data-testid="export-panel"]').or(
-                        page.locator('text=/DXF Files|Cut List|BOM/i')
-                    );
-                    await expect(exportPanel.first()).toBeVisible({ timeout: 5000 });
-                }
+            if (isDisabled) {
+                // A DRAFT spec is expected to fail closed with an actionable reason.
+                const title = await button.getAttribute('title');
+                expect(title).toMatch(/FROZEN|RELEASED|export/i);
             } else {
-                // Export panel might be always visible in sidebar
-                test.skip();
+                await button.click();
+                await page.waitForTimeout(500);
+
+                const exportPanel = page.locator('[data-testid="export-panel"]').or(
+                    page.locator('text=/DXF Files|Cut List|BOM/i')
+                );
+                await expect(exportPanel.first()).toBeVisible({ timeout: 5000 });
             }
         });
 

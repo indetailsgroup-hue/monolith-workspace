@@ -1,0 +1,190 @@
+-- =============================================================================
+-- Migration 0185 — Open audit findings: site_code-scoped operational tables
+-- =============================================================================
+--
+-- PURPOSE
+-- -------
+-- This migration contains NO DDL. It is a tracking record for the 74
+-- site_code-scoped operational tables identified by scripts/lint-rls-org-id.py
+-- during the v16.8.0 security audit (issue #56) as missing org_id-scoped RLS
+-- policies.
+--
+-- These tables are NOT covered by migrations 0173–0184 because they carry a
+-- site_code TEXT column (not an org_id UUID FK) for their primary tenancy
+-- anchor. Before RLS policies can be applied, each table requires:
+--
+--   PREREQUISITE: Add org_id UUID NOT NULL FK → organizations(id) to each
+--   table (or a reliable site_code → org_id join via a reference table).
+--   This is a multi-migration effort tracked in the "Phase 2 RLS" epic.
+--
+-- STATUS: OPEN — Phase 2 RLS epic not yet started as of migration 0185.
+--
+-- AUDIT NOTES
+-- -----------
+-- • 4 tables marked [CRITICAL] are missing BOTH ENABLE ROW LEVEL SECURITY
+--   AND any org_id policy; they have no RLS protection at all.
+-- • All remaining 70 tables have RLS enabled but are missing org_id-scoped
+--   policies; they may have other policies (e.g., user-scoped) that provide
+--   partial isolation but not full tenant isolation.
+-- • Linter run: scripts/lint-rls-org-id.py --full-corpus
+--   Commit: f159edb994 (ALLOWLIST expanded 8 → 30 entries)
+-- • All 30 ALLOWLIST entries (platform-level / MCP infrastructure /
+--   user-scoped tables) have been reviewed and intentionally excluded.
+--
+-- =============================================================================
+-- GROUP A — Factory & Production (10 tables)
+-- =============================================================================
+--
+--   table                     | has_rls | missing
+--   --------------------------|---------|---------------------------
+--   factory_checkins          |  YES    | org_id policy
+--   factory_gate_config       |  YES    | org_id policy
+--   factory_job_events        |  YES    | org_id policy
+--   factory_jobs              |  YES    | org_id policy
+--   factory_station_checklists|  YES    | org_id policy
+--   production_milestones     |  YES    | org_id policy
+--   daily_reports             |  YES    | org_id policy
+--   phase_rosters             |  YES    | org_id policy
+--   work_packages             |  YES    | org_id policy
+--   work_item                 |  NO     | ENABLE RLS + org_id policy  [CRITICAL]
+--
+-- =============================================================================
+-- GROUP B — Installation & Site (14 tables)
+-- =============================================================================
+--
+--   table                           | has_rls | missing
+--   --------------------------------|---------|---------------------------
+--   installation_approvals          |  YES    | org_id policy
+--   installation_audit_log          |  YES    | org_id policy
+--   installation_field_reports      |  YES    | org_id policy
+--   installation_issues             |  YES    | org_id policy
+--   installation_memberships        |  YES    | org_id policy
+--   installation_photo_annotations  |  YES    | org_id policy
+--   installation_photos             |  YES    | org_id policy
+--   installation_plans              |  YES    | org_id policy
+--   installation_projects           |  YES    | org_id policy
+--   installation_rooms              |  YES    | org_id policy
+--   installation_tasks              |  YES    | org_id policy
+--   site_checkins                   |  YES    | org_id policy
+--   site_survey_zone                |  YES    | org_id policy
+--   qc_inspections                  |  YES    | org_id policy
+--
+-- =============================================================================
+-- GROUP C — LINE OA & Messaging (12 tables)
+-- =============================================================================
+--
+--   table                         | has_rls | missing
+--   ------------------------------|---------|---------------------------
+--   line_bind_codes               |  YES    | org_id policy
+--   line_group_members            |  YES    | org_id policy
+--   line_groups                   |  YES    | org_id policy
+--   line_oa_audit_log             |  YES    | org_id policy
+--   line_oa_channels              |  YES    | org_id policy
+--   line_oa_conversations         |  YES    | org_id policy
+--   line_oa_customer_identity     |  YES    | org_id policy
+--   line_oa_inbound_messages      |  YES    | org_id policy
+--   line_oa_message_templates     |  YES    | org_id policy
+--   line_oa_orders                |  YES    | org_id policy
+--   line_oa_outbound_messages     |  YES    | org_id policy
+--   staff_bind_tokens             |  YES    | org_id policy
+--
+-- =============================================================================
+-- GROUP D — Financial & Billing (13 tables)
+-- =============================================================================
+--
+--   table                   | has_rls | missing
+--   ------------------------|---------|---------------------------
+--   bank_feed_txn           |  YES    | org_id policy
+--   expense_category_map    |  YES    | org_id policy
+--   finance_config          |  YES    | org_id policy
+--   job_cost_config         |  YES    | org_id policy
+--   job_cost_entries        |  YES    | org_id policy
+--   journal_entry           |  YES    | org_id policy
+--   journal_line            |  YES    | org_id policy
+--   payment_installments    |  YES    | org_id policy
+--   price_rates             |  YES    | org_id policy
+--   receipts                |  YES    | org_id policy
+--   receivable              |  YES    | org_id policy
+--   turnkey_offers          |  YES    | org_id policy
+--   variation_orders        |  YES    | org_id policy
+--
+-- =============================================================================
+-- GROUP E — Operational & Configuration (17 tables)
+-- =============================================================================
+--
+--   table                     | has_rls | missing
+--   --------------------------|---------|---------------------------
+--   appointments              |  YES    | org_id policy
+--   capture_artifact          |  YES    | org_id policy
+--   capture_audit_log         |  YES    | org_id policy
+--   capture_item              |  NO     | ENABLE RLS + org_id policy  [CRITICAL]
+--   capture_type_config       |  YES    | org_id policy
+--   contract_documents        |  YES    | org_id policy
+--   customer_docs             |  YES    | org_id policy
+--   design_lock_field_config  |  YES    | org_id policy
+--   document_links            |  YES    | org_id policy
+--   form_templates            |  YES    | org_id policy
+--   issue_routing             |  YES    | org_id policy
+--   lead_followup_config      |  YES    | org_id policy
+--   material_master           |  YES    | org_id policy
+--   material_purchase_price   |  YES    | org_id policy
+--   ops_contacts              |  YES    | org_id policy
+--   released_spec             |  YES    | org_id policy
+--   revision_event            |  YES    | org_id policy
+--
+-- =============================================================================
+-- GROUP F — Package & Project (5 tables)
+-- =============================================================================
+--
+--   table               | has_rls | missing
+--   --------------------|---------|---------------------------
+--   package_addons      |  YES    | org_id policy
+--   package_estimates   |  YES    | org_id policy
+--   package_materials   |  YES    | org_id policy
+--   package_stages      |  YES    | org_id policy
+--   project_turnkey     |  YES    | org_id policy
+--
+-- =============================================================================
+-- GROUP G — Approval & Workflow (3 tables)
+-- =============================================================================
+--
+--   table              | has_rls | missing
+--   -------------------|---------|---------------------------
+--   approval_decision  |  NO     | ENABLE RLS + org_id policy  [CRITICAL]
+--   approval_request   |  NO     | ENABLE RLS + org_id policy  [CRITICAL]
+--   workflow_audit_log |  YES    | org_id policy
+--
+-- =============================================================================
+-- SUMMARY
+-- =============================================================================
+--
+--   Total tables flagged                        : 74
+--   Missing ENABLE RLS + org_id policy [CRITICAL]: 4
+--     → approval_decision, approval_request,
+--       capture_item, work_item
+--   Missing org_id policy only                 : 70
+--
+-- =============================================================================
+-- REMEDIATION PATH
+-- =============================================================================
+--
+-- Phase 2 RLS epic (post-0185):
+--   Step 1 — Add org_id UUID NOT NULL FK to each site_code-scoped table via a
+--             backfill migration (resolve site_code → org_id using the
+--             organizations reference table; default to a sentinel org where
+--             no mapping exists, then clean up).
+--   Step 2 — For the 4 CRITICAL tables: run ALTER TABLE … ENABLE ROW LEVEL
+--             SECURITY before any policy is added.
+--   Step 3 — Add org_id-scoped SELECT/INSERT/UPDATE/DELETE policies using the
+--             standard get_user_org_id() pattern from migrations 0173–0176.
+--   Step 4 — Run lint-rls-org-id.py --full-corpus in CI to confirm 0 violations.
+--
+-- Estimated migrations: 0186 (org_id FK backfill, groups A–D),
+--                       0187 (org_id FK backfill, groups E–G),
+--                       0188 (RLS policies, all 74 tables).
+--
+-- =============================================================================
+-- NO DDL — this migration is a tracking record only.
+-- Rollback: 0185_rollback.sql (no-op — no DDL to reverse).
+-- Preceded by: 0184_*
+-- =============================================================================

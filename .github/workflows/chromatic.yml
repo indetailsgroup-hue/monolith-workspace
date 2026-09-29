@@ -1,0 +1,231 @@
+name: Chromatic Visual Regression
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Runs Chromatic snapshot upload + visual diff on every push/PR that touches
+# Storybook stories or components for the People & Culture module.
+#
+# Required secret (set in repo Settings → Secrets → Actions):
+#   CHROMATIC_PROJECT_TOKEN  — Chromatic project token from
+#                              https://www.chromatic.com/manage (project settings)
+#
+# Optional behaviour flags (set as repo variables or edit below):
+#   --only-changed    skip unchanged stories (faster runs)
+#   --exit-zero-on-changes  CI always green; Chromatic UI shows diff for review
+# ──────────────────────────────────────────────────────────────────────────────
+
+on:
+  workflow_dispatch: # allow manual trigger from GitHub Actions UI
+  push:
+    branches:
+      - feature/people-culture-module
+      - main
+      - develop
+    paths:
+      - 'src/people/**'
+      - 'src/culture/**'
+      - '.storybook/**'
+      - '**/*.stories.tsx'
+      - 'package.json'
+      - 'package-lock.json'
+      - '**/*.visual.spec.ts'
+      - 'playwright.config.ts'
+      - '.github/workflows/chromatic.yml'
+  pull_request:
+    # Required PR checks must report for every change to these target branches.
+    branches:
+      - main
+      - develop
+
+concurrency:
+  group: chromatic-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────────────
+  # chromatic-upload
+  # Builds Storybook and uploads snapshots to Chromatic for visual diffing.
+  # Focused on PeopleDirectory and SuperEmployeeProgressCard stories, but
+  # Chromatic will capture all stories in the build.
+  # ────────────────────────────────────────────────────────────────────────────
+  chromatic-upload:
+    name: Chromatic — Visual Regression (People & Culture)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          # Chromatic needs full git history for baseline detection
+          fetch-depth: 0
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Chromatic
+        uses: chromaui/action@07791f8243f4cb2698bf4d00426baf4b2d1cb7e0 # v13
+        with:
+          # ── Required ────────────────────────────────────────────────────
+          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+
+          # ── Build flags ─────────────────────────────────────────────────
+          # Pass VITE_USE_MOCK so stores resolve without real Supabase creds
+          buildScriptName: build-storybook
+
+          # ── Chromatic run flags ──────────────────────────────────────────
+          # --only-changed: only test stories that changed in this commit
+          #   (uses Chromatic's TurboSnap feature — reduces snapshot quota)
+          onlyChanged: true
+
+          # --auto-accept-changes: automatically accept all visual changes on this
+          # branch as the new baseline. Enables baseline establishment on first run.
+          autoAcceptChanges: "feature/people-culture-module"
+
+          # --exit-zero-on-changes: CI stays green even when visual diffs are
+          # detected; review diffs in the Chromatic UI and accept/deny there.
+          # Set to false if you want CI to block on unaccepted visual changes.
+          exitZeroOnChanges: true
+
+          # --exit-once-uploaded: don't wait for the build to finish in Chromatic
+          # (useful to reduce CI job duration; remove if you need pass/fail)
+          exitOnceUploaded: false
+
+          # ── Story-level filtering ────────────────────────────────────────
+          # Uncomment to run ONLY the People/Culture stories during development.
+          # In production remove this so all stories are covered.
+          # storybookConfigDir: .storybook
+          # onlyStoryFiles: |
+          #   src/people/PeopleDirectory.stories.tsx
+          #   src/people/SuperEmployeeProgressCard.stories.tsx
+          #   src/culture/CultureDashboard.stories.tsx
+
+        env:
+          # Storybook build env — use mock mode so no real API calls happen
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || 'https://placeholder-api.example.com' }}
+          VITE_USE_MOCK: 'true'
+          VITE_FACTORY_API_BASE: ${{ secrets.VITE_FACTORY_API_BASE || 'https://placeholder-factory.example.com' }}
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # chromatic-playwright
+  # Runs Playwright visual snapshots (*.visual.spec.ts) via the
+  # @chromatic-com/playwright integration. Chromatic requires Storybook and
+  # Playwright visual suites to use separate linked projects; publishing both to
+  # one project creates consecutive builds on the same branch and disables
+  # review of the Storybook build that owns the required UI Tests check.
+  #
+  # The test job remains useful without the second project token: Playwright and
+  # its uploaded HTML report still run, while the cloud snapshot upload reports
+  # an explicit successful skip.
+  # ────────────────────────────────────────────────────────────────────────────
+  chromatic-playwright:
+    name: Chromatic — Playwright Visual Snapshots
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      HAS_CHROMATIC_PLAYWRIGHT_PROJECT: ${{ secrets.CHROMATIC_PLAYWRIGHT_PROJECT_TOKEN != '' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Storybook
+        run: npx storybook build --quiet --output-dir storybook-static
+        env:
+          VITE_SUPABASE_URL: https://placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: placeholder-anon-key
+          VITE_API_BASE_URL: https://placeholder-api.example.com
+          VITE_USE_MOCK: 'true'
+          VITE_FACTORY_API_BASE: https://placeholder-factory.example.com
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright visual tests
+        run: npx playwright test
+        env:
+          CI: 'true'
+          VITE_USE_MOCK: 'true'
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: playwright-visual-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Upload snapshots to the dedicated Chromatic Playwright project
+        if: env.HAS_CHROMATIC_PLAYWRIGHT_PROJECT == 'true'
+        run: npx chromatic --playwright --project-token="$CHROMATIC_PLAYWRIGHT_PROJECT_TOKEN" --exit-zero-on-changes
+        env:
+          VITE_USE_MOCK: 'true'
+          CHROMATIC_PLAYWRIGHT_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PLAYWRIGHT_PROJECT_TOKEN }}
+
+      - name: Report skipped Playwright snapshot upload
+        if: env.HAS_CHROMATIC_PLAYWRIGHT_PROJECT != 'true'
+        run: |
+          echo "### Playwright snapshot upload skipped" >> "$GITHUB_STEP_SUMMARY"
+          echo "The Playwright visual tests passed, but CHROMATIC_PLAYWRIGHT_PROJECT_TOKEN is not configured." >> "$GITHUB_STEP_SUMMARY"
+          echo "Create a separate linked Chromatic project for Playwright and add its token as that repository secret." >> "$GITHUB_STEP_SUMMARY"
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # chromatic-storybook-verify
+  # Lightweight build-only check that runs in parallel with chromatic-upload.
+  # Fails fast if Storybook compilation itself breaks, before Chromatic upload.
+  # ────────────────────────────────────────────────────────────────────────────
+  chromatic-storybook-verify:
+    name: Storybook Build Verify (pre-Chromatic)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Storybook (verify)
+        run: npx storybook build --quiet --output-dir storybook-static-verify
+        env:
+          VITE_SUPABASE_URL: https://placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: placeholder-anon-key
+          VITE_API_BASE_URL: https://placeholder-api.example.com
+          VITE_USE_MOCK: 'true'
+          VITE_FACTORY_API_BASE: https://placeholder-factory.example.com
+
+      - name: Upload Storybook build (chromatic verify)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: storybook-static-chromatic-verify
+          path: storybook-static-verify/
+          retention-days: 3

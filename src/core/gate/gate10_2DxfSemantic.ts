@@ -109,24 +109,6 @@ export interface SemanticValidationOptions {
 // ============================================
 
 /**
- * Check if a point is inside panel bounds (with tolerance)
- */
-function isInsideBounds(
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  tolerance: number
-): boolean {
-  return (
-    x >= -tolerance &&
-    x <= width + tolerance &&
-    y >= -tolerance &&
-    y <= height + tolerance
-  );
-}
-
-/**
  * Calculate Euclidean distance between two points
  */
 function distance2D(x1: number, y1: number, x2: number, y2: number): number {
@@ -155,6 +137,15 @@ function getOpDepth(op: Operation): number {
     return (op as DrillOperation | BoreOperation).depth;
   }
   return 0;
+}
+
+function getPairedHoleId(op: Operation): string | undefined {
+  if (!('metadata' in op) || !op.metadata || typeof op.metadata !== 'object') {
+    return undefined;
+  }
+
+  const value = (op.metadata as Record<string, unknown>).pairedHoleId;
+  return typeof value === 'string' ? value : undefined;
 }
 
 /**
@@ -194,7 +185,7 @@ function checkDrillInsideOutline(
       issues.push({
         rule: 'DRILL_INSIDE_OUTLINE',
         severity: 'BLOCK',
-        message: `Drill ${op.id} at (${x.toFixed(2)}, ${y.toFixed(2)}) exceeds panel bounds [${panel.width}x${panel.height}]`,
+        message: `Drill ${op.id} at (${x.toFixed(4)}, ${y.toFixed(4)}) exceeds panel bounds [${panel.width}x${panel.height}]`,
         operationId: op.id,
         position: op.position,
         details: {
@@ -253,7 +244,7 @@ function checkDrillDepthSafe(
       issues.push({
         rule: 'DRILL_DEPTH_SAFE',
         severity: 'BLOCK',
-        message: `Drill ${op.id} depth ${depth.toFixed(2)}mm exceeds safe limit ${maxSafeDepth.toFixed(2)}mm (panel: ${panel.thickness}mm)`,
+        message: `Drill ${op.id} depth ${depth.toFixed(4)}mm exceeds safe limit ${maxSafeDepth.toFixed(4)}mm (panel: ${panel.thickness}mm)`,
         operationId: op.id,
         position: op.position,
         details: {
@@ -295,7 +286,7 @@ function checkMinifixDistanceB(
       issues.push({
         rule: 'MINIFIX_DISTANCE_B',
         severity: 'BLOCK',
-        message: `Minifix bolt ${op.id} Distance B = ${distanceB.toFixed(2)}mm (expected: ${MINIFIX_SPEC.DISTANCE_B}mm ±${TOLERANCES.MINIFIX_DISTANCE_B}mm)`,
+        message: `Minifix bolt ${op.id} Distance B = ${distanceB.toFixed(4)}mm (expected: ${MINIFIX_SPEC.DISTANCE_B}mm ±${TOLERANCES.MINIFIX_DISTANCE_B}mm)`,
         operationId: op.id,
         position: op.position,
         details: {
@@ -328,7 +319,7 @@ function checkMinifixPairMutual(
     if (!isDrillOrBore(op)) continue;
 
     // Check for paired hole reference in metadata
-    const pairedId = (op as any).metadata?.pairedHoleId;
+    const pairedId = getPairedHoleId(op);
     if (!pairedId) continue;
 
     // Verify the paired operation exists
@@ -348,7 +339,7 @@ function checkMinifixPairMutual(
     }
 
     // Verify mutual reference (the paired op should reference back)
-    const backRef = (pairedOp as any).metadata?.pairedHoleId;
+    const backRef = getPairedHoleId(pairedOp);
     if (backRef && backRef !== op.id) {
       issues.push({
         rule: 'MINIFIX_PAIR_MUTUAL',
@@ -397,7 +388,7 @@ function checkNoOverlappingDrills(
         issues.push({
           rule: 'NO_OVERLAPPING_DRILLS',
           severity: 'WARN',
-          message: `Drills ${op1.id} and ${op2.id} overlap (distance: ${dist.toFixed(2)}mm, min required: ${minDist.toFixed(2)}mm)`,
+          message: `Drills ${op1.id} and ${op2.id} overlap (distance: ${dist.toFixed(4)}mm, min required: ${minDist.toFixed(4)}mm)`,
           operationId: op1.id,
           position: op1.position,
           details: {
@@ -607,7 +598,7 @@ export function formatSemanticReport(result: SemanticValidationResult): string {
       }
       if (issue.position) {
         const { x, y, z } = issue.position;
-        lines.push(`   Position: (${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)})`);
+        lines.push(`   Position: (${x.toFixed(4)}, ${y.toFixed(4)}, ${z.toFixed(4)})`);
       }
       lines.push('');
     }

@@ -1,0 +1,457 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# generate-site-data.yml  (v2 — with chapter caching)
+# Auto-generates chapters.json and search_index.json from markdown source files.
+#
+# Caching:
+#   .github/chapter-cache.json  — stores {filename: sha256_hash} for each .md
+#   Chapters whose hash is unchanged since the last run are skipped entirely.
+#   The cache file is committed alongside JSON updates.
+#   Use force_rebuild=true to bypass the cache and process all chapters.
+#
+# Source convention:
+#   docs/chapters/chapter-{N}.md   — one file per chapter, N = 1..55
+#   Frontmatter (required; numeric chapter ID and non-empty title):
+#     ---
+#     num: 1
+#     title: บทสรุปสำหรับผู้บริหาร
+#     phase: 0
+#     phase_num: 0
+#     phase_label: Foundation
+#     mcp_tools: 3
+#     status: complete
+#     ---
+#
+# Outputs (submitted in a signed draft PR to main):
+#   docs/manufacturing-os-site/chapters.json      — {num_str: html, ...}
+#   docs/manufacturing-os-site/search_index.json  — [{num, text}, ...]
+#   .github/chapter-cache.json                    — {filename: sha256, ...}
+#
+# Triggers:
+#   - push: changes to docs/chapters/**/*.md
+#   - workflow_dispatch: manual run with optional path / dry_run / force_rebuild
+# ──────────────────────────────────────────────────────────────────────────────
+name: Generate Site Data
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/chapters/**/*.md"
+      - "docs/chapters/*.md"
+      - "scripts/docs/**"
+      - ".github/workflows/generate-site-data.yml"
+
+  workflow_dispatch:
+    inputs:
+      chapters_path:
+        description: "Path to chapter markdown files (relative to repo root)"
+        required: false
+        default: "docs/chapters"
+      output_path:
+        description: "Output directory for JSON files (relative to repo root)"
+        required: false
+        default: "docs/manufacturing-os-site"
+      dry_run:
+        description: "Dry run — generate but do not commit (true/false)"
+        required: false
+        default: "false"
+      force_rebuild:
+        description: "Force rebuild all chapters, ignoring cache (true/false)"
+        required: false
+        default: "false"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: docs-generated-data-pr
+  cancel-in-progress: false
+
+env:
+  CHAPTERS_PATH:  ${{ github.event.inputs.chapters_path  || 'docs/chapters' }}
+  OUTPUT_PATH:    ${{ github.event.inputs.output_path    || 'docs/manufacturing-os-site' }}
+  DRY_RUN:        ${{ github.event.inputs.dry_run        || 'false' }}
+  FORCE_REBUILD:  ${{ github.event.inputs.force_rebuild  || 'false' }}
+
+jobs:
+  generate:
+    name: Generate chapters.json & search_index.json
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          ref: main
+
+      # ── 2. Set up Python ─────────────────────────────────────────────────────
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install -r scripts/docs/requirements.txt
+
+      # ── 3. Check source directory ────────────────────────────────────────────
+      - name: Check source directory
+        id: check
+        run: |
+          CHAPTERS_DIR="${CHAPTERS_PATH}"
+          if [ ! -d "$CHAPTERS_DIR" ]; then
+            echo "::warning::Source directory '${CHAPTERS_DIR}' does not exist — creating with example file"
+            mkdir -p "$CHAPTERS_DIR"
+
+            cat > "${CHAPTERS_DIR}/chapter-01.md" << 'MD'
+          ---
+          num: 1
+          title: บทสรุปสำหรับผู้บริหาร
+          phase: 0
+          phase_num: 0
+          phase_label: Foundation
+          mcp_tools: 3
+          status: complete
+          ---
+
+          # 1. บทสรุปสำหรับผู้บริหาร
+
+          > เพิ่มเนื้อหา chapter ที่นี่
+
+          MD
+
+            echo "created_example=true" >> $GITHUB_OUTPUT
+          fi
+
+          COUNT=$(find "$CHAPTERS_DIR" -name "*.md" | wc -l)
+          echo "Found ${COUNT} markdown file(s) in ${CHAPTERS_DIR}"
+          echo "count=${COUNT}" >> $GITHUB_OUTPUT
+
+      # ── 4. Compute chapter hashes & detect changes ───────────────────────────
+      - name: Compute chapter hashes and detect changes
+        id: cache
+        run: |
+          python3 - << 'PYEOF'
+          import os, json, hashlib
+          from pathlib import Path
+          from scripts.docs.site_data import get_num, validate_data, rendering_fingerprint
+
+          CHAPTERS_DIR  = os.environ['CHAPTERS_PATH']
+          CACHE_FILE    = '.github/chapter-cache.json'
+          FORCE_REBUILD = os.environ.get('FORCE_REBUILD', 'false').lower() == 'true'
+
+          # ── Load existing cache ──────────────────────────────────────────────
+          old_cache = {}
+          if not FORCE_REBUILD and os.path.exists(CACHE_FILE):
+              try:
+                  with open(CACHE_FILE) as f:
+                      old_cache = json.load(f)
+                  if not isinstance(old_cache, dict):
+                      raise ValueError("Cache must be an object")
+                  print(f"Loaded cache: {len(old_cache)} entries from {CACHE_FILE}")
+              except Exception as e:
+                  old_cache = {}
+                  print(f"Warning: could not read cache ({e}) — treating all as changed")
+          elif FORCE_REBUILD:
+              print("FORCE_REBUILD=true — ignoring cache, all chapters will be processed")
+
+          # Rebuild if either published output is missing, invalid or stale.
+          md_files = sorted(p.relative_to(CHAPTERS_DIR).as_posix()
+                            for p in Path(CHAPTERS_DIR).rglob('*.md'))
+          expected_keys = {str(get_num({}, f)) for f in md_files}
+          if not md_files or len(expected_keys) != len(md_files):
+              raise ValueError('Empty source inventory or duplicate chapter numbers')
+          try:
+              output = Path(os.environ['OUTPUT_PATH'])
+              chapters = json.loads((output / 'chapters.json').read_text(encoding='utf-8'))
+              search = json.loads((output / 'search_index.json').read_text(encoding='utf-8'))
+              validate_data(chapters, search, expected_keys)
+          except (OSError, ValueError, TypeError):
+              FORCE_REBUILD = True
+          fingerprint = rendering_fingerprint()
+
+          # ── Compute SHA256 for every .md file ────────────────────────────────
+          new_hashes = {}
+          changed    = []
+          unchanged  = []
+
+          for fname in md_files:
+              path = os.path.join(CHAPTERS_DIR, fname)
+              with open(path, 'rb') as fh:
+                  sha = hashlib.sha256(fh.read() + fingerprint).hexdigest()
+              new_hashes[fname] = sha
+              if FORCE_REBUILD or old_cache.get(fname) != sha:
+                  changed.append(fname)
+              else:
+                  unchanged.append(fname)
+
+          # ── Report deleted chapters (in cache but no longer on disk) ─────────
+          deleted = [f for f in old_cache if f not in new_hashes]
+          if deleted:
+              print(f"⚠️  Removed from disk (will be dropped from cache): {deleted}")
+
+          # ── Write pending hashes file (promoted to cache after commit) ───────
+          os.makedirs('.github', exist_ok=True)
+          with open('.github/chapter-hashes-pending.json', 'w') as f:
+              json.dump(new_hashes, f, indent=2, sort_keys=True)
+
+          # ── Write changed filenames for the generate step ────────────────────
+          with open('/tmp/changed_chapters.txt', 'w') as f:
+              f.write('\n'.join(changed))
+
+          # ── Summary ──────────────────────────────────────────────────────────
+          print(f"\n📊 Cache diff")
+          print(f"   Total .md files : {len(new_hashes)}")
+          print(f"   Changed / new   : {len(changed)}")
+          print(f"   Unchanged       : {len(unchanged)}")
+          if changed:
+              for c in changed[:10]:
+                  print(f"   ↳ {c}  (sha256:{new_hashes[c][:12]}…)")
+              if len(changed) > 10:
+                  print(f"   … and {len(changed) - 10} more")
+          else:
+              print("   ✅ All chapters unchanged — generation will be skipped")
+
+          gho = os.environ['GITHUB_OUTPUT']
+          with open(gho, 'a') as out:
+              out.write(f"changed_count={len(changed)}\n")
+              out.write(f"unchanged_count={len(unchanged)}\n")
+              out.write(f"total_count={len(new_hashes)}\n")
+              out.write(f"has_changes={'true' if changed or deleted else 'false'}\n")
+          PYEOF
+        env:
+          CHAPTERS_PATH: ${{ env.CHAPTERS_PATH }}
+          FORCE_REBUILD: ${{ env.FORCE_REBUILD }}
+
+      # ── 5. Skip notice (no changes detected) ─────────────────────────────────
+      - name: Skip — no chapters changed
+        if: steps.cache.outputs.has_changes == 'false'
+        run: |
+          echo "✅ All ${{ steps.cache.outputs.total_count }} chapters are unchanged since last run."
+          echo "   JSON files are up-to-date — skipping regeneration and commit."
+          echo "   Re-run with force_rebuild=true to process all chapters regardless."
+
+      # ── 6. Generate JSON files (changed chapters only) ───────────────────────
+      - name: Generate chapters.json and search_index.json
+        id: generate
+        if: steps.cache.outputs.has_changes == 'true'
+        run: |
+          python3 - << 'PYEOF'
+          import os, re, json, html as html_mod
+          from pathlib import Path
+          from scripts.docs.site_data import parse_file, get_num, render_body, search_index, validate_data
+
+          CHAPTERS_DIR   = os.environ['CHAPTERS_PATH']
+          OUTPUT_DIR     = os.environ['OUTPUT_PATH']
+          CHAPTERS_JSON  = os.path.join(OUTPUT_DIR, 'chapters.json')
+          SEARCH_JSON    = os.path.join(OUTPUT_DIR, 'search_index.json')
+
+          # ── Load list of changed files ───────────────────────────────────────
+          with open('/tmp/changed_chapters.txt') as f:
+              changed_set = set(line.strip() for line in f if line.strip())
+          print(f"Processing {len(changed_set)} changed chapter(s)…")
+
+          # ── Load existing chapters.json (preserve unchanged entries) ─────────
+          existing = {}
+          if os.path.exists(CHAPTERS_JSON):
+              try:
+                  with open(CHAPTERS_JSON, encoding='utf-8') as f:
+                      existing = json.load(f)
+                  if not isinstance(existing, dict):
+                      existing = {}
+              except (ValueError, OSError):
+                  existing = {}
+              print(f"Loaded {len(existing)} existing chapters from chapters.json")
+
+          # ── Process ONLY changed/new chapters ────────────────────────────────
+          new_chapters = {}
+          skipped      = []
+          all_files    = sorted(
+              [p.relative_to(CHAPTERS_DIR).as_posix() for p in Path(CHAPTERS_DIR).rglob('*.md')],
+              key=lambda f: (get_num({}, f) or 9999, f)
+          )
+
+          active_keys = {str(get_num({}, f)) for f in all_files}
+          for fname in all_files:
+              if fname not in changed_set:
+                  continue  # unchanged — existing entry will be kept
+
+              path = os.path.join(CHAPTERS_DIR, fname)
+              meta, body = parse_file(path)
+              num = get_num(meta, fname)
+              if num is None:
+                  skipped.append(fname)
+                  continue
+
+              html_content = render_body(meta, body, num)
+
+              new_chapters[str(num)] = html_content
+
+          # ── Merge: new chapters override existing; unchanged preserved ────────
+          merged = {k: v for k, v in {**existing, **new_chapters}.items() if k in active_keys}
+          merged = dict(sorted(merged.items(), key=lambda x: int(x[0])))
+
+          # ── Write chapters.json ──────────────────────────────────────────────
+          os.makedirs(OUTPUT_DIR, exist_ok=True)
+          with open(CHAPTERS_JSON, 'w', encoding='utf-8') as f:
+              json.dump(merged, f, ensure_ascii=False, separators=(',', ':'))
+
+          # ── Rebuild full search index from merged chapters ───────────────────
+          full_search = search_index(merged)
+          validate_data(merged, full_search, active_keys)
+
+          with open(SEARCH_JSON, 'w', encoding='utf-8') as f:
+              json.dump(full_search, f, ensure_ascii=False, separators=(',', ':'))
+
+          # ── Report ───────────────────────────────────────────────────────────
+          chap_kb   = os.path.getsize(CHAPTERS_JSON)   / 1024
+          search_kb = os.path.getsize(SEARCH_JSON)     / 1024
+          preserved = len(existing) - len([k for k in new_chapters if k in existing])
+
+          print(f"✅ Updated {len(new_chapters)} chapter(s)")
+          print(f"   Preserved unchanged : {len(merged) - len(new_chapters)}")
+          if skipped:
+              print(f"   Skipped (no num)    : {skipped}")
+          print(f"   Total in index      : {len(merged)}")
+          print(f"   chapters.json       : {chap_kb:.1f} KB")
+          print(f"   search_index.json   : {search_kb:.1f} KB")
+
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+              out.write(f"new_chapters={len(new_chapters)}\n")
+              out.write(f"total_chapters={len(merged)}\n")
+              out.write(f"chapters_kb={chap_kb:.1f}\n")
+              out.write(f"search_kb={search_kb:.1f}\n")
+          PYEOF
+        env:
+          CHAPTERS_PATH: ${{ env.CHAPTERS_PATH }}
+          OUTPUT_PATH:   ${{ env.OUTPUT_PATH }}
+
+      # ── 7. Validate output ───────────────────────────────────────────────────
+      - name: Validate generated files
+        if: steps.cache.outputs.has_changes == 'true'
+        run: |
+          CHAPTERS_FILE="${OUTPUT_PATH}/chapters.json"
+          SEARCH_FILE="${OUTPUT_PATH}/search_index.json"
+
+          for FILE in "$CHAPTERS_FILE" "$SEARCH_FILE"; do
+            if [ ! -f "$FILE" ]; then
+              echo "::error::Expected output file not found: $FILE"
+              exit 1
+            fi
+            python3 -c "
+          import json, sys
+          path = sys.argv[1]
+          data = json.load(open(path))
+          name = path.split('/')[-1]
+          print(f'  ✅ {name}: valid JSON ({len(data)} entries)')
+          " "$FILE" || { echo "::error::Invalid JSON in $FILE"; exit 1; }
+          done
+
+          CHAPTER_COUNT=$(python3 -c "import json; print(len(json.load(open('${CHAPTERS_FILE}'))))")
+          SEARCH_COUNT=$(python3 -c "import json; print(len(json.load(open('${SEARCH_FILE}'))))")
+          echo "chapters.json entries: ${CHAPTER_COUNT}"
+          echo "search_index.json entries: ${SEARCH_COUNT}"
+
+          if [ "$CHAPTER_COUNT" -lt 1 ]; then
+            echo "::error::chapters.json is empty"
+            exit 1
+          fi
+
+      # ── 8. Promote pending hashes → chapter-cache.json ───────────────────────
+      - name: Update chapter cache file
+        if: steps.cache.outputs.has_changes == 'true' && env.DRY_RUN != 'true'
+        run: |
+          cp .github/chapter-hashes-pending.json .github/chapter-cache.json
+          python3 -c "
+          import json
+          d = json.load(open('.github/chapter-cache.json'))
+          print(f'✅ chapter-cache.json updated: {len(d)} entries')
+          "
+
+      # ── 9. Publish for review; never push generated commits to main ───────────
+      - name: Create or update site data PR
+        id: pr
+        if: env.DRY_RUN != 'true'
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: main
+          branch: codex/automated-site-data
+          sign-commits: true
+          draft: always-true
+          add-paths: |
+            ${{ env.OUTPUT_PATH }}/chapters.json
+            ${{ env.OUTPUT_PATH }}/search_index.json
+            .github/chapter-cache.json
+          commit-message: 'chore(data): regenerate site data [skip changelog]'
+          title: 'chore(data): regenerate site data [skip changelog]'
+          body: |
+            ## English
+            Generated from the latest main checkout; only site JSON and chapter cache are included.
+            This PR does not publish the generated content until reviewed and merged.
+            GITHUB_TOKEN does not trigger follow-up CI: a maintainer must close and reopen
+            this PR after the last bot update, then verify all required checks on its current head.
+            Mark ready only after review. Keep branch protection and signature requirements enabled.
+
+            ## ภาษาไทย
+            สร้างจาก main ล่าสุด รวมเฉพาะ JSON และ cache ต้องตรวจและ merge PR ก่อนเผยแพร่
+            ผู้ดูแลต้องปิดแล้วเปิด PR อีกครั้งหลัง bot อัปเดตล่าสุด เพื่อเริ่ม CI
+            ตรวจ required checks ที่ head ปัจจุบัน แล้วจึงพิจารณา merge โดยคง branch protection
+
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      # ── 10. Dry run summary ──────────────────────────────────────────────────
+      - name: Dry run notice
+        if: env.DRY_RUN == 'true' && steps.cache.outputs.has_changes == 'true'
+        run: |
+          echo "DRY RUN — files generated but NOT committed."
+          echo "  chapters.json:     ${{ steps.generate.outputs.chapters_kb }} KB"
+          echo "  search_index.json: ${{ steps.generate.outputs.search_kb }} KB"
+          echo "  Total chapters:    ${{ steps.generate.outputs.total_chapters }}"
+          echo "  Changed chapters:  ${{ steps.cache.outputs.changed_count }}"
+          echo "  Unchanged/cached:  ${{ steps.cache.outputs.unchanged_count }}"
+
+      # ── 11. Write job summary ────────────────────────────────────────────────
+      - name: Write job summary
+        if: always()
+        env:
+          PR_URL: ${{ steps.pr.outputs.pull-request-url }}
+          PR_OPERATION: ${{ steps.pr.outputs.pull-request-operation }}
+        run: |
+          HAS="${{ steps.cache.outputs.has_changes }}"
+          CHANGED="${{ steps.cache.outputs.changed_count }}"
+          UNCHANGED="${{ steps.cache.outputs.unchanged_count }}"
+          TOTAL_MD="${{ steps.cache.outputs.total_count }}"
+
+          if [ "${{ job.status }}" != "success" ]; then
+            STATUS="❌ Failed — inspect step logs"
+          elif [ "$HAS" = "true" ]; then
+            STATUS="✅ Generated"
+          else
+            STATUS="⏭️ Skipped (all chapters cached)"
+          fi
+
+          cat >> $GITHUB_STEP_SUMMARY << SUMMARY
+          ## 📦 Site Data Generation
+
+          | File | Size | Chapters |
+          |---|---|---|
+          | \`chapters.json\` | ${{ steps.generate.outputs.chapters_kb || 'unchanged' }} KB | ${{ steps.generate.outputs.total_chapters || 'N/A' }} |
+          | \`search_index.json\` | ${{ steps.generate.outputs.search_kb || 'unchanged' }} KB | ${{ steps.generate.outputs.total_chapters || 'N/A' }} |
+
+          ### Cache Performance
+          | Changed | Unchanged (cached) | Total .md | Status |
+          |---|---|---|---|
+          | ${CHANGED:-0} | ${UNCHANGED:-${TOTAL_MD}} | ${TOTAL_MD:-0} | ${STATUS} |
+
+          - **Source path:** \`${CHAPTERS_PATH}\`
+          - **Output path:** \`${OUTPUT_PATH}\`
+          - **Dry run:** ${DRY_RUN}
+          - **Force rebuild:** ${FORCE_REBUILD}
+          - **Review PR:** ${PR_URL:-none (dry-run, no diff, or publication failed)}
+          - **PR operation:** ${PR_OPERATION:-none}
+          - **Publication:** review and merge required; this run does not update main.
+          SUMMARY

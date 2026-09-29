@@ -98,6 +98,10 @@ import {
 import { buildDrillMapMeta } from './traceability';
 import { buildPairKeyV2 } from './pairKeyV2';
 import { lookupHardwareCatalog } from './hardwareCatalog';
+import {
+  filterDrillMapForKerfZones,
+  type KerfZonesByPanelId,
+} from './kerfZoneFilter';
 
 // ============================================
 // CONSTANTS
@@ -1850,6 +1854,15 @@ export function generateMinifixDrillMap(
     /** ADR-061(c) FLIP: engine ของ geometry corner joints — default = Connector OS
      *  (legacy = fallback; parity พิสูจน์ 144/144 Δ0.00 ก่อนเปิด default) */
     cornerEngine?: 'legacy' | 'connector-os';
+    /**
+     * Phase 4 — Curved Panel System:
+     * When kerf zones are present, drill points that fall inside a zone
+     * (+ DEFAULT_KERF_ZONE_FILTER_OPTIONS.marginMm safety margin) are
+     * marked ERROR with issue 'G12_FITTING_IN_KERF_ZONE'.
+     */
+    kerfZonesByPanelId?: KerfZonesByPanelId;
+    /** Override the default 5 mm kerf-zone safety margin */
+    kerfZoneMarginMm?: number;
   }
 ): DrillMap {
   if (!cabinet || !cabinet.panels || cabinet.panels.length === 0) {
@@ -1891,7 +1904,7 @@ export function generateMinifixDrillMap(
   const bottomPanel = panelsByRole['BOTTOM'];
 
   // Initialize drill map
-  const drillMap = createEmptyDrillMap(cabinet.id);
+  let drillMap = createEmptyDrillMap(cabinet.id);
 
   // Map to collect points per panel
   const panelPointsMap = new Map<string, DrillMapPoint[]>();
@@ -2415,6 +2428,16 @@ export function generateMinifixDrillMap(
         bRunIssues,
       );
     }
+  }
+
+  // Phase 4: apply kerf-zone filter if caller supplied zones
+  if (options?.kerfZonesByPanelId && options.kerfZonesByPanelId.size > 0) {
+    const filterResult = filterDrillMapForKerfZones(
+      drillMap,
+      options.kerfZonesByPanelId,
+      options.kerfZoneMarginMm !== undefined ? { marginMm: options.kerfZoneMarginMm } : undefined,
+    );
+    drillMap = filterResult.drillMap;
   }
 
   return drillMap;

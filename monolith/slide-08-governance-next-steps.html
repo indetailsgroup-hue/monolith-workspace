@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+@page { margin: 0; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: Arial, Helvetica, sans-serif; }
+.slide-container {
+    width: 1280px;
+    min-width: 100%;
+    height: 720px;
+    overflow: hidden;
+    background-color: #ffffff;
+    color: #1a1a2e;
+    display: flex;
+    flex-direction: column;
+    border-left: 6px solid #c9a84c;
+    border-right: 6px solid #c9a84c;
+}
+.slide-header {
+    background-color: #1f2d5a;
+    padding: 22px 60px 18px;
+    display: flex;
+    align-items: baseline;
+    gap: 18px;
+}
+.slide-header h2 { font-size: 36px; font-weight: 800; color: #ffffff; }
+.slide-header p { font-size: 16px; color: rgba(201,168,76,0.9); font-weight: 600; }
+.content-area {
+    flex: 1;
+    display: flex;
+    gap: 24px;
+    padding: 22px 60px 0;
+}
+.left-col { flex: 1; display: flex; flex-direction: column; gap: 14px; }
+.right-col { width: 380px; display: flex; flex-direction: column; gap: 14px; }
+.gov-section {
+    background-color: #f5f6fa;
+    border-radius: 8px;
+    padding: 18px 20px;
+    border-left: 5px solid #1f2d5a;
+}
+.gov-section h4 { font-size: 18px; font-weight: 700; color: #1f2d5a; margin-bottom: 12px; }
+.gov-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 7px 0;
+    border-bottom: 1px solid #dde0ee;
+    gap: 14px;
+}
+.gov-row:last-child { border-bottom: none; }
+.gov-role { font-size: 14px; font-weight: 700; color: #1f2d5a; min-width: 200px; }
+.gov-detail { font-size: 13px; color: #555; line-height: 1.4; text-align: right; }
+.next-steps {
+    background-color: #f5f6fa;
+    border-radius: 8px;
+    padding: 18px 20px;
+    border-top: 4px solid #c9a84c;
+}
+.next-steps h4 { font-size: 18px; font-weight: 700; color: #1f2d5a; margin-bottom: 14px; }
+.step-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.step-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-color: #c9a84c;
+    color: #1f2d5a;
+    font-size: 14px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.step-text h5 { font-size: 16px; font-weight: 700; color: #1f2d5a; margin-bottom: 3px; }
+.step-text p { font-size: 13px; color: #666; line-height: 1.4; }
+.gate-box {
+    background-color: #1f2d5a;
+    border-radius: 8px;
+    padding: 18px 20px;
+}
+.gate-box h4 { font-size: 18px; font-weight: 700; color: #c9a84c; margin-bottom: 10px; }
+.gate-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+.gate-icon { font-size: 18px; color: #c9a84c; min-width: 24px; font-weight: 700; }
+.gate-text p { font-size: 14px; color: rgba(255,255,255,0.85); line-height: 1.4; }
+.slide-footer {
+    margin-top: auto;
+    padding: 8px 60px;
+    border-top: 1px solid rgba(0,0,0,0.1);
+    color: rgba(0,0,0,0.45);
+    font-size: 11px;
+}
+</style>
+</head>
+<body>
+<div class="slide-container">
+    <div class="slide-header">
+        <h2>Phase 2 Governance &amp; Next Steps</h2>
+        <p>SC Gate · Programme Director Nomination · Phase 2 Readiness Checklist</p>
+    </div>
+    <div class="content-area">
+        <div class="left-col">
+            <div class="gov-section">
+                <h4>Phase 2 Governance Structure (Section 50.6)</h4>
+                <div class="gov-row">
+                    <p class="gov-role">Steering Committee (SC)</p>
+                    <p class="gov-detail">Oversight authority · Gate releases · Escalation resolution</p>
+                </div>
+                <div class="gov-row">
+                    <p class="gov-role">Phase 2 Programme Director</p>
+                    <p class="gov-detail">To be nominated via SC-2032-XX · P2-M1–M4 accountability</p>
+                </div>
+                <div class="gov-row">
+                    <p class="gov-role">Nexus (Group D &#x2265;97%)</p>
+                    <p class="gov-detail">Governance registry &amp; compliance tracking</p>
+                </div>
+                <div class="gov-row">
+                    <p class="gov-role">Guardian (Group D &#x2265;97%)</p>
+                    <p class="gov-detail">Risk &amp; escalation management · P0/P1 monitoring</p>
+                </div>
+                <div class="gov-row">
+                    <p class="gov-role">Vega (Group D &#x2265;97%)</p>
+                    <p class="gov-detail">Financial controls &amp; budget monitoring</p>
+                </div>
+                <div class="gov-row">
+                    <p class="gov-role">Reporting cadence</p>
+                    <p class="gov-detail">Monthly progress report · Quarterly SC report · Ad-hoc escalation</p>
+                </div>
+            </div>
+        </div>
+        <div class="right-col">
+            <div class="next-steps">
+                <h4>Next Steps (Q3 2032)</h4>
+                <div class="step-item">
+                    <div class="step-num">1</div>
+                    <div class="step-text">
+                        <h5>SC Resolution SC-2032-XX</h5>
+                        <p>Pass Phase 2 authorisation resolution at this SC meeting</p>
+                    </div>
+                </div>
+                <div class="step-item">
+                    <div class="step-num">2</div>
+                    <div class="step-text">
+                        <h5>Programme Director Nomination</h5>
+                        <p>Nominate Phase 2 PD within 4 weeks of resolution</p>
+                    </div>
+                </div>
+                <div class="step-item">
+                    <div class="step-num">3</div>
+                    <div class="step-text">
+                        <h5>P2-CHK-01–12 Readiness Gate</h5>
+                        <p>Complete 12-item Phase 2 readiness checklist (S50.7)</p>
+                    </div>
+                </div>
+                <div class="step-item">
+                    <div class="step-num">4</div>
+                    <div class="step-text">
+                        <h5>Budget Release Q1 2033</h5>
+                        <p>Finance to release THB 2.5M first tranche upon readiness confirmation</p>
+                    </div>
+                </div>
+            </div>
+            <div class="gate-box">
+                <h4>Phase 2 Pre-conditions</h4>
+                <div class="gate-item">
+                    <p class="gate-icon">&#x2713;</p>
+                    <p class="gate-text"><p>Phase 1 Completion Certificate acknowledged</p></p>
+                </div>
+                <div class="gate-item">
+                    <p class="gate-icon">&#x2713;</p>
+                    <p class="gate-text"><p>AMD4-CLOSE-01–05 all completed</p></p>
+                </div>
+                <div class="gate-item">
+                    <p class="gate-icon">&#x2713;</p>
+                    <p class="gate-text"><p>Coverage 68% independently verified</p></p>
+                </div>
+                <div class="gate-item">
+                    <p class="gate-icon">&gt;</p>
+                    <p class="gate-text"><p>SC-2032-XX to be passed at this meeting</p></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer"><p>MONOLITH DAPH Decor AI Agent Programme · SC Review 2569 · Section 50.6–50.7 Phase 2 Governance · SC-2032-XX</p></div>
+</div>
+</body>
+</html>

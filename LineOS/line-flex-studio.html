@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>MONOLITH · LINE Flex Studio</title>
+  <link rel="stylesheet" href="./line-flex-studio.css">
+</head>
+<body>
+  <a class="skip-link" href="#studio-main">ข้ามไปพื้นที่ทำงาน</a>
+  <header class="app-header">
+    <div class="platform-brand"><span class="platform-mark">M</span>
+      <span><b>MONOLITH</b><small>LINE Flex Studio</small></span></div>
+    <div id="tenant-context" class="tenant-context" aria-label="Current tenant"></div>
+    <button id="language-toggle" type="button" aria-pressed="false">TH / EN</button>
+  </header>
+  <main id="studio-main" class="studio-grid">
+    <section id="pane-editor" class="editor-pane" role="tabpanel" aria-labelledby="pane-tab-editor" tabindex="-1">
+      <h1 id="editor-title">สตูดิโอ Flex Message</h1>
+      <div id="preset-list" role="list" aria-label="Message presets"></div>
+      <div id="block-tabs" role="tablist" aria-label="Flex blocks"></div>
+      <form id="field-panel" role="tabpanel" aria-labelledby="block-tab-header" novalidate></form>
+    </section>
+    <section id="pane-preview" class="preview-pane" role="tabpanel" aria-labelledby="pane-tab-preview" tabindex="-1">
+      <div class="pane-title"><h2 id="preview-title">ตัวอย่าง LINE</h2>
+        <div id="viewport-switcher" role="group" aria-label="Preview width"></div></div>
+      <div class="phone-frame"><div id="phone-preview"></div></div>
+      <button id="run-journey" type="button">ทดลอง Journey</button>
+    </section>
+    <section id="pane-code" class="code-pane" role="tabpanel" aria-labelledby="pane-tab-code" tabindex="-1">
+      <div class="pane-title"><h2 id="json-title">ตัวอย่าง JSON</h2>
+        <output id="payload-count"></output></div>
+      <pre><code id="json-output"></code></pre>
+      <div class="button-row">
+        <button id="copy-json" type="button">คัดลอก JSON</button>
+        <button id="download-json" type="button">ดาวน์โหลด JSON</button>
+        <button id="reset-draft" type="button">คืนค่า</button>
+      </div>
+      <h2 id="validation-title">การตรวจสอบ</h2>
+      <ol id="validation-list"></ol>
+    </section>
+  </main>
+  <dialog id="liff-dialog" class="sandbox-dialog" aria-labelledby="liff-title" aria-describedby="liff-sandbox-warning liff-description">
+    <div class="sandbox-dialog-shell">
+      <header class="sandbox-dialog-header">
+        <p id="liff-sandbox-warning" class="sandbox-warning" role="note">SANDBOX — NO BUSINESS EFFECT</p>
+        <h2 id="liff-title">ตรวจแบบส่วนตัว · Sandbox</h2>
+        <p id="liff-description" class="sandbox-dialog-description">ตรวจสอบข้อมูลจาก sandbox adapter ก่อนยืนยันการทดลอง การดำเนินการนี้ไม่เปลี่ยนสถานะทางธุรกิจ</p>
+      </header>
+      <div class="sandbox-dialog-body">
+        <dl class="sandbox-provenance" aria-label="Sandbox review provenance">
+          <div><dt>Mode</dt><dd data-review-mode>sandbox</dd></div>
+          <div><dt>Business effect</dt><dd data-business-effect>none</dd></div>
+          <div><dt>Review expiry</dt><dd data-review-expiry>—</dd></div>
+          <div><dt>Artifact manifest SHA-256</dt><dd data-artifact-manifest-sha256 class="sandbox-digest">—</dd></div>
+        </dl>
+        <section class="adapter-review" aria-label="Adapter-owned review details" data-liff-review></section>
+        <div class="sandbox-outcome" data-review-outcome role="status" aria-live="polite" aria-atomic="true">
+          <strong>Sandbox outcome / error</strong>
+          <span>ยังไม่มีการบันทึกการทดลอง</span>
+        </div>
+      </div>
+      <div class="button-row sandbox-dialog-actions"><button id="cancel-journey" type="button" value="cancel">ยกเลิก</button>
+        <button id="confirm-journey" type="button" data-confirm-demo value="confirm">ยืนยันการทดลองใน Sandbox</button></div>
+    </div>
+  </dialog>
+  <dialog id="receipt-dialog" class="sandbox-dialog" aria-labelledby="receipt-title" aria-describedby="receipt-sandbox-warning receipt-description receipt-digest-disclosure">
+    <div class="sandbox-dialog-shell">
+      <header class="sandbox-dialog-header">
+        <p id="receipt-sandbox-warning" class="sandbox-warning" role="note">SANDBOX — NO BUSINESS EFFECT</p>
+        <h2 id="receipt-title">Sandbox Verification Record — Demo · No Business Effect</h2>
+        <p id="receipt-description" class="sandbox-dialog-description">Workflow and approval status did not change.</p>
+      </header>
+      <div class="sandbox-dialog-body sandbox-record-body">
+        <p id="receipt-digest-disclosure" class="sandbox-disclosure"><strong>Integrity metadata only.</strong> The digest is not a signature.</p>
+        <div data-receipt></div>
+      </div>
+      <div class="sandbox-dialog-actions"><button id="close-receipt" type="button" data-close-receipt>ปิด</button></div>
+    </div>
+  </dialog>
+  <p id="toast-live" class="sr-only" aria-live="polite"></p>
+  <script type="module" src="./line-flex-studio.mjs"></script>
+</body>
+</html>

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+@page { margin: 0; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: Arial, Helvetica, sans-serif; }
+.slide-container {
+    width: 1280px;
+    min-width: 100%;
+    height: 720px;
+    overflow: hidden;
+    background-color: #ffffff;
+    color: #1a1a2e;
+    display: flex;
+    flex-direction: column;
+    border-left: 6px solid #c9a84c;
+    border-right: 6px solid #c9a84c;
+}
+.slide-header {
+    background-color: #1f2d5a;
+    padding: 22px 60px 18px;
+    display: flex;
+    align-items: baseline;
+    gap: 18px;
+}
+.slide-header h2 { font-size: 36px; font-weight: 800; color: #ffffff; }
+.slide-header p { font-size: 16px; color: rgba(201,168,76,0.9); font-weight: 600; }
+.content-area {
+    flex: 1;
+    display: flex;
+    gap: 20px;
+    padding: 20px 60px 0;
+}
+.left-col { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+.right-col { width: 380px; display: flex; flex-direction: column; gap: 14px; }
+.gap-card {
+    background-color: #f5f6fa;
+    border-radius: 8px;
+    padding: 14px 18px;
+    border-left: 5px solid #2e75b6;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+}
+.gap-id {
+    font-size: 22px;
+    font-weight: 800;
+    color: #1f2d5a;
+    min-width: 68px;
+    line-height: 1;
+}
+.gap-body h4 { font-size: 16px; font-weight: 700; color: #1f2d5a; margin-bottom: 3px; }
+.gap-body p { font-size: 13px; color: #666; line-height: 1.4; }
+.gap-tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    background-color: #1f2d5a;
+    color: #c9a84c;
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-top: 5px;
+}
+.coverage-box {
+    background-color: #1f2d5a;
+    border-radius: 8px;
+    padding: 20px 24px;
+    color: #fff;
+}
+.coverage-box h4 { font-size: 18px; font-weight: 700; color: #c9a84c; margin-bottom: 14px; }
+.cov-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+.cov-label { font-size: 14px; color: rgba(255,255,255,0.7); }
+.cov-val { font-size: 28px; font-weight: 800; }
+.cov-arrow { font-size: 20px; color: #c9a84c; }
+.budget-box {
+    background-color: #f5f6fa;
+    border-radius: 8px;
+    padding: 18px 20px;
+    border-top: 4px solid #c9a84c;
+}
+.budget-box h4 { font-size: 18px; font-weight: 700; color: #1f2d5a; margin-bottom: 10px; }
+.budget-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    padding: 6px 0;
+    border-bottom: 1px solid #eee;
+    color: #444;
+}
+.budget-row:last-child { border-bottom: none; }
+.budget-total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 18px;
+    font-weight: 800;
+    color: #1f2d5a;
+    padding-top: 10px;
+}
+.slide-footer {
+    margin-top: auto;
+    padding: 8px 60px;
+    border-top: 1px solid rgba(0,0,0,0.1);
+    color: rgba(0,0,0,0.45);
+    font-size: 11px;
+}
+</style>
+</head>
+<body>
+<div class="slide-container">
+    <div class="slide-header">
+        <h2>Phase 2 Business Case</h2>
+        <p>SC-2032-XX · Coverage 68% to 80% · GAP-05/06/09/10/11/12</p>
+    </div>
+    <div class="content-area">
+        <div class="left-col">
+            <div class="gap-card">
+                <p class="gap-id">GAP-05</p>
+                <div class="gap-body">
+                    <h4>AI Creative Engine</h4>
+                    <p>Generative design workflow, Aria+Nova, src/creative-engine/</p>
+                    <span class="gap-tag">HIGH · THB 1.5M · Q1–Q3 2033</span>
+                </div>
+            </div>
+            <div class="gap-card">
+                <p class="gap-id">GAP-06</p>
+                <div class="gap-body">
+                    <h4>Cross-Pillar Event Bus</h4>
+                    <p>Real-time integration, Signal+Core, src/event-bus/, Pub/Sub</p>
+                    <span class="gap-tag">HIGH · THB 1.0M · Q1–Q2 2033</span>
+                </div>
+            </div>
+            <div class="gap-card" style="border-left-color:#c9a84c;">
+                <p class="gap-id" style="color:#c9a84c;">GAP-09</p>
+                <div class="gap-body">
+                    <h4>Material Intelligence</h4>
+                    <p>Procurement integration, Forge+Remy, supplier API, carbon scoring</p>
+                    <span class="gap-tag">MEDIUM · THB 0.8M · Q2–Q3 2033</span>
+                </div>
+            </div>
+            <div class="gap-card" style="border-left-color:#c9a84c;">
+                <p class="gap-id" style="color:#c9a84c;">GAP-10</p>
+                <div class="gap-body">
+                    <h4>Contractor / Vendor</h4>
+                    <p>Contract lifecycle management, Ledger+Compass, CNTR-001–050</p>
+                    <span class="gap-tag">MEDIUM · THB 0.7M · Q2–Q4 2033</span>
+                </div>
+            </div>
+            <div class="gap-card" style="border-left-color:#c9a84c;">
+                <p class="gap-id" style="color:#c9a84c;">GAP-11/12</p>
+                <div class="gap-body">
+                    <h4>Spatial Analytics + Localisation</h4>
+                    <p>BIM integration, occupancy intelligence, Thai/English/Chinese support</p>
+                    <span class="gap-tag">MEDIUM · THB 1.4M combined · Q3–Q4 2033</span>
+                </div>
+            </div>
+        </div>
+        <div class="right-col">
+            <div class="coverage-box">
+                <h4>Coverage Target</h4>
+                <div class="cov-row">
+                    <p class="cov-label">Phase 1 Achieved</p>
+                    <p class="cov-val" style="color:#c9a84c;">68%</p>
+                </div>
+                <div class="cov-row">
+                    <p class="cov-label"></p>
+                    <p class="cov-arrow">&#x2193;</p>
+                </div>
+                <div class="cov-row">
+                    <p class="cov-label">Phase 2 Target</p>
+                    <p class="cov-val" style="color:#27ae60;">80%</p>
+                </div>
+                <p style="font-size:13px;color:rgba(255,255,255,0.55);margin-top:6px;">+12 percentage points · 6 gaps closed</p>
+            </div>
+            <div class="budget-box">
+                <h4>Phase 2 Budget Summary</h4>
+                <div class="budget-row"><p>GAP-05 AI Creative Engine</p><p style="font-weight:700;">THB 1.5M</p></div>
+                <div class="budget-row"><p>GAP-06 Event Bus</p><p style="font-weight:700;">THB 1.0M</p></div>
+                <div class="budget-row"><p>GAP-09 Material Intelligence</p><p style="font-weight:700;">THB 0.8M</p></div>
+                <div class="budget-row"><p>GAP-10 Contractor/Vendor</p><p style="font-weight:700;">THB 0.7M</p></div>
+                <div class="budget-row"><p>GAP-11 Spatial Analytics</p><p style="font-weight:700;">THB 0.8M</p></div>
+                <div class="budget-row"><p>GAP-12 Multi-language</p><p style="font-weight:700;">THB 0.6M</p></div>
+                <div class="budget-row"><p>Contingency (10%)</p><p style="font-weight:700;">THB 0.6M</p></div>
+                <div class="budget-total"><p>Total</p><p>THB 6.0M</p></div>
+            </div>
+        </div>
+    </div>
+    <div class="slide-footer"><p>MONOLITH DAPH Decor AI Agent Programme · SC Review 2569 · Section 50 Phase 2 PDD · SC-2032-XX</p></div>
+</div>
+</body>
+</html>

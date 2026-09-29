@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MONOLITH — Programme Completion Executive Summary (S57+S58)</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Sarabun', sans-serif;
+    background: #f0f2f5;
+    color: #1a1a2e;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 12mm auto;
+    background: #ffffff;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── HERO HEADER ── */
+  .hero {
+    background: linear-gradient(135deg, #1f2d5a 0%, #162248 40%, #0d1a3a 100%);
+    padding: 22px 24px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -30px; right: -30px;
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(201,168,76,0.12) 0%, transparent 70%);
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #c9a84c 0%, #e8c96a 50%, #c9a84c 100%);
+  }
+  .hero-badges {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .hero-badge {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 3px;
+    letter-spacing: 0.5px;
+  }
+  .badge-complete { background: #2d7a4f; color: #fff; }
+  .badge-s57 { background: rgba(201,168,76,0.2); border: 1px solid #c9a84c; color: #c9a84c; }
+  .badge-s58 { background: rgba(201,168,76,0.15); border: 1px solid rgba(201,168,76,0.5); color: #c9a84c; }
+  .badge-chair { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: rgba(255,255,255,0.8); }
+  .hero-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.2;
+    margin-bottom: 4px;
+  }
+  .hero-title span { color: #c9a84c; }
+  .hero-sub {
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 14px;
+  }
+  .hero-stats {
+    display: flex;
+    gap: 0;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .hero-stat {
+    flex: 1;
+    padding: 8px 10px;
+    text-align: center;
+    border-right: 1px solid rgba(255,255,255,0.1);
+  }
+  .hero-stat:last-child { border-right: none; }
+  .hs-val { font-size: 18px; font-weight: 800; color: #c9a84c; line-height: 1.1; }
+  .hs-label { font-size: 8.5px; color: rgba(255,255,255,0.6); line-height: 1.3; margin-top: 1px; }
+
+  /* ── MAIN ── */
+  .main { padding: 14px 24px; flex: 1; }
+  .section-title {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #1f2d5a;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    border-left: 3px solid #c9a84c;
+    padding-left: 8px;
+    margin-bottom: 8px;
+    margin-top: 12px;
+  }
+  .section-title:first-child { margin-top: 0; }
+
+  /* ── PHASE DELIVERY STRIP ── */
+  .phase-strip {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid #dde2ee;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 4px;
+  }
+  .phase-item {
+    flex: 1;
+    padding: 9px 10px;
+    border-right: 1px solid #dde2ee;
+    background: #f7f9fc;
+  }
+  .phase-item:last-child { border-right: none; }
+  .phase-item.complete { background: linear-gradient(135deg, #1f2d5a, #2a3f7a); }
+  .phase-label { font-size: 8.5px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.3px; }
+  .phase-item.complete .phase-label { color: rgba(255,255,255,0.6); }
+  .phase-coverage { font-size: 20px; font-weight: 800; color: #1f2d5a; line-height: 1; }
+  .phase-item.complete .phase-coverage { color: #c9a84c; }
+  .phase-budget { font-size: 9px; font-weight: 700; color: #2d7a4f; }
+  .phase-item.complete .phase-budget { color: rgba(255,255,255,0.8); }
+  .phase-status { font-size: 7.5px; padding: 1px 5px; border-radius: 2px; display: inline-block; margin-top: 2px; }
+  .st-closed { background: #2d7a4f; color: #fff; font-weight: 700; }
+  .st-live { background: #c9a84c; color: #1f2d5a; font-weight: 700; }
+  .phase-arrow {
+    display: flex; align-items: center; padding: 0 3px;
+    background: #fff; border-right: 1px solid #dde2ee;
+    color: #c9a84c; font-size: 16px; font-weight: 700;
+  }
+
+  /* ── PROGRAMME CERT BOX ── */
+  .cert-box {
+    background: linear-gradient(135deg, #1f2d5a 0%, #162248 100%);
+    border-radius: 8px;
+    padding: 14px 20px;
+    margin-bottom: 4px;
+    border: 2px solid rgba(201,168,76,0.4);
+    position: relative;
+    overflow: hidden;
+  }
+  .cert-box::before {
+    content: '✓';
+    position: absolute;
+    right: 16px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 60px;
+    color: rgba(201,168,76,0.08);
+    font-weight: 800;
+  }
+  .cert-title { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.6); letter-spacing: 0.5px; margin-bottom: 2px; }
+  .cert-ref { font-size: 13px; font-weight: 800; color: #c9a84c; margin-bottom: 6px; }
+  .cert-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .cert-item { }
+  .cert-item-label { font-size: 8px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.3px; }
+  .cert-item-val { font-size: 11px; font-weight: 700; color: #fff; line-height: 1.2; }
+  .cert-item-val.gold { color: #c9a84c; }
+
+  /* ── TWO-COLUMN MAIN ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* ── COMMITTEE TABLE ── */
+  table.committee {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+  }
+  table.committee thead tr { background: #1f2d5a; color: #fff; }
+  table.committee thead th { padding: 5px 7px; font-weight: 700; font-size: 9px; text-align: left; letter-spacing: 0.3px; }
+  table.committee tbody tr:nth-child(even) { background: #f5f7fc; }
+  table.committee tbody td { padding: 4px 7px; border-bottom: 1px solid #e8ecf5; vertical-align: top; font-size: 9.5px; }
+  .comm-badge {
+    display: inline-block;
+    background: #eef1fa;
+    color: #1f2d5a;
+    font-size: 8px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 3px;
+    border: 1px solid #c0c9e8;
+    white-space: nowrap;
+  }
+
+  /* ── KPI CADENCE ── */
+  .cadence-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+  .cad-freq {
+    min-width: 70px;
+    background: #1f2d5a;
+    color: #c9a84c;
+    font-size: 8.5px;
+    font-weight: 700;
+    padding: 4px 7px;
+    border-radius: 4px;
+    text-align: center;
+    line-height: 1.2;
+  }
+  .cad-body {
+    flex: 1;
+    background: #f7f9fc;
+    border: 1px solid #dde2ee;
+    border-radius: 4px;
+    padding: 4px 9px;
+  }
+  .cad-type { font-size: 9.5px; font-weight: 700; color: #1f2d5a; }
+  .cad-desc { font-size: 8.5px; color: #666; line-height: 1.3; }
+  .cad-owner { font-size: 8px; color: #2d7a4f; font-weight: 600; }
+
+  /* ── AUDIT PLAN ── */
+  table.audit {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+  }
+  table.audit thead tr { background: #2d7a4f; color: #fff; }
+  table.audit thead th { padding: 5px 7px; font-weight: 700; font-size: 9px; text-align: left; letter-spacing: 0.3px; }
+  table.audit tbody tr:nth-child(even) { background: #f4faf6; }
+  table.audit tbody td { padding: 4px 7px; border-bottom: 1px solid #daf0e3; vertical-align: top; font-size: 9.5px; }
+  .audit-t {
+    display: inline-block;
+    background: #2d7a4f;
+    color: #fff;
+    font-size: 8px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+
+  /* ── GOVERNANCE ACTIVATION BOX ── */
+  .gov-box {
+    background: linear-gradient(90deg, #f4faf6 0%, #edf7f1 100%);
+    border: 1px solid #b2dcc2;
+    border-left: 4px solid #2d7a4f;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .gov-icon {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: #2d7a4f;
+    color: #fff;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .gov-title { font-size: 11px; font-weight: 800; color: #1f2d5a; }
+  .gov-ref { font-size: 9px; color: #2d7a4f; font-weight: 700; margin-bottom: 3px; }
+  .gov-desc { font-size: 9.5px; color: #555; line-height: 1.4; }
+  .gov-tags { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+  .gov-tag {
+    background: #e8f5ee;
+    border: 1px solid #b2dcc2;
+    color: #2d7a4f;
+    font-size: 8px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 3px;
+  }
+
+  /* ── SC CHAIR BLOCK ── */
+  .chair-block {
+    background: #fdf8ec;
+    border: 1px solid #e8d08a;
+    border-left: 4px solid #c9a84c;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 4px;
+  }
+  .chair-label { font-size: 9px; color: #997830; text-transform: uppercase; letter-spacing: 0.4px; font-weight: 700; }
+  .chair-title { font-size: 12px; font-weight: 800; color: #1f2d5a; margin: 2px 0 4px; }
+  .chair-items { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 12px; }
+  .chair-item { font-size: 9px; color: #555; }
+  .chair-item strong { color: #1f2d5a; }
+
+  /* ── FOOTER ── */
+  .footer {
+    background: #1f2d5a;
+    padding: 8px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .footer-left { color: rgba(255,255,255,0.6); font-size: 9px; }
+  .footer-left strong { color: #c9a84c; }
+  .footer-right { color: rgba(255,255,255,0.5); font-size: 8.5px; text-align: right; }
+  .footer-complete {
+    display: inline-block;
+    background: #2d7a4f;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-left: 6px;
+  }
+
+  @media print {
+    body { background: #fff; }
+    .page { margin: 0; box-shadow: none; width: 100%; min-height: 100vh; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HERO HEADER -->
+  <div class="hero">
+    <div class="hero-badges">
+      <span class="hero-badge badge-complete">&#10003; PROGRAMME COMPLETE</span>
+      <span class="hero-badge badge-s57">S57 Go-Live Operations</span>
+      <span class="hero-badge badge-s58">S58 BAU Governance Charter</span>
+      <span class="hero-badge badge-chair">SC Chair Executive Summary</span>
+    </div>
+    <div class="hero-title">MONOLITH DAPH Decor AI Agent Programme<br><span>Programme Completion — Executive Summary</span></div>
+    <div class="hero-sub">
+      สรุปผู้บริหารสำหรับ SC Chair — THB 18.2M · 28 Agents · 92% BAU Coverage Achieved · BAU Governance Charter Active<br>
+      อ้างอิง: MONOLITH-S57-P3GOLIVE-001 · MONOLITH-S58-BAUGOV-001 · MONOLITH-S58-CLOSECERT-001 v1.0
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hs-val">92%</div>
+        <div class="hs-label">BAU Coverage<br>Achieved</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hs-val">28</div>
+        <div class="hs-label">AI Agents<br>In Production</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hs-val">18.2M</div>
+        <div class="hs-label">THB Programme<br>Total Investment</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hs-val">58</div>
+        <div class="hs-label">SOP Sections<br>S1–S58</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hs-val">+36pp</div>
+        <div class="hs-label">Coverage Gain<br>56%→92%</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hs-val">3</div>
+        <div class="hs-label">Phases<br>All Closed</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- PHASE DELIVERY -->
+    <div class="section-title">Programme Delivery — 3 Phases All Closed</div>
+    <div class="phase-strip">
+      <div class="phase-item">
+        <div class="phase-label">Baseline</div>
+        <div class="phase-coverage">56%</div>
+        <div class="phase-budget">Pre-Programme</div>
+        <div><span class="phase-status st-closed">—</span></div>
+      </div>
+      <div class="phase-arrow">›</div>
+      <div class="phase-item">
+        <div class="phase-label">Phase 1</div>
+        <div class="phase-coverage">68%</div>
+        <div class="phase-budget">THB 5.2M</div>
+        <div><span class="phase-status st-closed">CLOSED</span></div>
+      </div>
+      <div class="phase-arrow">›</div>
+      <div class="phase-item">
+        <div class="phase-label">Phase 2</div>
+        <div class="phase-coverage">80%</div>
+        <div class="phase-budget">THB 6.0M</div>
+        <div><span class="phase-status st-closed">CLOSED</span></div>
+      </div>
+      <div class="phase-arrow">›</div>
+      <div class="phase-item complete">
+        <div class="phase-label">Phase 3</div>
+        <div class="phase-coverage">92%</div>
+        <div class="phase-budget">THB 7.0M</div>
+        <div><span class="phase-status st-live">&#10003; CLOSED</span></div>
+      </div>
+    </div>
+
+    <!-- PROGRAMME CLOSURE CERT -->
+    <div class="section-title" style="margin-top:10px;">Programme Closure Certificate</div>
+    <div class="cert-box">
+      <div class="cert-title">MONOLITH DAPH DECOR AI AGENT PROGRAMME — PROGRAMME CLOSURE CERTIFICATE</div>
+      <div class="cert-ref">MONOLITH-S58-CLOSECERT-001 v1.0</div>
+      <div class="cert-grid">
+        <div class="cert-item">
+          <div class="cert-item-label">Total Investment</div>
+          <div class="cert-item-val gold">THB 18,200,000</div>
+        </div>
+        <div class="cert-item">
+          <div class="cert-item-label">Coverage (Final)</div>
+          <div class="cert-item-val gold">92% BAU AI Coverage</div>
+        </div>
+        <div class="cert-item">
+          <div class="cert-item-label">Agents Deployed</div>
+          <div class="cert-item-val">28 of 28</div>
+        </div>
+        <div class="cert-item">
+          <div class="cert-item-label">GAPs Certified</div>
+          <div class="cert-item-val">Phase 1: GAP-01/02/03/04/07/08</div>
+        </div>
+        <div class="cert-item">
+          <div class="cert-item-label">Phase 2 GAPs</div>
+          <div class="cert-item-val">GAP-05/06/09/10/11/12</div>
+        </div>
+        <div class="cert-item">
+          <div class="cert-item-label">Phase 3 GAPs</div>
+          <div class="cert-item-val">GAP-01/02/03/04/13/14/15</div>
+        </div>
+        <div class="cert-item">
+          <div class="cert-item-label">Milestones</div>
+          <div class="cert-item-val">P1-M4 · P2-M4 · P3-M4 ALL CLOSED</div>
+        </div>
+        <div class="cert-item">
+          <div class="cert-item-label">SOP Package</div>
+          <div class="cert-item-val">S1–S58 · 58 Sections</div>
+        </div>
+        <div class="cert-item">
+          <div class="cert-item-label">Authorisation</div>
+          <div class="cert-item-val gold">P3-GL-CHK-10 SC Chair Approved</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TWO COLUMNS: Committee + KPI Cadence -->
+    <div class="two-col" style="margin-top:10px;">
+
+      <!-- COMMITTEE STRUCTURE -->
+      <div>
+        <div class="section-title">BAU Governance Committee Structure</div>
+        <table class="committee">
+          <thead>
+            <tr>
+              <th>Committee</th>
+              <th>Chair</th>
+              <th>Cadence</th>
+              <th>Quorum</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="comm-badge">SC</span> Steering Committee</td>
+              <td>SC Chair</td>
+              <td>Quarterly + ad hoc</td>
+              <td>3/5</td>
+            </tr>
+            <tr>
+              <td><span class="comm-badge">PGB</span> Programme Governance Board</td>
+              <td>Programme Director</td>
+              <td>Monthly</td>
+              <td>4/6</td>
+            </tr>
+            <tr>
+              <td><span class="comm-badge">TAG</span> Technical Advisory Group</td>
+              <td>Technical Lead</td>
+              <td>Bi-monthly</td>
+              <td>3/5</td>
+            </tr>
+            <tr>
+              <td><span class="comm-badge">AOC</span> Agent Operations Committee</td>
+              <td>Ops Manager</td>
+              <td>Weekly</td>
+              <td>2/3</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- AUDIT PLAN -->
+        <div class="section-title" style="margin-top:10px;">Post-Programme Audit Schedule</div>
+        <table class="audit">
+          <thead>
+            <tr>
+              <th>Audit</th>
+              <th>Timing</th>
+              <th>Auditor</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>First BAU Audit — SLA + KPI baseline</td>
+              <td><span class="audit-t">T+30d</span></td>
+              <td>TAG + PM</td>
+            </tr>
+            <tr>
+              <td>Process Audit — workflows, escalation</td>
+              <td><span class="audit-t">T+60d</span></td>
+              <td>TAG + Ops</td>
+            </tr>
+            <tr>
+              <td>Full BAU Audit — 92% confirmation</td>
+              <td><span class="audit-t">T+90d</span></td>
+              <td>External + TAG</td>
+            </tr>
+            <tr>
+              <td>Year-1 Programme Audit — full scope</td>
+              <td><span class="audit-t">12 months</span></td>
+              <td>External Firm</td>
+            </tr>
+            <tr>
+              <td>Ongoing BAU Audit — continuous improvement</td>
+              <td><span class="audit-t">Annual</span></td>
+              <td>External + PGB</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- KPI CADENCE + GOVERNANCE ACTIVATION -->
+      <div>
+        <div class="section-title">KPI Review Cadence (KPI-001–024)</div>
+        <div class="cadence-row">
+          <div class="cad-freq">รายสัปดาห์<br>Weekly</div>
+          <div class="cad-body">
+            <div class="cad-type">SLA Compliance Check</div>
+            <div class="cad-desc">GAP-01/02/03/04/13/14/15 — SLA thresholds ทุกตัว; ≤1h drift (GAP-15)</div>
+            <div class="cad-owner">AOC — Operations Manager → Incident log</div>
+          </div>
+        </div>
+        <div class="cadence-row">
+          <div class="cad-freq">รายเดือน<br>Monthly</div>
+          <div class="cad-body">
+            <div class="cad-type">Full KPI Dashboard Review</div>
+            <div class="cad-desc">KPI-001–024 ครบ; coverage trajectory; vendor SLA compliance; budget tracking</div>
+            <div class="cad-owner">PGB — Programme Director → Monthly report to SC</div>
+          </div>
+        </div>
+        <div class="cadence-row">
+          <div class="cad-freq">รายไตรมาส<br>Quarterly</div>
+          <div class="cad-body">
+            <div class="cad-type">SC Strategic Review</div>
+            <div class="cad-desc">Coverage trajectory ≥92%; programme ROI; charter compliance; risk register</div>
+            <div class="cad-owner">SC — SC Chair → Governance decision minutes</div>
+          </div>
+        </div>
+        <div class="cadence-row">
+          <div class="cad-freq">6 เดือน<br>Semi-annual</div>
+          <div class="cad-body">
+            <div class="cad-type">Agent Performance Benchmark</div>
+            <div class="cad-desc">Model accuracy (7 GAPs); drift analysis; security posture; WS-A/B/C integration health</div>
+            <div class="cad-owner">TAG — Technical Lead → Performance report</div>
+          </div>
+        </div>
+        <div class="cadence-row">
+          <div class="cad-freq">รายปี<br>Annual</div>
+          <div class="cad-body">
+            <div class="cad-type">Full Programme Audit</div>
+            <div class="cad-desc">Governance charter compliance; all 28 agents; KPI actuals vs. baseline; vendor contracts</div>
+            <div class="cad-owner">External Auditor + TAG → Annual audit certificate</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GOVERNANCE CHARTER ACTIVATION -->
+    <div class="section-title" style="margin-top:10px;">BAU Governance Charter — Activated</div>
+    <div class="gov-box">
+      <div class="gov-icon">&#9881;</div>
+      <div>
+        <div class="gov-ref">MONOLITH-S58-BAUGOV-001 v1.0</div>
+        <div class="gov-title">BAU Governance Charter — ACTIVE</div>
+        <div class="gov-desc">
+          Charter ได้รับการ activate เมื่อ P3-M4 Programme Delivery Milestone ถูกปิดและ SC Chair ออก P3-GL-CHK-10 final approval
+          กำหนดโครงสร้างการกำกับดูแลถาวรสำหรับ MONOLITH AI Platform — SC (apex), PGB (operations), TAG (technical), AOC (day-to-day)
+          Charter มีผลบังคับถาวร; ทบทวนประจำปีโดย SC; การแก้ไขต้องได้รับอนุมัติจาก SC Chair
+        </div>
+        <div class="gov-tags">
+          <span class="gov-tag">SC Apex Authority</span>
+          <span class="gov-tag">PGB Monthly KPI Review</span>
+          <span class="gov-tag">TAG Technical Standards</span>
+          <span class="gov-tag">AOC Weekly SLA Check</span>
+          <span class="gov-tag">Annual External Audit</span>
+          <span class="gov-tag">92% Coverage Maintained</span>
+          <span class="gov-tag">28 Agents BAU</span>
+          <span class="gov-tag">THB 18.2M Delivered</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SC CHAIR APPROVAL BLOCK -->
+    <div class="chair-block">
+      <div class="chair-label">SC Chair Action Required</div>
+      <div class="chair-title">P3-GL-CHK-10 — Final Programme Authorisation</div>
+      <div class="chair-items">
+        <div class="chair-item"><strong>Approval gate:</strong> P3-GL-CHK-10 (S57 Section 57.4)</div>
+        <div class="chair-item"><strong>Charter ref:</strong> MONOLITH-S58-BAUGOV-001 v1.0</div>
+        <div class="chair-item"><strong>Cert ref:</strong> MONOLITH-S58-CLOSECERT-001 v1.0</div>
+        <div class="chair-item"><strong>Trigger:</strong> T+72h SC Review — 92% coverage confirmed</div>
+        <div class="chair-item"><strong>Confirms:</strong> BAU Governance Charter activation</div>
+        <div class="chair-item"><strong>Confirms:</strong> Programme closure — P3-M4 milestone CLOSED</div>
+        <div class="chair-item"><strong>Next review:</strong> Quarterly SC Review (PGB report)</div>
+        <div class="chair-item"><strong>Audit:</strong> T+90d Full BAU Audit — External Auditor + TAG</div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-left">
+      <strong>MONOLITH</strong> DAPH Decor AI Agent Programme · Programme Completion Executive Summary ·
+      S57–S58 · MONOLITH-S58-CLOSECERT-001 v1.0
+      <span class="footer-complete">PROGRAMME COMPLETE</span>
+    </div>
+    <div class="footer-right">
+      THB 18.2M · 28 Agents · 92% BAU Coverage<br>
+      SC Chair: P3-GL-CHK-10 Final Approval Required
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

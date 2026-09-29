@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <meta name="theme-color" content="#1f2d5a"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <title>DAPH Install Field App</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    :root{
+      --navy:#1f2d5a;--gold:#c9a84c;--green:#2d7a4f;--purple:#5b4fcf;
+      --red:#c0392b;--orange:#e07b39;--bg:#f4f6fa;--white:#fff;
+      --text:#1f2d5a;--muted:#64748b;--border:#d1d5db;--radius:12px;
+    }
+    html,body{height:100%;font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+
+    /* ── APP SHELL ─────────────────────────────────────── */
+    .app{display:flex;flex-direction:column;height:100vh;max-width:480px;margin:0 auto;background:var(--bg);box-shadow:0 0 40px rgba(0,0,0,.15)}
+
+    /* ── HEADER ────────────────────────────────────────── */
+    .app-header{background:var(--navy);color:#fff;padding:12px 16px 10px;display:flex;align-items:center;gap:10px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+    .header-icon{width:36px;height:36px;background:var(--purple);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+    .header-text{flex:1}
+    .header-title{font-size:15px;font-weight:700;line-height:1.2}
+    .header-sub{font-size:11px;opacity:.75;margin-top:2px}
+    .offline-badge{background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:.3px}
+    .online-badge{background:var(--green);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:.3px}
+
+    /* ── BOTTOM NAV ─────────────────────────────────────── */
+    .bottom-nav{display:flex;background:var(--white);border-top:1px solid var(--border);flex-shrink:0;box-shadow:0 -2px 10px rgba(0,0,0,.08)}
+    .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px 6px;font-size:9px;font-weight:600;color:var(--muted);cursor:pointer;border:none;background:none;gap:3px;transition:color .2s}
+    .nav-btn .nav-icon{font-size:20px;line-height:1}
+    .nav-btn.active{color:var(--purple)}
+    .nav-btn.active .nav-bar{display:block}
+    .nav-bar{display:none;width:28px;height:3px;background:var(--purple);border-radius:2px;margin-top:2px}
+
+    /* ── SCREEN CONTENT ─────────────────────────────────── */
+    .screen{display:none;flex:1;overflow-y:auto;padding:16px}
+    .screen.active{display:block}
+
+    /* ── CARDS ──────────────────────────────────────────── */
+    .card{background:var(--white);border-radius:var(--radius);padding:16px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+    .card-title{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+    .card-title .badge{background:var(--purple);color:#fff;font-size:10px;padding:1px 8px;border-radius:20px}
+
+    /* ── STATUS CARDS ───────────────────────────────────── */
+    .status-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+    .stat-card{background:var(--white);border-radius:var(--radius);padding:12px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+    .stat-num{font-size:24px;font-weight:700;line-height:1}
+    .stat-label{font-size:10px;color:var(--muted);margin-top:2px}
+
+    /* ── FORM ELEMENTS ──────────────────────────────────── */
+    .form-group{margin-bottom:14px}
+    .form-label{font-size:12px;font-weight:600;color:var(--navy);margin-bottom:5px;display:block}
+    .form-label .req{color:var(--red)}
+    .form-input,.form-select,.form-textarea{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--text);outline:none;transition:border-color .2s;background:#fff}
+    .form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--purple)}
+    .form-textarea{resize:none;height:80px}
+    .form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%231f2d5a' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+
+    /* ── SEVERITY SELECTOR ──────────────────────────────── */
+    .sev-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+    .sev-btn{padding:8px 4px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;font-weight:700;text-align:center;cursor:pointer;background:#fff;transition:all .2s;color:var(--muted)}
+    .sev-btn[data-sev="9"],.sev-btn[data-sev="8"]{border-color:#fecaca;background:#fef2f2;color:var(--red)}
+    .sev-btn[data-sev="7"],.sev-btn[data-sev="6"]{border-color:#fed7aa;background:#fff7ed;color:var(--orange)}
+    .sev-btn[data-sev="5"],.sev-btn[data-sev="4"]{border-color:#fef08a;background:#fefce8;color:#854d0e}
+    .sev-btn[data-sev="3"],.sev-btn[data-sev="2"],.sev-btn[data-sev="1"]{border-color:#bbf7d0;background:#f0fdf4;color:var(--green)}
+    .sev-btn.selected{transform:scale(1.05);border-width:2px}
+    .sev-btn[data-sev="9"].selected,.sev-btn[data-sev="8"].selected{border-color:var(--red);box-shadow:0 0 0 2px rgba(192,57,43,.2)}
+    .sev-btn[data-sev="7"].selected,.sev-btn[data-sev="6"].selected{border-color:var(--orange);box-shadow:0 0 0 2px rgba(224,123,57,.2)}
+    .sev-btn[data-sev="5"].selected,.sev-btn[data-sev="4"].selected{border-color:#d97706;box-shadow:0 0 0 2px rgba(217,119,6,.2)}
+    .sev-btn[data-sev="3"].selected,.sev-btn[data-sev="2"].selected,.sev-btn[data-sev="1"].selected{border-color:var(--green);box-shadow:0 0 0 2px rgba(45,122,79,.2)}
+
+    /* ── PHOTO UPLOAD ────────────────────────────────────── */
+    .photo-zone{border:2px dashed var(--border);border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s;background:#fafafa}
+    .photo-zone:hover{border-color:var(--purple)}
+    .photo-zone input[type=file]{display:none}
+    .photo-zone .ph-icon{font-size:28px;margin-bottom:6px}
+    .photo-zone .ph-text{font-size:12px;color:var(--muted)}
+    .photo-preview{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .photo-thumb{width:70px;height:70px;object-fit:cover;border-radius:6px;border:1.5px solid var(--border)}
+    .photo-thumb-wrap{position:relative;display:inline-block}
+    .photo-remove{position:absolute;top:-5px;right:-5px;width:18px;height:18px;background:var(--red);color:#fff;border-radius:50%;font-size:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;font-weight:700}
+
+    /* ── GPS PANEL ───────────────────────────────────────── */
+    .gps-display{background:linear-gradient(135deg,#1e3a6e,#2d5a9e);border-radius:10px;padding:16px;color:#fff;text-align:center;margin-bottom:12px}
+    .gps-coords{font-size:12px;font-family:monospace;opacity:.85;margin-top:6px;line-height:1.6}
+    .gps-status{font-size:12px;font-weight:600;margin-bottom:4px}
+    .gps-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.15);padding:3px 10px;border-radius:20px;font-size:11px;margin-top:6px}
+    .gps-dot{width:7px;height:7px;border-radius:50%;background:#4ade80;animation:pulse 1.5s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .gps-dot.inactive{background:#94a3b8;animation:none}
+
+    /* ── CHECKLIST ───────────────────────────────────────── */
+    .checklist-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #f1f5f9}
+    .checklist-item:last-child{border-bottom:none}
+    .check-box{width:22px;height:22px;border:2px solid var(--border);border-radius:4px;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;background:#fff;transition:all .2s;margin-top:1px}
+    .check-box.checked{background:var(--green);border-color:var(--green);color:#fff}
+    .check-text{flex:1;font-size:12px;line-height:1.5}
+    .check-phase{font-size:10px;font-weight:700;color:var(--purple);margin-bottom:2px}
+    .checklist-progress{background:#e2e8f0;border-radius:4px;height:6px;margin-bottom:14px;overflow:hidden}
+    .checklist-fill{height:100%;background:var(--green);border-radius:4px;transition:width .4s}
+
+    /* ── SIGNATURE PAD ───────────────────────────────────── */
+    .sig-wrap{border:1.5px solid var(--border);border-radius:8px;overflow:hidden;background:#fff;position:relative}
+    .sig-canvas{width:100%;height:180px;cursor:crosshair;display:block;touch-action:none}
+    .sig-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);pointer-events:none;transition:opacity .2s}
+    .sig-actions{display:flex;gap:8px;margin-top:8px}
+    .btn{padding:10px 16px;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+    .btn-primary{background:var(--purple);color:#fff}
+    .btn-primary:hover{background:#4a3fbf}
+    .btn-secondary{background:var(--white);color:var(--navy);border:1.5px solid var(--border)}
+    .btn-danger{background:var(--red);color:#fff}
+    .btn-success{background:var(--green);color:#fff}
+    .btn-gold{background:var(--gold);color:#fff}
+    .btn-block{width:100%;padding:12px}
+    .btn:active{transform:scale(.97)}
+
+    /* ── ALERT BOX ───────────────────────────────────────── */
+    .alert{padding:10px 12px;border-radius:8px;font-size:12px;margin-bottom:12px;display:flex;align-items:flex-start;gap:8px}
+    .alert-warn{background:#fff7ed;border:1px solid #fed7aa;color:#92400e}
+    .alert-error{background:#fef2f2;border:1px solid #fecaca;color:#991b1b}
+    .alert-success{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
+    .alert-info{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af}
+
+    /* ── DEFECT LIST ─────────────────────────────────────── */
+    .defect-item{background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px}
+    .defect-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+    .defect-title{font-size:12px;font-weight:700}
+    .sev-chip{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px}
+    .sev-critical{background:#fef2f2;color:var(--red);border:1px solid #fecaca}
+    .sev-high{background:#fff7ed;color:var(--orange);border:1px solid #fed7aa}
+    .sev-med{background:#fefce8;color:#854d0e;border:1px solid #fef08a}
+    .sev-low{background:#f0fdf4;color:var(--green);border:1px solid #bbf7d0}
+    .defect-desc{font-size:11px;color:var(--muted);margin-top:3px}
+    .defect-meta{font-size:10px;color:var(--muted);margin-top:4px}
+
+    /* ── SUMMARY ─────────────────────────────────────────── */
+    .summary-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:12px}
+    .summary-row:last-child{border-bottom:none}
+    .summary-label{color:var(--muted)}
+    .summary-val{font-weight:700;color:var(--navy)}
+    .complete-stamp{background:linear-gradient(135deg,var(--green),#1a5c38);color:#fff;border-radius:10px;padding:20px;text-align:center;margin-bottom:14px}
+    .stamp-icon{font-size:40px;margin-bottom:6px}
+    .stamp-title{font-size:16px;font-weight:700;margin-bottom:4px}
+    .stamp-time{font-size:11px;opacity:.8}
+
+    /* ── JOB INFO HEADER ─────────────────────────────────── */
+    .job-header{background:linear-gradient(135deg,var(--purple),#4a3fbf);color:#fff;border-radius:var(--radius);padding:14px;margin-bottom:14px}
+    .job-header .job-id{font-size:11px;opacity:.8;margin-bottom:3px}
+    .job-header .job-name{font-size:15px;font-weight:700;margin-bottom:6px}
+    .job-meta{display:flex;gap:10px;flex-wrap:wrap}
+    .job-meta span{font-size:10px;background:rgba(255,255,255,.15);padding:2px 8px;border-radius:20px}
+
+    /* ── TOAST ───────────────────────────────────────────── */
+    .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:10px 18px;border-radius:8px;font-size:12px;font-weight:600;opacity:0;transition:all .3s;pointer-events:none;z-index:999;white-space:nowrap}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+    /* ── SECTION DIVIDER ─────────────────────────────────── */
+    .section-header{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding:8px 0 6px;margin-bottom:6px;border-bottom:1.5px solid var(--border)}
+
+    /* ── PART TYPE TAGS ──────────────────────────────────── */
+    .part-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+    .part-tag{font-size:10px;padding:3px 9px;border-radius:20px;cursor:pointer;border:1.5px solid var(--border);background:#fff;color:var(--muted);transition:all .2s;white-space:nowrap}
+    .part-tag.selected{background:var(--purple);border-color:var(--purple);color:#fff}
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="app-header">
+    <div class="header-icon">🔧</div>
+    <div class="header-text">
+      <div class="header-title">DAPH Install Field App</div>
+      <div class="header-sub">Installation Agent — Field Operations</div>
+    </div>
+    <span id="connectivity-badge" class="online-badge">🟢 Online</span>
+  </div>
+
+  <!-- SCREENS -->
+
+  <!-- ═══ SCREEN 1: GPS CHECK-IN ═══════════════════════════════════ -->
+  <div id="screen-checkin" class="screen active">
+    <div class="job-header">
+      <div class="job-id">Job ID: JOB-2026-0904-001</div>
+      <div class="job-name">งานติดตั้ง — คุณสมชาย ใจดี</div>
+      <div class="job-meta">
+        <span>📍 ลาดพร้าว 101</span>
+        <span>📅 04/09/2026</span>
+        <span>⏰ 09:00–17:00</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📍 GPS Check-In <span class="badge">Required</span></div>
+      <div class="gps-display" id="gps-display">
+        <div class="gps-status" id="gps-status">กำลังรอ GPS...</div>
+        <div class="gps-coords" id="gps-coords">กดปุ่มด้านล่างเพื่อรับตำแหน่ง</div>
+        <div class="gps-badge"><span class="gps-dot inactive" id="gps-dot"></span><span id="gps-accuracy">ยังไม่ได้ตำแหน่ง</span></div>
+      </div>
+      <button class="btn btn-primary btn-block" onclick="doGPS()">📡 รับตำแหน่ง GPS</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🏠 ข้อมูลหน้างาน</div>
+      <div class="form-group">
+        <label class="form-label">ชื่อช่าง <span class="req">*</span></label>
+        <input class="form-input" id="tech-name" placeholder="ชื่อ-นามสกุล" value=""/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">เบอร์ทีม</label>
+        <input class="form-input" id="team-size" type="number" placeholder="จำนวนคน" value="2"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">สถานะแรกเข้า</label>
+        <select class="form-select" id="site-condition">
+          <option value="ready">✅ หน้างานพร้อม</option>
+          <option value="partial">⚠️ พร้อมบางส่วน</option>
+          <option value="not-ready">❌ ยังไม่พร้อม</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">หมายเหตุ</label>
+        <textarea class="form-textarea" id="checkin-note" placeholder="ระบุสิ่งที่พบเมื่อถึงหน้างาน..."></textarea>
+      </div>
+      <button class="btn btn-success btn-block" onclick="submitCheckin()">✅ ยืนยัน Check-In</button>
+    </div>
+  </div>
+
+  <!-- ═══ SCREEN 2: DEFECT CAPTURE ══════════════════════════════════ -->
+  <div id="screen-defect" class="screen">
+    <div id="defects-list-wrap">
+      <div class="section-header">รายการ Defect ที่บันทึกแล้ว (<span id="defect-count">0</span>)</div>
+      <div id="defects-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📸 บันทึก Defect ใหม่</div>
+      <div class="form-group">
+        <label class="form-label">ประเภท Defect <span class="req">*</span></label>
+        <select class="form-select" id="defect-type">
+          <option value="">-- เลือกประเภท --</option>
+          <option value="dimension">ขนาดไม่ตรง (Dimension Mismatch)</option>
+          <option value="surface">รอยขีดข่วน / ผิวเสียหาย</option>
+          <option value="alignment">ระดับไม่ตรง / บิดเบี้ยว</option>
+          <option value="electrical">ระบบไฟฟ้าผิดพลาด</option>
+          <option value="missing-part">ชิ้นส่วนขาด / ไม่ครบ</option>
+          <option value="structural">โครงสร้างไม่แข็งแรง</option>
+          <option value="other">อื่น ๆ</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">ส่วนที่เกิด Defect</label>
+        <div class="part-tags">
+          <span class="part-tag" onclick="togglePart(this)">ตู้ครัว</span>
+          <span class="part-tag" onclick="togglePart(this)">ผนัง</span>
+          <span class="part-tag" onclick="togglePart(this)">บานประตู</span>
+          <span class="part-tag" onclick="togglePart(this)">โครงอลูมิเนียม</span>
+          <span class="part-tag" onclick="togglePart(this)">ไฟ LED</span>
+          <span class="part-tag" onclick="togglePart(this)">เคาน์เตอร์</span>
+          <span class="part-tag" onclick="togglePart(this)">แผงฝาตู้</span>
+          <span class="part-tag" onclick="togglePart(this)">อุปกรณ์ภายใน</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">ระดับความรุนแรง (PFMEA Severity) <span class="req">*</span></label>
+        <div class="sev-grid" id="sev-grid">
+          <div class="sev-btn" data-sev="9" onclick="selectSev(this)">9<br><span style="font-size:8px;font-weight:400">Crit</span></div>
+          <div class="sev-btn" data-sev="8" onclick="selectSev(this)">8<br><span style="font-size:8px;font-weight:400">High</span></div>
+          <div class="sev-btn" data-sev="6" onclick="selectSev(this)">6<br><span style="font-size:8px;font-weight:400">Med</span></div>
+          <div class="sev-btn" data-sev="4" onclick="selectSev(this)">4<br><span style="font-size:8px;font-weight:400">Low</span></div>
+          <div class="sev-btn" data-sev="2" onclick="selectSev(this)">2<br><span style="font-size:8px;font-weight:400">Min</span></div>
+        </div>
+        <div id="sev-warn" style="display:none;margin-top:8px;" class="alert alert-error">⛔ Sev ≥ 9: หยุดงานทันที — แจ้ง PM ก่อนดำเนินการต่อ</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">รายละเอียด <span class="req">*</span></label>
+        <textarea class="form-textarea" id="defect-desc" placeholder="อธิบายลักษณะของ defect ที่พบ..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">📷 รูปถ่าย (แนบได้สูงสุด 3 รูป)</label>
+        <div class="photo-zone" onclick="document.getElementById('photo-input').click()">
+          <input type="file" id="photo-input" accept="image/*" multiple capture="environment" onchange="handlePhotos(this)"/>
+          <div class="ph-icon">📷</div>
+          <div class="ph-text">กดเพื่อถ่ายรูป / เลือกรูป</div>
+        </div>
+        <div class="photo-preview" id="photo-preview"></div>
+      </div>
+      <button class="btn btn-primary btn-block" onclick="saveDefect()">💾 บันทึก Defect</button>
+    </div>
+  </div>
+
+  <!-- ═══ SCREEN 3: SITE CHECKLIST ═════════════════════════════════ -->
+  <div id="screen-checklist" class="screen">
+    <div class="card">
+      <div class="card-title">📋 Site Checklist <span class="badge" id="check-progress-label">0/12</span></div>
+      <div class="checklist-progress"><div class="checklist-fill" id="check-fill" style="width:0%"></div></div>
+
+      <div class="section-header">Pre-Install Phase</div>
+      <div id="checklist-pre"></div>
+
+      <div class="section-header" style="margin-top:14px">During Install Phase</div>
+      <div id="checklist-during"></div>
+
+      <div class="section-header" style="margin-top:14px">Post-Install Phase</div>
+      <div id="checklist-post"></div>
+    </div>
+    <button class="btn btn-gold btn-block" onclick="submitChecklist()" style="margin-bottom:14px">📤 บันทึก Checklist ไปยัง System</button>
+  </div>
+
+  <!-- ═══ SCREEN 4: CUSTOMER SIGN-OFF ═══════════════════════════════ -->
+  <div id="screen-signoff" class="screen">
+    <div class="card">
+      <div class="card-title">✍️ Customer Sign-off</div>
+      <div class="alert alert-info">📌 กรุณาให้ลูกค้าตรวจรับงานก่อนลงลายมือชื่อ</div>
+
+      <div class="section-header">สรุปงานที่แล้วเสร็จ</div>
+      <div id="signoff-summary"></div>
+
+      <div class="form-group" style="margin-top:14px">
+        <label class="form-label">ชื่อลูกค้า (ผู้รับงาน) <span class="req">*</span></label>
+        <input class="form-input" id="customer-name" placeholder="ชื่อ-นามสกุล"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">เบอร์โทรศัพท์</label>
+        <input class="form-input" id="customer-phone" type="tel" placeholder="08x-xxx-xxxx"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">สถานะการรับงาน</label>
+        <select class="form-select" id="accept-status">
+          <option value="accepted">✅ รับงาน — พอใจทุกส่วน</option>
+          <option value="conditional">⚠️ รับงาน — มีงานแก้ไขรอ</option>
+          <option value="rejected">❌ ไม่รับงาน — ต้องแก้ก่อน</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">ความคิดเห็น</label>
+        <textarea class="form-textarea" id="customer-comment" placeholder="ความคิดเห็นจากลูกค้า..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">ลายมือชื่อลูกค้า <span class="req">*</span></label>
+        <div class="sig-wrap">
+          <canvas id="sig-canvas" class="sig-canvas"></canvas>
+          <div class="sig-placeholder" id="sig-placeholder">✍️ ลงลายมือชื่อที่นี่</div>
+        </div>
+        <div class="sig-actions">
+          <button class="btn btn-secondary" style="flex:1" onclick="clearSig()">🗑️ ล้าง</button>
+          <button class="btn btn-primary" style="flex:2" onclick="saveSig()">✅ ยืนยันลายมือชื่อ</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-success btn-block" style="margin-bottom:14px" onclick="submitSignoff()">📤 ส่ง Sign-off Report ไปยัง PM</button>
+  </div>
+
+  <!-- ═══ SCREEN 5: JOB SUMMARY ══════════════════════════════════════ -->
+  <div id="screen-summary" class="screen">
+    <div id="summary-complete-wrap" style="display:none">
+      <div class="complete-stamp">
+        <div class="stamp-icon">✅</div>
+        <div class="stamp-title">งานเสร็จสมบูรณ์</div>
+        <div class="stamp-time" id="summary-timestamp">—</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📊 Job Summary</div>
+      <div id="summary-body">
+        <div class="summary-row"><span class="summary-label">Job ID</span><span class="summary-val">JOB-2026-0904-001</span></div>
+        <div class="summary-row"><span class="summary-label">ช่าง Check-in</span><span class="summary-val" id="sum-tech">—</span></div>
+        <div class="summary-row"><span class="summary-label">GPS Check-in</span><span class="summary-val" id="sum-gps">—</span></div>
+        <div class="summary-row"><span class="summary-label">Checklist</span><span class="summary-val" id="sum-check">—</span></div>
+        <div class="summary-row"><span class="summary-label">Defects บันทึก</span><span class="summary-val" id="sum-defects">0</span></div>
+        <div class="summary-row"><span class="summary-label">Defects Sev ≥ 8</span><span class="summary-val" id="sum-critical" style="color:var(--red)">0</span></div>
+        <div class="summary-row"><span class="summary-label">Customer Sign-off</span><span class="summary-val" id="sum-signoff">—</span></div>
+        <div class="summary-row"><span class="summary-label">สถานะงาน</span><span class="summary-val" id="sum-status">กำลังดำเนินการ</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📡 Sync Status</div>
+      <div class="alert alert-info" id="sync-alert">💡 ข้อมูลจะ sync อัตโนมัติเมื่อมีอินเทอร์เน็ต</div>
+      <button class="btn btn-primary btn-block" onclick="simulateSync()">🔄 Sync ไปยัง MCP Server</button>
+    </div>
+
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">📋 MCP Event ที่จะส่ง</div>
+      <pre id="mcp-payload" style="font-size:10px;line-height:1.6;overflow-x:auto;background:#f8fafc;padding:10px;border-radius:6px;color:#334155;white-space:pre-wrap"></pre>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-screen="checkin" onclick="navTo('checkin',this)">
+      <span class="nav-icon">📍</span>Check-In<div class="nav-bar"></div>
+    </button>
+    <button class="nav-btn" data-screen="defect" onclick="navTo('defect',this)">
+      <span class="nav-icon">⚠️</span>Defect<div class="nav-bar"></div>
+    </button>
+    <button class="nav-btn" data-screen="checklist" onclick="navTo('checklist',this)">
+      <span class="nav-icon">📋</span>Checklist<div class="nav-bar"></div>
+    </button>
+    <button class="nav-btn" data-screen="signoff" onclick="navTo('signoff',this)">
+      <span class="nav-icon">✍️</span>Sign-off<div class="nav-bar"></div>
+    </button>
+    <button class="nav-btn" data-screen="summary" onclick="navTo('summary',this)">
+      <span class="nav-icon">📊</span>Summary<div class="nav-bar"></div>
+    </button>
+  </nav>
+
+</div><!-- .app -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+const state = {
+  gps: null,
+  checkinDone: false,
+  selectedSev: null,
+  selectedParts: [],
+  photos: [],
+  defects: [],
+  checklistDone: false,
+  sigDone: false,
+  sigDataUrl: null
+};
+
+const CHECKLIST = {
+  pre: [
+    'ตรวจสอบรายการวัสดุครบถ้วนตาม BOM',
+    'วัดระยะหน้างานตรงกับแบบ (±2mm)',
+    'ตรวจสอบสภาพผนัง/พื้น/เพดานพร้อมติดตั้ง',
+    'แจ้งลูกค้าและยืนยันนัดหมาย',
+    'เตรียมอุปกรณ์/เครื่องมือครบ'
+  ],
+  during: [
+    'ติดตั้งโครงอลูมิเนียมตรงระดับ',
+    'ตรวจสอบแนวดิ่ง/แนวราบทุก 30 นาที',
+    'ถ่ายรูปทุกขั้นตอนหลัก',
+    'บันทึก defect ทุกรายการทันที'
+  ],
+  post: [
+    'ทดสอบบานพับ/ลิ้นชัก/อุปกรณ์ทุกชิ้น',
+    'ทำความสะอาดพื้นที่หลังติดตั้ง',
+    'ถ่ายรูป "งานเสร็จ" อย่างน้อย 5 มุม'
+  ]
+};
+
+let checkStates = {};
+const allItems = [...CHECKLIST.pre,...CHECKLIST.during,...CHECKLIST.post];
+allItems.forEach((_,i)=>checkStates[i]=false);
+
+// ══════════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════════
+function navTo(id, btn){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='summary') updateSummary();
+}
+
+// ══════════════════════════════════════════════════════════
+// CONNECTIVITY
+// ══════════════════════════════════════════════════════════
+function updateConnectivity(){
+  const el=document.getElementById('connectivity-badge');
+  if(navigator.onLine){el.className='online-badge';el.textContent='🟢 Online';}
+  else{el.className='offline-badge';el.textContent='🔴 Offline';}
+}
+window.addEventListener('online',updateConnectivity);
+window.addEventListener('offline',updateConnectivity);
+updateConnectivity();
+
+// ══════════════════════════════════════════════════════════
+// GPS CHECK-IN
+// ══════════════════════════════════════════════════════════
+function doGPS(){
+  const status=document.getElementById('gps-status');
+  const coords=document.getElementById('gps-coords');
+  const dot=document.getElementById('gps-dot');
+  const acc=document.getElementById('gps-accuracy');
+  status.textContent='กำลังรับสัญญาณ GPS...';
+  coords.textContent='โปรดรอสักครู่...';
+  dot.className='gps-dot';
+  if(!navigator.geolocation){
+    status.textContent='GPS ไม่รองรับบนอุปกรณ์นี้';
+    // Demo fallback
+    state.gps={lat:13.7563,lng:100.5018,acc:15};
+    renderGPS();
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      state.gps={lat:pos.coords.latitude,lng:pos.coords.longitude,acc:Math.round(pos.coords.accuracy)};
+      renderGPS();
+    },
+    err=>{
+      // Demo fallback for testing
+      state.gps={lat:13.7563+Math.random()*0.01,lng:100.5018+Math.random()*0.01,acc:8};
+      renderGPS();
+    },
+    {enableHighAccuracy:true,timeout:8000,maximumAge:0}
+  );
+}
+
+function renderGPS(){
+  const g=state.gps;
+  document.getElementById('gps-status').textContent='✅ ได้รับตำแหน่ง GPS';
+  document.getElementById('gps-coords').innerHTML=
+    `Lat: ${g.lat.toFixed(6)}<br>Lng: ${g.lng.toFixed(6)}<br>± ${g.acc}m`;
+  document.getElementById('gps-dot').className='gps-dot';
+  document.getElementById('gps-accuracy').textContent=`Accuracy ±${g.acc}m`;
+  showToast('📍 GPS รับตำแหน่งแล้ว');
+}
+
+function submitCheckin(){
+  const name=document.getElementById('tech-name').value.trim();
+  if(!name){showToast('⚠️ กรุณาใส่ชื่อช่าง');return;}
+  if(!state.gps){showToast('⚠️ กรุณารับ GPS ก่อน');return;}
+  state.checkinDone=true;
+  state.techName=name;
+  showToast('✅ Check-in สำเร็จ');
+  setTimeout(()=>{navTo('defect',document.querySelector('[data-screen="defect"]'));},500);
+}
+
+// ══════════════════════════════════════════════════════════
+// DEFECT CAPTURE
+// ══════════════════════════════════════════════════════════
+function selectSev(btn){
+  document.querySelectorAll('.sev-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  state.selectedSev=parseInt(btn.dataset.sev);
+  document.getElementById('sev-warn').style.display=state.selectedSev>=9?'flex':'none';
+}
+function togglePart(el){
+  el.classList.toggle('selected');
+  state.selectedParts=Array.from(document.querySelectorAll('.part-tag.selected')).map(e=>e.textContent);
+}
+function handlePhotos(input){
+  const files=Array.from(input.files).slice(0,3);
+  state.photos=[];
+  const preview=document.getElementById('photo-preview');
+  preview.innerHTML='';
+  files.forEach((file,i)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      state.photos.push(e.target.result);
+      const wrap=document.createElement('div');
+      wrap.className='photo-thumb-wrap';
+      wrap.innerHTML=`<img class="photo-thumb" src="${e.target.result}"/><button class="photo-remove" onclick="removePhoto(${i})">×</button>`;
+      preview.appendChild(wrap);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function removePhoto(i){state.photos.splice(i,1);document.querySelectorAll('.photo-thumb-wrap')[i]?.remove();}
+function saveDefect(){
+  const type=document.getElementById('defect-type').value;
+  const desc=document.getElementById('defect-desc').value.trim();
+  if(!type){showToast('⚠️ เลือกประเภท Defect');return;}
+  if(!desc){showToast('⚠️ ใส่รายละเอียด');return;}
+  if(!state.selectedSev){showToast('⚠️ เลือก Severity');return;}
+  const d={
+    id:'DEF-'+(state.defects.length+1).toString().padStart(3,'0'),
+    type,desc,sev:state.selectedSev,
+    parts:[...state.selectedParts],
+    photos:state.photos.length,
+    time:new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})
+  };
+  state.defects.push(d);
+  renderDefects();
+  // Reset form
+  document.getElementById('defect-type').value='';
+  document.getElementById('defect-desc').value='';
+  document.querySelectorAll('.sev-btn').forEach(b=>b.classList.remove('selected'));
+  document.querySelectorAll('.part-tag').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('photo-preview').innerHTML='';
+  document.getElementById('sev-warn').style.display='none';
+  state.selectedSev=null;state.selectedParts=[];state.photos=[];
+  showToast(d.sev>=9?'⛔ Defect Sev-9 บันทึกแล้ว — แจ้ง PM!':'✅ บันทึก Defect สำเร็จ');
+}
+function getSevClass(sev){if(sev>=9)return'sev-critical';if(sev>=7)return'sev-high';if(sev>=5)return'sev-med';return'sev-low';}
+function renderDefects(){
+  const list=document.getElementById('defects-list');
+  const count=document.getElementById('defect-count');
+  count.textContent=state.defects.length;
+  list.innerHTML=state.defects.map(d=>`
+    <div class="defect-item">
+      <div class="defect-header">
+        <span class="defect-title">${d.id} — ${d.type}</span>
+        <span class="sev-chip ${getSevClass(d.sev)}">Sev ${d.sev}</span>
+      </div>
+      <div class="defect-desc">${d.desc}</div>
+      <div class="defect-meta">${d.parts.length?'📌 '+d.parts.join(', '):''} ${d.photos?'📷 '+d.photos+' รูป':''} ⏱ ${d.time}</div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// CHECKLIST
+// ══════════════════════════════════════════════════════════
+function buildChecklist(){
+  function render(phase, items, startIdx){
+    const el=document.getElementById('checklist-'+phase);
+    el.innerHTML=items.map((t,i)=>{
+      const gi=startIdx+i;
+      return `<div class="checklist-item">
+        <div class="check-box ${checkStates[gi]?'checked':''}" id="cb-${gi}" onclick="toggleCheck(${gi})">
+          ${checkStates[gi]?'✓':''}
+        </div>
+        <div class="check-text">
+          <div class="check-phase">${phase==='pre'?'Pre-Install':phase==='during'?'During Install':'Post-Install'}</div>
+          ${t}
+        </div>
+      </div>`;
+    }).join('');
+  }
+  render('pre',CHECKLIST.pre,0);
+  render('during',CHECKLIST.during,5);
+  render('post',CHECKLIST.post,9);
+  updateCheckProgress();
+}
+function toggleCheck(idx){
+  checkStates[idx]=!checkStates[idx];
+  const cb=document.getElementById('cb-'+idx);
+  if(cb){cb.className='check-box '+(checkStates[idx]?'checked':'');cb.textContent=checkStates[idx]?'✓':'';}
+  updateCheckProgress();
+}
+function updateCheckProgress(){
+  const done=Object.values(checkStates).filter(v=>v).length;
+  const total=allItems.length;
+  document.getElementById('check-progress-label').textContent=`${done}/${total}`;
+  document.getElementById('check-fill').style.width=`${(done/total)*100}%`;
+}
+function submitChecklist(){
+  const done=Object.values(checkStates).filter(v=>v).length;
+  state.checklistDone=true;
+  showToast(`✅ บันทึก Checklist แล้ว (${done}/${allItems.length})`);
+}
+
+// ══════════════════════════════════════════════════════════
+// SIGNATURE PAD
+// ══════════════════════════════════════════════════════════
+const sigCanvas=document.getElementById('sig-canvas');
+const sigCtx=sigCanvas.getContext('2d');
+let isDrawing=false,lastX=0,lastY=0,hasSigStroke=false;
+function getPos(e,canvas){
+  const r=canvas.getBoundingClientRect();
+  const src=e.touches?e.touches[0]:e;
+  return{x:src.clientX-r.left,y:src.clientY-r.top};
+}
+function initSig(){
+  const dpr=window.devicePixelRatio||1;
+  const w=sigCanvas.parentElement.offsetWidth;
+  const h=180;
+  sigCanvas.width=w*dpr;
+  sigCanvas.height=h*dpr;
+  sigCanvas.style.width=w+'px';
+  sigCanvas.style.height=h+'px';
+  sigCtx.scale(dpr,dpr);
+  sigCtx.strokeStyle='#1f2d5a';
+  sigCtx.lineWidth=2;
+  sigCtx.lineCap='round';
+  sigCtx.lineJoin='round';
+}
+sigCanvas.addEventListener('mousedown',e=>{isDrawing=true;const p=getPos(e,sigCanvas);lastX=p.x;lastY=p.y;});
+sigCanvas.addEventListener('mousemove',e=>{if(!isDrawing)return;draw(e);});
+sigCanvas.addEventListener('mouseup',()=>isDrawing=false);
+sigCanvas.addEventListener('touchstart',e=>{e.preventDefault();isDrawing=true;const p=getPos(e,sigCanvas);lastX=p.x;lastY=p.y;},{passive:false});
+sigCanvas.addEventListener('touchmove',e=>{e.preventDefault();if(!isDrawing)return;draw(e);},{passive:false});
+sigCanvas.addEventListener('touchend',()=>isDrawing=false);
+function draw(e){
+  const p=getPos(e,sigCanvas);
+  sigCtx.beginPath();sigCtx.moveTo(lastX,lastY);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();
+  lastX=p.x;lastY=p.y;hasSigStroke=true;
+  document.getElementById('sig-placeholder').style.opacity='0';
+}
+function clearSig(){sigCtx.clearRect(0,0,sigCanvas.width,sigCanvas.height);hasSigStroke=false;document.getElementById('sig-placeholder').style.opacity='1';state.sigDone=false;state.sigDataUrl=null;}
+function saveSig(){
+  if(!hasSigStroke){showToast('⚠️ กรุณาลงลายมือชื่อก่อน');return;}
+  state.sigDataUrl=sigCanvas.toDataURL('image/png');
+  state.sigDone=true;
+  showToast('✅ บันทึกลายมือชื่อแล้ว');
+}
+function submitSignoff(){
+  const name=document.getElementById('customer-name').value.trim();
+  if(!name){showToast('⚠️ ใส่ชื่อลูกค้า');return;}
+  if(!state.sigDone){showToast('⚠️ ลูกค้าต้องลงลายมือชื่อก่อน');return;}
+  state.signoffDone=true;
+  state.customerName=name;
+  state.acceptStatus=document.getElementById('accept-status').value;
+  showToast('✅ ส่ง Sign-off สำเร็จ');
+  setTimeout(()=>{navTo('summary',document.querySelector('[data-screen="summary"]'));},600);
+}
+function renderSignoffSummary(){
+  const el=document.getElementById('signoff-summary');
+  if(el) el.innerHTML=`
+    <div class="summary-row"><span class="summary-label">Checklist</span><span class="summary-val">${state.checklistDone?'✅ เสร็จแล้ว':'⏳ ยังไม่บันทึก'}</span></div>
+    <div class="summary-row"><span class="summary-label">Defects</span><span class="summary-val">${state.defects.length} รายการ</span></div>
+    <div class="summary-row"><span class="summary-label">Defects Critical</span><span class="summary-val" style="color:var(--red)">${state.defects.filter(d=>d.sev>=9).length} รายการ</span></div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// SUMMARY + MCP PAYLOAD
+// ══════════════════════════════════════════════════════════
+function updateSummary(){
+  document.getElementById('sum-tech').textContent=state.techName||'—';
+  document.getElementById('sum-gps').textContent=state.gps?`${state.gps.lat.toFixed(5)}, ${state.gps.lng.toFixed(5)}`:'—';
+  const done=Object.values(checkStates).filter(v=>v).length;
+  document.getElementById('sum-check').textContent=`${done}/${allItems.length}`;
+  document.getElementById('sum-defects').textContent=state.defects.length;
+  const crit=state.defects.filter(d=>d.sev>=9).length;
+  document.getElementById('sum-critical').textContent=crit;
+  document.getElementById('sum-signoff').textContent=state.signoffDone?`✅ ${state.customerName}`:'—';
+  const complete=state.checkinDone&&state.checklistDone&&state.signoffDone;
+  document.getElementById('sum-status').textContent=complete?'✅ เสร็จสมบูรณ์':'🔄 กำลังดำเนินการ';
+  document.getElementById('summary-complete-wrap').style.display=complete?'block':'none';
+  if(complete) document.getElementById('summary-timestamp').textContent=new Date().toLocaleString('th-TH');
+  const payload={
+    event_type:'job_complete',
+    job_id:'JOB-2026-0904-001',
+    technician:state.techName||'N/A',
+    gps:state.gps,
+    checklist_completed:done+'/'+allItems.length,
+    defects:state.defects.map(d=>({id:d.id,type:d.type,sev:d.sev,time:d.time})),
+    customer_signoff:{
+      name:state.customerName||null,
+      status:state.acceptStatus||null,
+      signed:state.sigDone
+    },
+    timestamp:new Date().toISOString()
+  };
+  document.getElementById('mcp-payload').textContent=JSON.stringify(payload,null,2);
+}
+function simulateSync(){
+  showToast('🔄 กำลัง Sync...');
+  setTimeout(()=>{
+    document.getElementById('sync-alert').className='alert alert-success';
+    document.getElementById('sync-alert').textContent='✅ Sync สำเร็จ — MCP event job_complete ส่งแล้ว';
+    showToast('✅ Sync ไปยัง MCP Server เรียบร้อย');
+  },1500);
+}
+
+// ══════════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════════
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+buildChecklist();
+initSig();
+renderSignoffSummary();
+
+// Service Worker registration (PWA offline support)
+if('serviceWorker' in navigator){
+  const swCode=`
+self.addEventListener('install',e=>e.waitUntil(
+  caches.open('daph-install-v1').then(c=>c.addAll(['/']))
+));
+self.addEventListener('fetch',e=>e.respondWith(
+  caches.match(e.request).then(r=>r||fetch(e.request).catch(()=>new Response('Offline')))
+));`;
+  const blob=new Blob([swCode],{type:'application/javascript'});
+  const url=URL.createObjectURL(blob);
+  navigator.serviceWorker.register(url).catch(()=>{});
+}
+</script>
+</body>
+</html>

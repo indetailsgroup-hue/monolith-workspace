@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+@page { margin: 0; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: Arial, Helvetica, sans-serif; }
+.slide-container {
+    width: 1280px;
+    min-width: 100%;
+    height: 720px;
+    overflow: hidden;
+    background-color: #ffffff;
+    color: #1a1a2e;
+    display: flex;
+    flex-direction: column;
+    border-left: 6px solid #1f2d5a;
+    border-right: 6px solid #1f2d5a;
+}
+.slide-header {
+    background-color: #1f2d5a;
+    padding: 22px 60px 18px;
+    display: flex;
+    align-items: baseline;
+    gap: 18px;
+}
+.slide-header h2 { font-size: 36px; font-weight: 800; color: #ffffff; }
+.slide-header p { font-size: 16px; color: rgba(201,168,76,0.9); font-weight: 600; }
+.content-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 60px 0;
+}
+.ws-grid {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 22px;
+}
+.ws-card {
+    flex: 1;
+    border: 1px solid #dde0ee;
+    border-radius: 8px;
+    padding: 16px 14px;
+    background-color: #f5f6fa;
+    position: relative;
+}
+.ws-tag {
+    display: inline-block;
+    background-color: #1f2d5a;
+    color: #c9a84c;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+}
+.ws-card h4 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1f2d5a;
+    margin-bottom: 5px;
+    line-height: 1.3;
+}
+.ws-card p { font-size: 13px; color: #555; line-height: 1.4; }
+.ws-budget {
+    font-size: 18px;
+    font-weight: 800;
+    color: #c9a84c;
+    margin-top: 8px;
+}
+.timeline-bar {
+    background-color: #f5f6fa;
+    border: 1px solid #dde0ee;
+    border-radius: 8px;
+    padding: 16px 20px;
+}
+.tl-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 12px;
+}
+.tl-track {
+    display: flex;
+    gap: 4px;
+    height: 36px;
+}
+.tl-seg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+}
+.tl-dates {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #999;
+    margin-top: 6px;
+}
+.total-box {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 14px;
+    background-color: #1f2d5a;
+    border-radius: 8px;
+    padding: 12px 24px;
+}
+.total-box p { font-size: 16px; font-weight: 700; color: #fff; }
+.total-box p span { color: #c9a84c; font-size: 28px; }
+.slide-footer {
+    margin-top: auto;
+    padding: 8px 60px;
+    border-top: 1px solid rgba(0,0,0,0.1);
+    color: rgba(0,0,0,0.45);
+    font-size: 11px;
+}
+</style>
+</head>
+<body>
+<div class="slide-container">
+    <div class="slide-header">
+        <h2>AMD-004 Programme Delivery</h2>
+        <p>5 Workstreams · Q3 2030 – Q2 2032 · THB 5.2M Total</p>
+    </div>
+    <div class="content-area">
+        <div class="ws-grid">
+            <div class="ws-card">
+                <p class="ws-tag">WS-A</p>
+                <h4>Corporate Governance</h4>
+                <p>S1–S38 SOP framework, SC governance registry, 28-agent SLA framework</p>
+                <p class="ws-budget">THB 0.8M</p>
+            </div>
+            <div class="ws-card">
+                <p class="ws-tag">WS-B</p>
+                <h4>Technology Infrastructure</h4>
+                <p>src/ repo build, Supabase schema, event integrations, CI/CD pipeline</p>
+                <p class="ws-budget">THB 1.1M</p>
+            </div>
+            <div class="ws-card">
+                <p class="ws-tag">WS-C</p>
+                <h4>Client Service Innovation</h4>
+                <p>6-Pillar client delivery, design-to-handover workflow, GAP-01/02 closure</p>
+                <p class="ws-budget">THB 1.2M</p>
+            </div>
+            <div class="ws-card">
+                <p class="ws-tag">WS-D</p>
+                <h4>Analytics &amp; KPI Dashboard</h4>
+                <p>KPI-001–024 framework, src/dashboard/ build, GAP-08 closure</p>
+                <p class="ws-budget">THB 0.9M</p>
+            </div>
+            <div class="ws-card">
+                <p class="ws-tag">WS-E</p>
+                <h4>Human Capital &amp; Change</h4>
+                <p>TRN-001–004 training, CHG-001–004 change management, AMD4-CLOSE</p>
+                <p class="ws-budget">THB 0.6M</p>
+            </div>
+        </div>
+        <div class="timeline-bar">
+            <p class="tl-label">Delivery Timeline</p>
+            <div class="tl-track">
+                <div class="tl-seg" style="flex:2;background-color:#1f2d5a;">WS-A Q3–Q4 2030</div>
+                <div class="tl-seg" style="flex:3;background-color:#2e75b6;">WS-B Q1–Q3 2031</div>
+                <div class="tl-seg" style="flex:3;background-color:#3a8fd8;">WS-C Q2–Q4 2031</div>
+                <div class="tl-seg" style="flex:3;background-color:#c9a84c;">WS-D Q3 2030 – Q4 2031</div>
+                <div class="tl-seg" style="flex:2;background-color:#27ae60;">WS-E Q1–Q2 2032</div>
+            </div>
+            <div class="tl-dates"><p>Q3 2030</p><p>Q1 2031</p><p>Q3 2031</p><p>Q1 2032</p><p>Q2 2032</p></div>
+        </div>
+        <div class="total-box">
+            <p>Total AMD-004 Budget: <span>THB 5.2M</span></p>
+            <p style="color:rgba(255,255,255,0.6)">|</p>
+            <p>5 Workstreams · 49 SOP Sections · 6 Gaps Closed · 28 Agents Active</p>
+        </div>
+    </div>
+    <div class="slide-footer"><p>MONOLITH DAPH Decor AI Agent Programme · SC Review 2569 · AMD-004 Programme Completion Report</p></div>
+</div>
+</body>
+</html>

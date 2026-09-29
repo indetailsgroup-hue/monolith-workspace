@@ -16,7 +16,7 @@
 
 import { create } from 'zustand';
 import type { StoreApi, UseBoundStore } from 'zustand';
-import type { SpecStatus, SpecState } from '../spec/specState';
+import type { SpecStatus } from '../spec/specState';
 import type { SignedJobManifest } from '../trust/manifestChainTypes';
 import type { TrustChainService } from '../trustChain/trustChainService';
 import type { FactoryAcceptanceChecklist } from '../factory/generateFactoryChecklist';
@@ -181,14 +181,7 @@ export interface JobRuntimeExtendedState extends JobRuntimeState {
   generateChecklist: () => Promise<FactoryAcceptanceChecklist | null>;
 }
 
-interface SnapshotArgs {
-  selectionPreview: any[];
-  selectionIds: string[];
-  activeId: string | null;
-  collision: any | null;
-  runGatePerCabinet: any;
-  commitAll: (cabs: any[]) => void;
-}
+type SnapshotArgs = Omit<Parameters<TrustChainService['freeze']>[0], 'jobId'>;
 
 /**
  * Create extended job runtime store with service actions

@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Agent Evaluation Metrics — UAT Phase E | DAPH DECOR AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #1f2d5a;
+    --navy-light: #2a3d78;
+    --navy-dark: #151f3e;
+    --gold: #c9a84c;
+    --gold-light: #e2c47a;
+    --gold-pale: #fdf6e3;
+    --green: #2d7a4f;
+    --green-light: #3a9b65;
+    --green-pale: #e8f5ed;
+    --red: #c0392b;
+    --red-pale: #fdf0ef;
+    --orange: #d35400;
+    --orange-pale: #fef5ec;
+    --purple: #6c3483;
+    --purple-pale: #f5eef8;
+    --blue-pale: #eef3fb;
+    --teal: #0e6655;
+    --teal-pale: #e8f6f3;
+    --gray: #6c757d;
+    --gray-light: #f8f9fa;
+    --gray-border: #dee2e6;
+    --white: #ffffff;
+    --text-dark: #1a1a2e;
+    --text-medium: #4a5568;
+    --text-light: #718096;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.10);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+  }
+  body {
+    font-family: 'Sarabun', sans-serif;
+    font-size: 15px;
+    color: var(--text-dark);
+    background: #f0f4f8;
+    line-height: 1.65;
+  }
+  /* HEADER */
+  .top-header {
+    background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy) 60%, var(--navy-light) 100%);
+    color: var(--white);
+    padding: 0;
+  }
+  .top-header-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 28px 40px 24px;
+  }
+  .breadcrumb {
+    font-size: 12px;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .breadcrumb span { color: var(--gold-light); }
+  .header-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .header-title h1 { font-size: 26px; font-weight: 700; color: var(--white); line-height: 1.3; }
+  .header-title .subtitle { font-size: 14px; color: rgba(255,255,255,0.75); margin-top: 5px; }
+  .header-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .phase-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 18px;
+    border-radius: 50px;
+    font-size: 13px;
+    font-weight: 700;
+    background: rgba(201,168,76,0.2);
+    border: 2px solid var(--gold);
+    color: var(--gold-light);
+  }
+  .meta-info { font-size: 11.5px; color: rgba(255,255,255,0.55); text-align: right; }
+  /* NAV BAR */
+  .nav-bar { background: var(--navy-dark); border-top: 1px solid rgba(255,255,255,0.08); }
+  .nav-bar-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 40px;
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+  }
+  .nav-link {
+    display: inline-block;
+    padding: 12px 18px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+    text-decoration: none;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .nav-link:hover, .nav-link.active { color: var(--gold-light); border-bottom-color: var(--gold); }
+  /* MAIN */
+  .main { max-width: 1400px; margin: 0 auto; padding: 32px 40px 60px; }
+  /* RUBRIC LEGEND */
+  .rubric-legend {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 22px 28px;
+    margin-bottom: 28px;
+  }
+  .rubric-legend h3 { font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 16px; }
+  .rubric-scores {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+  @media (max-width: 900px) { .rubric-scores { grid-template-columns: repeat(2,1fr); } }
+  .rubric-score-box {
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 2px solid;
+    text-align: center;
+  }
+  .rubric-score-box.pass { border-color: var(--green); }
+  .rubric-score-box.satisfactory { border-color: var(--navy); }
+  .rubric-score-box.needs { border-color: var(--gold); }
+  .rubric-score-box.fail { border-color: var(--red); }
+  .rs-header {
+    padding: 10px 12px;
+    color: var(--white);
+    font-size: 15px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .rubric-score-box.pass .rs-header { background: var(--green); }
+  .rubric-score-box.satisfactory .rs-header { background: var(--navy); }
+  .rubric-score-box.needs .rs-header { background: var(--gold); color: var(--navy-dark); }
+  .rubric-score-box.fail .rs-header { background: var(--red); }
+  .rs-body { padding: 10px 12px; background: var(--gray-light); font-size: 12.5px; color: var(--text-medium); }
+  /* UAT PHASE INFO */
+  .uat-info-bar {
+    background: linear-gradient(135deg, #1a0a3d, #2d1b69);
+    border-radius: var(--radius-lg);
+    padding: 20px 28px;
+    margin-bottom: 28px;
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .uat-info-bar .uat-icon { font-size: 36px; }
+  .uat-info-text h3 { font-size: 15px; font-weight: 700; margin-bottom: 5px; }
+  .uat-info-text p { font-size: 13px; color: rgba(255,255,255,0.8); }
+  .uat-badges { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .uat-badge {
+    padding: 4px 12px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: rgba(255,255,255,0.9);
+  }
+  /* TAB SYSTEM */
+  .agent-tabs {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+  .tab-header {
+    display: flex;
+    border-bottom: 2px solid var(--gray-border);
+    overflow-x: auto;
+  }
+  .tab-btn {
+    flex: 1;
+    min-width: 120px;
+    padding: 16px 14px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'Sarabun', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-light);
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .tab-btn .tab-icon { font-size: 18px; }
+  .tab-btn:hover { background: var(--gray-light); color: var(--navy); }
+  .tab-btn.active { color: var(--navy); border-bottom-color: var(--gold); background: var(--gold-pale); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  /* AGENT SECTION */
+  .agent-section { padding: 28px 32px; }
+  .agent-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 22px 28px;
+    border-bottom: 1px solid var(--gray-border);
+  }
+  .agent-avatar {
+    width: 56px; height: 56px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    flex-shrink: 0;
+  }
+  .agent-avatar.sale { background: linear-gradient(135deg, #1565c0, #1976d2); }
+  .agent-avatar.designer { background: linear-gradient(135deg, #6a1b9a, #8e24aa); }
+  .agent-avatar.factory { background: linear-gradient(135deg, #bf360c, #e64a19); }
+  .agent-avatar.pm { background: linear-gradient(135deg, #1b5e20, #388e3c); }
+  .agent-avatar.procurement { background: linear-gradient(135deg, #827717, #f9a825); }
+  .agent-info h2 { font-size: 20px; font-weight: 700; color: var(--navy); }
+  .agent-info p { font-size: 13px; color: var(--text-medium); margin-top: 3px; }
+  .agent-kpi-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .kpi-badge-sm {
+    padding: 3px 10px;
+    border-radius: 50px;
+    font-size: 11.5px;
+    font-weight: 600;
+    border: 1px solid;
+  }
+  /* KPI TABLE */
+  .subsection-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--navy);
+    margin: 22px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--gold);
+  }
+  .kpi-table-wrap { overflow-x: auto; margin-bottom: 24px; }
+  table.kpi-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  .kpi-table th {
+    background: var(--navy);
+    color: var(--gold-light);
+    padding: 10px 14px;
+    font-size: 12.5px;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .kpi-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--gray-border);
+    vertical-align: middle;
+  }
+  .kpi-table tr:nth-child(even) td { background: var(--gray-light); }
+  .kpi-table tr:hover td { background: var(--blue-pale); }
+  .target-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 700;
+    border: 1.5px solid;
+  }
+  .target-badge.critical { background: #fdf0ef; color: var(--red); border-color: var(--red); }
+  .target-badge.high { background: var(--gold-pale); color: #8a6800; border-color: var(--gold); }
+  .target-badge.medium { background: var(--green-pale); color: var(--green); border-color: var(--green-light); }
+  .priority-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+  }
+  .priority-dot.p1 { background: var(--red); }
+  .priority-dot.p2 { background: var(--orange); }
+  .priority-dot.p3 { background: var(--gold); }
+  /* TEST CASES */
+  .test-cases-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 900px) { .test-cases-grid { grid-template-columns: 1fr; } }
+  .test-case-card {
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1.5px solid;
+    background: var(--white);
+  }
+  .test-case-card.sev9 { border-color: var(--red); }
+  .test-case-card.sev7 { border-color: var(--orange); }
+  .test-case-card.sev5 { border-color: var(--gold); }
+  .tc-header {
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .test-case-card.sev9 .tc-header { background: var(--red-pale); }
+  .test-case-card.sev7 .tc-header { background: var(--orange-pale); }
+  .test-case-card.sev5 .tc-header { background: var(--gold-pale); }
+  .tc-id { font-family: monospace; font-size: 12px; font-weight: 700; color: var(--navy); }
+  .sev-badge {
+    padding: 2px 10px;
+    border-radius: 50px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--white);
+  }
+  .sev-badge.s9 { background: var(--red); }
+  .sev-badge.s7 { background: var(--orange); }
+  .sev-badge.s5 { background: #b7950b; }
+  .tc-body { padding: 12px 14px; }
+  .tc-body .tc-scenario { font-size: 13.5px; font-weight: 600; color: var(--text-dark); margin-bottom: 8px; }
+  .tc-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .tc-field { font-size: 12px; }
+  .tc-field .tf-key { color: var(--text-light); font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .tc-field .tf-val { color: var(--text-dark); font-weight: 500; margin-top: 1px; }
+  /* EVALUATION RUBRIC TABLE */
+  .rubric-table-wrap { overflow-x: auto; margin-bottom: 16px; }
+  table.rubric-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .rubric-table th {
+    padding: 10px 14px;
+    font-size: 12.5px;
+    font-weight: 600;
+    text-align: left;
+  }
+  .rubric-table .th-dim { background: var(--navy-dark); color: var(--gold-light); }
+  .rubric-table .th-pass { background: var(--green); color: #fff; text-align: center; }
+  .rubric-table .th-sat { background: var(--navy); color: #fff; text-align: center; }
+  .rubric-table .th-needs { background: var(--gold); color: var(--navy-dark); text-align: center; }
+  .rubric-table .th-fail { background: var(--red); color: #fff; text-align: center; }
+  .rubric-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--gray-border);
+    vertical-align: top;
+  }
+  .rubric-table td.dim { font-weight: 600; color: var(--navy); }
+  .rubric-table .cell-pass { background: rgba(45,122,79,0.06); text-align: center; }
+  .rubric-table .cell-sat { background: rgba(31,45,90,0.04); text-align: center; }
+  .rubric-table .cell-needs { background: rgba(201,168,76,0.08); text-align: center; }
+  .rubric-table .cell-fail { background: rgba(192,57,43,0.06); text-align: center; }
+  .rubric-table tr:hover td { filter: brightness(0.97); }
+  /* SCORECARD */
+  .scorecard {
+    background: var(--navy-dark);
+    border-radius: var(--radius-lg);
+    padding: 24px 28px;
+    margin-bottom: 32px;
+    color: var(--white);
+  }
+  .scorecard h3 { font-size: 16px; font-weight: 700; margin-bottom: 18px; }
+  .score-agents {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+  }
+  @media (max-width: 900px) { .score-agents { grid-template-columns: repeat(2,1fr); } }
+  .score-agent-box {
+    background: rgba(255,255,255,0.07);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+  .score-agent-box .sa-icon { font-size: 28px; margin-bottom: 8px; }
+  .score-agent-box .sa-name { font-size: 13px; font-weight: 700; color: var(--gold-light); margin-bottom: 8px; }
+  .score-agent-box .sa-kpis { font-size: 11.5px; color: rgba(255,255,255,0.65); line-height: 1.7; }
+  .score-agent-box .sa-status {
+    margin-top: 10px;
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 50px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .sa-status.pending { background: rgba(201,168,76,0.2); color: var(--gold-light); border: 1px solid var(--gold); }
+  .sa-status.pass { background: rgba(45,122,79,0.25); color: #7fffb2; border: 1px solid var(--green-light); }
+  /* GATE REMINDER */
+  .gate-reminder {
+    background: linear-gradient(135deg, var(--green), var(--green-light));
+    border-radius: var(--radius-lg);
+    padding: 20px 28px;
+    margin-bottom: 28px;
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .gate-reminder .gr-icon { font-size: 32px; flex-shrink: 0; }
+  .gate-reminder h4 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .gate-reminder p { font-size: 13px; color: rgba(255,255,255,0.85); }
+  /* ALERT */
+  .alert-info {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 14px 18px; border-radius: var(--radius-md);
+    background: var(--blue-pale); border-left: 5px solid var(--navy);
+    margin-bottom: 28px;
+  }
+  .alert-info .ai-icon { font-size: 20px; flex-shrink: 0; }
+  .alert-info h4 { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+  .alert-info p { font-size: 13px; color: var(--text-medium); }
+  code { background: rgba(0,0,0,0.06); padding: 1px 5px; border-radius: 3px; font-family: monospace; font-size: 12px; }
+  @media (max-width: 900px) { .main { padding: 20px; } .top-header-inner { padding: 20px; } .agent-section { padding: 16px; } }
+</style>
+</head>
+<body>
+
+<!-- TOP HEADER -->
+<header class="top-header">
+  <div class="top-header-inner">
+    <div class="breadcrumb">
+      <span>DAPH DECOR AI Programme</span> ›
+      <span>UAT Phase E</span> ›
+      AI Agent Evaluation Metrics
+    </div>
+    <div class="header-title-row">
+      <div class="header-title">
+        <h1>AI Agent Evaluation Metrics</h1>
+        <div class="subtitle">5 MVP Agents — KPI Benchmarks, PFMEA Test Cases &amp; Evaluation Rubric สำหรับ UAT Phase E</div>
+      </div>
+      <div class="header-meta">
+        <div class="phase-badge">🧪 UAT Phase E</div>
+        <div class="meta-info">ต้องผ่านทุก test ก่อน Gate-1 เปิด · 5 Agents · PFMEA Sev≥7</div>
+      </div>
+    </div>
+  </div>
+  <nav class="nav-bar">
+    <div class="nav-bar-inner">
+      <a class="nav-link active" href="#overview">ภาพรวม</a>
+      <a class="nav-link" href="#sale">Sale Agent</a>
+      <a class="nav-link" href="#designer">Designer Agent</a>
+      <a class="nav-link" href="#factory">Factory Agent</a>
+      <a class="nav-link" href="#pm">PM Agent</a>
+      <a class="nav-link" href="#procurement">Procurement Agent</a>
+      <a class="nav-link" href="#scorecard">Scorecard</a>
+    </div>
+  </nav>
+</header>
+
+<main class="main">
+
+  <!-- UAT INFO BAR -->
+  <div class="uat-info-bar" id="overview">
+    <div class="uat-icon">🧪</div>
+    <div class="uat-info-text">
+      <h3>UAT Phase E — User Acceptance Testing สำหรับ 5 MVP Agents</h3>
+      <p>ทดสอบ AI Agents ทั้ง 5 ตัวด้วย KPI benchmarks และ test cases ที่ derive จาก PFMEA Risk Controls เงื่อนไข: ทุก Agent ต้องผ่าน score ≥3.0 เฉลี่ย และไม่มี Critical Fail ก่อน Gate-1 จะเปิด</p>
+      <div class="uat-badges">
+        <span class="uat-badge">Sale Agent</span>
+        <span class="uat-badge">Designer Agent</span>
+        <span class="uat-badge">Factory Agent</span>
+        <span class="uat-badge">PM Agent</span>
+        <span class="uat-badge">Procurement Agent</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RUBRIC LEGEND -->
+  <div class="rubric-legend">
+    <h3>📊 Evaluation Rubric — 4-Level Scoring System</h3>
+    <div class="rubric-scores">
+      <div class="rubric-score-box pass">
+        <div class="rs-header">✅ Pass <span style="font-size:20px;font-weight:800;margin-left:4px">4</span></div>
+        <div class="rs-body">ตรงหรือเกิน KPI target ทุกข้อ ไม่มี critical failure ใดๆ พร้อม production ทันที</div>
+      </div>
+      <div class="rubric-score-box satisfactory">
+        <div class="rs-header">🔵 Satisfactory <span style="font-size:20px;font-weight:800;margin-left:4px">3</span></div>
+        <div class="rs-body">ค่าเบี่ยงเบนเล็กน้อยจาก target ไม่มี blocking issue สามารถ deploy ได้ โดยมีการ monitor เพิ่มเติม</div>
+      </div>
+      <div class="rubric-score-box needs">
+        <div class="rs-header">⚠️ Needs Improvement <span style="font-size:20px;font-weight:800;margin-left:4px">2</span></div>
+        <div class="rs-body">ค่าเบี่ยงเบนมีนัยสำคัญ หรือมี recurring issues ต้องแก้ไข prompt/logic ก่อน deploy</div>
+      </div>
+      <div class="rubric-score-box fail">
+        <div class="rs-header">❌ Fail <span style="font-size:20px;font-weight:800;margin-left:4px">1</span></div>
+        <div class="rs-body">ไม่บรรลุ KPI หลักหรือมี critical failure บล็อก UAT progression ห้าม deploy</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GATE REMINDER -->
+  <div class="gate-reminder">
+    <div class="gr-icon">🏁</div>
+    <div>
+      <h4>Gate-1 Requirement: ทุก Agent ต้องผ่าน Score ≥ 3.0 (Average) ก่อน Gate-1 เปิด</h4>
+      <p>หาก Agent ใดได้ Score = 1 ในมิติ Critical (Safety/Accuracy/Halt) → UAT ถือว่า Fail ทันที ไม่ว่า score มิติอื่นจะเป็นเท่าใด</p>
+    </div>
+  </div>
+
+  <!-- AGENT TABS -->
+  <div class="agent-tabs" id="sale">
+    <div class="tab-header">
+      <button class="tab-btn active" onclick="switchTab('sale', this)">
+        <span class="tab-icon">👤</span>Sale Agent
+      </button>
+      <button class="tab-btn" onclick="switchTab('designer', this)">
+        <span class="tab-icon">🎨</span>Designer Agent
+      </button>
+      <button class="tab-btn" onclick="switchTab('factory', this)">
+        <span class="tab-icon">🏭</span>Factory Agent
+      </button>
+      <button class="tab-btn" onclick="switchTab('pm', this)">
+        <span class="tab-icon">📅</span>PM Agent
+      </button>
+      <button class="tab-btn" onclick="switchTab('procurement', this)">
+        <span class="tab-icon">📦</span>Procurement Agent
+      </button>
+    </div>
+
+    <!-- ========================= SALE AGENT ========================= -->
+    <div class="tab-content active" id="tab-sale">
+      <div class="agent-header">
+        <div class="agent-avatar sale">👤</div>
+        <div class="agent-info">
+          <h2>Sale Agent</h2>
+          <p>ดูแลการรับข้อมูลลูกค้า, คัดกรองและ escalate, และส่งต่อ handoff brief ไปยัง Designer Agent</p>
+          <div class="agent-kpi-badges">
+            <span class="kpi-badge-sm" style="border-color:var(--red);color:var(--red);background:var(--red-pale)">Customer Info ≥98%</span>
+            <span class="kpi-badge-sm" style="border-color:var(--red);color:var(--red);background:var(--red-pale)">Escalation Accuracy 100%</span>
+            <span class="kpi-badge-sm" style="border-color:var(--gold);color:#8a6800;background:var(--gold-pale)">Handoff Brief ≥95%</span>
+            <span class="kpi-badge-sm" style="border-color:var(--green);color:var(--green);background:var(--green-pale)">&lt;30s Response</span>
+            <span class="kpi-badge-sm" style="border-color:var(--navy);color:var(--navy);background:var(--blue-pale)">False Escalation &lt;5%</span>
+          </div>
+        </div>
+      </div>
+      <div class="agent-section">
+        <div class="subsection-title">📊 KPI Benchmarks Table</div>
+        <div class="kpi-table-wrap">
+          <table class="kpi-table">
+            <thead>
+              <tr>
+                <th>KPI</th>
+                <th>คำอธิบาย</th>
+                <th>Target</th>
+                <th>Priority</th>
+                <th>วิธีวัด</th>
+                <th>ผลที่ยอมรับ (Min)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Customer Info Completeness</strong></td>
+                <td>% ของ required fields ที่ Agent รวบรวมได้ครบก่อน handoff</td>
+                <td><span class="target-badge critical">≥ 98%</span></td>
+                <td><span class="priority-dot p1"></span>P1 Critical</td>
+                <td>นับ fields ที่กรอกครบ / total required fields</td>
+                <td>95%</td>
+              </tr>
+              <tr>
+                <td><strong>Escalation Accuracy</strong></td>
+                <td>% ของ cases ที่ต้อง escalate และ Agent escalate ถูกต้อง</td>
+                <td><span class="target-badge critical">100%</span></td>
+                <td><span class="priority-dot p1"></span>P1 Critical</td>
+                <td>True Positive escalations / Total escalation-required cases</td>
+                <td>98%</td>
+              </tr>
+              <tr>
+                <td><strong>Handoff Brief Completeness</strong></td>
+                <td>% ของ handoff brief fields ที่ครบก่อนส่ง Designer Agent</td>
+                <td><span class="target-badge high">≥ 95%</span></td>
+                <td><span class="priority-dot p1"></span>P1 Critical</td>
+                <td>Check required brief schema fields</td>
+                <td>90%</td>
+              </tr>
+              <tr>
+                <td><strong>Response Time</strong></td>
+                <td>เวลาตอบสนองต่อ customer query (ตั้งแต่รับ message ถึงส่ง reply)</td>
+                <td><span class="target-badge medium">&lt; 30s</span></td>
+                <td><span class="priority-dot p2"></span>P2 High</td>
+                <td>Timestamp diff: message_received → reply_sent</td>
+                <td>&lt; 60s</td>
+              </tr>
+              <tr>
+                <td><strong>False Escalation Rate</strong></td>
+                <td>% ของ cases ที่ Agent escalate โดยไม่จำเป็น (false positive)</td>
+                <td><span class="target-badge medium">&lt; 5%</span></td>
+                <td><span class="priority-dot p2"></span>P2 High</td>
+                <td>False escalations / Total escalations</td>
+                <td>&lt; 10%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="subsection-title">🧪 Test Cases จาก PFMEA Controls (Sev≥7)</div>
+        <div class="test-cases-grid">
+          <div class="test-case-card sev9">
+            <div class="tc-header">
+              <span class="tc-id">TC-SALE-01</span>
+              <span class="sev-badge s9">SEV=9 Critical</span>
+            </div>
+            <div class="tc-body">
+              <div class="tc-scenario">ลูกค้าไม่ให้ข้อมูลติดต่อ (ชื่อ/เบอร์โทร) — Agent ต้องบล็อก handoff</div>
+              <div class="tc-meta">
+                <div class="tc-field"><div class="tf-key">PFMEA Risk</div><div class="tf-val">Incomplete customer record → wrong project assignment</div></div>
+                <div class="tc-field"><div class="tf-key">Expected Behavior</div><div class="tf-val">Reject handoff, prompt for missing info, log TC-SALE-01-BLOCK</div></div>
+                <div class="tc-field"><div class="tf-key">Control Measure</div><div class="tf-val">Required field validation before generateHandoffBrief()</div></div>
+                <div class="tc-field"><div class="tf-key">Pass Criteria</div><div class="tf-val">0% handoffs with missing required contact info</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="test-case-card sev9">
+            <div class="tc-header">
+              <span class="tc-id">TC-SALE-02</span>
+              <span class="sev-badge s9">SEV=9 Critical</span>
+            </div>
+            <div class="tc-body">
+              <div class="tc-scenario">ลูกค้าอยู่ใน credit hold / blacklist — Agent ต้อง escalate ไม่ดำเนินการต่อ</div>
+              <div class="tc-meta">
+                <div class="tc-field"><div class="tf-key">PFMEA Risk</div><div class="tf-val">Credit risk not detected → bad debt / revenue loss</div></div>
+                <div class="tc-field"><div class="tf-key">Expected Behavior</div><div class="tf-val">Query CRM credit_status, if hold → escalate to ผู้จัดการฝ่ายขาย immediately</div></div>
+                <div class="tc-field"><div class="tf-key">Control Measure</div><div class="tf-val">getMCPTool(crm_credit_check) สำหรับทุก new customer</div></div>
+                <div class="tc-field"><div class="tf-key">Pass Criteria</div><div class="tf-val">100% credit-hold cases escalated, 0% proceed to design</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="test-case-card sev9">
+            <div class="tc-header">
+              <span class="tc-id">TC-SALE-03</span>
+              <span class="sev-badge s9">SEV=9 Critical</span>
+            </div>
+            <div class="tc-body">
+              <div class="tc-scenario">Project type ไม่ชัดเจน (ambiguous new vs. renovation) — Agent ต้อง escalate ไม่เดาเอง</div>
+              <div class="tc-meta">
+                <div class="tc-field"><div class="tf-key">PFMEA Risk</div><div class="tf-val">Wrong workflow triggered → wrong pricing / production plan</div></div>
+                <div class="tc-field"><div class="tf-key">Expected Behavior</div><div class="tf-val">Confidence &lt;0.85 on project_type → escalate to human, do not auto-classify</div></div>
+                <div class="tc-field"><div class="tf-key">Control Measure</div><div class="tf-val">Confidence threshold check ใน classifyProjectType()</div></div>
+                <div class="tc-field"><div class="tf-key">Pass Criteria</div><div class="tf-val">100% ambiguous cases escalated (confidence &lt;0.85)</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="test-case-card sev7">
+            <div class="tc-header">
+              <span class="tc-id">TC-SALE-04</span>
+              <span class="sev-badge s7">SEV=7 Important</span>
+            </div>
+            <div class="tc-body">
+              <div class="tc-scenario">Address ไม่สมบูรณ์ (ไม่มี ตำบล/อำเภอ) — ต้องขอข้อมูลเพิ่มก่อน handoff</div>
+              <div class="tc-meta">
+                <div class="tc-field"><div class="tf-key">PFMEA Risk</div><div class="tf-val">Wrong delivery address → installation failure / extra cost</div></div>
+                <div class="tc-field"><div class="tf-key">Expected Behavior</div><div class="tf-val">Validate address schema, if incomplete → follow-up prompt to customer</div></div>
+                <div class="tc-field"><div class="tf-key">Control Measure</div><div class="tf-val">validateAddress() ต้องมี province/district/subdistrict</div></div>
+                <div class="tc-field"><div class="tf-key">Pass Criteria</div><div class="tf-val">0% handoffs with incomplete address</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="test-case-card sev7">
+            <div class="tc-header">
+              <span class="tc-id">TC-SALE-05</span>
+              <span class="sev-badge s7">SEV=7 Important</span>
+            </div>
+            <div class="tc-body">
+              <div class="tc-scenario">Duplicate customer record ตรวจพบ — Agent ต้องแจ้งและรอ confirmation</div>
+              <div class="tc-meta">
+                <div class="tc-field"><div class="tf-key">PFMEA Risk</div><div class="tf-val">Duplicate records → split order history / billing error</div></div>
+                <div class="tc-field"><div class="tf-key">Expected Behavior</div><div class="tf-val">detectDuplicate() → flag to ผู้จัดการฝ่ายขาย before creating new record</div></div>
+                <div class="tc-field"><div class="tf-key">Control Measure</div><div class="tf-val">Fuzzy match on name+phone+email ≥85% similarity</div></div>
+                <div class="tc-field"><div class="tf-key">Pass Criteria</div><div class="tf-val">100% duplicates flagged before record creation</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="subsection-title">📋 Evaluation Rubric — Sale Agent</div>
+        <div class="rubric-table-wrap">
+          <table class="rubric-table">
+            <thead>
+              <tr>
+                <th class="th-dim" style="width:22%">มิติการประเมิน</th>
+                <th class="th-pass">✅ Pass (4)</th>
+                <th class="th-sat">🔵 Satisfactory (3)</th>
+                <th class="th-needs">⚠️ Needs Improvement (2)</th>
+                <th class="th-fail">❌ Fail (1)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="dim">Customer Info Completeness</td>
+                <td class="cell-pass">≥ 98% fields ครบ</td>
+                <td class="cell-sat">95–97%</td>
+                <td class="cell-needs">90–94%</td>
+                <td class="cell-fail">&lt; 90% หรือส่ง handoff โดยขาด required fields</td>
+              </tr>
+              <tr>
+                <td class="dim">Escalation Accuracy</td>
+                <td class="cell-pass">100% ถูกต้อง ไม่มี miss</td>
+                <td class="cell-sat">98–99%</td>
+                <td class="cell-needs">95–97%</td>
+                <td class="cell-fail">&lt; 95% หรือมี credit-hold case ที่ไม่ escalate</td>
+              </tr>
+              <tr>
+                <td class="dim">Handoff Brief Quality</td>
+                <td class="cell-pass">≥ 95% schema fields ครบ, ไม่มี empty required</td>
+                <td class="cell-sat">90–94%</td>
+                <td class="cell-needs">85–89%</td>
+                <td class="cell-fail">&lt; 85% หรือส่ง brief ที่ missing critical field</td>
+              </tr>
+              <tr>
+                <td class="dim">Response Time</td>
+                <td class="cell-pass">&lt; 30s ทุก call</td>
+                <td class="cell-sat">30–60s</td>
+                <td class="cell-needs">60–120s</td>
+                <td class="cell-fail">&gt; 120s หรือ timeout error</td>
+              </tr>
+              <tr>
+                <td class="dim">False Escalation Rate</td>
+                <td class="cell-pass">&lt; 5%</td>
+                <td class="cell-sat">5–8%</td>
+                <td class="cell-needs">8–12%</td>
+                <td class="cell-fail">&gt; 12%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================= DESIGNER AGENT ========================= -->
+    <div class="tab-content" id="tab-designer">
+      <div class="agent-header">
+        <div class="agent-avatar designer">🎨</div>
+        <div class="agent-info">
+          <h2>Designer Agent</h2>
+          <p>ตรวจสอบ design brief, validate material codes, ดำเนินการขอ unanimous approval (ผู้จัดการออกแบบ + ลูกค้า)</p>
+          <div class="agent-kpi-badges">
+            <span class="kpi-badge-sm" style="border-color:var(--red);color:var(--red);background:var(--red-pale)">Brief Validation 100%</span>
+            <span class="kpi-badge-sm" style="border-color:var(--red);color:var(--red);background:var(--red-pale)">Unanimous Approval 100%</span>
+            <span class="kpi-badge-sm" style="border-color:var(--red);color:var(--red);background:var(--red-pale)">Material Code 0 discontinued</span>
+            <span class="kpi-badge-sm" style="border-color:var(--gold);color:#8a6800;background:var(--gold-pale)">Revision Rate &lt;2</span>
+            <span class="kpi-badge-sm" style="border-color:var(--green);color:var(--green);background:var(--green-pale)">&lt;60s Response</span>
+          </div>
+        </div>
+      </div>
+      <div class="agent-section">
+        <div class="subsection-title">📊 KPI Benchmarks Table</div>
+        <div class="kpi-table-wrap">
+          <table class="kpi-table">
+            <thead>
+              <tr><th>KPI</th><th>คำอธิบาย</th><th>Target</th><th>Priority</th><th>วิธีวัด</th><th>Min Acceptable</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Brief Validation Pass Rate</strong></td>
+                <td>% ของ briefs ที่ validate ผ่านโดยไม่ต้องขอข้อมูลเพิ่ม</td>
+                <td><span class="target-badge critical">100%</span></td>
+                <td><span class="priority-dot p1"></span>P1 Critical</td>
+                <td>Briefs passed validation / Total briefs received</td>
+                <td>98%</td>
+              </tr>
+              <tr>
+                <td><strong>Unanimous Approval Compliance</strong></td>
+                <td>% ของ designs ที่ผ่าน approval process ด้วย quorum=unanimous (ผู้จัดการออกแบบ + ลูกค้า)</td>
+                <td><span class="target-badge critical">100%</span></td>
+                <td><span class="priority-dot p1"></span>P1 Critical</td>
+                <td>0 designs ที่ proceed without full unanimous approval</td>
+                <td>100% (hard)</td>
+              </tr>
+              <tr>
+                <td><strong>Material Code Accuracy</strong></td>
+                <td>จำนวน discontinued material codes ที่ถูกใช้ใน BOM</td>
+                <td><span class="target-badge critical">0 discontinued</span></td>
+                <td><span class="priority-dot p1"></span>P1 Critical</td>
+                <td>Count of discontinued codes in generated BOMs</td>
+                <td>0 (absolute)</td>
+              </tr>
+              <tr>
+                <td><strong>Design Revision Rate</strong></td>
+                <td>จำนวน revision cycles เฉลี่ยต่อ 1 project</td>
+                <td><span class="target-badge high">&lt; 2 revisions</span></td>
+                <td><span class="priority-dot p2"></span>P2 High</td>
+                <td>Total revisions / Total projects</td>
+                <td>&lt; 3 revisions</td>
+              </tr>
+              <tr>
+                <td><strong>Response Time</strong></td>
+                <td>เวลาตอบสนองต่อ brief validation request</td>
+                <td><span class="target-badge medium">&lt; 60s</span></td>
+                <td><span class="priority-dot p2"></span>P2 High</td>
+                <td>Timestamp diff: brief_received → validation_response</td>
+                <td>&lt; 120s</td>
+              </tr>
+              <tr>
+                <td><strong>Approval Timeout Handling</strong></td>
+                <td>% ของ cases ที่ approval timeout (&gt;24h) และ Agent escalate ถูกต้อง</td>
+                <td><span class="target-badge critical">100%</span></td>
+                <td><span class="priority-dot p1"></span>P1 Critical</td>
+                <td>Correct escalations on timeout / Total timeout cases</td>
+                <td>100% (hard)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="subsection-title">🧪 Test Cases จาก PFMEA Controls (Sev≥7)</div>
+        <div class="test-cases-grid">
+          <div class="test-case-card sev9">
+            <div class="tc-header"><span class="tc-id">TC-DESIGN-01</span><span class="sev-badge s9">SEV=9 Critical</span></div>
+            <div class="tc-body">
+              <div class="tc-scenario">Material code ที่ระบุใน brief เป็น discontinued SKU — Agent ต้อง halt และแจ้งทันที</div>
+              <div class="tc-meta">
+                <div class="tc-field"><div class="tf-key">PFMEA Risk</div><div class="tf-val">Discontinued material in BOM → production halt / customer delay</div></div>
+                <div class="tc-field"><div class="tf-key">Expected Behavior</div><div class="tf-val">checkMaterialStatus(code) → if discontinued → halt, alert Designer + PM</div></div>
+                <div class="tc-field"><div class="tf-key">Control Measure</div><div class="tf-val">Real-time material catalog lookup ก่อน generateBOM()</div></div>
+                <div class="tc-field"><div class="tf-key">Pass Criteria</div><div class="tf-val">0 BOMs generated with discontinued material codes</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="test-case-card sev9">
+            <div class="tc-header"><span class="tc-id">TC-DESIGN-02</span><span class="sev-badge s9">SEV=9 Critical</span></div>
+            <div class="tc-body">
+              <div class="tc-scenario">มีเพียง 1 ใน 2 approver อนุมัติ (ไม่ unanimous) — Agent ต้องไม่ proceed ต่อ</div>
+              <div class="tc-meta">
+                <div class="tc-field"><div class="tf-key">PFMEA Risk</div><div class="tf-val">Unauthorized design handoff to factory → rework / customer dispute</div></div>
+                <div class="tc-field"><div class="tf-key">Expected Behavior</div><div class="tf-val">checkApprovalQuorum() → unanimous required → block if only 1/2 approved</div></div>
+                <div class="tc-field"><div class="tf-key">Control Measure</div><div class="tf-val">quorum=unanimous enforced in processApproval() — ผู้จัดการออกแบบ + ลูกค้า</div></div>
+                <div class="tc-field"><div class="tf-key">Pass Criteria</div><div class="tf-val">0 designs proceed without unanimous approval</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="test-case-card sev9">
+            <div class="tc-header"><span class="tc-id">TC-DESIGN-03</span><span class="sev-badge s9">SEV=9 Critical</span></div>
+            <div class="tc-body">
+              <div class="tc-scenario">Customer approval timeout &gt;24h — Agent ต้อง escalate ไปยัง PM ไม่รอต่อ</div>
+              <div class="tc-meta">
+                <div class="tc-field"><div class="tf-key">PFMEA Risk</div><div class="tf-val">Project stuck indefinitely → schedule delay / customer dissatisfaction</div></div>
+                <div class="tc-field"><div class="tf-key">Expected Behavior</div><div class="tf-val">24h timer → auto-escalate to PM Agent with context payload</div></div>
+                <div class="tc-field"><div class="tf-key">Control Measure</div><div class="tf-val">Approval timeout watchdog ใน approval_monitor service</div></div>
+                <div class="tc-field"><div class="tf-key">Pass Criteria</div><div class="tf-val">100% timeout cases escalated within 24h + 5min buffer</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="test-case-card sev7">
+            <div class="tc-header"><span class="tc-id">TC-DESIGN-04</span><span class="sev-badge s7">SEV=7 Important</span></div>
+            <div class="tc-body">
+              <div class="tc-scenario">Design brief ขาด room dimensions — Agent ต้อง reject validation ไม่สร้าง BOM</div>
+              <div class="tc-meta">
+                <div class="tc-field"><div class="tf-key">PFMEA Risk</div><div class="tf-val">Wrong dimension in BOM → off-spec furniture / installation failure</div></div>
+                <div class="tc-field"><div class="tf-key">Expected Behavior</div><div class="tf-val">validateBrief() → require width/height/depth/unit → reject if missing</div></div>
+                <div class="tc-field"><div class="tf-key">Control Measure</div><div class="tf-val">Required dimension schema validation ก่อน generate anything</div></div>
+                <div class="tc-field"><div class="tf-key">Pass Criteria</div><div class="tf-val">0 BOMs generated without complete dimension data</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="subsection-title">📋 Evaluation Rubric — Designer Agent</div>
+        <div class="rubric-table-wrap">
+          <table class="rubric-table">
+            <thead>
+              <tr><th class="th-dim">มิติ</th><th class="th-pass">Pass (4)</th><th class="th-sat">Satisfactory (3)</th><th class="th-needs">Needs Improvement (2)</th><th class="th-fail">Fail (1)</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="dim">Brief Validation</td><td class="cell-pass">100% pass ไม่ต้องขอข้อมูลซ้ำ</td><td class="cell-sat">98–99%</td><td class="cell-needs">95–97%</td><td class="cell-fail">&lt;95% หรือ proceed โดยไม่ validate</td></tr>
+              <tr><td class="dim">Unanimous Approval</td><td class="cell-pass">100% — 0 violations</td><td class="cell-sat">100% (hard requirement)</td><td class="cell-needs">1 violation (non-critical design)</td><td class="cell-fail">≥1 design proceed without unanimous</td></tr>
+              <tr><td class="dim">Material Code Accuracy</td><td class="cell-pass">0 discontinued codes ใน BOM</td><td class="cell-sat">0 (hard requirement)</td><td class="cell-needs">1–2 cases with warning (caught by system)</td><td class="cell-fail">≥1 discontinued code reaches production</td></tr>
+              <tr><td class="dim">Revision Rate</td><td class="cell-pass">&lt;2 revisions/project</td><td class="cell-sat">2–3 revisions</td><td class="cell-needs">3–4 revisions</td><td class="cell-fail">≥5 revisions หรือ infinite loop</td></tr>
+              <tr><td class="dim">Timeout Handling</td><td class="cell-pass">100% timeout escalated in time</td><td class="cell-sat">100% (hard)</td><td class="cell-needs">1 late escalation (25–30h)</td><td class="cell-fail">≥1 case stuck beyond 30h without escalation</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================= FACTORY AGENT ========================= -->
+    <div class="tab-content" id="tab-factory">
+      <div class="agent-header">
+        <div class="agent-avatar factory">🏭</div>
+        <div class="agent-info">
+          <h2>Factory Agent</h2>
+          <p>ตรวจสอบ QC ทุกขั้นตอนการผลิต, บังคับใช้ CNC file version control, log ทุก production step, halt เมื่อพบ defect</p>
+          <div class="agent-kpi-badges">
+            <span class="kpi-badge-sm" style="border-color:var(--red);color:var(--red);background:var(--red-pale)">QC Pass ≥95%</span>
+            <span class="kpi-badge-sm" style="border-color:var(--red);color:var(--red);background:var(--red-pale)">Halt Accuracy 100%</span>
+            <span class="kpi-badge-sm" style="border-color:var(--red);color:var(--red);background:var(--red-pale)">Step Logging 100%</span>
+            <span class="kpi-badge-sm" style="border-color:var(--gold);color:#8a6800;background:var(--gold-pale)">False Halt &lt;2%</span>
+            <span class="kpi-badge-sm" style="border-color:var(--green);color:var(--green);background:var(--green-pale)">CNC Version 100%</span>
+          </div>
+        </div>
+      </div>
+      <div class="agent-section">
+        <div class="subsection-title">📊 KPI Benchmarks Table</div>
+        <div class="kpi-table-wrap">
+          <table class="kpi-table">
+            <thead>
+              <tr><th>KPI</th><th>คำอธิบาย</th><th>Target</th><th>Priority</th><th>วิธีวัด</th><th>Min Acceptable</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>QC Pass Rate</strong></td><td>% ของ production batches ที่ผ่าน QC checkpoint</td><td><span class="target-badge critical">≥ 95%</span></td><td><span class="priority-dot p1"></span>P1 Critical</td><td>QC pass / total inspections</td><td>90%</td></tr>
+              <tr><td><strong>Halt Trigger Accuracy</strong></td><td>% ของ defect cases ที่ Agent halt production ถูกต้อง</td><td><span class="target-badge critical">100%</span></td><td><span class="priority-dot p1"></span>P1 Critical</td><td>True halt triggers / total defect cases</td><td>100% (hard)</td></tr>
+              <tr><td><strong>Step Logging Completeness</strong></td><td>% ของ production steps ที่ถูก log ครบถ้วน</td><td><span class="target-badge critical">100%</span></td><td><span class="priority-dot p1"></span>P1 Critical</td><td>Logged steps / required steps</td><td>99%</td></tr>
+              <tr><td><strong>False Halt Rate</strong></td><td>% ของ halts ที่เกิดโดยไม่มี defect จริง (false positive)</td><td><span class="target-badge high">&lt; 2%</span></td><td><span class="priority-dot p2"></span>P2 High</td><td>False halts / total halts</td><td>&lt; 5%</td></tr>
+              <tr><td><strong>CNC File Version Check</strong></td><td>% ของ CNC jobs ที่ verify version ก่อนรัน</td><td><span class="target-badge critical">100%</span></td><td><span class="priority-dot p1"></span>P1 Critical</td><td>Version-checked jobs / total CNC jobs</td><td>100% (hard)</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="subsection-title">🧪 Test Cases จาก PFMEA Controls (Sev≥7)</div>
+        <div class="test-cases-grid">
+          <div class="test-case-card sev9">
+            <div class="tc-header"><span class="tc-id">TC-FACTORY-01</span><span class="sev-badge s9">SEV=9 Critical</span></div>
+            <div class="tc-body">
+              <div class="tc-scenario">QC measurement ออกนอก spec — Agent ต้อง halt production line ทันที</div>
+              <div class="tc-meta">
+                <div class="tc-field"><div class="tf-key">PFMEA Risk</div><div class="tf-val">Out-of-spec parts shipped → customer defect claim / rework cost</div></div>
+                <div class="tc-field"><div class="tf-key">Expected Behavior</div><div class="tf-val">triggerHalt(line_id, reason="QC_FAIL") → notify หัวหน้าฝ่ายผลิต</div></div>
+                <div class="tc-field"><div class="tf-key">Control Measure</div><div class="tf-val">Auto-halt on measurement deviation &gt;tolerance in qcCheck()</div></div>
+                <div class="tc-field"><div class="tf-key">Pass Criteria</div><div class="tf-val">100% QC failures trigger halt within 30 seconds</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="test-case-card sev9">
+            <div class="tc-header"><span class="tc-id">TC-FACTORY-02</span><span class="sev-badge s9">SEV=9 Critical</span></div>
+            <div class="tc-body">
+              <div class="tc-scenario">CNC file version ไม่ตรง (outdated) — Agent ต้อง block การเริ่มงาน</div>
+              <div class="tc-meta">
+                <div class="tc-field"><div class="tf-key">PFMEA Risk</div><div class="tf-val">Wrong CNC cut dimensions → wasted material / delivery delay</div></div>
+                <div class="tc-field"><div class="tf-key">Expected Behavior</div><div class="tf-val">verifyCNCVersion(file) → if hash mismatch → block job start, alert operator</div></div>
+                <div class="tc-field"><div class="tf-key">Control Measure</div><div class="tf-val">CNC file hash validation ก่อน loadJob() — เทียบกับ approved version</div></div>
+                <div class="tc-field"><div class="tf-key">Pass Criteria</div><div class="tf-val">0 CNC jobs started with unverified/outdated file version</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="test-case-card sev9">
+            <div class="tc-header"><span class="tc-id">TC-FACTORY-03</span><span class="sev-badge s9">SEV=9 Critical</span></div>
+            <div class="tc-body">
+              <div class="tc-scenario">Operator พยายาม skip QC step — Agent ต้อง block และ escalate</div>
+              <div class="tc-meta">
+                <div class="tc-field"><div class="tf-key">PFMEA Risk</div><div class="tf-val">QC skipped → undetected defect ships to customer</div></div>
+                <div class="tc-field"><div class="tf-key">Expected Behavior</div><div class="tf-val">canProceedToNextStep() → require QC sign-off, block if not completed</div></div>
+                <div class="tc-field"><div class="tf-key">Control Measure</div><div class="tf-val">Step gate enforcement: QC checkpoint is mandatory pre-condition</div></div>
+                <div class="tc-field"><div class="tf-key">Pass Criteria</div><div class="tf-val">100% QC skip attempts blocked; 0 steps proceed without QC sign-off</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="test-case-card sev7">
+            <div class="tc-header"><span class="tc-id">TC-FACTORY-04</span><span class="sev-badge s7">SEV=7 Important</span></div>
+            <div class="tc-body">
+              <div class="tc-scenario">Material substitution ไม่ได้รับ approval — Agent ต้อง halt และขอ approval</div>
+              <div class="tc-meta">
+                <div class="tc-field"><div class="tf-key">PFMEA Risk</div><div class="tf-val">Unapproved substitution → spec non-conformance / warranty issue</div></div>
+                <div class="tc-field"><div class="tf-key">Expected Behavior</div><div class="tf-val">detectSubstitution() → require Designer+PM approval before proceeding</div></div>
+                <div class="tc-field"><div class="tf-key">Control Measure</div><div class="tf-val">Material substitution requires explicit approval token in BOM</div></div>
+                <div class="tc-field"><div class="tf-key">Pass Criteria</div><div class="tf-val">100% substitutions require approval before production resumes</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="test-case-card sev7">
+            <div class="tc-header"><span class="tc-id">TC-FACTORY-05</span><span class="sev-badge s7">SEV=7 Important</span></div>
+            <div class="tc-body">
+              <div class="tc-scenario">Production step ไม่ได้ log — Agent ต้อง block step ถัดไปจนกว่าจะ log</div>
+              <div class="tc-meta">
+                <div class="tc-field"><div class="tf-key">PFMEA Risk</div><div class="tf-val">Incomplete audit trail → cannot trace defect source</div></div>
+                <div class="tc-field"><div class="tf-key">Expected Behavior</div><div class="tf-val">logProductionStep() required → next step blocked until log confirmed</div></div>
+                <div class="tc-field"><div class="tf-key">Control Measure</div><div class="tf-val">Step completion requires DB write confirmation before unlock</div></div>
+                <div class="tc-field"><div class="tf-key">Pass Criteria</div><div class="tf-val">100% steps logged; 0 next-step unlocks without log</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="subsection-title">📋 Evaluation Rubric — Factory Agent</div>
+        <div class="rubric-table-wrap">
+          <table class="rubric-table">
+            <thead>
+              <tr><th class="th-dim">มิติ</th><th class="th-pass">Pass (4)</th><th class="th-sat">Satisfactory (3)</th><th class="th-needs">Needs Improvement (2)</th><th class="th-fail">Fail (1)</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="dim">QC Pass Rate</td><td class="cell-pass">≥95% batches pass</td><td class="cell-sat">90–94%</td><td class="cell-needs">85–89%</td><td class="cell-fail">&lt;85%</td></tr>
+              <tr><td class="dim">Halt Trigger Accuracy</td><td class="cell-pass">100% correct halts</td><td class="cell-sat">100% (hard)</td><td class="cell-needs">1 missed halt (minor defect)</td><td class="cell-fail">≥1 critical defect not halted</td></tr>
+              <tr><td class="dim">Step Logging</td><td class="cell-pass">100% steps logged</td><td class="cell-sat">99%</td><td class="cell-needs">97–98%</td><td class="cell-fail">&lt;97% หรือ critical step unlogged</td></tr>
+              <tr><td class="dim">False Halt Rate</td><td class="cell-pass">&lt;2%</td><td class="cell-sat">2–4%</td><td class="cell-needs">4–7%</td><td class="cell-fail">&gt;7% (disrupts production)</td></tr>
+              <tr><td class="dim">CNC Version Check</td><td class="cell-pass">100% verified before run</td><td class="cell-sat">100% (hard)</td><td class="cell-needs">1 job with delayed check</td><td class="cell-fail">≥1 job run with unverified file</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================= PM AGENT ========================= -->
+    <div class="tab-content" id="tab-pm">
+      <div class="agent-header">
+        <div class="agent-avatar pm">📅</div>
+        <div class="agent-info">
+          <h2>PM Agent</h2>
+          <p>สร้าง production plan, ตรวจสอบ capacity, process approval (first_response: ผู้จัดการผลิต+ผู้จัดการทั่วไป ภายใน 4h), ออก BOM</p>
+          <div class="agent-kpi-badges">
+            <span class="kpi-badge-sm" style="border-color:var(--red);color:var(--red);background:var(--red-pale)">Plan Accuracy ≤5% dev</span>
+            <span class="kpi-badge-sm" style="border-color:var(--red);color:var(--red);background:var(--red-pale)">Capacity Check 100%</span>
+            <span class="kpi-badge-sm" style="border-color:var(--red);color:var(--red);background:var(--red-pale)">first_response 4h</span>
+            <span class="kpi-badge-sm" style="border-color:var(--gold);color:#8a6800;background:var(--gold-pale)">BOM 0 missing</span>
+            <span class="kpi-badge-sm" style="border-color:var(--green);color:var(--green);background:var(--green-pale)">&lt;45s Response</span>
+          </div>
+        </div>
+      </div>
+      <div class="agent-section">
+        <div class="subsection-title">📊 KPI Benchmarks Table</div>
+        <div class="kpi-table-wrap">
+          <table class="kpi-table">
+            <thead>
+              <tr><th>KPI</th><th>คำอธิบาย</th><th>Target</th><th>Priority</th><th>วิธีวัด</th><th>Min Acceptable</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Plan Accuracy</strong></td><td>% deviation ของ production plan จาก actual completion</td><td><span class="target-badge critical">≤ 5% dev</span></td><td><span class="priority-dot p1"></span>P1 Critical</td><td>|planned_days - actual_days| / planned_days</td><td>≤ 10%</td></tr>
+              <tr><td><strong>Capacity Check Rate</strong></td><td>% ของ plans ที่ผ่าน capacity validation ก่อน commit</td><td><span class="target-badge critical">100%</span></td><td><span class="priority-dot p1"></span>P1 Critical</td><td>Plans with capacity check / total plans</td><td>100% (hard)</td></tr>
+              <tr><td><strong>First Response Approval ≤4h</strong></td><td>% ของ approval requests ที่ได้รับ first_response ภายใน 4h (quorum=first_response)</td><td><span class="target-badge critical">100%</span></td><td><span class="priority-dot p1"></span>P1 Critical</td><td>Responses within 4h / total approval requests</td><td>95%</td></tr>
+              <tr><td><strong>BOM Accuracy</strong></td><td>จำนวน missing items ใน BOM ที่ถูกส่งไป Procurement</td><td><span class="target-badge critical">0 missing</span></td><td><span class="priority-dot p1"></span>P1 Critical</td><td>BOM items vs design spec items</td><td>0 (absolute)</td></tr>
+              <tr><td><strong>Response Time</strong></td><td>เวลาตอบสนองต่อ planning request</td><td><span class="target-badge medium">&lt; 45s</span></td><td><span class="priority-dot p2"></span>P2 High</td><td>Request received → plan generated</td><td>&lt; 90s</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="subsection-title">🧪 Test Cases จาก PFMEA Controls (Sev≥7)</div>
+        <div class="test-cases-grid">
+          <div class="test-case-card sev9">
+            <div class="tc-header"><span class="tc-id">TC-PM-01</span><span class="sev-badge s9">SEV=9 Critical</span></div>
+            <div class="tc-body">
+              <div class="tc-scenario">Order capacity เกิน machine availability — Agent ต้อง reject plan และ alert</div>
+              <div class="tc-meta">
+                <div class="tc-field"><div class="tf-key">PFMEA Risk</div><div class="tf-val">Overcommitted capacity → delivery failure / customer penalty</div></div>
+                <div class="tc-field"><div class="tf-key">Expected Behavior</div><div class="tf-val">checkCapacity() → if utilization &gt;95% → reject plan, propose alternative date</div></div>
+                <div class="tc-field"><div class="tf-key">Control Measure</div><div class="tf-val">Real-time capacity check via ERP API ก่อน commitPlan()</div></div>
+                <div class="tc-field"><div class="tf-key">Pass Criteria</div><div class="tf-val">100% over-capacity situations detected and rejected</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="test-case-card sev9">
+            <div class="tc-header"><span class="tc-id">TC-PM-02</span><span class="sev-badge s9">SEV=9 Critical</span></div>
+            <div class="tc-body">
+              <div class="tc-scenario">Approval timeout &gt;4h (first_response quorum) — Agent ต้อง escalate ไปยัง ผู้จัดการทั่วไป</div>
+              <div class="tc-meta">
+                <div class="tc-field"><div class="tf-key">PFMEA Risk</div><div class="tf-val">Plan approval delay → production start delay → delivery miss</div></div>
+                <div class="tc-field"><div class="tf-key">Expected Behavior</div><div class="tf-val">4h timeout watchdog → escalate to ผู้จัดการทั่วไป with urgent flag</div></div>
+                <div class="tc-field"><div class="tf-key">Control Measure</div><div class="tf-val">quorum=first_response SLA enforced: 4h hard limit</div></div>
+                <div class="tc-field"><div class="tf-key">Pass Criteria</div><div class="tf-val">100% timeout escalations within 4h + 10min buffer</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="test-case-card sev9">
+            <div class="tc-header"><span class="tc-id">TC-PM-03</span><span class="sev-badge s9">SEV=9 Critical</span></div>
+            <div class="tc-body">
+              <div class="tc-scenario">BOM item ไม่ครบ (missing item จาก design spec) — Agent ต้อง block BOM release</div>
+              <div class="tc-meta">
+                <div class="tc-field"><div class="tf-key">PFMEA Risk</div><div class="tf-val">Incomplete BOM → wrong/partial procurement → production halt</div></div>
+                <div class="tc-field"><div class="tf-key">Expected Behavior</div><div class="tf-val">validateBOMCompleteness() → compare with design spec → block if missing</div></div>
+                <div class="tc-field"><div class="tf-key">Control Measure</div><div class="tf-val">BOM-to-spec cross-check ก่อน releaseBOM()</div></div>
+                <div class="tc-field"><div class="tf-key">Pass Criteria</div><div class="tf-val">0 BOMs released with missing items vs design spec</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="test-case-card sev7">
+            <div class="tc-header"><span class="tc-id">TC-PM-04</span><span class="sev-badge s7">SEV=7 Important</span></div>
+            <div class="tc-body">
+              <div class="tc-scenario">Plan deviation &gt;5% ตรวจพบ — Agent ต้อง alert และ re-plan</div>
+              <div class="tc-meta">
+                <div class="tc-field"><div class="tf-key">PFMEA Risk</div><div class="tf-val">Undetected plan slip → late delivery / resource waste</div></div>
+                <div class="tc-field"><div class="tf-key">Expected Behavior</div><div class="tf-val">monitorPlanDeviation() → if &gt;5% → alert PM + propose corrective plan</div></div>
+                <div class="tc-field"><div class="tf-key">Control Measure</div><div class="tf-val">Daily plan vs actual comparison in ERP</div></div>
+                <div class="tc-field"><div class="tf-key">Pass Criteria</div><div class="tf-val">100% deviations &gt;5% detected and alerted within same working day</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="subsection-title">📋 Evaluation Rubric — PM Agent</div>
+        <div class="rubric-table-wrap">
+          <table class="rubric-table">
+            <thead>
+              <tr><th class="th-dim">มิติ</th><th class="th-pass">Pass (4)</th><th class="th-sat">Satisfactory (3)</th><th class="th-needs">Needs Improvement (2)</th><th class="th-fail">Fail (1)</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="dim">Plan Accuracy</td><td class="cell-pass">≤5% deviation</td><td class="cell-sat">5–8%</td><td class="cell-needs">8–12%</td><td class="cell-fail">&gt;12% หรือ plan not monitored</td></tr>
+              <tr><td class="dim">Capacity Check</td><td class="cell-pass">100% checked before commit</td><td class="cell-sat">100% (hard)</td><td class="cell-needs">1 plan committed without check</td><td class="cell-fail">≥2 plans over-committed</td></tr>
+              <tr><td class="dim">4h Approval SLA</td><td class="cell-pass">100% within 4h</td><td class="cell-sat">95–99% within 4h</td><td class="cell-needs">90–94%</td><td class="cell-fail">&lt;90% หรือ escalation not triggered</td></tr>
+              <tr><td class="dim">BOM Accuracy</td><td class="cell-pass">0 missing items</td><td class="cell-sat">0 (hard)</td><td class="cell-needs">1–2 non-critical missing items</td><td class="cell-fail">≥1 critical item missing in released BOM</td></tr>
+              <tr><td class="dim">Response Time</td><td class="cell-pass">&lt;45s</td><td class="cell-sat">45–90s</td><td class="cell-needs">90–180s</td><td class="cell-fail">&gt;180s หรือ timeout</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================= PROCUREMENT AGENT ========================= -->
+    <div class="tab-content" id="tab-procurement">
+      <div class="agent-header">
+        <div class="agent-avatar procurement">📦</div>
+        <div class="agent-info">
+          <h2>Procurement Agent</h2>
+          <p>จัดการ PO, ตรวจสอบ budget compliance, validate vendor specs และ QC certificates, แจ้งเตือน lead time และ stock alerts</p>
+          <div class="agent-kpi-badges">
+            <span class="kpi-badge-sm" style="border-color:var(--red);color:var(--red);background:var(--red-pale)">Budget Compliance 100%</span>
+            <span class="kpi-badge-sm" style="border-color:var(--red);color:var(--red);background:var(--red-pale)">Vendor QC Cert 100%</span>
+            <span class="kpi-badge-sm" style="border-color:var(--gold);color:#8a6800;background:var(--gold-pale)">Lead Time ±10%</span>
+            <span class="kpi-badge-sm" style="border-color:var(--gold);color:#8a6800;background:var(--gold-pale)">Spec Accuracy 0 mismatch</span>
+            <span class="kpi-badge-sm" style="border-color:var(--green);color:var(--green);background:var(--green-pale)">Stock Alert &lt;1h</span>
+          </div>
+        </div>
+      </div>
+      <div class="agent-section">
+        <div class="subsection-title">📊 KPI Benchmarks Table</div>
+        <div class="kpi-table-wrap">
+          <table class="kpi-table">
+            <thead>
+              <tr><th>KPI</th><th>คำอธิบาย</th><th>Target</th><th>Priority</th><th>วิธีวัด</th><th>Min Acceptable</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Budget Compliance</strong></td><td>% ของ POs ที่ไม่เกิน approved budget</td><td><span class="target-badge critical">100%</span></td><td><span class="priority-dot p1"></span>P1 Critical</td><td>POs within budget / total POs issued</td><td>100% (hard)</td></tr>
+              <tr><td><strong>Lead Time Accuracy</strong></td><td>% deviation ของ vendor lead time จาก quoted lead time</td><td><span class="target-badge high">± 10%</span></td><td><span class="priority-dot p2"></span>P2 High</td><td>|actual_lt - quoted_lt| / quoted_lt</td><td>± 20%</td></tr>
+              <tr><td><strong>Spec Accuracy</strong></td><td>จำนวน spec mismatches ระหว่าง PO และ design BOM</td><td><span class="target-badge critical">0 mismatches</span></td><td><span class="priority-dot p1"></span>P1 Critical</td><td>Mismatch count per released PO</td><td>0 (absolute)</td></tr>
+              <tr><td><strong>Stock Alert Response Time</strong></td><td>เวลาตอบสนองต่อ stock alert event</td><td><span class="target-badge high">&lt; 1h</span></td><td><span class="priority-dot p2"></span>P2 High</td><td>Alert detected → response action taken</td><td>&lt; 2h</td></tr>
+              <tr><td><strong>Vendor QC Certificate Validation</strong></td><td>% ของ purchases ที่ verify vendor QC cert ก่อนออก PO</td><td><span class="target-badge critical">100%</span></td><td><span class="priority-dot p1"></span>P1 Critical</td><td>POs with QC cert verified / total POs</td><td>100% (hard)</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="subsection-title">🧪 Test Cases จาก PFMEA Controls (Sev≥7)</div>
+        <div class="test-cases-grid">
+          <div class="test-case-card sev9">
+            <div class="tc-header"><span class="tc-id">TC-PROC-01</span><span class="sev-badge s9">SEV=9 Critical</span></div>
+            <div class="tc-body">
+              <div class="tc-scenario">PO มูลค่าเกิน approved budget — Agent ต้อง block และ escalate ผู้จัดการทันที</div>
+              <div class="tc-meta">
+                <div class="tc-field"><div class="tf-key">PFMEA Risk</div><div class="tf-val">Budget overrun → financial loss / cash flow issue</div></div>
+                <div class="tc-field"><div class="tf-key">Expected Behavior</div><div class="tf-val">validateBudget(po) → if over → block PO creation, escalate to ผู้จัดการฝ่ายจัดซื้อ</div></div>
+                <div class="tc-field"><div class="tf-key">Control Measure</div><div class="tf-val">Budget limit check ก่อน issuePO() ทุกครั้ง</div></div>
+                <div class="tc-field"><div class="tf-key">Pass Criteria</div><div class="tf-val">0 POs issued exceeding approved budget</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="test-case-card sev9">
+            <div class="tc-header"><span class="tc-id">TC-PROC-02</span><span class="sev-badge s9">SEV=9 Critical</span></div>
+            <div class="tc-body">
+              <div class="tc-scenario">Vendor QC certificate หมดอายุ — Agent ต้อง block การซื้อ</div>
+              <div class="tc-meta">
+                <div class="tc-field"><div class="tf-key">PFMEA Risk</div><div class="tf-val">Expired cert → non-conforming material → production defect</div></div>
+                <div class="tc-field"><div class="tf-key">Expected Behavior</div><div class="tf-val">validateVendorCert(vendor_id) → if expired → block PO, request new cert</div></div>
+                <div class="tc-field"><div class="tf-key">Control Measure</div><div class="tf-val">Cert expiry date check against current date ก่อน issuePO()</div></div>
+                <div class="tc-field"><div class="tf-key">Pass Criteria</div><div class="tf-val">0 POs issued with expired vendor QC certificate</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="test-case-card sev9">
+            <div class="tc-header"><span class="tc-id">TC-PROC-03</span><span class="sev-badge s9">SEV=9 Critical</span></div>
+            <div class="tc-body">
+              <div class="tc-scenario">Vendor quote spec ไม่ตรงกับ BOM spec — Agent ต้อง reject quote</div>
+              <div class="tc-meta">
+                <div class="tc-field"><div class="tf-key">PFMEA Risk</div><div class="tf-val">Wrong material spec delivered → production halt / rework</div></div>
+                <div class="tc-field"><div class="tf-key">Expected Behavior</div><div class="tf-val">compareSpecWithBOM(quote, bom) → if mismatch → reject quote, log mismatch detail</div></div>
+                <div class="tc-field"><div class="tf-key">Control Measure</div><div class="tf-val">Spec field-by-field comparison ก่อน accept vendor quote</div></div>
+                <div class="tc-field"><div class="tf-key">Pass Criteria</div><div class="tf-val">0 POs with spec mismatch vs approved BOM</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="test-case-card sev7">
+            <div class="tc-header"><span class="tc-id">TC-PROC-04</span><span class="sev-badge s7">SEV=7 Important</span></div>
+            <div class="tc-body">
+              <div class="tc-scenario">Vendor lead time เกิน project deadline — Agent ต้อง alert PM ทันที</div>
+              <div class="tc-meta">
+                <div class="tc-field"><div class="tf-key">PFMEA Risk</div><div class="tf-val">Late material delivery → production delay → customer delivery miss</div></div>
+                <div class="tc-field"><div class="tf-key">Expected Behavior</div><div class="tf-val">checkLeadTimeVsDeadline(po, project) → if lead_time &gt; deadline → alert PM with alternatives</div></div>
+                <div class="tc-field"><div class="tf-key">Control Measure</div><div class="tf-val">Lead time + buffer check against project milestone date</div></div>
+                <div class="tc-field"><div class="tf-key">Pass Criteria</div><div class="tf-val">100% deadline conflicts alerted to PM before PO issuance</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="test-case-card sev7">
+            <div class="tc-header"><span class="tc-id">TC-PROC-05</span><span class="sev-badge s7">SEV=7 Important</span></div>
+            <div class="tc-body">
+              <div class="tc-scenario">Stock alert ไม่ได้รับ response ภายใน 1h — Agent ต้อง escalate</div>
+              <div class="tc-meta">
+                <div class="tc-field"><div class="tf-key">PFMEA Risk</div><div class="tf-val">Stock-out unresolved → production halt</div></div>
+                <div class="tc-field"><div class="tf-key">Expected Behavior</div><div class="tf-val">stockAlertWatchdog() → if no action after 1h → escalate to หัวหน้าฝ่ายผลิต</div></div>
+                <div class="tc-field"><div class="tf-key">Control Measure</div><div class="tf-val">1h SLA timer on stock alerts with auto-escalation</div></div>
+                <div class="tc-field"><div class="tf-key">Pass Criteria</div><div class="tf-val">100% unresolved stock alerts escalated within 1h</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="subsection-title">📋 Evaluation Rubric — Procurement Agent</div>
+        <div class="rubric-table-wrap">
+          <table class="rubric-table">
+            <thead>
+              <tr><th class="th-dim">มิติ</th><th class="th-pass">Pass (4)</th><th class="th-sat">Satisfactory (3)</th><th class="th-needs">Needs Improvement (2)</th><th class="th-fail">Fail (1)</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="dim">Budget Compliance</td><td class="cell-pass">100% within budget</td><td class="cell-sat">100% (hard)</td><td class="cell-needs">1 PO over-budget (caught &amp; reversed)</td><td class="cell-fail">≥1 PO over-budget not caught</td></tr>
+              <tr><td class="dim">Lead Time Accuracy</td><td class="cell-pass">±10% deviation</td><td class="cell-sat">±15%</td><td class="cell-needs">±20%</td><td class="cell-fail">&gt;±25% or delivery miss</td></tr>
+              <tr><td class="dim">Spec Accuracy</td><td class="cell-pass">0 mismatches</td><td class="cell-sat">0 (hard)</td><td class="cell-needs">1–2 minor spec notes (caught before PO)</td><td class="cell-fail">≥1 mismatch in issued PO</td></tr>
+              <tr><td class="dim">Stock Alert Response</td><td class="cell-pass">&lt;1h action taken</td><td class="cell-sat">1–2h</td><td class="cell-needs">2–4h</td><td class="cell-fail">&gt;4h หรือ no escalation</td></tr>
+              <tr><td class="dim">Vendor QC Cert</td><td class="cell-pass">100% verified before PO</td><td class="cell-sat">100% (hard)</td><td class="cell-needs">1 case: cert verified after PO (corrected)</td><td class="cell-fail">≥1 PO with expired/missing cert</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end .agent-tabs -->
+
+  <!-- SUMMARY SCORECARD -->
+  <div class="scorecard" id="scorecard">
+    <h3>📊 UAT Phase E — Summary Scorecard (Pre-Test Status)</h3>
+    <div class="score-agents">
+      <div class="score-agent-box">
+        <div class="sa-icon">👤</div>
+        <div class="sa-name">Sale Agent</div>
+        <div class="sa-kpis">5 KPIs · 5 Test Cases<br>Sev=9: 3 cases<br>Sev=7: 2 cases</div>
+        <div class="sa-status pending">Pending UAT</div>
+      </div>
+      <div class="score-agent-box">
+        <div class="sa-icon">🎨</div>
+        <div class="sa-name">Designer Agent</div>
+        <div class="sa-kpis">6 KPIs · 4 Test Cases<br>Sev=9: 3 cases<br>Sev=7: 1 case</div>
+        <div class="sa-status pending">Pending UAT</div>
+      </div>
+      <div class="score-agent-box">
+        <div class="sa-icon">🏭</div>
+        <div class="sa-name">Factory Agent</div>
+        <div class="sa-kpis">5 KPIs · 5 Test Cases<br>Sev=9: 3 cases<br>Sev=7: 2 cases</div>
+        <div class="sa-status pending">Pending UAT</div>
+      </div>
+      <div class="score-agent-box">
+        <div class="sa-icon">📅</div>
+        <div class="sa-name">PM Agent</div>
+        <div class="sa-kpis">5 KPIs · 4 Test Cases<br>Sev=9: 3 cases<br>Sev=7: 1 case</div>
+        <div class="sa-status pending">Pending UAT</div>
+      </div>
+      <div class="score-agent-box">
+        <div class="sa-icon">📦</div>
+        <div class="sa-name">Procurement Agent</div>
+        <div class="sa-kpis">5 KPIs · 5 Test Cases<br>Sev=9: 3 cases<br>Sev=7: 2 cases</div>
+        <div class="sa-status pending">Pending UAT</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER INFO -->
+  <div class="alert-info">
+    <div class="ai-icon">ℹ️</div>
+    <div>
+      <h4>ข้อมูลอ้างอิง: UAT Phase E · PFMEA Controls · KPI Benchmarks</h4>
+      <p>เอกสารนี้อ้างอิงจาก PFMEA risk controls ใน <code>_knowledge-export.json</code> (pfmeaRiskRows 122 rows), <code>monolith-mcp-layer_tasks.md</code> (Agent UAT requirements), raciMap approval quorum rules, และ MCP Layer design decisions · n:160 DAPH DECOR AI Programme Documentation v2.5</p>
+    </div>
+  </div>
+
+</main>
+
+<script>
+function switchTab(agentId, btn) {
+  // Hide all tabs
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  // Show selected
+  var target = document.getElementById('tab-' + agentId);
+  if (target) target.classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,266 @@
+# MONOLITH Digital Shadow Service — CI Pipeline
+# Runs on every push and pull request to main/develop branches.
+# Executes all unit + integration tests with v8 coverage.
+# Enforces 60% statement coverage gate.
+
+name: CI — Tests & Coverage
+
+on:
+  push:
+    branches: [main, develop, 'feature/**']
+  pull_request:
+    branches: [main, develop]
+
+env:
+  NODE_VERSION: '20'
+  COVERAGE_THRESHOLD_STATEMENTS: 60
+  COVERAGE_THRESHOLD_BRANCHES: 50
+  COVERAGE_THRESHOLD_FUNCTIONS: 60
+  COVERAGE_THRESHOLD_LINES: 60
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────
+  # Lint & Type Check
+  # ─────────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+
+      - name: ESLint
+        run: npm run lint
+        continue-on-error: true  # Don't block on lint during early development
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Unit & Integration Tests with Coverage
+  # ─────────────────────────────────────────────────────────────────────
+  test:
+    name: Test & Coverage Gate
+    runs-on: ubuntu-latest
+    needs: lint
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Run tests with coverage
+        run: npx vitest run --coverage
+        env:
+          REDIS_URL: redis://localhost:6379
+          INFLUX_URL: http://localhost:8086
+          INFLUX_TOKEN: test-token
+          INFLUX_ORG: monolith-test
+          FACTORY_SERVER_URL: http://localhost:3000
+
+      - name: Enforce coverage thresholds
+        run: |
+          echo "📊 Checking coverage thresholds..."
+          
+          # Parse coverage-summary.json
+          SUMMARY="coverage/coverage-summary.json"
+          if [ ! -f "$SUMMARY" ]; then
+            echo "❌ Coverage summary not found at $SUMMARY"
+            exit 1
+          fi
+          
+          # Extract percentages using node (portable JSON parsing)
+          node -e "
+            const fs = require('fs');
+            const summary = JSON.parse(fs.readFileSync('$SUMMARY', 'utf8'));
+            const total = summary.total;
+            
+            const checks = [
+              { name: 'Statements', actual: total.statements.pct, threshold: ${{ env.COVERAGE_THRESHOLD_STATEMENTS }} },
+              { name: 'Branches',   actual: total.branches.pct,   threshold: ${{ env.COVERAGE_THRESHOLD_BRANCHES }} },
+              { name: 'Functions',  actual: total.functions.pct,  threshold: ${{ env.COVERAGE_THRESHOLD_FUNCTIONS }} },
+              { name: 'Lines',      actual: total.lines.pct,      threshold: ${{ env.COVERAGE_THRESHOLD_LINES }} },
+            ];
+            
+            let failed = false;
+            for (const { name, actual, threshold } of checks) {
+              const status = actual >= threshold ? '✅' : '❌';
+              console.log(\`\${status} \${name}: \${actual.toFixed(2)}% (threshold: \${threshold}%)\`);
+              if (actual < threshold) failed = true;
+            }
+            
+            if (failed) {
+              console.log('\\n❌ Coverage thresholds not met! See above for details.');
+              process.exit(1);
+            }
+            
+            console.log('\\n✅ All coverage thresholds passed!');
+          "
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 14
+
+      - name: Comment coverage on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = JSON.parse(fs.readFileSync('coverage/coverage-summary.json', 'utf8'));
+            const total = summary.total;
+            
+            const body = `## 📊 Test Coverage Report
+            
+            | Metric | Coverage | Threshold | Status |
+            |--------|----------|-----------|--------|
+            | Statements | ${total.statements.pct.toFixed(2)}% | ${process.env.COVERAGE_THRESHOLD_STATEMENTS}% | ${total.statements.pct >= process.env.COVERAGE_THRESHOLD_STATEMENTS ? '✅' : '❌'} |
+            | Branches | ${total.branches.pct.toFixed(2)}% | ${process.env.COVERAGE_THRESHOLD_BRANCHES}% | ${total.branches.pct >= process.env.COVERAGE_THRESHOLD_BRANCHES ? '✅' : '❌'} |
+            | Functions | ${total.functions.pct.toFixed(2)}% | ${process.env.COVERAGE_THRESHOLD_FUNCTIONS}% | ${total.functions.pct >= process.env.COVERAGE_THRESHOLD_FUNCTIONS ? '✅' : '❌'} |
+            | Lines | ${total.lines.pct.toFixed(2)}% | ${process.env.COVERAGE_THRESHOLD_LINES}% | ${total.lines.pct >= process.env.COVERAGE_THRESHOLD_LINES ? '✅' : '❌'} |
+            
+            **Total Tests:** ${total.statements.covered + total.statements.skipped} covered / ${total.statements.total} total statements
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body,
+            });
+
+  # ─────────────────────────────────────────────────────────────────────
+  # E2E Tests (on push to main only)
+  # ─────────────────────────────────────────────────────────────────────
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Start Docker Compose services
+        run: docker compose -f docker-compose.e2e.yml up -d --wait
+        timeout-minutes: 3
+
+      - name: Wait for services to be healthy
+        run: |
+          echo "Waiting for services..."
+          sleep 5
+          docker compose -f docker-compose.e2e.yml ps
+
+      - name: Run E2E tests
+        run: npx vitest run tests/e2e
+        env:
+          E2E_BASE_URL: http://localhost:3199
+          E2E_REDIS_URL: redis://localhost:6399
+
+      - name: Docker Compose logs (on failure)
+        if: failure()
+        run: docker compose -f docker-compose.e2e.yml logs --tail=100
+
+      - name: Cleanup
+        if: always()
+        run: docker compose -f docker-compose.e2e.yml down -v
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Load Tests (manual or on main push)
+  # ─────────────────────────────────────────────────────────────────────
+  load-test:
+    name: Load Tests (Smoke)
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6 -y
+
+      - name: Start services
+        run: docker compose -f docker-compose.e2e.yml up -d --wait
+
+      - name: Run load test (smoke)
+        run: npm run test:load:smoke
+        continue-on-error: true  # Smoke test is advisory
+
+      - name: Cleanup
+        if: always()
+        run: docker compose -f docker-compose.e2e.yml down -v
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Build Check (ensures dist output is valid)
+  # ─────────────────────────────────────────────────────────────────────
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Verify dist output exists
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "❌ dist/ directory not found after build"
+            exit 1
+          fi
+          echo "✅ Build successful — $(find dist -name '*.js' | wc -l) JS files generated"

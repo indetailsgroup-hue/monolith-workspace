@@ -1,0 +1,169 @@
+name: npm audit
+
+# =============================================================================
+# REQUIRED SECRETS — none (no external secrets needed for npm audit)
+# =============================================================================
+# This workflow is self-contained. It runs npm ci + npm audit against the
+# server/package-lock.json and fails the PR if any production vulnerability at
+# high or critical severity is detected. Moderate findings remain visible debt.
+#
+# Audit level: high (blocks high, critical)
+# Scope:       production dependencies in server/ only
+# Trigger:     every PR targeting main + every push to main
+# =============================================================================
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+
+concurrency:
+  group: npm-audit-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+jobs:
+  audit:
+    name: npm audit — server dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: server
+
+    steps:
+      # -----------------------------------------------------------------------
+      # 1. Checkout
+      # -----------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # 2. Set up Node.js
+      #    Uses the version specified in server/.nvmrc or engines field if
+      #    present; falls back to LTS (20).
+      # -----------------------------------------------------------------------
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      # -----------------------------------------------------------------------
+      # 3. Install dependencies (clean install from lock file — no mutations)
+      # -----------------------------------------------------------------------
+      - name: Install dependencies
+        run: npm ci
+
+      # -----------------------------------------------------------------------
+      # 4. Run npm audit
+      #    --omit=dev              → release gate covers production dependencies
+      #    --audit-level=high      → exits non-zero for high and critical
+      #    --json                  → machine-readable output for summary step
+      #    The raw JSON is written to a temp file; the human-readable table is
+      #    printed to the log. Both forms are preserved.
+      # -----------------------------------------------------------------------
+      - name: Run npm audit (JSON capture)
+        id: audit_json
+        run: |
+          npm audit --omit=dev --json > /tmp/npm-audit.json 2>&1 || true
+          echo "--- npm audit JSON summary ---"
+          python3 - << 'PYEOF'
+          import json, sys
+          try:
+              d    = json.load(open("/tmp/npm-audit.json"))
+              meta = d.get("metadata", {})
+              v    = meta.get("vulnerabilities", {})
+              total = v.get("total", sum(v.get(s, 0) for s in ["critical","high","moderate","low","info"]))
+              print(f"Total vulnerabilities : {total}")
+              print(f"  critical            : {v.get('critical', 0)}")
+              print(f"  high                : {v.get('high', 0)}")
+              print(f"  moderate            : {v.get('moderate', 0)}")
+              print(f"  low                 : {v.get('low', 0)}")
+              print(f"  info                : {v.get('info', 0)}")
+              if total > 0:
+                  print("\nAffected advisories:")
+                  for adv_id, adv in d.get("advisories", {}).items():
+                      print(f"  [{adv.get('severity','?').upper():8}] {adv.get('module_name','?')} — {adv.get('title','?')}")
+          except Exception as e:
+              print(f"Could not parse JSON: {e}")
+          PYEOF
+
+      - name: Enforce production audit gate (fail on high or critical)
+        run: |
+          echo "Running npm audit --omit=dev --audit-level=high ..."
+          npm audit --omit=dev --audit-level=high
+          echo "Audit passed — no high or critical production vulnerabilities found."
+
+      # -----------------------------------------------------------------------
+      # 5. Post PR comment with audit result (PRs only, always runs)
+      #    Writes a collapsible summary comment to the PR so reviewers can see
+      #    the audit state without digging into workflow logs.
+      # -----------------------------------------------------------------------
+      - name: Post audit summary to PR
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require('fs');
+            let body = '';
+            try {
+              const raw  = JSON.parse(fs.readFileSync('/tmp/npm-audit.json', 'utf8'));
+              const meta = raw.metadata || {};
+              const v    = meta.vulnerabilities || {};
+              const total = v.total ?? Object.values(v).reduce((a, b) => a + b, 0);
+              const blocking = (v.critical ?? 0) + (v.high ?? 0);
+              const icon  = blocking === 0 ? '✅' : '🚨';
+              const status = blocking === 0
+                ? `**0 high/critical production vulnerabilities** — release gate passed. Moderate: ${v.moderate ?? 0}.`
+                : `**${blocking} blocking production vulnerability/ies found** (critical: ${v.critical ?? 0}, high: ${v.high ?? 0}, moderate: ${v.moderate ?? 0}).`;
+
+              let advisories = '';
+              const advs = raw.advisories || {};
+              if (Object.keys(advs).length > 0) {
+                advisories = '\n\n<details><summary>Affected packages</summary>\n\n';
+                for (const [id, a] of Object.entries(advs)) {
+                  advisories += `- **[${(a.severity || '?').toUpperCase()}]** \`${a.module_name}\` — ${a.title}\n`;
+                }
+                advisories += '\n</details>';
+              }
+
+              body = `## ${icon} npm audit — \`server/\`\n\n${status}${advisories}\n\n_Production gate: high/critical | Run: \`npm audit --omit=dev --audit-level=high\` in \`server/\` to reproduce locally._`;
+            } catch (e) {
+              body = `## ⚠️ npm audit\n\nCould not parse audit output: ${e.message}`;
+            }
+
+            // Find and update existing bot comment if present
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes('npm audit — `server/`')
+            );
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner:      context.repo.owner,
+                repo:       context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner:        context.repo.owner,
+                repo:         context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }

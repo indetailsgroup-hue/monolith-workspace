@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>รายงาน Implementation ของ MONOLITH LINE Design Approval Port A1</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1>รายงาน Implementation ของ MONOLITH LINE Design Approval Port A1</h1>
+<p><strong>ฉบับ:</strong> ภาษาไทย <strong>วันที่เก็บหลักฐาน:</strong> 3 สิงหาคม 2026 <strong>ชั้นหลักฐาน:</strong> สัญญา sandbox ในเครื่องพร้อมหลักฐานอัตโนมัติและ browser แบบ durable</p>
+<blockquote><p><strong>คำตัดสิน:</strong> <code>NO-GO_RUNTIME_INTEGRATION</code></p></blockquote>
+<h2>คำตัดสินสำหรับผู้บริหาร</h2>
+<p>A1 ได้รับการยอมรับเฉพาะในฐานะ sandbox contract harness ที่ governance/bootstrap root หลักฐานแสดง Human Surface แบบจำกัดขอบเขตซึ่งตรวจ revision ที่ adapter เป็นเจ้าของและสร้าง <code>Sandbox Verification Record — Demo · No Business Effect</code></p>
+<p>คำตัดสิน ณ เวลาเก็บหลักฐาน: NO-GO_RUNTIME_INTEGRATION; runtime integration = false.</p>
+<p>หลักฐานนี้ไม่ได้ใช้ production credential, ไม่ได้ส่ง LINE, ไม่ได้เปลี่ยน database, ไม่ได้สร้าง cryptographic production signature และไม่ได้สร้าง production audit record</p>
+<h2>ขอบเขต</h2>
+<p>Slice ที่ตรวจจำกัดเฉพาะ preset <code>design-approval</code> ส่วนอีกสี่ presets ยังคงใช้ legacy local demo journey A1 ใช้ non-secret opaque review token, session-only ledger, deterministic integrity digest และข้อความ no-business-effect ที่เห็นชัด</p>
+<p>นี่เป็นเพียงหลักฐาน sandbox ณ เวลาเก็บหลักฐาน ไม่ใช่ runtime integration, production readiness, customer delivery หรือ approval authority.</p>
+<h2>Provenance สอง Git root และ dirty scope</h2>
+<p>Evidence-time snapshot: base commit a816bf8d3ddc2f98c9c8e9ef42238df0593f2a8e และ immutable captured status manifest ของ Task 8 จำนวน 11 paths.</p>
+<p>Base commit ต้องยังเป็น object ที่มีอยู่และเป็น ancestor ของ <code>HEAD</code> ปัจจุบันใน isolated lane แต่ contract ตั้งใจไม่บังคับให้ live dirty state หรือ live <code>HEAD</code> เท่ากับ evidence-time capture หลัง checkpoint commit</p>
+<div class="tablewrap"><table><thead><tr><th>Root</th><th>Snapshot ณ เวลาเก็บหลักฐาน</th><th>Live gate</th></tr></thead><tbody>
+<tr><td>Governance/bootstrap isolated worktree</td><td><code>C:\tmp\monolith-lineos-design-approval-a1</code>; captured branch <code>codex/lineos-design-approval-a1</code>; captured status SHA-256 <code>2EE67628F4974E75167AE349D98BE680BC389DA8513D72BD45AEDE778D988157</code></td><td>Base commit มีอยู่และเป็น ancestor; live status อาจ clean หรือเป็น descendant ได้</td></tr>
+<tr><td>Active nested product repository</td><td><code>C:\Users\thai3\determined-williams (2)\determined-williams</code>; capture commit <code>a1e9006add32fe3ce5346eb6ca94e8bdce1d13ab</code>; captured entries 67 รายการ; captured status SHA-256 <code>7612E07AEBC75AB1269A60106976BCB0BEE1B424A42176D2A4BFCC4EA51B2998</code></td><td>Live gate ตรวจเฉพาะว่าไม่มี A1/LineOS-targeted path โดยไม่เทียบ branch, commit, count หรือ unrelated status ที่เปลี่ยนได้</td></tr>
+</tbody></table></div>
+<p>Nested capture เก็บครบทั้ง 67 entries เพื่อคำนวณ count และ hash ซ้ำได้ภายใน snapshot การจัดชั้นนี้ทำตาม <code>CONTEXT.md</code> และ repository-scope correction วันที่ 21 กรกฎาคม 2026: parent root มีอำนาจเฉพาะ governance/bootstrap และ production readiness ต้องอาศัย deployment/operations evidence แยกต่างหาก</p>
+<h2>ไฟล์ที่เปลี่ยน</h2>
+<p>Task 8 เป็นเจ้าของ exact 11 paths:</p>
+<ol>
+<li><code>LineOS/tests/docs-contract.test.mjs</code></li>
+<li><code>LineOS/tests/line-design-approval-browser-evidence.py</code></li>
+<li><code>LineOS/artifacts/line-design-approval-a1/browser-observed.json</code></li>
+<li><code>LineOS/artifacts/line-design-approval-a1/full-suite.junit.xml</code></li>
+<li><code>LineOS/artifacts/line-design-approval-a1/desktop-1440.png</code></li>
+<li><code>LineOS/artifacts/line-design-approval-a1/mobile-390.png</code></li>
+<li><code>LineOS/artifacts/line-design-approval-a1/verification-summary.json</code></li>
+<li><code>LineOS/docs/reports/2026-08-02-line-design-approval-port-a1-implementation-report.en.md</code></li>
+<li><code>LineOS/docs/reports/2026-08-02-line-design-approval-port-a1-implementation-report.th.md</code></li>
+<li><code>LineOS/docs/reports/2026-08-02-line-design-approval-port-a1-implementation-report.en.html</code></li>
+<li><code>LineOS/docs/reports/2026-08-02-line-design-approval-port-a1-implementation-report.th.html</code></li>
+</ol>
+<p>ไม่มี production module, nested MONOLITH source, migration, credential หรือ delivery configuration ที่เปลี่ยน</p>
+<h2>หลักฐาน TDD RED → GREEN</h2>
+<p>RED ของ artifact/report contract รอบแรกมี 87 tests: ผ่าน 82 และ fail 5 ตามคาด ส่วน RED ของ accepted review fixes มี 89 tests: ผ่าน 86 และ fail 3 โดย cancelled, skipped และ <code>todo</code> เท่ากับศูนย์ Failure สามรายการมาจาก schema-2 capture, immutable provenance และ visible-report claims ใหม่ที่ยังไม่ implement</p>
+<p>Producer-safety RED มี 90 tests: ผ่าน 88 และ fail 2 โดยพิสูจน์ว่า canonical raw evidence กลายเป็น stale และ <code>--help</code> เรียก browser capture ก่อนมี explicit output modes</p>
+<p>RED รอบสุดท้ายสำหรับ transactional publish และ Gate model มี 90 tests: ผ่าน 86 และ fail 4 Failure เหล่านี้ยืนยันว่าก่อน implement ยังไม่มี sibling staging/rollback guarantees, failure seam, การปิด Gate 1 อย่างชัดเจน และ gate statuses ตามลำดับที่ผู้อ่านมองเห็น จากนั้น focused producer regression ผ่าน 1/1 รวมการรักษา canonical bytes/mtimes เดิมทุกค่า, staging/backup residue เท่ากับศูนย์ และการคืน port 4179 หลัง forced failure</p>
+<p>RED ด้าน canonical-LF portability มี 91 tests: ผ่าน 89 และ fail 2 โดย cancelled, skipped และ <code>todo</code> เท่ากับศูนย์ Synthetic regression ใหม่ผ่าน แต่ summary/report bindings เดิมล้มเหลวตามคาด โดย JUnit, JSON, Python producer และ served source ตัวแทนที่เป็น LF, CRLF และ lone CR ให้ canonical-LF hash กับ byte count เท่ากัน ขณะที่ content mutation ทำให้ hash เปลี่ยน</p>
+<p>GREEN บังคับให้มี durable raw artifacts, evidence-time manifests ที่สอดคล้องภายใน, claims สองภาษาที่ผู้อ่านมองเห็น, มิติ PNG ครบ และ browser aggregates ที่ derive จาก events แทนการเชื่อ summary เอง</p>
+<h2>การตรวจอัตโนมัติ</h2>
+<p>Durable post-review JUnit artifact ที่สำเร็จคือ <code>artifacts/line-design-approval-a1/full-suite.junit.xml</code>: 38,260 canonical-LF bytes, canonical-LF SHA-256 <code>8A7384801EACA8795BC8451BFA0609108087AE0E307578D4454E31E9C2198469</code>, มี <code>&lt;testcase&gt;</code> 336 elements และ Node footer ระบุ 351 tests, ผ่าน 351, fail/cancelled/skipped/<code>todo</code> เท่ากับศูนย์</p>
+<p>336 XML elements และ 351 Node summary tests เป็นคนละแนวคิดของ reporter และ executable contract parse ทั้งคู่ Stored canonical-LF hash ระบุ timing-dependent observed run ที่เลือกไว้จริงโดยไม่ขึ้นกับ line endings ของ Git checkout และไม่ยอมรับ hexadecimal claim ใด ๆ ที่ไม่ผูกกับไฟล์</p>
+<p>หลัง implement accepted review และ portability fixes แล้ว canonical-LF docs contract ผ่าน 91/91 และ final full GREEN revalidation ปัจจุบันรัน 351 tests: ผ่าน 351 โดย fail, cancelled, skipped และ <code>todo</code> เท่ากับศูนย์</p>
+<p>ไฟล์ durable คือ stored observed run ที่ระบุด้านบน ส่วน latest logical revalidation หลังแก้ schema/report รอบสุดท้ายก็ได้ 351/351 และ zero-failure totals เดิม โดยไม่เก็บ temporary JUnit XML เพราะ timing-only identity ต่างจาก durable observed artifact</p>
+<p>Claim lint ต้อง exit 0 โดยไม่มี debt ใหม่, HTML ที่ render ซ้ำต้องตรง Markdown และ <code>git diff --check</code> ต้องสะอาด</p>
+<h2>เมทริกซ์หลักฐานเบราว์เซอร์</h2>
+<p>Producer ใน repository ที่ <code>tests/line-design-approval-browser-evidence.py</code> เปิด in-process <code>ThreadingHTTPServer</code> บน <code>127.0.0.1</code>, เปิด <code>http://localhost:4179/line-flex-studio.html</code> ด้วย native headless Chromium <code>149.0.7827.55</code>, รอ <code>networkidle</code> และ shutdown server อย่างชัดเจน</p>
+<p>แต่ละ cell ภาษาอังกฤษ/ภาษาไทย × 1440/390 แยกสาม UI-driven journeys คือ <code>success</code>, <code>cancel</code>, <code>legacy_preset</code> ออกจากสาม in-page port-contract probes คือ <code>replay</code>, <code>stale_revision</code>, <code>expired</code> โดย probes เรียก local sandbox port ภายใน page ที่โหลดแล้ว ไม่ใช่ end-to-end UI journeys</p>
+<div class="tablewrap"><table><thead><tr><th>ภาษา</th><th align="right">Width</th><th>UI-driven</th><th>In-page probes</th><th align="right">Overflow</th><th align="right">Rows</th><th>Focus</th></tr></thead><tbody>
+<tr><td>ภาษาอังกฤษ</td><td align="right">1440</td><td>3/3 PASS</td><td>3/3 PASS</td><td align="right">0 px</td><td align="right">18</td><td>PASS</td></tr>
+<tr><td>ภาษาอังกฤษ</td><td align="right">390</td><td>3/3 PASS</td><td>3/3 PASS</td><td align="right">0 px</td><td align="right">18</td><td>PASS</td></tr>
+<tr><td>ภาษาไทย</td><td align="right">1440</td><td>3/3 PASS</td><td>3/3 PASS</td><td align="right">0 px</td><td align="right">18</td><td>PASS</td></tr>
+<tr><td>ภาษาไทย</td><td align="right">390</td><td>3/3 PASS</td><td>3/3 PASS</td><td align="right">0 px</td><td align="right">18</td><td>PASS</td></tr>
+</tbody></table></div>
+<p>Outcomes ที่สังเกตคือ <code>sandbox_recorded</code>, <code>cancelled_locally</code>, <code>legacy_demo_receipt</code> และ <code>sandbox_replayed</code>; rejection probes บันทึก error codes <code>stale_revision</code> กับ <code>expired</code> ค่า reduced motion คือ <code>0.01 ms</code> และทั้ง success/cancel คืน focus</p>
+<h2>หลักฐานเครือข่ายและข้อผิดพลาด</h2>
+<p>ค่าที่ derive จาก raw request events 56 รายการ: external 0; failed 0; HTTP errors 0; console errors 0; page errors 0.</p>
+<p>Raw arrays อยู่ใน <code>artifacts/line-design-approval-a1/browser-observed.json</code>: 20,439 canonical-LF bytes และ canonical-LF SHA-256 <code>B0DFF5533024445A613169A18A1BA864F0335789A55A483AF32B4DE937E008CC</code> Canonical output provenance บันทึก directory แบบ repository-relative เป็น <code>artifacts/line-design-approval-a1</code> เพื่อให้หลักฐานยังใช้ได้ใน clean worktree อื่น Summary คำนวณ counts และ localhost-only hosts จาก arrays เหล่านี้ใหม่ Page สี่หน้าเรียก local resources ชุดเดิม 14 รายการ ส่วน inventory ของ LINE, Supabase, analytics, credential และ external message endpoint มี request count 0</p>
+<p>Producer มี 31,785 canonical-LF bytes และ canonical-LF SHA-256 <code>8BDEA0AD16721A222E02BEA52939FA26E59681C4380FBC09B5B2009FAF9AB160</code></p>
+<h2>การสแกน forbidden fields ของ record</h2>
+<p>Success record ที่สังเกตถูกสแกน recursive ด้วย authority-like keys ที่อนุมัติ 22 รายการ ผลคือ matches 0 และ occurrences 0 Raw inventory แสดง approved keys 21 รายการ โดย <code>approvalRequestRef</code> ยังคงเป็น non-authoritative reference</p>
+<p>Record digest ที่สังเกตคือ <code>98aa18f7ac400d7739ba66b9c9dc876f5df3ffbc9a6aae582e0fb10b8b046861</code></p>
+<h2>การผูก screenshot กับ source</h2>
+<p>Served-resource manifest 14 ไฟล์ที่ sort ตาม path อย่างชัดเจนมี canonical-LF source snapshot SHA-256 <code>B1289E1BF03136CA4BE362B711786590B844249DBE5CAAF5C06D5F6D060D8DC4</code></p>
+<p>การเก็บหลักฐาน browser รอบล่าสุด, screenshot ทั้งสอง และ served-source snapshot นี้บันทึก historical capture commit <code>d0d2db69c66d850871633bb62cde9ad3ee7d3964</code> Commit ID เป็น historical metadata ไม่ใช่ replay/rebase ancestry authority ส่วน authority ที่พกพาได้คือ manifest ที่ sort ชัดเจน, aggregate hash และ per-file hashes ที่ contract คำนวณใหม่จากไฟล์ใน checkout ปัจจุบัน</p>
+<div class="tablewrap"><table><thead><tr><th>หลักฐาน</th><th align="right">มิติ</th><th>SHA-256</th><th>Inspection</th></tr></thead><tbody>
+<tr><td><code>artifacts/line-design-approval-a1/desktop-1440.png</code></td><td align="right">1440 × 1000</td><td><code>C1E35E86FDE474203F89393F1B6584FF728E3B519E939E766A0A9C3B780C4CB3</code></td><td>PASS</td></tr>
+<tr><td><code>artifacts/line-design-approval-a1/mobile-390.png</code></td><td align="right">390 × 844</td><td><code>7499CED9BCA4A24DB15961D4491CE23E4CE1D3D973CEC8BC2CCAA42CF61E9BD7</code></td><td>PASS</td></tr>
+</tbody></table></div>
+<p>ทุก identity และ byte count ของ Git-text evidence ใช้ <code>normalization = canonical-lf</code> โดยแปลง CRLF และ lone CR เป็น LF ก่อนทำ SHA-256 และนับ bytes ส่วน PNG hash, signature และ dimensions ใช้ raw bytes Contract ตรวจ semantics เหล่านี้, source snapshot, raw observation, captured-status hashes และรูปแบบของ historical commit identifiers โดยไม่ผูก validity เข้ากับ ancestry ของ clone ปัจจุบัน</p>
+<p>ตรวจพบการแทนที่ที่ไม่ประสานกัน แต่ coordinated edits ไม่ใช่ signature/tamper proof.</p>
+<h2>Review gates</h2>
+<p>Accepted Task 8 review fixes บังคับ immutable evidence-time provenance, durable JUnit/browser artifacts, event-derived network assertions, การแยก UI/probe อย่างซื่อตรง, reader-visible claims, มิติ PNG exact และ approved 11-path capture</p>
+<p>Document contract ตัด Markdown comments/fences และตัด HTML comments/scripts/styles Mutation fixtures ทั้งภาษาอังกฤษและภาษาไทยพิสูจน์ว่า hidden headings, decision, network/error evidence, runtime boundary และ whole-claim inline code ถูกปฏิเสธ</p>
+<p>Producer บังคับให้เลือก existing isolated <code>--output-dir</code> หรือ explicit <code>--publish-canonical</code> เท่านั้น การ capture แบบ canonical ทำใน validated sibling staging directory ใหม่ แล้วตรวจ raw observation และ PNG ทั้งสองไฟล์ให้ครบก่อนทำ backup-and-replace transaction สามไฟล์ หาก capture, assertion, browser, server หรือ publish ล้มเหลว ระบบจะคืน canonical bytes และ mtimes เดิมทุกค่า ล้าง staging/backup residue และคืน port 4179 Regression tests ครอบคลุม <code>--help</code>, implicit canonical path ที่ถูกปฏิเสธ, forced failure หลัง staged desktop capture และ isolated temp capture ที่ทำงานครบ</p>
+<h2>ความเสี่ยงคงเหลือ</h2>
+<ul>
+<li>Ledger เป็น session-only; replay evidence reset หลัง reload หรือ browser restart</li>
+<li>Adapter และ token เป็น local fixtures; ยังไม่ได้ตรวจ server-owned revision, user identity, authorization หรือ tenant boundary</li>
+<li>Digest เป็น integrity metadata ไม่ใช่ production signature</li>
+<li>ผล replay, stale revision และ expiry เป็น in-page port-contract probes ไม่ใช่ UI journeys หรือ deployed LIFF evidence</li>
+<li>Unit/browser evidence ไม่ได้พิสูจน์ LINE delivery, persistence, audit durability, operational recovery หรือ production readiness</li>
+<li>Nested product ยังคง dirty แยกต่างหากและต้องตรวจ runtime, security, database และ deployment ปัจจุบันของตัวเอง</li>
+</ul>
+<h2>Promotion gates ไป A2</h2>
+<p>Gate 1 — A1 contract and browser evidence — CLOSED / SATISFIED.</p>
+<p>Gate 2 — canonical server-owned revision source — OPEN.</p>
+<p>Gate 3 — tenant–organization–site mapping — OPEN.</p>
+<p>Gate 4 — customer-design-view database contract tests — OPEN.</p>
+<p>Gate 5 — narrow LIFF confirmation transport design — OPEN.</p>
+<p>Gate 6 — rollback, idempotency, audit, and error semantics — OPEN.</p>
+<p>Gate 7 — local environment and secret-handling authority — OPEN.</p>
+<p>เฉพาะ Gates 2–7 เท่านั้นที่ยังเป็นตัวบล็อก A2 ส่วน Gate 1 ปิดได้เฉพาะจาก fresh A1 sandbox contract, browser, task-review และ whole-scrutiny evidence การปิด Gate 1 ไม่ได้อนุญาต runtime integration, production readiness, customer delivery, approval authority หรือการ promote ไป A2</p>
+<h2>ขอบเขตสุดท้าย</h2>
+<p>ผลที่รองรับได้คือ durable sandbox contract สองภาษาที่สังเกตผ่าน browser แล้ว คำตัดสินผู้บริหารยังเป็น <code>NO-GO_RUNTIME_INTEGRATION</code> การ promote ต้องได้รับ owner approval แยกหลัง Gates 2–7 ปิดด้วย fresh evidence</p>
+</main></body>
+</html>

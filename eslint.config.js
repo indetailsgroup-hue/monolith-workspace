@@ -76,6 +76,7 @@ export default [
       '**/coverage/**',
       'build/**',
       '**/build/**',
+      'storybook-static/**',
       'playwright-report/**',
       'test-results/**',
       // Config files, carried over from ignorePatterns...
@@ -117,7 +118,11 @@ export default [
       // sets the baseline would have started the ratchet 14 notches loose.
       // Widening the underscore convention is a defensible change — but it is a
       // separate one, made against a baseline that was not moved to meet it.
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': ['warn', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_',
+      }],
       '@typescript-eslint/no-explicit-any': 'warn',
       'no-console': 'off',
     },
@@ -149,6 +154,18 @@ export default [
     },
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
+
+  {
+    // k6 injects these execution-context globals at runtime.
+    files: ['packages/digital-shadow-service/tests/load/**/*.js'],
+    languageOptions: {
+      globals: {
+        __ENV: 'readonly',
+        __VU: 'readonly',
+        __ITER: 'readonly',
+      },
     },
   },
 

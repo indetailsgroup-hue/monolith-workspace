@@ -1,0 +1,135 @@
+name: "🐛 People & Culture — Bug Report"
+description: Report a bug in the PeopleDirectory, CultureDashboard, SuperEmployeeProgressCard, or PsSurveyForm components.
+title: "[P&C Bug] <short description>"
+labels:
+  - "bug"
+  - "people-culture"
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## People & Culture Module — Bug Report
+        Please fill in all sections below. For **security issues** (RLS, anonymous_feedback access, org_id isolation) open a **Security Advisory** instead.
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected Component
+      description: Which component is exhibiting the bug?
+      multiple: false
+      options:
+        - "PeopleDirectory"
+        - "CultureDashboard"
+        - "SuperEmployeeProgressCard"
+        - "PsSurveyForm"
+        - "peopleStore (Zustand)"
+        - "cultureStore (Zustand)"
+        - "People & Culture CI / Storybook"
+        - "Other (describe below)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - "Critical — data loss / security"
+        - "High — component broken / feature unusable"
+        - "Medium — degraded behaviour"
+        - "Low — cosmetic / minor"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of the bug.
+      placeholder: "When I filter PeopleDirectory by stage 'SUPER_EMPLOYEE', the list returns empty even when employees exist at that stage..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to Reproduce
+      description: Minimal steps to reproduce the behaviour.
+      placeholder: |
+        1. Navigate to /people
+        2. Open stage filter dropdown
+        3. Select 'SUPER_EMPLOYEE'
+        4. Observe empty list
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behaviour
+      description: What should happen instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behaviour
+      description: What actually happens? Paste error messages or console output if relevant.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tenant
+    attributes:
+      label: Multi-Tenant Context
+      description: Is the bug specific to a tenant role or all tenants?
+      options:
+        - "All tenants / not tenant-specific"
+        - "OWNER role (hierarchy 100)"
+        - "ADMIN role (hierarchy 80)"
+        - "VIEWER role (hierarchy 10)"
+        - "Cross-tenant isolation issue"
+    validations:
+      required: true
+
+  - type: textarea
+    id: test_coverage
+    attributes:
+      label: Existing Test Coverage
+      description: |
+        Reference the relevant test file(s) and test name(s) that should catch this, or note if coverage is missing.
+        Known test files: `PeopleDirectory.test.tsx` (47), `CultureDashboard.test.tsx` (19), `SuperEmployeeProgressCard.test.tsx` (34), `PsSurveyForm.test.tsx` (30), `validateStageProgression.test.ts` (36).
+      placeholder: "No existing test covers this case — new test needed in PeopleDirectory.test.tsx"
+
+  - type: input
+    id: storybook_story
+    attributes:
+      label: Related Storybook Story (if any)
+      description: Story name or ID from `PeopleDirectory.stories.tsx`, `CultureDashboard.stories.tsx`, or `SuperEmployeeProgressCard.stories.tsx`.
+      placeholder: "people-peopledirectory--stage-filter-super-employee"
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Branch, Node version, browser, and any relevant config.
+      placeholder: |
+        - Branch: main
+        - Node: 20.x
+        - Browser: Chrome 127
+        - Supabase local / prod
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      options:
+        - label: "I searched existing issues and this is not a duplicate"
+          required: true
+        - label: "This is NOT a security / RLS / data-isolation issue (use Security Advisory for those)"
+          required: true
+        - label: "I can reproduce this on the `main` branch"
+          required: false

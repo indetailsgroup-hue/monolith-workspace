@@ -23,6 +23,10 @@ permissions:
   pull-requests: read
   contents: read
 
+
+concurrency:
+  group: keyset-dual-approval-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 jobs:
   # ==========================================================================
   # JOB 1: Dual Approval Check
@@ -30,6 +34,7 @@ jobs:
   dual-approval:
     name: Dual Approval Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     # Only run on PRs that modify keyset files
     if: |
@@ -39,7 +44,7 @@ jobs:
     steps:
       - name: Check PR approvals
         id: check-approvals
-        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -149,6 +154,7 @@ jobs:
   ceremony-evidence:
     name: Ceremony Evidence Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     # Only run on PRs that include ceremony docs
     if: |
@@ -161,7 +167,7 @@ jobs:
 
       - name: Check for ceremony evidence
         id: check-ceremony
-        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             const fs = require('fs');
@@ -273,6 +279,7 @@ jobs:
   fingerprint-check:
     name: Keyset Fingerprint Validation
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     if: |
       github.event_name == 'pull_request' &&

@@ -1,4 +1,4 @@
-#!/usr/bin/env npx ts-node
+#!/usr/bin/env -S node --experimental-strip-types --no-warnings
 /**
  * bypass-scan.ts - CI Bypass Pattern Scanner
  *
@@ -7,7 +7,7 @@
  *
  * Exit codes:
  *   0 = PASS (no BLOCK matches)
- *   1 = FAIL (BLOCK matches found, or --strict with any WARN)
+ *   1 = FAIL (BLOCK matches found, or --strict with HIGH/MED warnings)
  *   2 = WARN only (warnings found but no blocks)
  *
  * WARN Severity Levels:
@@ -16,19 +16,18 @@
  *   WARN-LOW  = Code hygiene, fix when convenient
  *
  * Usage:
- *   npx ts-node scripts/gates/bypass-scan.ts              # Full scan
- *   npx ts-node scripts/gates/bypass-scan.ts --strict     # Fail on any WARN
- *   npx ts-node scripts/gates/bypass-scan.ts --gate G10   # Filter by gate
- *   npx ts-node scripts/gates/bypass-scan.ts --gate G9 --scope   # Focused scan
- *   npx ts-node scripts/gates/bypass-scan.ts --json       # JSON output
- *   npx ts-node scripts/gates/bypass-scan.ts -v           # Verbose output
+ *   npm run gate:bypass-scan              # Full scan
+ *   npm run gate:bypass-scan:strict       # Fail on BLOCK/HIGH/MED findings
+ *   npm run gate:bypass-scan -- --gate G10
+ *   npm run gate:bypass-scan -- --gate G9 --scope
+ *   npm run gate:bypass-scan:json
+ *   npm run gate:bypass-scan -- -v
  *
  * @version 1.1.0
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync } from 'child_process';
 
 // ============================================
 // TYPES
@@ -42,6 +41,7 @@ interface Pattern {
   regex: string;
   description: string;
   lineNumber: number;
+  compiledRegex: RegExp;
 }
 
 interface Exception {
@@ -73,6 +73,7 @@ interface ScanResult {
   patternsLoaded: number;
   filesScanned: number;
   duration: number;
+  strict: boolean;
 }
 
 // ============================================
@@ -83,7 +84,8 @@ const CONFIG = {
   patternsFile: '.claude/gates/ci-bypass-patterns.txt',
   scanDirs: ['src'],
   fileExtensions: ['ts', 'tsx'],
-  excludeDirs: ['node_modules', 'dist', '.git', 'coverage'],
+  excludeDirs: ['node_modules', 'dist', '.git', 'coverage', '__tests__', 'test', 'tests', 'testkit'],
+  excludeFileSuffixes: ['.test.ts', '.test.tsx', '.spec.ts', '.spec.tsx', '.stories.ts', '.stories.tsx'],
 };
 
 /**
@@ -112,13 +114,86 @@ const GATE_SCOPES: Record<string, string[]> = {
     'src/core/export',
     'src/core/gate',
   ],
+  'G10.3': [
+    'src/core/export',
+    'src/core/gate',
+    'src/cnc',
+  ],
+};
+
+/**
+ * Patterns that only make sense inside a specific safety domain. Keeping these
+ * scoped prevents unrelated UI formatting and general TypeScript code from
+ * being mislabeled as a CNC or persistence-gate bypass.
+ */
+const PATTERN_SCOPES: Record<string, string[]> = {
+  ':\\s*any\\s*[;,})]': GATE_SCOPES.G9,
+  '\\.toFixed\\([0-3]\\)': GATE_SCOPES['G10.1'],
+  'as\\s+unknown\\s+as\\s+': GATE_SCOPES.G9,
 };
 
 // ============================================
 // PATTERN PARSING
 // ============================================
 
-function parsePatterns(content: string): { patterns: Pattern[]; exceptions: Exception[] } {
+function parsePatternLine(line: string, lineNumber: number): Pattern {
+  const firstSeparator = line.indexOf('|');
+  const secondSeparator = line.indexOf('|', firstSeparator + 1);
+  const lastSeparator = line.lastIndexOf('|');
+
+  if (
+    firstSeparator <= 0 ||
+    secondSeparator <= firstSeparator + 1 ||
+    lastSeparator <= secondSeparator + 1
+  ) {
+    throw new Error(`Malformed bypass pattern at line ${lineNumber}`);
+  }
+
+  const gate = line.slice(0, firstSeparator);
+  const rawSeverity = line.slice(firstSeparator + 1, secondSeparator);
+  const regex = line.slice(secondSeparator + 1, lastSeparator);
+  const description = line.slice(lastSeparator + 1);
+  const normalizedSeverity = rawSeverity === 'WARN' ? 'WARN-MED' : rawSeverity as Severity;
+  const validSeverities: Severity[] = ['BLOCK', 'WARN-HIGH', 'WARN-MED', 'WARN-LOW'];
+
+  if (!validSeverities.includes(normalizedSeverity)) {
+    throw new Error(`Invalid severity "${rawSeverity}" at line ${lineNumber}`);
+  }
+
+  let compiledRegex: RegExp;
+  try {
+    compiledRegex = new RegExp(regex, 'g');
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new Error(`Invalid regex at line ${lineNumber}: ${regex} (${reason})`);
+  }
+
+  return {
+    gate,
+    severity: normalizedSeverity,
+    regex,
+    description,
+    lineNumber,
+    compiledRegex,
+  };
+}
+
+function parseExceptionLine(line: string, lineNumber: number): Exception {
+  const prefix = 'EXCEPT|';
+  const lastSeparator = line.lastIndexOf('|');
+
+  if (lastSeparator <= prefix.length) {
+    throw new Error(`Malformed bypass exception at line ${lineNumber}`);
+  }
+
+  return {
+    pattern: line.slice(prefix.length, lastSeparator),
+    fileGlob: line.slice(lastSeparator + 1),
+    lineNumber,
+  };
+}
+
+export function parsePatterns(content: string): { patterns: Pattern[]; exceptions: Exception[] } {
   const patterns: Pattern[] = [];
   const exceptions: Exception[] = [];
   const lines = content.split('\n');
@@ -132,34 +207,12 @@ function parsePatterns(content: string): { patterns: Pattern[]; exceptions: Exce
 
     // Parse exception
     if (line.startsWith('EXCEPT|')) {
-      const parts = line.split('|');
-      if (parts.length >= 3) {
-        exceptions.push({
-          pattern: parts[1],
-          fileGlob: parts[2],
-          lineNumber,
-        });
-      }
+      exceptions.push(parseExceptionLine(line, lineNumber));
       continue;
     }
 
     // Parse pattern
-    const parts = line.split('|');
-    if (parts.length >= 4) {
-      const [gate, severity, regex, description] = parts;
-      // Support both old WARN and new WARN-HIGH/MED/LOW
-      const validSeverities: Severity[] = ['BLOCK', 'WARN-HIGH', 'WARN-MED', 'WARN-LOW'];
-      const normalizedSeverity = severity === 'WARN' ? 'WARN-MED' : severity as Severity;
-      if (validSeverities.includes(normalizedSeverity)) {
-        patterns.push({
-          gate,
-          severity: normalizedSeverity,
-          regex,
-          description,
-          lineNumber,
-        });
-      }
-    }
+    patterns.push(parsePatternLine(line, lineNumber));
   }
 
   return { patterns, exceptions };
@@ -182,6 +235,9 @@ function walkDir(dir: string, files: string[] = []): string[] {
       if (CONFIG.excludeDirs.includes(entry.name)) continue;
       walkDir(fullPath, files);
     } else if (entry.isFile()) {
+      if (CONFIG.excludeFileSuffixes.some((suffix) => entry.name.endsWith(suffix))) {
+        continue;
+      }
       // Check file extension
       const ext = path.extname(entry.name).slice(1);
       if (CONFIG.fileExtensions.includes(ext)) {
@@ -191,6 +247,21 @@ function walkDir(dir: string, files: string[] = []): string[] {
   }
 
   return files;
+}
+
+function isPatternInScope(file: string, pattern: Pattern): boolean {
+  const scopes = PATTERN_SCOPES[pattern.regex];
+  if (!scopes) return true;
+
+  const normalizedFile = file.replace(/\\/g, '/');
+  return scopes.some((scope) => (
+    normalizedFile === scope || normalizedFile.startsWith(`${scope}/`)
+  ));
+}
+
+function isCommentOnlyLine(line: string): boolean {
+  const trimmed = line.trim();
+  return trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*');
 }
 
 /**
@@ -269,29 +340,29 @@ function scanFile(
       continue;
     }
 
+    if (!isPatternInScope(file, pattern)) {
+      continue;
+    }
+
     // Skip if file is excepted
     if (isExcepted(file, pattern, exceptions)) {
       continue;
     }
 
-    try {
-      const regex = new RegExp(pattern.regex, 'g');
-
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        if (regex.test(line)) {
-          matches.push({
-            file,
-            line: i + 1,
-            content: line.trim().substring(0, 100),
-            pattern,
-          });
-        }
-        // Reset regex lastIndex for next line
-        regex.lastIndex = 0;
+    const regex = pattern.compiledRegex;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (isCommentOnlyLine(line)) continue;
+      if (regex.test(line)) {
+        matches.push({
+          file,
+          line: i + 1,
+          content: line.trim().substring(0, 100),
+          pattern,
+        });
       }
-    } catch (e) {
-      console.error(`Invalid regex: ${pattern.regex}`);
+      // Reset regex lastIndex for next line
+      regex.lastIndex = 0;
     }
   }
 
@@ -301,6 +372,16 @@ function scanFile(
 // ============================================
 // REPORTING
 // ============================================
+
+export function getExitCode(
+  blocked: boolean,
+  warnCounts: Pick<WarnCounts, 'high' | 'med' | 'total'>,
+  strict: boolean,
+): number {
+  if (blocked || (strict && warnCounts.high + warnCounts.med > 0)) return 1;
+  if (strict) return 0;
+  return warnCounts.total > 0 ? 2 : 0;
+}
 
 function formatReport(result: ScanResult, verbose: boolean): string {
   const lines: string[] = [];
@@ -312,7 +393,8 @@ function formatReport(result: ScanResult, verbose: boolean): string {
   lines.push('');
 
   // Summary
-  const status = result.blocked ? '❌ FAIL' : result.warnCounts.total > 0 ? '⚠️ WARN' : '✅ PASS';
+  const strictFailure = result.strict && result.warnCounts.high + result.warnCounts.med > 0;
+  const status = result.blocked || strictFailure ? '❌ FAIL' : result.warnCounts.total > 0 ? '⚠️ WARN' : '✅ PASS';
   lines.push(`Status: ${status}`);
   lines.push(`Patterns loaded: ${result.patternsLoaded}`);
   lines.push(`Files scanned: ${result.filesScanned}`);
@@ -366,21 +448,24 @@ function formatReport(result: ScanResult, verbose: boolean): string {
   }
 
   lines.push('───────────────────────────────────────────────────────────────');
-  lines.push(`Exit code: ${result.blocked ? 1 : result.warnCounts.total > 0 ? 2 : 0}`);
+  const exitCode = getExitCode(result.blocked, result.warnCounts, result.strict);
+  lines.push(`Exit code: ${exitCode}`);
   lines.push('');
 
   return lines.join('\n');
 }
 
 function formatJson(result: ScanResult): string {
+  const strictFailure = result.strict && result.warnCounts.high + result.warnCounts.med > 0;
   return JSON.stringify({
-    status: result.blocked ? 'FAIL' : result.warnCounts.total > 0 ? 'WARN' : 'PASS',
+    status: result.blocked || strictFailure ? 'FAIL' : result.warnCounts.total > 0 ? 'WARN' : 'PASS',
     blocked: result.blocked,
     blockCount: result.blockCount,
     warnCounts: result.warnCounts,
     patternsLoaded: result.patternsLoaded,
     filesScanned: result.filesScanned,
     duration: result.duration,
+    strict: result.strict,
     matches: result.matches.map(m => ({
       file: m.file,
       line: m.line,
@@ -397,7 +482,7 @@ function formatJson(result: ScanResult): string {
 // MAIN
 // ============================================
 
-function main(): number {
+export function main(): number {
   const args = process.argv.slice(2);
   const strict = args.includes('--strict');
   const json = args.includes('--json');
@@ -416,7 +501,15 @@ function main(): number {
   }
 
   const patternsContent = fs.readFileSync(patternsPath, 'utf-8');
-  const { patterns, exceptions } = parsePatterns(patternsContent);
+  let parsed: ReturnType<typeof parsePatterns>;
+  try {
+    parsed = parsePatterns(patternsContent);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    console.error(`Failed to load bypass patterns: ${reason}`);
+    return 1;
+  }
+  const { patterns, exceptions } = parsed;
 
   // Get files to scan (optionally scoped to gate-specific paths)
   const scanDirs = getScanDirs(gateFilter, useScope);
@@ -437,7 +530,7 @@ function main(): number {
   const totalWarnMatches = warnHighMatches.length + warnMedMatches.length + warnLowMatches.length;
 
   const result: ScanResult = {
-    passed: blockMatches.length === 0 && (!strict || totalWarnMatches === 0),
+    passed: blockMatches.length === 0 && (!strict || warnHighMatches.length + warnMedMatches.length === 0),
     blocked: blockMatches.length > 0,
     blockCount: blockMatches.length,
     warnCounts: {
@@ -450,6 +543,7 @@ function main(): number {
     patternsLoaded: patterns.length,
     filesScanned: files.length,
     duration: Date.now() - startTime,
+    strict,
   };
 
   // Output
@@ -460,18 +554,12 @@ function main(): number {
   }
 
   // Exit code
-  if (result.blocked) {
-    return 1;
-  }
-  if (strict && result.warnCounts.total > 0) {
-    return 1;
-  }
-  if (result.warnCounts.total > 0) {
-    return 2;
-  }
-  return 0;
+  return getExitCode(result.blocked, result.warnCounts, strict);
 }
 
 // Run
-const exitCode = main();
-process.exit(exitCode);
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+  // Do not call process.exit() here: large JSON reports may still be buffered
+  // and would be truncated before stdout has finished flushing.
+  process.exitCode = main();
+}

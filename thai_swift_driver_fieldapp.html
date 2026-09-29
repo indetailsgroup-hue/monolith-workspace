@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <meta name="theme-color" content="#1f2d5a"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <title>Swift Driver Field App</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    :root{
+      --navy:#1f2d5a;--gold:#c9a84c;--green:#2d7a4f;--orange:#e65c00;
+      --red:#c0392b;--bg:#f4f6fa;--white:#fff;
+      --text:#1f2d5a;--muted:#64748b;--border:#d1d5db;--radius:12px;
+    }
+    html,body{height:100%;font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+
+    /* ── APP SHELL ─────────────────────────────────────── */
+    .app{display:flex;flex-direction:column;height:100vh;max-width:480px;margin:0 auto;background:var(--bg);box-shadow:0 0 40px rgba(0,0,0,.15)}
+
+    /* ── HEADER ────────────────────────────────────────── */
+    .app-header{background:var(--navy);color:#fff;padding:12px 16px 10px;display:flex;align-items:center;gap:10px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+    .header-icon{width:36px;height:36px;background:var(--orange);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+    .header-text{flex:1}
+    .header-title{font-size:15px;font-weight:700;line-height:1.2}
+    .header-sub{font-size:11px;opacity:.75;margin-top:2px}
+    .offline-badge{background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:.3px}
+    .online-badge{background:var(--green);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:.3px}
+
+    /* ── BOTTOM NAV ─────────────────────────────────────── */
+    .bottom-nav{display:flex;background:var(--white);border-top:1px solid var(--border);flex-shrink:0;box-shadow:0 -2px 10px rgba(0,0,0,.08)}
+    .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 2px 5px;font-size:8px;font-weight:600;color:var(--muted);cursor:pointer;border:none;background:none;gap:2px;transition:color .2s}
+    .nav-btn .nav-icon{font-size:17px;line-height:1}
+    .nav-btn.active{color:var(--orange)}
+    .nav-btn.active .nav-bar{display:block}
+    .nav-bar{display:none;width:24px;height:3px;background:var(--orange);border-radius:2px;margin-top:2px}
+
+    /* ── SCREEN CONTENT ─────────────────────────────────── */
+    .screen{display:none;flex:1;overflow-y:auto;padding:16px}
+    .screen.active{display:block}
+
+    /* ── CARDS ──────────────────────────────────────────── */
+    .card{background:var(--white);border-radius:var(--radius);padding:16px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+    .card-title{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+    .card-title .badge{background:var(--orange);color:#fff;font-size:10px;padding:1px 8px;border-radius:20px}
+
+    /* ── STATUS GRID ─────────────────────────────────────── */
+    .status-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+    .stat-card{background:var(--white);border-radius:var(--radius);padding:12px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+    .stat-num{font-size:24px;font-weight:700;line-height:1}
+    .stat-label{font-size:10px;color:var(--muted);margin-top:2px}
+
+    /* ── JOB QUEUE ITEMS ─────────────────────────────────── */
+    .job-item{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;transition:all .2s}
+    .job-item:hover{border-color:var(--orange);box-shadow:0 2px 8px rgba(230,92,0,.15)}
+    .job-item.accepted{border-color:var(--green);background:#f0fdf4}
+    .job-item-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+    .job-item-id{font-size:11px;font-weight:700;color:var(--orange)}
+    .job-status-chip{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px}
+    .chip-pending{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}
+    .chip-accepted{background:#f0fdf4;color:var(--green);border:1px solid #bbf7d0}
+    .chip-transit{background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe}
+    .chip-delivered{background:#f0fdf4;color:var(--green);border:1px solid #bbf7d0}
+    .job-item-name{font-size:13px;font-weight:700;margin-bottom:4px}
+    .job-item-meta{display:flex;flex-wrap:wrap;gap:6px}
+    .job-item-meta span{font-size:10px;color:var(--muted)}
+    .job-actions{display:flex;gap:8px;margin-top:10px}
+
+    /* ── JOURNEY PROGRESS BAR ────────────────────────────── */
+    .journey-bar{display:flex;align-items:center;overflow-x:auto;padding:8px 0;gap:0;scrollbar-width:none}
+    .journey-bar::-webkit-scrollbar{display:none}
+    .j-step{display:flex;flex-direction:column;align-items:center;flex:1;min-width:44px}
+    .j-dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;transition:all .3s}
+    .j-dot.done{background:var(--green);color:#fff}
+    .j-dot.active{background:var(--orange);color:#fff;box-shadow:0 0 0 4px rgba(230,92,0,.2)}
+    .j-dot.pending{background:#e2e8f0;color:var(--muted)}
+    .j-label{font-size:8px;text-align:center;margin-top:3px;color:var(--muted);line-height:1.2}
+    .j-connector{flex:1;height:2px;background:#e2e8f0;min-width:6px}
+    .j-connector.done{background:var(--green)}
+
+    /* ── FORM ELEMENTS ──────────────────────────────────── */
+    .form-group{margin-bottom:14px}
+    .form-label{font-size:12px;font-weight:600;color:var(--navy);margin-bottom:5px;display:block}
+    .form-label .req{color:var(--red)}
+    .form-input,.form-select,.form-textarea{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--text);outline:none;transition:border-color .2s;background:#fff}
+    .form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--orange)}
+    .form-textarea{resize:none;height:80px}
+    .form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%231f2d5a' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+
+    /* ── SEVERITY SELECTOR ──────────────────────────────── */
+    .sev-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+    .sev-btn{padding:8px 4px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;font-weight:700;text-align:center;cursor:pointer;background:#fff;transition:all .2s;color:var(--muted)}
+    .sev-btn[data-sev="9"],.sev-btn[data-sev="8"]{border-color:#fecaca;background:#fef2f2;color:var(--red)}
+    .sev-btn[data-sev="7"],.sev-btn[data-sev="6"]{border-color:#fed7aa;background:#fff7ed;color:var(--orange)}
+    .sev-btn[data-sev="5"],.sev-btn[data-sev="4"]{border-color:#fef08a;background:#fefce8;color:#854d0e}
+    .sev-btn[data-sev="3"],.sev-btn[data-sev="2"],.sev-btn[data-sev="1"]{border-color:#bbf7d0;background:#f0fdf4;color:var(--green)}
+    .sev-btn.selected{transform:scale(1.05);border-width:2px}
+    .sev-btn[data-sev="9"].selected,.sev-btn[data-sev="8"].selected{border-color:var(--red);box-shadow:0 0 0 2px rgba(192,57,43,.2)}
+    .sev-btn[data-sev="7"].selected,.sev-btn[data-sev="6"].selected{border-color:var(--orange);box-shadow:0 0 0 2px rgba(230,92,0,.2)}
+    .sev-btn[data-sev="5"].selected,.sev-btn[data-sev="4"].selected{border-color:#d97706;box-shadow:0 0 0 2px rgba(217,119,6,.2)}
+    .sev-btn[data-sev="3"].selected,.sev-btn[data-sev="2"].selected,.sev-btn[data-sev="1"].selected{border-color:var(--green);box-shadow:0 0 0 2px rgba(45,122,79,.2)}
+
+    /* ── PHOTO UPLOAD ────────────────────────────────────── */
+    .photo-zone{border:2px dashed var(--border);border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s;background:#fafafa}
+    .photo-zone:hover{border-color:var(--orange)}
+    .photo-zone input[type=file]{display:none}
+    .photo-zone .ph-icon{font-size:28px;margin-bottom:6px}
+    .photo-zone .ph-text{font-size:12px;color:var(--muted)}
+    .photo-preview{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .photo-thumb{width:70px;height:70px;object-fit:cover;border-radius:6px;border:1.5px solid var(--border)}
+    .photo-thumb-wrap{position:relative;display:inline-block}
+    .photo-remove{position:absolute;top:-5px;right:-5px;width:18px;height:18px;background:var(--red);color:#fff;border-radius:50%;font-size:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;font-weight:700}
+
+    /* ── GPS PANEL ───────────────────────────────────────── */
+    .gps-display{background:linear-gradient(135deg,#1e3a6e,#2d5a9e);border-radius:10px;padding:16px;color:#fff;text-align:center;margin-bottom:12px}
+    .gps-coords{font-size:12px;font-family:monospace;opacity:.85;margin-top:6px;line-height:1.6}
+    .gps-status{font-size:12px;font-weight:600;margin-bottom:4px}
+    .gps-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.15);padding:3px 10px;border-radius:20px;font-size:11px;margin-top:6px}
+    .gps-dot{width:7px;height:7px;border-radius:50%;background:#4ade80;animation:pulse 1.5s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .gps-dot.inactive{background:#94a3b8;animation:none}
+
+    /* ── CHECKLIST ───────────────────────────────────────── */
+    .checklist-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #f1f5f9}
+    .checklist-item:last-child{border-bottom:none}
+    .check-box{width:22px;height:22px;border:2px solid var(--border);border-radius:4px;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;background:#fff;transition:all .2s;margin-top:1px;font-size:13px}
+    .check-box.checked{background:var(--green);border-color:var(--green);color:#fff}
+    .check-text{flex:1;font-size:12px;line-height:1.5}
+    .check-code{font-size:10px;font-weight:700;color:var(--orange);margin-bottom:2px}
+    .checklist-progress{background:#e2e8f0;border-radius:4px;height:6px;margin-bottom:14px;overflow:hidden}
+    .checklist-fill{height:100%;background:var(--orange);border-radius:4px;transition:width .4s}
+
+    /* ── SIGNATURE PAD ───────────────────────────────────── */
+    .sig-wrap{border:1.5px solid var(--border);border-radius:8px;overflow:hidden;background:#fff;position:relative}
+    .sig-canvas{width:100%;height:180px;cursor:crosshair;display:block;touch-action:none}
+    .sig-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);pointer-events:none;transition:opacity .2s}
+    .sig-actions{display:flex;gap:8px;margin-top:8px}
+
+    /* ── BUTTONS ─────────────────────────────────────────── */
+    .btn{padding:10px 16px;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+    .btn-primary{background:var(--orange);color:#fff}
+    .btn-primary:hover{background:#c94f00}
+    .btn-secondary{background:var(--white);color:var(--navy);border:1.5px solid var(--border)}
+    .btn-danger{background:var(--red);color:#fff}
+    .btn-success{background:var(--green);color:#fff}
+    .btn-navy{background:var(--navy);color:#fff}
+    .btn-gold{background:var(--gold);color:#fff}
+    .btn-block{width:100%;padding:12px}
+    .btn:active{transform:scale(.97)}
+
+    /* ── ALERT BOX ───────────────────────────────────────── */
+    .alert{padding:10px 12px;border-radius:8px;font-size:12px;margin-bottom:12px;display:flex;align-items:flex-start;gap:8px}
+    .alert-warn{background:#fff7ed;border:1px solid #fed7aa;color:#92400e}
+    .alert-error{background:#fef2f2;border:1px solid #fecaca;color:#991b1b}
+    .alert-success{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
+    .alert-info{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af}
+
+    /* ── TRANSIT MILESTONES ──────────────────────────────── */
+    .milestone-list{padding:0;list-style:none}
+    .milestone-item{display:flex;gap:12px;padding:10px 0;position:relative}
+    .milestone-item:not(:last-child)::after{content:'';position:absolute;left:13px;top:32px;width:2px;height:calc(100% - 12px);background:#e2e8f0}
+    .mile-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;z-index:1}
+    .mile-dot.done{background:var(--green);color:#fff}
+    .mile-dot.active{background:var(--orange);color:#fff;box-shadow:0 0 0 4px rgba(230,92,0,.2)}
+    .mile-dot.pending{background:#e2e8f0;color:var(--muted)}
+    .mile-body{flex:1;padding-top:4px}
+    .mile-title{font-size:12px;font-weight:700}
+    .mile-time{font-size:10px;color:var(--muted);margin-top:2px}
+
+    /* ── DAMAGE ITEMS ─────────────────────────────────────── */
+    .damage-item{background:#fff;border:1.5px solid #fecaca;border-radius:8px;padding:12px;margin-bottom:8px}
+    .damage-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+    .damage-title{font-size:12px;font-weight:700;color:var(--red)}
+    .sev-chip{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px}
+    .sev-critical{background:#fef2f2;color:var(--red);border:1px solid #fecaca}
+    .sev-high{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}
+    .sev-med{background:#fefce8;color:#854d0e;border:1px solid #fef08a}
+    .sev-low{background:#f0fdf4;color:var(--green);border:1px solid #bbf7d0}
+    .damage-desc{font-size:11px;color:var(--muted);margin-top:3px}
+    .damage-meta{font-size:10px;color:var(--muted);margin-top:4px}
+
+    /* ── SUMMARY ─────────────────────────────────────────── */
+    .summary-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:12px}
+    .summary-row:last-child{border-bottom:none}
+    .summary-label{color:var(--muted)}
+    .summary-val{font-weight:700;color:var(--navy)}
+    .complete-stamp{background:linear-gradient(135deg,var(--orange),#c94f00);color:#fff;border-radius:10px;padding:20px;text-align:center;margin-bottom:14px}
+    .stamp-icon{font-size:40px;margin-bottom:6px}
+    .stamp-title{font-size:16px;font-weight:700;margin-bottom:4px}
+    .stamp-time{font-size:11px;opacity:.8}
+
+    /* ── JOB HEADER ──────────────────────────────────────── */
+    .job-header{background:linear-gradient(135deg,var(--orange),#c94f00);color:#fff;border-radius:var(--radius);padding:14px;margin-bottom:14px}
+    .job-header .job-id{font-size:11px;opacity:.8;margin-bottom:3px}
+    .job-header .job-name{font-size:15px;font-weight:700;margin-bottom:6px}
+    .job-meta{display:flex;gap:10px;flex-wrap:wrap}
+    .job-meta span{font-size:10px;background:rgba(255,255,255,.15);padding:2px 8px;border-radius:20px}
+
+    /* ── TOAST ───────────────────────────────────────────── */
+    .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:10px 18px;border-radius:8px;font-size:12px;font-weight:600;opacity:0;transition:all .3s;pointer-events:none;z-index:999;white-space:nowrap}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+    /* ── SECTION DIVIDER ─────────────────────────────────── */
+    .section-header{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding:8px 0 6px;margin-bottom:6px;border-bottom:1.5px solid var(--border)}
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="app-header">
+    <div class="header-icon">🚚</div>
+    <div class="header-text">
+      <div class="header-title">Swift Driver Field App</div>
+      <div class="header-sub">Driver Agent — Logistics Operations</div>
+    </div>
+    <span id="connectivity-badge" class="online-badge">🟢 Online</span>
+  </div>
+
+  <!-- SCREENS -->
+
+  <!-- ═══ SCREEN 1: JOB QUEUE / ACCEPT JOB ══════════════════════════ -->
+  <div id="screen-jobs" class="screen active">
+
+    <div class="status-grid">
+      <div class="stat-card">
+        <div class="stat-num" style="color:var(--orange)" id="stat-pending">2</div>
+        <div class="stat-label">รอรับงาน</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" style="color:var(--green)" id="stat-done">5</div>
+        <div class="stat-label">ส่งสำเร็จวันนี้</div>
+      </div>
+    </div>
+
+    <!-- Customer Journey Progress -->
+    <div class="card">
+      <div class="card-title">🗺️ Swift Delivery Journey</div>
+      <div class="journey-bar">
+        <div class="j-step">
+          <div class="j-dot done">1</div>
+          <div class="j-label">Pickup<br>Request</div>
+        </div>
+        <div class="j-connector done"></div>
+        <div class="j-step">
+          <div class="j-dot done">2</div>
+          <div class="j-label">Dispatch</div>
+        </div>
+        <div class="j-connector"></div>
+        <div class="j-step">
+          <div class="j-dot active" id="j3">3</div>
+          <div class="j-label">GPS<br>Pickup</div>
+        </div>
+        <div class="j-connector" id="jc3"></div>
+        <div class="j-step">
+          <div class="j-dot pending" id="j4">4</div>
+          <div class="j-label">In<br>Transit</div>
+        </div>
+        <div class="j-connector" id="jc4"></div>
+        <div class="j-step">
+          <div class="j-dot pending" id="j5">5</div>
+          <div class="j-label">Out for<br>Delivery</div>
+        </div>
+        <div class="j-connector" id="jc5"></div>
+        <div class="j-step">
+          <div class="j-dot pending" id="j6">6</div>
+          <div class="j-label">POD</div>
+        </div>
+        <div class="j-connector" id="jc6"></div>
+        <div class="j-step">
+          <div class="j-dot pending" id="j7">7</div>
+          <div class="j-label">Review</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Job List -->
+    <div class="section-header">รายการงาน — 04/09/2026</div>
+
+    <!-- Job 001 — Pending -->
+    <div class="job-item" id="job-001">
+      <div class="job-item-top">
+        <span class="job-item-id">SHP-2026-0904-001</span>
+        <span class="job-status-chip chip-pending" id="status-001">⏳ รอรับ</span>
+      </div>
+      <div class="job-item-name">บริษัท ABC Electronics — สินค้า 3 ชิ้น</div>
+      <div class="job-item-meta">
+        <span>📍 ลาดพร้าว 101, กรุงเทพฯ</span>
+        <span>⚖️ 12.5 kg</span>
+        <span>⏰ ก่อน 14:00</span>
+      </div>
+      <div class="job-actions">
+        <button class="btn btn-secondary" style="flex:1;font-size:12px" onclick="declineJob('001')">❌ ปฏิเสธ</button>
+        <button class="btn btn-primary" style="flex:2;font-size:12px" onclick="acceptJob('001')">✅ รับงาน</button>
+      </div>
+    </div>
+
+    <!-- Job 002 — Accepted/Active -->
+    <div class="job-item accepted" id="job-002">
+      <div class="job-item-top">
+        <span class="job-item-id">SHP-2026-0904-002</span>
+        <span class="job-status-chip chip-accepted" id="status-002">✅ รับแล้ว</span>
+      </div>
+      <div class="job-item-name">คุณสมชาย ใจดี — เอกสารด่วน 1 ชิ้น</div>
+      <div class="job-item-meta">
+        <span>📍 สุขุมวิท 55, กรุงเทพฯ</span>
+        <span>⚖️ 0.5 kg</span>
+        <span>⏰ ก่อน 12:00</span>
+      </div>
+      <div class="job-actions">
+        <button class="btn btn-navy" style="flex:1;font-size:12px"
+          onclick="navTo('checkin', document.querySelector('[data-screen=checkin]'))">
+          📍 ไป Pickup Check-in
+        </button>
+      </div>
+    </div>
+
+    <!-- Job 003 — Delivered -->
+    <div class="job-item" style="opacity:.6" id="job-003">
+      <div class="job-item-top">
+        <span class="job-item-id">SHP-2026-0904-003</span>
+        <span class="job-status-chip chip-delivered">📦 ส่งแล้ว</span>
+      </div>
+      <div class="job-item-name">ร้าน XYZ Store — สินค้า 5 ชิ้น</div>
+      <div class="job-item-meta">
+        <span>📍 อโศก, กรุงเทพฯ</span>
+        <span>✅ ส่งแล้ว 10:42 น.</span>
+      </div>
+    </div>
+
+  </div><!-- /screen-jobs -->
+
+  <!-- ═══ SCREEN 2: GPS PICKUP CHECK-IN [TC-DRIVER-01] ══════════════ -->
+  <div id="screen-checkin" class="screen">
+
+    <div class="job-header">
+      <div class="job-id">Shipment: SHP-2026-0904-002 · [TC-DRIVER-01]</div>
+      <div class="job-name">📍 GPS Pickup Check-in</div>
+      <div class="job-meta">
+        <span>📍 สุขุมวิท 55</span>
+        <span>📅 04/09/2026</span>
+        <span>⏰ ก่อน 12:00</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📡 GPS Pickup <span class="badge">TC-DRIVER-01 · Sev 9</span></div>
+      <div class="alert alert-error">⛔ TC-DRIVER-01 (Sev:9) — ต้องยืนยัน GPS ณ จุด Pickup ก่อนรับสินค้าทุกครั้ง ห้ามข้ามขั้นตอนนี้</div>
+      <div class="gps-display">
+        <div class="gps-status" id="gps-status">กำลังรอ GPS...</div>
+        <div class="gps-coords" id="gps-coords">กดปุ่มด้านล่างเพื่อรับตำแหน่ง</div>
+        <div class="gps-badge">
+          <span class="gps-dot inactive" id="gps-dot"></span>
+          <span id="gps-accuracy">ยังไม่ได้ตำแหน่ง</span>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block" onclick="doGPS()">📡 รับตำแหน่ง GPS</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🚗 ข้อมูล Driver</div>
+      <div class="form-group">
+        <label class="form-label">ชื่อ Driver <span class="req">*</span></label>
+        <input class="form-input" id="driver-name" placeholder="ชื่อ-นามสกุล"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">ทะเบียนรถ <span class="req">*</span></label>
+        <input class="form-input" id="vehicle-plate" placeholder="กข-1234 กรุงเทพ"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">สภาพพัสดุ ณ จุดรับ</label>
+        <select class="form-select" id="parcel-condition">
+          <option value="good">✅ สมบูรณ์ — ไม่มีความเสียหาย</option>
+          <option value="minor">⚠️ มีรอยเล็กน้อย — รับได้</option>
+          <option value="damaged">❌ เสียหาย — ต้องบันทึก Damage Report</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">📷 รูปถ่ายสินค้าก่อนรับ</label>
+        <div class="photo-zone" onclick="document.getElementById('pickup-photo').click()">
+          <input type="file" id="pickup-photo" accept="image/*" capture="environment" multiple
+            onchange="handlePickupPhotos(this)"/>
+          <div class="ph-icon">📷</div>
+          <div class="ph-text">ถ่ายรูปสินค้า + บรรจุภัณฑ์ก่อนโหลดรถ</div>
+        </div>
+        <div class="photo-preview" id="pickup-preview"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">หมายเหตุ</label>
+        <textarea class="form-textarea" id="pickup-note" placeholder="ระบุสิ่งที่พบ ณ จุด Pickup..."></textarea>
+      </div>
+      <button class="btn btn-success btn-block" onclick="submitPickup()">✅ ยืนยัน Pickup Check-in</button>
+    </div>
+
+  </div><!-- /screen-checkin -->
+
+  <!-- ═══ SCREEN 3: IN TRANSIT UPDATES ══════════════════════════════ -->
+  <div id="screen-transit" class="screen">
+
+    <div class="job-header">
+      <div class="job-id">Shipment: SHP-2026-0904-002</div>
+      <div class="job-name">🚚 In Transit Updates</div>
+      <div class="job-meta">
+        <span id="transit-driver-name">—</span>
+        <span id="transit-eta">ETA: กำลังคำนวณ</span>
+      </div>
+    </div>
+
+    <!-- Transit Milestones -->
+    <div class="card">
+      <div class="card-title">🗺️ Transit Milestones</div>
+      <ul class="milestone-list">
+        <li class="milestone-item">
+          <div class="mile-dot done">✅</div>
+          <div class="mile-body">
+            <div class="mile-title">Pickup Confirmed (GPS)</div>
+            <div class="mile-time" id="mile-pickup-time">—</div>
+          </div>
+        </li>
+        <li class="milestone-item">
+          <div class="mile-dot active" id="mile-transit-dot">🚚</div>
+          <div class="mile-body">
+            <div class="mile-title">In Transit</div>
+            <div class="mile-time" id="mile-transit-time">กำลังเดินทาง...</div>
+          </div>
+        </li>
+        <li class="milestone-item">
+          <div class="mile-dot pending" id="mile-outdelivery-dot">📦</div>
+          <div class="mile-body">
+            <div class="mile-title">Out for Delivery</div>
+            <div class="mile-time" id="mile-outdelivery-time">รอดำเนินการ</div>
+          </div>
+        </li>
+        <li class="milestone-item">
+          <div class="mile-dot pending" id="mile-pod-dot">✍️</div>
+          <div class="mile-body">
+            <div class="mile-title">POD Captured</div>
+            <div class="mile-time" id="mile-pod-time">รอดำเนินการ</div>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Status Update -->
+    <div class="card">
+      <div class="card-title">📡 อัพเดทสถานะ</div>
+      <div class="form-group">
+        <label class="form-label">สถานะปัจจุบัน</label>
+        <select class="form-select" id="transit-status">
+          <option value="in_transit">🚚 กำลังเดินทาง (In Transit)</option>
+          <option value="out_for_delivery">📦 ออกจัดส่งแล้ว (Out for Delivery)</option>
+          <option value="arrived">📍 ถึงปลายทางแล้ว</option>
+          <option value="delay">⏰ ล่าช้า — ระบุสาเหตุ</option>
+          <option value="halt">🛑 หยุดชั่วคราว — แจ้งปัญหา</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">ETA (เวลาถึงโดยประมาณ)</label>
+        <input class="form-input" id="eta-input" type="time"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">ตำแหน่งปัจจุบัน</label>
+        <input class="form-input" id="current-location" placeholder="เช่น อโศก, มีนบุรี, บางนา..."/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">หมายเหตุ</label>
+        <textarea class="form-textarea" id="transit-note" placeholder="รายละเอียดเพิ่มเติม..."></textarea>
+      </div>
+      <button class="btn btn-primary btn-block" onclick="updateTransitStatus()">📡 ส่ง Status Update ไปยัง MCP</button>
+    </div>
+
+    <!-- Driver Checklist CHK-D01–D10 -->
+    <div class="card">
+      <div class="card-title">📋 Driver Checklist <span class="badge" id="transit-check-label">0/10</span></div>
+      <div class="checklist-progress">
+        <div class="checklist-fill" id="transit-fill" style="width:0%"></div>
+      </div>
+      <div id="driver-checklist"></div>
+      <button class="btn btn-gold btn-block" style="margin-top:12px" onclick="submitDriverChecklist()">
+        📤 บันทึก Checklist ไปยัง System
+      </button>
+    </div>
+
+  </div><!-- /screen-transit -->
+
+  <!-- ═══ SCREEN 4: POD CAPTURE [TC-DRIVER-03] ══════════════════════ -->
+  <div id="screen-pod" class="screen">
+
+    <div class="job-header">
+      <div class="job-id">Shipment: SHP-2026-0904-002 · [TC-DRIVER-03]</div>
+      <div class="job-name">📷 Proof of Delivery (POD)</div>
+      <div class="job-meta">
+        <span>📍 สุขุมวิท 55</span>
+        <span>ต้องรูป + ลายเซ็น</span>
+      </div>
+    </div>
+
+    <div class="alert alert-error">⛔ TC-DRIVER-03 (Sev:9) — ต้องถ่ายรูปและรับลายเซ็นผู้รับทุกครั้ง ห้ามส่งงานโดยไม่มี POD</div>
+
+    <!-- POD Photos -->
+    <div class="card">
+      <div class="card-title">📷 รูปถ่าย POD <span class="badge">TC-DRIVER-03</span></div>
+      <div class="form-group">
+        <label class="form-label">รูปถ่ายสินค้าขณะส่งมอบ <span class="req">*</span></label>
+        <div class="photo-zone" onclick="document.getElementById('pod-photo').click()">
+          <input type="file" id="pod-photo" accept="image/*" capture="environment" multiple
+            onchange="handlePODPhotos(this)"/>
+          <div class="ph-icon">📷</div>
+          <div class="ph-text">ถ่ายรูปสินค้า + ผู้รับ (อย่างน้อย 1 รูป)</div>
+        </div>
+        <div class="photo-preview" id="pod-preview"></div>
+      </div>
+    </div>
+
+    <!-- Recipient Info -->
+    <div class="card">
+      <div class="card-title">👤 ข้อมูลผู้รับสินค้า</div>
+      <div class="form-group">
+        <label class="form-label">ชื่อผู้รับ <span class="req">*</span></label>
+        <input class="form-input" id="recipient-name" placeholder="ชื่อ-นามสกุล"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">เบอร์โทรผู้รับ</label>
+        <input class="form-input" id="recipient-phone" type="tel" placeholder="08x-xxx-xxxx"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">สภาพสินค้าเมื่อถึงปลายทาง</label>
+        <select class="form-select" id="delivery-condition">
+          <option value="perfect">✅ สมบูรณ์</option>
+          <option value="minor_damage">⚠️ มีรอยเล็กน้อย</option>
+          <option value="damaged">❌ เสียหาย — ต้องบันทึก Damage Report</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">ความคิดเห็นจากผู้รับ</label>
+        <textarea class="form-textarea" id="recipient-comment" placeholder="ความเห็น / คำขอเพิ่มเติม..."></textarea>
+      </div>
+    </div>
+
+    <!-- Signature Pad -->
+    <div class="card">
+      <div class="card-title">✍️ ลายเซ็นผู้รับ <span class="badge">Required</span></div>
+      <div class="alert alert-info">📌 ให้ผู้รับสินค้าเซ็นชื่อโดยตรงบนหน้าจอ</div>
+      <div class="sig-wrap">
+        <canvas id="pod-sig-canvas" class="sig-canvas"></canvas>
+        <div class="sig-placeholder" id="pod-sig-placeholder">✍️ ลายเซ็นผู้รับสินค้า</div>
+      </div>
+      <div class="sig-actions">
+        <button class="btn btn-secondary" style="flex:1" onclick="clearPODSig()">🗑️ ล้าง</button>
+        <button class="btn btn-primary" style="flex:2" onclick="savePODSig()">✅ ยืนยันลายเซ็น</button>
+      </div>
+    </div>
+
+    <button class="btn btn-success btn-block" style="margin-bottom:14px" onclick="submitPOD()">
+      📤 ยืนยันจัดส่งสำเร็จ — ส่ง POD
+    </button>
+
+  </div><!-- /screen-pod -->
+
+  <!-- ═══ SCREEN 5: DAMAGE REPORT ════════════════════════════════════ -->
+  <div id="screen-damage" class="screen">
+
+    <div id="damage-list-wrap">
+      <div class="section-header">รายการ Damage ที่บันทึกแล้ว (<span id="damage-count">0</span>)</div>
+      <div id="damage-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⚠️ บันทึก Damage Report ใหม่</div>
+      <div class="form-group">
+        <label class="form-label">ประเภทความเสียหาย <span class="req">*</span></label>
+        <select class="form-select" id="damage-type">
+          <option value="">-- เลือกประเภท --</option>
+          <option value="physical">กล่อง/บรรจุภัณฑ์บุบ ฉีก แตก</option>
+          <option value="water">เปียกน้ำ / ชื้น</option>
+          <option value="missing">สินค้าขาดหาย / ไม่ครบ</option>
+          <option value="wrong_item">สินค้าผิดรายการ</option>
+          <option value="contamination">ปนเปื้อน / มีกลิ่น</option>
+          <option value="fragile_broken">ของเปราะ / แตกหัก</option>
+          <option value="other">อื่น ๆ</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">ระดับความรุนแรง (PFMEA Severity) <span class="req">*</span></label>
+        <div class="sev-grid" id="dmg-sev-grid">
+          <div class="sev-btn" data-sev="9" onclick="selectDmgSev(this)">9<br><span style="font-size:8px;font-weight:400">Crit</span></div>
+          <div class="sev-btn" data-sev="8" onclick="selectDmgSev(this)">8<br><span style="font-size:8px;font-weight:400">High</span></div>
+          <div class="sev-btn" data-sev="6" onclick="selectDmgSev(this)">6<br><span style="font-size:8px;font-weight:400">Med</span></div>
+          <div class="sev-btn" data-sev="4" onclick="selectDmgSev(this)">4<br><span style="font-size:8px;font-weight:400">Low</span></div>
+          <div class="sev-btn" data-sev="2" onclick="selectDmgSev(this)">2<br><span style="font-size:8px;font-weight:400">Min</span></div>
+        </div>
+        <div id="dmg-sev-warn" style="display:none;margin-top:8px" class="alert alert-error">
+          ⛔ Sev ≥ 9: แจ้ง Dispatch Agent ทันที — halt_alert จะถูกส่งอัตโนมัติ
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Shipment ที่เกี่ยวข้อง</label>
+        <select class="form-select" id="damage-shipment">
+          <option value="SHP-2026-0904-001">SHP-2026-0904-001</option>
+          <option value="SHP-2026-0904-002" selected>SHP-2026-0904-002</option>
+          <option value="SHP-2026-0904-003">SHP-2026-0904-003</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">รายละเอียด <span class="req">*</span></label>
+        <textarea class="form-textarea" id="damage-desc" placeholder="อธิบายลักษณะความเสียหายที่พบ..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">📷 รูปถ่ายความเสียหาย (สูงสุด 5 รูป)</label>
+        <div class="photo-zone" onclick="document.getElementById('damage-photo').click()">
+          <input type="file" id="damage-photo" accept="image/*" multiple capture="environment"
+            onchange="handleDamagePhotos(this)"/>
+          <div class="ph-icon">📷</div>
+          <div class="ph-text">ถ่ายรูปทุกมุม — สำคัญสำหรับ Insurance Claim</div>
+        </div>
+        <div class="photo-preview" id="damage-preview"></div>
+      </div>
+      <button class="btn btn-danger btn-block" onclick="saveDamage()">⚠️ บันทึก Damage Report</button>
+    </div>
+
+  </div><!-- /screen-damage -->
+
+  <!-- ═══ SCREEN 6: JOB SUMMARY ══════════════════════════════════════ -->
+  <div id="screen-summary" class="screen">
+
+    <div id="summary-complete-wrap" style="display:none">
+      <div class="complete-stamp">
+        <div class="stamp-icon">📦</div>
+        <div class="stamp-title">จัดส่งสำเร็จ</div>
+        <div class="stamp-time" id="summary-timestamp">—</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📊 Job Summary</div>
+      <div class="summary-row"><span class="summary-label">Shipment ID</span><span class="summary-val">SHP-2026-0904-002</span></div>
+      <div class="summary-row"><span class="summary-label">Driver</span><span class="summary-val" id="sum-driver">—</span></div>
+      <div class="summary-row"><span class="summary-label">ทะเบียนรถ</span><span class="summary-val" id="sum-plate">—</span></div>
+      <div class="summary-row"><span class="summary-label">GPS Pickup</span><span class="summary-val" id="sum-gps">—</span></div>
+      <div class="summary-row"><span class="summary-label">Checklist (CHK-D01–D10)</span><span class="summary-val" id="sum-check">—</span></div>
+      <div class="summary-row"><span class="summary-label">Damage Reports</span><span class="summary-val" id="sum-damage">0</span></div>
+      <div class="summary-row"><span class="summary-label">Damage Sev ≥ 9</span><span class="summary-val" id="sum-critical" style="color:var(--red)">0</span></div>
+      <div class="summary-row"><span class="summary-label">POD ผู้รับ</span><span class="summary-val" id="sum-pod">—</span></div>
+      <div class="summary-row"><span class="summary-label">สถานะงาน</span><span class="summary-val" id="sum-status">กำลังดำเนินการ</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📡 MCP Sync Status</div>
+      <div class="alert alert-info" id="sync-alert">💡 ข้อมูลจะ sync อัตโนมัติเมื่อมีอินเทอร์เน็ต</div>
+      <button class="btn btn-primary btn-block" onclick="simulateSync()">🔄 Sync ไปยัง MCP Server</button>
+    </div>
+
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">📋 MCP Event Payload</div>
+      <pre id="mcp-payload" style="font-size:10px;line-height:1.6;overflow-x:auto;background:#f8fafc;padding:10px;border-radius:6px;color:#334155;white-space:pre-wrap"></pre>
+    </div>
+
+  </div><!-- /screen-summary -->
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-screen="jobs" onclick="navTo('jobs',this)">
+      <span class="nav-icon">📦</span>งาน<div class="nav-bar"></div>
+    </button>
+    <button class="nav-btn" data-screen="checkin" onclick="navTo('checkin',this)">
+      <span class="nav-icon">📍</span>Pickup<div class="nav-bar"></div>
+    </button>
+    <button class="nav-btn" data-screen="transit" onclick="navTo('transit',this)">
+      <span class="nav-icon">🚚</span>Transit<div class="nav-bar"></div>
+    </button>
+    <button class="nav-btn" data-screen="pod" onclick="navTo('pod',this)">
+      <span class="nav-icon">📷</span>POD<div class="nav-bar"></div>
+    </button>
+    <button class="nav-btn" data-screen="damage" onclick="navTo('damage',this)">
+      <span class="nav-icon">⚠️</span>Damage<div class="nav-bar"></div>
+    </button>
+    <button class="nav-btn" data-screen="summary" onclick="navTo('summary',this)">
+      <span class="nav-icon">📊</span>Summary<div class="nav-bar"></div>
+    </button>
+  </nav>
+
+</div><!-- .app -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+const state = {
+  gps: null,
+  pickupDone: false,
+  driverName: '',
+  vehiclePlate: '',
+  selectedDmgSev: null,
+  podPhotos: [],
+  pickupPhotos: [],
+  damagePhotos: [],
+  damages: [],
+  checklistDone: false,
+  podSigDone: false,
+  podSigDataUrl: null,
+  podDone: false,
+  recipientName: '',
+  transitStatusUpdated: false,
+  driverCheckDone: Array(10).fill(false)
+};
+
+// CHK-D01 through CHK-D10
+const DRIVER_CHECKLIST = [
+  {code:'CHK-D01', text:'ตรวจสอบรายการสินค้าตาม Manifest ครบถ้วน'},
+  {code:'CHK-D02', text:'ตรวจสอบบรรจุภัณฑ์ไม่มีความเสียหายก่อนรับ'},
+  {code:'CHK-D03', text:'ยืนยันที่อยู่จัดส่งกับผู้ส่งสินค้า'},
+  {code:'CHK-D04', text:'สแกน Barcode / ถ่ายรูปสินค้าก่อนโหลดรถ'},
+  {code:'CHK-D05', text:'ยืนยัน GPS Location ณ จุด Pickup (TC-DRIVER-01)'},
+  {code:'CHK-D06', text:'ตรวจสอบเส้นทางและประมาณเวลาจัดส่ง (ETA)'},
+  {code:'CHK-D07', text:'ถ่ายรูปรถและพัสดุก่อนออกเดินทาง'},
+  {code:'CHK-D08', text:'แจ้งลูกค้าปลายทางก่อนถึงอย่างน้อย 30 นาที'},
+  {code:'CHK-D09', text:'ตรวจสอบที่อยู่ปลายทางตรงกับใบนำส่ง'},
+  {code:'CHK-D10', text:'บันทึกเวลาถึงปลายทาง (ETA Actual)'}
+];
+
+// ══════════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════════
+function navTo(id, btn){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='summary') updateSummary();
+}
+
+// ══════════════════════════════════════════════════════════
+// CONNECTIVITY
+// ══════════════════════════════════════════════════════════
+function updateConnectivity(){
+  const el=document.getElementById('connectivity-badge');
+  if(navigator.onLine){el.className='online-badge';el.textContent='🟢 Online';}
+  else{el.className='offline-badge';el.textContent='🔴 Offline';}
+}
+window.addEventListener('online',updateConnectivity);
+window.addEventListener('offline',updateConnectivity);
+updateConnectivity();
+
+// ══════════════════════════════════════════════════════════
+// JOB QUEUE
+// ══════════════════════════════════════════════════════════
+function acceptJob(id){
+  const item=document.getElementById('job-'+id);
+  const chip=document.getElementById('status-'+id);
+  item.classList.add('accepted');
+  chip.className='job-status-chip chip-accepted';
+  chip.textContent='✅ รับแล้ว';
+  const actions=item.querySelector('.job-actions');
+  if(actions) actions.innerHTML=`<button class="btn btn-navy" style="flex:1;font-size:12px"
+    onclick="navTo('checkin',document.querySelector('[data-screen=checkin]'))">📍 ไป Pickup Check-in</button>`;
+  showToast('✅ รับงาน SHP-2026-0904-'+id+' แล้ว');
+  const pending=document.getElementById('stat-pending');
+  pending.textContent=Math.max(0,parseInt(pending.textContent)-1);
+}
+function declineJob(id){
+  const item=document.getElementById('job-'+id);
+  item.style.opacity='0.4';
+  const chip=document.getElementById('status-'+id);
+  chip.className='job-status-chip';chip.textContent='❌ ปฏิเสธ';
+  const actions=item.querySelector('.job-actions');
+  if(actions) actions.remove();
+  showToast('❌ ปฏิเสธงาน SHP-2026-0904-'+id);
+  const pending=document.getElementById('stat-pending');
+  pending.textContent=Math.max(0,parseInt(pending.textContent)-1);
+}
+
+// ══════════════════════════════════════════════════════════
+// GPS CHECK-IN (TC-DRIVER-01)
+// ══════════════════════════════════════════════════════════
+function doGPS(){
+  const statusEl=document.getElementById('gps-status');
+  const coordsEl=document.getElementById('gps-coords');
+  const dot=document.getElementById('gps-dot');
+  statusEl.textContent='กำลังรับสัญญาณ GPS...';
+  coordsEl.textContent='โปรดรอสักครู่...';
+  dot.className='gps-dot';
+  if(!navigator.geolocation){
+    state.gps={lat:13.7296,lng:100.5736,acc:10};
+    renderGPS(); return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      state.gps={lat:pos.coords.latitude,lng:pos.coords.longitude,acc:Math.round(pos.coords.accuracy)};
+      renderGPS();
+    },
+    ()=>{
+      state.gps={lat:13.7296,lng:100.5736,acc:10};
+      renderGPS();
+    },
+    {enableHighAccuracy:true,timeout:10000}
+  );
+}
+function renderGPS(){
+  document.getElementById('gps-status').textContent='✅ ได้รับตำแหน่ง GPS แล้ว';
+  document.getElementById('gps-coords').textContent=
+    'Lat: '+state.gps.lat.toFixed(6)+'\nLng: '+state.gps.lng.toFixed(6);
+  document.getElementById('gps-dot').className='gps-dot';
+  document.getElementById('gps-accuracy').textContent='±'+state.gps.acc+'m accuracy';
+  showToast('📍 GPS: '+state.gps.lat.toFixed(4)+', '+state.gps.lng.toFixed(4));
+}
+function handlePickupPhotos(input){
+  const preview=document.getElementById('pickup-preview');
+  Array.from(input.files).forEach(f=>{
+    const url=URL.createObjectURL(f);
+    const wrap=document.createElement('div');
+    wrap.className='photo-thumb-wrap';
+    wrap.innerHTML='<img src="'+url+'" class="photo-thumb"/>'
+      +'<button class="photo-remove" onclick="this.parentNode.remove()">✕</button>';
+    preview.appendChild(wrap);
+    state.pickupPhotos.push(url);
+  });
+}
+function submitPickup(){
+  const name=document.getElementById('driver-name').value.trim();
+  const plate=document.getElementById('vehicle-plate').value.trim();
+  if(!state.gps){showToast('⚠️ ต้องรับ GPS ก่อน (TC-DRIVER-01)');return;}
+  if(!name){showToast('⚠️ ใส่ชื่อ Driver');return;}
+  if(!plate){showToast('⚠️ ใส่ทะเบียนรถ');return;}
+  state.pickupDone=true;
+  state.driverName=name;
+  state.vehiclePlate=plate;
+  const now=new Date().toLocaleTimeString('th-TH');
+  document.getElementById('mile-pickup-time').textContent=now;
+  document.getElementById('transit-driver-name').textContent=name+' / '+plate;
+  // Advance journey
+  document.getElementById('j3').className='j-dot done';
+  document.getElementById('jc3').className='j-connector done';
+  document.getElementById('j4').className='j-dot active';
+  showToast('✅ Pickup Check-in สำเร็จ');
+  setTimeout(()=>navTo('transit',document.querySelector('[data-screen="transit"]')),700);
+}
+
+// ══════════════════════════════════════════════════════════
+// IN TRANSIT
+// ══════════════════════════════════════════════════════════
+function updateTransitStatus(){
+  const val=document.getElementById('transit-status').value;
+  const eta=document.getElementById('eta-input').value;
+  const now=new Date().toLocaleTimeString('th-TH');
+  state.transitStatusUpdated=true;
+  if(val==='out_for_delivery'){
+    document.getElementById('mile-transit-dot').className='mile-dot done';
+    document.getElementById('mile-transit-time').textContent=now;
+    document.getElementById('mile-outdelivery-dot').className='mile-dot active';
+    document.getElementById('mile-outdelivery-time').textContent=now;
+    // Journey step 5
+    document.getElementById('jc4').className='j-connector done';
+    document.getElementById('j5').className='j-dot active';
+  }
+  if(val==='halt') setTimeout(()=>showToast('🛑 halt_alert ส่งไปยัง Dispatch Agent'),800);
+  if(eta) document.getElementById('transit-eta').textContent='ETA: '+eta;
+  showToast('📡 status_update ส่งไปยัง MCP แล้ว');
+}
+
+// ══════════════════════════════════════════════════════════
+// DRIVER CHECKLIST (CHK-D01–D10)
+// ══════════════════════════════════════════════════════════
+function buildDriverChecklist(){
+  const container=document.getElementById('driver-checklist');
+  DRIVER_CHECKLIST.forEach((item,i)=>{
+    const el=document.createElement('div');
+    el.className='checklist-item';
+    el.innerHTML='<div class="check-box" id="chk-'+i+'" onclick="toggleDriverCheck('+i+')"></div>'
+      +'<div class="check-text"><div class="check-code">'+item.code+'</div>'+item.text+'</div>';
+    container.appendChild(el);
+  });
+}
+function toggleDriverCheck(i){
+  state.driverCheckDone[i]=!state.driverCheckDone[i];
+  const box=document.getElementById('chk-'+i);
+  box.classList.toggle('checked',state.driverCheckDone[i]);
+  box.textContent=state.driverCheckDone[i]?'✓':'';
+  updateChecklistProgress();
+}
+function updateChecklistProgress(){
+  const done=state.driverCheckDone.filter(v=>v).length;
+  const total=DRIVER_CHECKLIST.length;
+  document.getElementById('transit-check-label').textContent=done+'/'+total;
+  document.getElementById('transit-fill').style.width=(done/total*100)+'%';
+}
+function submitDriverChecklist(){
+  const done=state.driverCheckDone.filter(v=>v).length;
+  if(done<DRIVER_CHECKLIST.length){
+    showToast('⚠️ ยังทำ Checklist ไม่ครบ ('+done+'/'+DRIVER_CHECKLIST.length+')');return;
+  }
+  state.checklistDone=true;
+  showToast('✅ Checklist บันทึกไปยัง System แล้ว');
+}
+
+// ══════════════════════════════════════════════════════════
+// POD CAPTURE (TC-DRIVER-03)
+// ══════════════════════════════════════════════════════════
+function handlePODPhotos(input){
+  const preview=document.getElementById('pod-preview');
+  Array.from(input.files).forEach(f=>{
+    const url=URL.createObjectURL(f);
+    const wrap=document.createElement('div');
+    wrap.className='photo-thumb-wrap';
+    wrap.innerHTML='<img src="'+url+'" class="photo-thumb"/>'
+      +'<button class="photo-remove" onclick="this.parentNode.remove()">✕</button>';
+    preview.appendChild(wrap);
+    state.podPhotos.push(url);
+  });
+}
+
+// POD Signature Canvas
+let podSigCtx,podLastX=0,podLastY=0,podIsDrawing=false,podHasSig=false;
+function initPODSig(){
+  const canvas=document.getElementById('pod-sig-canvas');
+  podSigCtx=canvas.getContext('2d');
+  canvas.width=canvas.offsetWidth||400;
+  canvas.height=180;
+  podSigCtx.strokeStyle='#1f2d5a';
+  podSigCtx.lineWidth=2;
+  podSigCtx.lineCap='round';
+  podSigCtx.lineJoin='round';
+  function getPos(e){
+    const r=canvas.getBoundingClientRect();
+    const src=(e.touches&&e.touches[0])||e;
+    return{x:src.clientX-r.left,y:src.clientY-r.top};
+  }
+  canvas.addEventListener('mousedown',e=>{podIsDrawing=true;const p=getPos(e);podLastX=p.x;podLastY=p.y;});
+  canvas.addEventListener('mousemove',e=>{if(!podIsDrawing)return;podDraw(e,getPos);});
+  canvas.addEventListener('mouseup',()=>podIsDrawing=false);
+  canvas.addEventListener('mouseleave',()=>podIsDrawing=false);
+  canvas.addEventListener('touchstart',e=>{e.preventDefault();podIsDrawing=true;const p=getPos(e);podLastX=p.x;podLastY=p.y;});
+  canvas.addEventListener('touchmove',e=>{e.preventDefault();if(!podIsDrawing)return;podDraw(e,getPos);});
+  canvas.addEventListener('touchend',()=>podIsDrawing=false);
+}
+function podDraw(e,getPos){
+  const p=getPos(e);
+  podSigCtx.beginPath();
+  podSigCtx.moveTo(podLastX,podLastY);
+  podSigCtx.lineTo(p.x,p.y);
+  podSigCtx.stroke();
+  podLastX=p.x;podLastY=p.y;
+  podHasSig=true;
+  document.getElementById('pod-sig-placeholder').style.opacity='0';
+}
+function clearPODSig(){
+  const canvas=document.getElementById('pod-sig-canvas');
+  podSigCtx.clearRect(0,0,canvas.width,canvas.height);
+  podHasSig=false;
+  document.getElementById('pod-sig-placeholder').style.opacity='1';
+  state.podSigDone=false;state.podSigDataUrl=null;
+}
+function savePODSig(){
+  if(!podHasSig){showToast('⚠️ ผู้รับต้องลงลายเซ็นก่อน');return;}
+  state.podSigDataUrl=document.getElementById('pod-sig-canvas').toDataURL('image/png');
+  state.podSigDone=true;
+  showToast('✅ บันทึกลายเซ็นผู้รับแล้ว');
+}
+function submitPOD(){
+  const recipient=document.getElementById('recipient-name').value.trim();
+  if(state.podPhotos.length===0){showToast('⚠️ ต้องถ่ายรูป POD ก่อน (TC-DRIVER-03)');return;}
+  if(!recipient){showToast('⚠️ ใส่ชื่อผู้รับ');return;}
+  if(!state.podSigDone){showToast('⚠️ ต้องมีลายเซ็นผู้รับ (TC-DRIVER-03)');return;}
+  state.podDone=true;
+  state.recipientName=recipient;
+  const now=new Date().toLocaleTimeString('th-TH');
+  document.getElementById('mile-outdelivery-dot').className='mile-dot done';
+  document.getElementById('mile-outdelivery-time').textContent=now;
+  document.getElementById('mile-pod-dot').className='mile-dot done';
+  document.getElementById('mile-pod-time').textContent=now;
+  // Journey steps 6–7
+  document.getElementById('jc5').className='j-connector done';
+  document.getElementById('j6').className='j-dot done';
+  document.getElementById('jc6').className='j-connector done';
+  document.getElementById('j7').className='j-dot active';
+  showToast('✅ POD ส่งสำเร็จ — job_complete event');
+  setTimeout(()=>navTo('summary',document.querySelector('[data-screen="summary"]')),700);
+}
+
+// ══════════════════════════════════════════════════════════
+// DAMAGE REPORT
+// ══════════════════════════════════════════════════════════
+function handleDamagePhotos(input){
+  const preview=document.getElementById('damage-preview');
+  const max=5;
+  let count=preview.querySelectorAll('.photo-thumb-wrap').length;
+  Array.from(input.files).forEach(f=>{
+    if(count>=max){showToast('⚠️ แนบรูปได้สูงสุด 5 รูป');return;}
+    const url=URL.createObjectURL(f);
+    const wrap=document.createElement('div');
+    wrap.className='photo-thumb-wrap';
+    wrap.innerHTML='<img src="'+url+'" class="photo-thumb"/>'
+      +'<button class="photo-remove" onclick="this.parentNode.remove()">✕</button>';
+    preview.appendChild(wrap);
+    state.damagePhotos.push(url);count++;
+  });
+}
+function selectDmgSev(btn){
+  document.querySelectorAll('#dmg-sev-grid .sev-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  state.selectedDmgSev=parseInt(btn.dataset.sev);
+  document.getElementById('dmg-sev-warn').style.display=state.selectedDmgSev>=9?'flex':'none';
+}
+function saveDamage(){
+  const type=document.getElementById('damage-type').value;
+  const desc=document.getElementById('damage-desc').value.trim();
+  if(!type){showToast('⚠️ เลือกประเภทความเสียหาย');return;}
+  if(!state.selectedDmgSev){showToast('⚠️ เลือก Severity');return;}
+  if(!desc){showToast('⚠️ ใส่รายละเอียด');return;}
+  const dmgId='DMG-'+Date.now().toString().slice(-5);
+  const shipment=document.getElementById('damage-shipment').value;
+  const dmg={id:dmgId,type,sev:state.selectedDmgSev,shipment,desc,time:new Date().toLocaleTimeString('th-TH')};
+  state.damages.push(dmg);
+  renderDamageList();
+  // Reset form
+  document.getElementById('damage-type').value='';
+  document.getElementById('damage-desc').value='';
+  document.getElementById('damage-preview').innerHTML='';
+  state.selectedDmgSev=null;
+  state.damagePhotos=[];
+  document.querySelectorAll('#dmg-sev-grid .sev-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('dmg-sev-warn').style.display='none';
+  showToast('⚠️ บันทึก '+dmgId+' แล้ว');
+  if(dmg.sev>=9) setTimeout(()=>showToast('🛑 halt_alert ส่งไปยัง Dispatch Agent'),1000);
+}
+function renderDamageList(){
+  document.getElementById('damage-count').textContent=state.damages.length;
+  const list=document.getElementById('damage-list');
+  list.innerHTML='';
+  state.damages.forEach(d=>{
+    const sevClass=d.sev>=9?'sev-critical':d.sev>=7?'sev-high':d.sev>=5?'sev-med':'sev-low';
+    list.innerHTML+='<div class="damage-item">'
+      +'<div class="damage-header"><span class="damage-title">'+d.id+' — '+d.type+'</span>'
+      +'<span class="sev-chip '+sevClass+'">Sev '+d.sev+'</span></div>'
+      +'<div class="damage-desc">'+d.desc+'</div>'
+      +'<div class="damage-meta">'+d.shipment+' · '+d.time+'</div>'
+      +'</div>';
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// SUMMARY + MCP PAYLOAD
+// ══════════════════════════════════════════════════════════
+function updateSummary(){
+  document.getElementById('sum-driver').textContent=state.driverName||'—';
+  document.getElementById('sum-plate').textContent=state.vehiclePlate||'—';
+  document.getElementById('sum-gps').textContent=
+    state.gps?(state.gps.lat.toFixed(5)+', '+state.gps.lng.toFixed(5)):'—';
+  const done=state.driverCheckDone.filter(v=>v).length;
+  document.getElementById('sum-check').textContent=done+'/'+DRIVER_CHECKLIST.length;
+  document.getElementById('sum-damage').textContent=state.damages.length;
+  const crit=state.damages.filter(d=>d.sev>=9).length;
+  document.getElementById('sum-critical').textContent=crit;
+  document.getElementById('sum-pod').textContent=state.podDone?('✅ '+state.recipientName):'—';
+  const complete=state.pickupDone&&state.podDone;
+  document.getElementById('sum-status').textContent=complete?'✅ ส่งสำเร็จ':'🔄 กำลังดำเนินการ';
+  document.getElementById('summary-complete-wrap').style.display=complete?'block':'none';
+  if(complete) document.getElementById('summary-timestamp').textContent=new Date().toLocaleString('th-TH');
+  const payload={
+    event_type:'job_complete',
+    client:'swift',
+    domain:'logistics_delivery',
+    shipment_id:'SHP-2026-0904-002',
+    driver:state.driverName||'N/A',
+    vehicle:state.vehiclePlate||'N/A',
+    gps_pickup:state.gps,
+    checklist_completed:done+'/'+DRIVER_CHECKLIST.length,
+    damages:state.damages.map(d=>({id:d.id,type:d.type,sev:d.sev,shipment:d.shipment,time:d.time})),
+    pod:{
+      recipient:state.recipientName||null,
+      signed:state.podSigDone,
+      photos:state.podPhotos.length
+    },
+    timestamp:new Date().toISOString()
+  };
+  document.getElementById('mcp-payload').textContent=JSON.stringify(payload,null,2);
+}
+function simulateSync(){
+  showToast('🔄 กำลัง Sync...');
+  setTimeout(()=>{
+    document.getElementById('sync-alert').className='alert alert-success';
+    document.getElementById('sync-alert').textContent=
+      '✅ Sync สำเร็จ — MCP event job_complete ส่งไปยัง Swift MCP Server แล้ว';
+    showToast('✅ Sync ไปยัง MCP Server เรียบร้อย');
+  },1500);
+}
+
+// ══════════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════════
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+buildDriverChecklist();
+initPODSig();
+
+// ── Service Worker (PWA Offline Support) ──────────────────
+if('serviceWorker' in navigator){
+  const swCode=`
+self.addEventListener('install',e=>e.waitUntil(
+  caches.open('swift-driver-v1').then(c=>c.addAll(['/']))
+));
+self.addEventListener('fetch',e=>e.respondWith(
+  caches.match(e.request).then(r=>r||fetch(e.request).catch(()=>new Response('Offline')))
+));`;
+  const blob=new Blob([swCode],{type:'application/javascript'});
+  const swUrl=URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(()=>{});
+}
+</script>
+</body>
+</html>

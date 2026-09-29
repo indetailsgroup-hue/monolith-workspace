@@ -9,11 +9,12 @@
  */
 
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSessionStore } from '../core/auth/useSessionStore';
 
 export function SignIn(): React.ReactElement {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const signIn = useSessionStore((s) => s.signIn);
   const session = useSessionStore((s) => s.session);
 
@@ -29,7 +30,11 @@ export function SignIn(): React.ReactElement {
     const result = await signIn(email, password);
     setSubmitting(false);
     if (result.ok) {
-      navigate('/');
+      const requestedPath = searchParams.get('next');
+      const safeNext = requestedPath?.startsWith('/') && !requestedPath.startsWith('//')
+        ? requestedPath
+        : '/';
+      navigate(safeNext);
     } else {
       setError(result.error);
     }

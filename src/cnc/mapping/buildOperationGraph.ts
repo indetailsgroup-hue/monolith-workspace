@@ -25,6 +25,7 @@ import type {
 import { getToolsUsed } from '../operation/operationTypes';
 import { mapDrillMapToOps, type MapDrillOptions } from './mapDrillMapToOps';
 import { mapMinifixToOps, type MapMinifixOptions } from './mapMinifixToOps';
+import { mapAllKerfPatternsToOps, type KerfPatternsByPanelId } from './mapKerfPatternToOps';
 
 // ============================================
 // TYPES
@@ -52,6 +53,8 @@ export interface BuildStats {
   outOfBoundsCount: number;
   /** ADR-065: Number of duplicate-position operations dropped during dedupe */
   duplicatePositionsRemoved: number;
+  /** Phase 6: Number of kerf SLOT operations added */
+  kerfSlotOperations: number;
 }
 
 export interface BuildOperationGraphOptions {
@@ -59,6 +62,8 @@ export interface BuildOperationGraphOptions {
   drillMapOptions?: MapDrillOptions;
   /** Minifix mapping options */
   minifixOptions?: MapMinifixOptions;
+  /** Kerf slot patterns by panel (Curved Panel System Phase 6) */
+  kerfPatterns?: KerfPatternsByPanelId;
   /** Tool version string */
   toolVersion?: string;
 }
@@ -148,6 +153,13 @@ export function buildOperationGraph(
   // Combine operations
   const allOperations = [...drillResult.operations, ...minifixResult.operations];
 
+  // Phase 6: Map kerf SLOT operations (Curved Panel System)
+  const kerfResult = options.kerfPatterns
+    ? mapAllKerfPatternsToOps(options.kerfPatterns)
+    : { operations: [], warnings: [] };
+  warnings.push(...kerfResult.warnings);
+  allOperations.push(...kerfResult.operations);
+
   // ADR-065: Dedupe operations sharing the same panel + coordinate (DUPLICATE_POSITION)
   // Minifix cam/bolt points live in BOTH drillmap.json and connectors.minifix.json,
   // so the combined list can describe the same physical hole twice.
@@ -194,6 +206,7 @@ export function buildOperationGraph(
     toolsUsed: graph.toolsUsed,
     outOfBoundsCount: boundsResult.outOfBoundsCount,
     duplicatePositionsRemoved: dedupeResult.removedCount,
+    kerfSlotOperations: kerfResult.operations.length,
   };
 
   return { graph, warnings, errors, stats };

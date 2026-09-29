@@ -1,58 +1,148 @@
-# Supabase config — determined-williams (Monolith / DAPH) STANDALONE
-# Q1 decision: standalone DB (self-contained invariant; separate-monolith-tcck → no TCCK coupling).
-# C12 foundation (00000000000000_c12_foundation.sql) is applied first by `supabase db reset`.
-# For reference: https://supabase.com/docs/guides/local-development/cli/config
-
-project_id = "determined-williams"
+# =============================================================================
+# supabase/config.toml — Monolith Manufacturing OS (FPR sub-system)
+# Registers Deno Edge Functions for the field-purchase module.
+# Apply: supabase db push   (or apply_migrations.sh for raw SQL)
+# =============================================================================
 
 [api]
 enabled = true
-port = 54321
-schemas = ["public", "graphql_public"]
+port    = 54321
+schemas = ["public", "storage", "graphql_public"]
 extra_search_path = ["public", "extensions"]
 max_rows = 1000
 
 [db]
-port = 54322
-shadow_port = 54320
-health_timeout = "2m"
-# ต้องตรงกับเวอร์ชัน remote (เท่ากับ cp06 platform เพื่อความเข้ากันของ C12)
-major_version = 17
-
-[db.pooler]
-enabled = false
-
-[auth]
-enabled = true
-# C12 helpers อ่าน auth.jwt() app_metadata.{roles, site_codes} และ auth.uid()
-# (Local dev: seed JWT app_metadata ให้มี roles/site_codes ตาม C12 — เช่น site_codes=["BKK-HQ-01"])
-site_url = "http://127.0.0.1:5199"
-additional_redirect_urls = ["http://127.0.0.1:5199", "http://localhost:5199", "http://127.0.0.1:3000"]
+port          = 54322
+shadow_port   = 54320
+major_version = 15
 
 [studio]
 enabled = true
-port = 54323
+port    = 54323
+
+[inbucket]
+enabled = true
+port    = 54324
+smtp_port = 54325
+pop3_port = 54326
 
 [storage]
-enabled = false
+enabled = true
 
-[realtime]
-enabled = false
+[auth]
+enabled      = true
+site_url     = "http://localhost:3000"
+jwt_expiry   = 3600
+enable_signup = true
+
+# Mirror the existing RPC identity contract in locally issued Auth tokens.
+# Hosted Supabase requires enabling this same function in Auth Hooks separately.
+[auth.hook.custom_access_token]
+enabled = true
+uri = "pg-functions://postgres/public/custom_access_token_hook"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Edge Functions
+# ─────────────────────────────────────────────────────────────────────────────
+
+# FPR LINE Webhook Handler
+# Source: line_webhook_handler.ts (project root — symlinked or copied to function folder)
+# Receives inbound LINE webhook events for the FPR channel.
+# HMAC-SHA256 signature verified inline; no JWT verification by LINE gateway.
+[functions.field-purchase-line]
+enabled      = true
+verify_jwt   = false   # LINE calls this directly with x-line-signature header
+import_map   = "./import_map.json"
+
+# LINE OA Dispatch Worker
+# Source: line_oa_dispatch_worker.ts (project root — symlinked or copied to function folder)
+# Drains pending line_oa_outbound_messages rows and POSTs to LINE Messaging API.
+# Called by pg_notify trigger (0197) or directly via Bearer SERVICE_ROLE_KEY.
+[functions.line-oa-dispatch-worker]
+enabled    = true
+verify_jwt = true    # Requires Bearer SERVICE_ROLE_KEY or x-invoke-key header
+
+# ─────────────────────────────────────────────────────────────────────────────
+# pg_cron schedules registered in migrations
+# (listed here for documentation; actual registration is in SQL migrations)
+#
+#   fpr-expire-sessions          */15 * * * *   (0179) fn_expire_fpr_sessions
+#   fpr-summary-refresh          0    * * * *   (0186) rpc_refresh_fpr_summary
+#   fpr-retry-notifications      */10 * * * *   (0196) rpc_retry_fpr_notifications
+#   fpr-auto-uncancel            0    2 * * *   (0205) fn_cron_auto_uncancel_stale_fpr
+# ─────────────────────────────────────────────────────────────────────────────
 
 # ---------------------------------------------------------------------------
-# Edge Functions — verify_jwt (S7-1, scrutiny รอบ 7):
-# default ของ Supabase = ต้องมี JWT → endpoint ที่ "คนนอก/LINE server" เรียกตรงต้องปิด
-# ความปลอดภัยของแต่ละตัวอยู่ข้างใน: line-webhook/approval-postback = HMAC signature (Vault),
-# line-login = แลก code กับ LINE โดยตรง, doc-view = token uuid อายุจำกัด + audit
+# Edge Functions — Monolith eTax & Notification workers (release/15.0.0)
 # ---------------------------------------------------------------------------
-[functions.line-webhook]
+[functions.etax-submit-worker]
 verify_jwt = false
 
-[functions.approval-postback]
+[functions.notify-overdue]
 verify_jwt = false
 
-[functions.line-login]
-verify_jwt = false
+# ---------------------------------------------------------------------------
+# pg_cron scheduled jobs (updated: release/15.6.0 — 8 jobs total)
+#
+# ┌───────── minute (0-59)
+# │  ┌──────── hour (0-23)
+# │  │  ┌───── day-of-month (1-31)
+# │  │  │  ┌── month (1-12)
+# │  │  │  │  ┌─ day-of-week (0-7, 0/7=Sun)
+# │  │  │  │  │
+# job name                          schedule        description
+# ──────────────────────────────────────────────────────────────────────────
+# [1] etax-submit-worker             */5 * * * *     poll & submit queued eTax docs
+# [2] notify-overdue                 0 1 * * *       nightly overdue invoice alerts
+# [3] refresh-etax-compliance-mv     */15 * * * *    refresh mv_etax_compliance_dashboard
+# [4] check-mv-refresh-lag           */5 * * * *     alert if MV refresh > 15 min stale
+# [5] refresh-etax-health-trend-mv   0 0 * * *       daily refresh mv_etax_health_trend
+# [6] auto-create-etax-partition     0 0 20 * *      pre-create next monthly partition
+# [7] refresh-etax-sla-mv            0 * * * *       hourly refresh mv_etax_submission_sla
+# [8] archive-etax-sla-breach-daily  15 0 * * *      daily SLA breach archive → etax_sla_breach_archive
+# ---------------------------------------------------------------------------
+[cron."etax-submit-worker"]
+schedule = "*/5 * * * *"
+command  = "SELECT net.http_post(url:='http://localhost:8081/functions/v1/etax-submit-worker', headers:='{\"Content-Type\":\"application/json\"}'::jsonb, body:='{}'::jsonb);"
 
-[functions.doc-view]
-verify_jwt = false
+[cron."notify-overdue"]
+schedule = "0 1 * * *"
+command  = "SELECT net.http_post(url:='http://localhost:8081/functions/v1/notify-overdue', headers:='{\"Content-Type\":\"application/json\"}'::jsonb, body:='{}'::jsonb);"
+
+[cron."refresh-etax-compliance-mv"]
+schedule = "*/15 * * * *"
+command  = "SELECT rpc_refresh_etax_compliance_mv();"
+
+[cron."check-mv-refresh-lag"]
+schedule = "*/5 * * * *"
+command  = "SELECT fn_check_mv_refresh_lag();"
+
+[cron."refresh-etax-health-trend-mv"]
+schedule = "0 0 * * *"
+command  = "SELECT rpc_refresh_etax_health_trend_mv();"
+
+
+# [6] Auto-create next month's etax_submissions partition (runs 20th of each month)
+#     Ensures the upcoming monthly partition exists before the month starts.
+[cron.jobs.auto-create-etax-partition]
+schedule = "0 0 20 * *"
+command  = "SELECT public.fn_auto_create_next_etax_partition();"
+
+
+# [7] Hourly refresh of mv_etax_submission_sla (SLA compliance materialized view)
+#     Keeps SLA breach flags and severity tiers fresh for rpc_etax_submission_sla_cached().
+[cron."refresh-etax-sla-mv"]
+schedule = "0 * * * *"
+command  = "SELECT public.fn_refresh_mv_etax_submission_sla();"
+
+# [8] Daily SLA breach archive (Migration 0201 — runs 00:15 UTC)
+#     Archives v_etax_sla_breach_timeline rows into etax_sla_breach_archive
+#     for long-term retention beyond the 90-day live view window.
+[cron."archive-etax-sla-breach-daily"]
+schedule = "15 0 * * *"
+command  = "SELECT public.fn_archive_etax_sla_breach_timeline();"
+
+
+[functions.etax-risk-notify]
+verify_jwt = true
+

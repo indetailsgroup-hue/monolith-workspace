@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LINE OA Customer Journey — MONOLITH n:163</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:#1f2d5a; --gold:#c9a84c; --green:#2d7a4f;
+    --purple:#5b4fcf; --red:#c0392b; --orange:#e07b39;
+    --line:#06c755; --bg:#f8f9fc; --card:#ffffff;
+    --border:#e2e8f0; --text:#1e293b; --muted:#64748b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.7;}
+
+  /* ── Header ── */
+  .page-header{background:linear-gradient(135deg,var(--navy) 0%,#2a3d7a 60%,#1a2550 100%);color:#fff;padding:40px 48px 36px;border-bottom:4px solid var(--line);}
+  .page-header .badge{display:inline-block;background:var(--line);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.5px;margin-bottom:12px;text-transform:uppercase;}
+  .page-header h1{font-size:26px;font-weight:800;margin-bottom:6px;}
+  .page-header p{font-size:14px;opacity:.8;margin-bottom:16px;}
+  .header-meta{display:flex;gap:20px;flex-wrap:wrap;}
+  .meta-chip{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:6px 14px;font-size:12px;}
+  .meta-chip strong{display:block;font-size:10px;opacity:.7;letter-spacing:.5px;text-transform:uppercase;}
+
+  /* ── Tabs ── */
+  .tab-bar{background:#fff;border-bottom:2px solid var(--border);padding:0 48px;display:flex;gap:4px;overflow-x:auto;}
+  .tab-btn{padding:14px 18px;font-size:13px;font-weight:600;font-family:'Sarabun',sans-serif;cursor:pointer;border:none;background:none;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:all .2s;}
+  .tab-btn.active{color:var(--line);border-bottom-color:var(--line);}
+  .tab-btn:hover{color:var(--text);}
+  .tab-content{display:none;padding:36px 48px 60px;}
+  .tab-content.active{display:block;}
+
+  /* ── Cards ── */
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:20px;}
+  .card-title{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+  .section-title{font-size:14px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin:28px 0 12px;border-bottom:2px solid var(--border);padding-bottom:6px;}
+
+  /* ── Journey Timeline ── */
+  .journey-wrap{display:flex;flex-direction:column;gap:0;}
+  .stage{display:flex;gap:0;align-items:stretch;}
+  .stage-connector{display:flex;flex-direction:column;align-items:center;min-width:56px;}
+  .stage-dot{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#fff;flex-shrink:0;z-index:1;}
+  .stage-line{flex:1;width:3px;background:var(--border);}
+  .stage-body{flex:1;padding:0 0 32px 20px;}
+  .stage-header{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+  .stage-num{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+  .stage-title{font-size:17px;font-weight:700;color:var(--navy);}
+  .stage-subtitle{font-size:13px;color:var(--muted);margin-bottom:12px;}
+  .stage-event-badge{display:inline-block;background:#f0f4ff;border:1px solid #c7d2fe;color:var(--purple);font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;font-family:monospace;margin-bottom:12px;}
+  .stage-desc{font-size:14px;color:var(--text);line-height:1.7;margin-bottom:12px;}
+  .trigger-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+  .tag{display:inline-block;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600;}
+  .tag-trigger{background:#e0f2fe;color:#0369a1;}
+  .tag-channel{background:#f0fdf4;color:#166534;}
+  .tag-action{background:#fef3c7;color:#92400e;}
+  .tag-sla{background:#fee2e2;color:#991b1b;}
+
+  /* ── Flex Message Mockup ── */
+  .flex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px;margin-bottom:20px;}
+  .flex-mock{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.1);max-width:300px;}
+  .flex-header{padding:14px 16px;display:flex;align-items:center;gap:10px;color:#fff;}
+  .flex-header .icon{font-size:22px;}
+  .flex-header .title{font-size:14px;font-weight:700;line-height:1.3;}
+  .flex-body{padding:12px 16px;display:flex;flex-direction:column;gap:6px;}
+  .flex-row{display:flex;gap:8px;font-size:12px;}
+  .flex-label{color:#888;flex:2;min-width:60px;}
+  .flex-val{color:#111;font-weight:600;flex:3;}
+  .flex-footer{padding:10px 12px;display:flex;flex-direction:column;gap:6px;}
+  .flex-btn{padding:8px 12px;border-radius:8px;font-size:12px;font-weight:700;text-align:center;border:none;cursor:pointer;font-family:'Sarabun',sans-serif;}
+  .flex-btn-primary{background:var(--navy);color:#fff;}
+  .flex-btn-secondary{background:#f1f5f9;color:var(--navy);}
+  .flex-btn-green{background:var(--green);color:#fff;}
+  .flex-btn-gold{background:var(--gold);color:#fff;}
+  .flex-btn-purple{background:var(--purple);color:#fff;}
+  .flex-btn-red{background:var(--red);color:#fff;}
+  .flex-btn-link{background:none;color:var(--navy);text-decoration:underline;padding:4px 0;}
+
+  /* ── Rich Menu ── */
+  .rich-menu-wrap{max-width:580px;}
+  .rich-menu-preview{background:#f0f4ff;border:2px dashed #a5b4fc;border-radius:12px;padding:12px;margin-bottom:16px;}
+  .rich-menu-label{font-size:12px;font-weight:700;color:var(--purple);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;}
+  .rich-menu-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;border-radius:8px;overflow:hidden;}
+  .rich-cell{background:#1f2d5a;color:#fff;padding:18px 10px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:80px;cursor:pointer;transition:background .2s;}
+  .rich-cell:hover{background:#2a3d7a;}
+  .rich-cell .icon{font-size:24px;}
+  .rich-cell .label{font-size:12px;font-weight:700;line-height:1.2;}
+  .rich-cell.gold{background:var(--gold);}
+  .rich-cell.green{background:var(--green);}
+  .rich-cell.purple{background:var(--purple);}
+  .rich-menu-spec{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .spec-item{background:#f8f9fc;border:1px solid var(--border);border-radius:8px;padding:12px;}
+  .spec-item label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:4px;}
+  .spec-item span{font-size:14px;font-weight:600;color:var(--text);}
+
+  /* ── Settings Table ── */
+  .spec-table{width:100%;border-collapse:collapse;font-size:14px;}
+  .spec-table th{background:var(--navy);color:#fff;padding:10px 14px;text-align:left;font-weight:600;font-size:13px;}
+  .spec-table td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top;}
+  .spec-table tr:last-child td{border-bottom:none;}
+  .spec-table tr:nth-child(even){background:#f8f9fc;}
+  code{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:4px;padding:1px 6px;font-family:'Courier New',monospace;font-size:12.5px;color:#1e293b;}
+
+  /* ── Code Block ── */
+  .code-block{background:#0f172a;color:#e2e8f0;border-radius:10px;padding:20px 22px;font-family:'Courier New',monospace;font-size:12.5px;line-height:1.8;overflow-x:auto;white-space:pre;}
+  .k{color:#7dd3fc;font-weight:600;} .s{color:#86efac;} .c{color:#94a3b8;font-style:italic;}
+  .n{color:#fbbf24;} .v{color:#f9a8d4;}
+
+  /* ── Info Boxes ── */
+  .info-box{border-left:4px solid var(--line);background:#f0fdf4;padding:14px 18px;border-radius:0 8px 8px 0;margin-bottom:16px;font-size:14px;}
+  .warn-box{border-left:4px solid var(--orange);background:#fff7ed;padding:14px 18px;border-radius:0 8px 8px 0;margin-bottom:16px;font-size:14px;}
+  .tip-box{border-left:4px solid var(--purple);background:#f5f3ff;padding:14px 18px;border-radius:0 8px 8px 0;margin-bottom:16px;font-size:14px;}
+
+  /* ── KV Grid ── */
+  .kv-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+  .kv-item{background:#f8f9fc;border:1px solid var(--border);border-radius:8px;padding:12px 16px;}
+  .kv-item .kv-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px;}
+  .kv-item .kv-val{font-size:15px;font-weight:700;color:var(--navy);}
+
+  /* ── Flow Diagram ── */
+  .flow-row{display:flex;align-items:center;gap:0;flex-wrap:wrap;margin-bottom:8px;}
+  .flow-box{background:#fff;border:2px solid var(--border);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--navy);white-space:nowrap;}
+  .flow-box.trigger{border-color:var(--line);background:#f0fdf4;color:var(--green);}
+  .flow-box.agent{border-color:var(--purple);background:#f5f3ff;color:var(--purple);}
+  .flow-box.flex{border-color:var(--gold);background:#fffbeb;color:#92400e;}
+  .flow-box.customer{border-color:var(--navy);background:#eff6ff;color:var(--navy);}
+  .flow-arrow{font-size:18px;color:var(--muted);padding:0 8px;}
+
+  /* ── Auto-reply Rules ── */
+  .rule-card{border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px;}
+  .rule-header{background:var(--navy);color:#fff;padding:10px 16px;font-size:13px;font-weight:700;display:flex;justify-content:space-between;align-items:center;}
+  .rule-body{padding:14px 16px;font-size:13px;}
+  .rule-keyword{display:inline-block;background:#e0e7ff;color:var(--purple);border-radius:4px;padding:2px 8px;font-weight:700;font-family:monospace;margin:2px;}
+
+  /* ── Steps ── */
+  .steps-list{list-style:none;display:flex;flex-direction:column;gap:10px;}
+  .steps-list li{display:flex;gap:14px;align-items:flex-start;}
+  .step-num{min-width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:2px;}
+  .step-content{font-size:14px;color:var(--text);}
+  .step-content strong{color:var(--navy);}
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="badge">n:163 · LINE OA Customer Journey</div>
+  <h1>LINE Official Account — Customer Journey</h1>
+  <p>Customer experience ตั้งแต่ add LINE OA จนถึง installation complete พร้อม Flex Message ทุก stage และ Rich Menu design</p>
+  <div class="header-meta">
+    <div class="meta-chip"><strong>Document</strong>thai_line_oa_customer_journey.html</div>
+    <div class="meta-chip"><strong>Version</strong>v1.0 · 2025-09</div>
+    <div class="meta-chip"><strong>Stages</strong>10 Customer Journey Stages</div>
+    <div class="meta-chip"><strong>Flex Events</strong>10 Customer-facing Messages</div>
+    <div class="meta-chip"><strong>Rich Menu</strong>6 cells · 3-column grid</div>
+    <div class="meta-chip"><strong>API</strong>LINE Messaging API v3 (no LINE Notify)</div>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('journey',this)">🗺️ Customer Journey</button>
+  <button class="tab-btn" onclick="switchTab('flexmsg',this)">💬 Flex Message Previews</button>
+  <button class="tab-btn" onclick="switchTab('richmenu',this)">🎛️ Rich Menu Design</button>
+  <button class="tab-btn" onclick="switchTab('settings',this)">⚙️ LINE OA Settings</button>
+  <button class="tab-btn" onclick="switchTab('autoreply',this)">🤖 Auto-reply Rules</button>
+  <button class="tab-btn" onclick="switchTab('setup',this)">🔌 LIFF &amp; Tech Setup</button>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     TAB 01: CUSTOMER JOURNEY
+════════════════════════════════════════════════════════════════════ -->
+<div id="tab-journey" class="tab-content active">
+  <div class="card">
+    <div class="card-title">🗺️ Customer Journey — 10 Stages (Add LINE OA → Installation Complete)</div>
+    <div class="info-box">
+      <strong>Channel:</strong> ลูกค้าทุกคนมี 1 LINE OA channel — <strong>@MONOLITH</strong> |
+      การสื่อสารทั้งหมดผ่าน LINE OA push message (Flex Message) |
+      ภายในทีม MONOLITH ใช้ LINE Group Bot แยกต่างหาก |
+      <strong>LINE Notify deprecated March 2025</strong> — ใช้ Messaging API เท่านั้น
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="journey-wrap">
+
+      <!-- Stage 1 -->
+      <div class="stage">
+        <div class="stage-connector">
+          <div class="stage-dot" style="background:var(--line);">1</div>
+          <div class="stage-line"></div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-header">
+            <div>
+              <div class="stage-num">Stage 01</div>
+              <div class="stage-title">Add LINE OA &amp; Follow</div>
+            </div>
+          </div>
+          <div class="stage-subtitle">ลูกค้า add @MONOLITH เป็นเพื่อน → ระบบบันทึก userId → ส่ง Welcome Flex</div>
+          <div>
+            <span class="tag tag-trigger">Trigger: follow event</span>
+            <span class="tag tag-channel">LINE OA Webhook</span>
+            <span class="tag tag-action">Auto Welcome Message</span>
+          </div>
+          <div class="stage-desc" style="margin-top:10px;">
+            เมื่อลูกค้า scan QR code หรือค้นหา LINE OA ของ MONOLITH และกด "เพิ่มเพื่อน"
+            ระบบจะรับ <code>follow</code> event, บันทึก <code>line_user_id</code> + <code>display_name</code> ลง Supabase,
+            และส่ง Welcome Flex Message ทันที พร้อมแสดง Rich Menu
+          </div>
+          <div class="flow-row">
+            <div class="flow-box trigger">👤 ลูกค้า Add OA</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box agent">line_oa.py webhook</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box agent">register_customer()</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box flex">Welcome Flex</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box customer">📱 ลูกค้าเห็น Rich Menu</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stage 2 -->
+      <div class="stage">
+        <div class="stage-connector">
+          <div class="stage-dot" style="background:var(--green);">2</div>
+          <div class="stage-line"></div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-header">
+            <div>
+              <div class="stage-num">Stage 02</div>
+              <div class="stage-title">ส่ง Inquiry</div>
+            </div>
+          </div>
+          <div class="stage-subtitle">ลูกค้าส่งคำถาม/ความสนใจ → Sale Agent รับ → ตอบภายใน 4h</div>
+          <div>
+            <span class="tag tag-trigger">Trigger: new_inquiry</span>
+            <span class="tag tag-channel">LINE OA / Web Form</span>
+            <span class="tag tag-sla">SLA: 4h First Response</span>
+          </div>
+          <div class="stage-desc" style="margin-top:10px;">
+            ลูกค้าส่งข้อความผ่าน LINE OA หรือกด "สอบถาม" ในเมนู → Sale Agent รับงาน →
+            ระบบส่ง Acknowledgment Flex ให้ลูกค้าทราบว่าได้รับแล้วและจะมีคนติดต่อกลับภายใน 4 ชั่วโมง
+          </div>
+          <div class="flow-row">
+            <div class="flow-box trigger">📝 ส่ง Inquiry</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box agent">Sale Agent</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box flex">Acknowledgment Flex</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box customer">📱 ลูกค้ารู้ว่ารับแล้ว</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stage 3 -->
+      <div class="stage">
+        <div class="stage-connector">
+          <div class="stage-dot" style="background:var(--navy);">3</div>
+          <div class="stage-line"></div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-header">
+            <div>
+              <div class="stage-num">Stage 03</div>
+              <div class="stage-title">Brief &amp; Design In Progress</div>
+            </div>
+          </div>
+          <div class="stage-subtitle">Sale ส่ง Brief ให้ Designer → ระบบแจ้งลูกค้าว่ากำลังออกแบบ</div>
+          <div>
+            <span class="tag tag-trigger">Trigger: brief_received → project_created</span>
+            <span class="tag tag-channel">LINE OA Push (OA)</span>
+          </div>
+          <div class="stage-desc" style="margin-top:10px;">
+            เมื่อ Brief ได้รับการยืนยันและ Designer เริ่มทำงาน → ระบบ push
+            "กำลังออกแบบ" status update ให้ลูกค้าพร้อม Project ID, ชื่อ PM ที่ดูแล และ Timeline คาดการณ์
+          </div>
+          <div class="flow-row">
+            <div class="flow-box trigger">📋 Brief Confirmed</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box agent">Designer Agent</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box flex">project_created Flex</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box customer">📱 ลูกค้ารู้ Project ID</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stage 4 -->
+      <div class="stage">
+        <div class="stage-connector">
+          <div class="stage-dot" style="background:var(--gold);">4</div>
+          <div class="stage-line"></div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-header">
+            <div>
+              <div class="stage-num">Stage 04</div>
+              <div class="stage-title">Design Approval</div>
+            </div>
+          </div>
+          <div class="stage-subtitle">แบบพร้อม → ลูกค้ารับ Flex ขออนุมัติ → อนุมัติ / ขอแก้ไข</div>
+          <div>
+            <span class="tag tag-trigger">Trigger: approval_request</span>
+            <span class="tag tag-sla">Expire: 24h</span>
+            <span class="tag tag-action">Postback: approve / reject</span>
+          </div>
+          <div class="stage-desc" style="margin-top:10px;">
+            Designer ส่งแบบเสร็จ → ลูกค้าได้รับ Flex Message พร้อมลิงก์ดูแบบ 3D และ
+            ปุ่ม "อนุมัติ" / "ขอแก้ไข" → ถ้าไม่มีการตอบภายใน 24h → ระบบส่ง reminder อัตโนมัติ
+          </div>
+          <div class="flow-row">
+            <div class="flow-box trigger">🎨 Design Ready</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box agent">PM Agent</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box flex">approval_request Flex</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box customer">📱 อนุมัติ / แก้ไข</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stage 5 -->
+      <div class="stage">
+        <div class="stage-connector">
+          <div class="stage-dot" style="background:var(--navy);">5</div>
+          <div class="stage-line"></div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-header">
+            <div>
+              <div class="stage-num">Stage 05</div>
+              <div class="stage-title">Production Started</div>
+            </div>
+          </div>
+          <div class="stage-subtitle">Factory เริ่มผลิต → แจ้งลูกค้าพร้อมวันคาดแล้วเสร็จ</div>
+          <div>
+            <span class="tag tag-trigger">Trigger: status_update (stage=production)</span>
+            <span class="tag tag-channel">LINE OA Push</span>
+          </div>
+          <div class="stage-desc" style="margin-top:10px;">
+            Factory Agent เริ่ม production → PM Agent push status_update ให้ลูกค้า
+            พร้อมวันที่คาดว่าจะผลิตเสร็จ และข้อมูลวัสดุที่ใช้ (ถ้ามี)
+          </div>
+          <div class="flow-row">
+            <div class="flow-box trigger">🏭 Production Start</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box agent">Factory Agent</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box flex">status_update Flex</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box customer">📱 ลูกค้าทราบกำลังผลิต</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stage 6 -->
+      <div class="stage">
+        <div class="stage-connector">
+          <div class="stage-dot" style="background:var(--green);">6</div>
+          <div class="stage-line"></div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-header">
+            <div>
+              <div class="stage-num">Stage 06</div>
+              <div class="stage-title">QC Passed — Ready to Deliver</div>
+            </div>
+          </div>
+          <div class="stage-subtitle">QC ผ่านทุก checkpoint → แจ้งลูกค้าพร้อมกำหนดจัดส่ง</div>
+          <div>
+            <span class="tag tag-trigger">Trigger: qc_checkpoint (passed) + status_update</span>
+            <span class="tag tag-channel">LINE OA Push</span>
+          </div>
+          <div class="stage-desc" style="margin-top:10px;">
+            Factory Agent ผ่าน QC checkpoint ครบทุกขั้น → PM Agent push แจ้งลูกค้าว่า
+            ผลิตภัณฑ์ผ่าน QC แล้วและพร้อมจัดส่ง พร้อมรูปผลงาน (ถ้ามี)
+          </div>
+          <div class="flow-row">
+            <div class="flow-box trigger">✅ QC All Pass</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box agent">PM Agent</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box flex">QC Passed Flex</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box customer">📱 ลูกค้ารู้ว่าพร้อมส่ง</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stage 7 -->
+      <div class="stage">
+        <div class="stage-connector">
+          <div class="stage-dot" style="background:var(--navy);">7</div>
+          <div class="stage-line"></div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-header">
+            <div>
+              <div class="stage-num">Stage 07</div>
+              <div class="stage-title">Delivery Scheduled</div>
+            </div>
+          </div>
+          <div class="stage-subtitle">กำหนดวันส่งของ → แจ้งลูกค้าพร้อมวันเวลาและผู้ขนส่ง</div>
+          <div>
+            <span class="tag tag-trigger">Trigger: status_update (stage=delivery)</span>
+            <span class="tag tag-channel">LINE OA Push</span>
+          </div>
+          <div class="stage-desc" style="margin-top:10px;">
+            PM Agent กำหนดวันส่งของร่วมกับลูกค้า → push Flex พร้อมวันที่, ช่วงเวลา
+            และหมายเลขติดตามพัสดุ (ถ้ามี) ลูกค้ากด "ยืนยัน" หรือ "เลื่อนวัน" ผ่าน postback
+          </div>
+          <div class="flow-row">
+            <div class="flow-box trigger">🚚 Delivery Date Set</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box agent">PM Agent</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box flex">Delivery Flex</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box customer">📱 ยืนยัน / เลื่อนวัน</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stage 8 -->
+      <div class="stage">
+        <div class="stage-connector">
+          <div class="stage-dot" style="background:var(--purple);">8</div>
+          <div class="stage-line"></div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-header">
+            <div>
+              <div class="stage-num">Stage 08</div>
+              <div class="stage-title">Installation Scheduled</div>
+            </div>
+          </div>
+          <div class="stage-subtitle">Installation Agent กำหนดวันติดตั้ง → แจ้งลูกค้าพร้อม Team Lead</div>
+          <div>
+            <span class="tag tag-trigger">Trigger: job_scheduled</span>
+            <span class="tag tag-channel">LINE OA Push</span>
+            <span class="tag tag-action">Postback: ยืนยัน / เลื่อนนัด</span>
+          </div>
+          <div class="stage-desc" style="margin-top:10px;">
+            Installation Agent จัดทีมช่าง กำหนดวันนัด → push <code>job_scheduled</code> Flex
+            พร้อมชื่อทีมช่าง, วันที่, เวลา, สถานที่ และลิงก์ดูแผนที่
+          </div>
+          <div class="flow-row">
+            <div class="flow-box trigger">📅 Job Scheduled</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box agent">Installation Agent</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box flex">job_scheduled Flex</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box customer">📱 ยืนยันนัดหมาย</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stage 9 -->
+      <div class="stage">
+        <div class="stage-connector">
+          <div class="stage-dot" style="background:var(--purple);">9</div>
+          <div class="stage-line"></div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-header">
+            <div>
+              <div class="stage-num">Stage 09</div>
+              <div class="stage-title">Installation In Progress</div>
+            </div>
+          </div>
+          <div class="stage-subtitle">ทีมช่างถึงหน้างาน → อัปเดตระหว่างงาน → ลูกค้าติดตาม progress</div>
+          <div>
+            <span class="tag tag-trigger">Trigger: status_update (stage=installation)</span>
+            <span class="tag tag-channel">LINE OA Push (real-time)</span>
+          </div>
+          <div class="stage-desc" style="margin-top:10px;">
+            Installation Agent push milestone updates ให้ลูกค้าระหว่างงาน เช่น
+            "ทีมช่างถึงหน้างานแล้ว", "เริ่มติดตั้ง", "ผ่าน SOP ขั้นที่ 9/18" ฯลฯ
+            ลูกค้าสามารถกด "ดูความคืบหน้า" ใน LIFF
+          </div>
+          <div class="flow-row">
+            <div class="flow-box trigger">🔧 Install Started</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box agent">Installation Agent</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box flex">Progress Flex (x3)</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box customer">📱 ลูกค้าติดตาม live</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stage 10 -->
+      <div class="stage">
+        <div class="stage-connector">
+          <div class="stage-dot" style="background:var(--green);">🎉</div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-header">
+            <div>
+              <div class="stage-num">Stage 10 — FINAL</div>
+              <div class="stage-title">Installation Complete &amp; Sign-off</div>
+            </div>
+          </div>
+          <div class="stage-subtitle">ติดตั้งเสร็จสมบูรณ์ → ลูกค้า Sign-off → ขอ Review → จบ Journey</div>
+          <div>
+            <span class="tag tag-trigger">Trigger: job_complete</span>
+            <span class="tag tag-channel">LINE OA Push</span>
+            <span class="tag tag-action">Postback: sign_off / review</span>
+          </div>
+          <div class="stage-desc" style="margin-top:10px;">
+            Installation Agent บันทึก SOP 18/18 ขั้น ครบ → push <code>job_complete</code> Flex
+            พร้อมรูปผลงาน, ปุ่ม "Sign-off" และ "ให้คะแนน" → เมื่อลูกค้า sign-off → PM Agent
+            ปิดงานและบันทึกเข้า CRM
+          </div>
+          <div class="flow-row">
+            <div class="flow-box trigger">🎉 Job Complete</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box agent">Installation Agent</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box flex">job_complete Flex</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box customer">📱 Sign-off + Review</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end journey-wrap -->
+  </div><!-- end card -->
+
+  <div class="card">
+    <div class="card-title">📊 Journey Summary</div>
+    <div class="kv-grid">
+      <div class="kv-item"><div class="kv-label">Total Stages</div><div class="kv-val">10 stages</div></div>
+      <div class="kv-item"><div class="kv-label">Flex Messages ส่งให้ลูกค้า</div><div class="kv-val">10+ messages</div></div>
+      <div class="kv-item"><div class="kv-label">Customer Action Required</div><div class="kv-val">3 stages (S4, S7, S10)</div></div>
+      <div class="kv-item"><div class="kv-label">Agent Handoffs</div><div class="kv-val">Sale→Designer→PM→Factory→Install</div></div>
+      <div class="kv-item"><div class="kv-label">Avg Journey Duration</div><div class="kv-val">4–12 สัปดาห์</div></div>
+      <div class="kv-item"><div class="kv-label">SLA Critical</div><div class="kv-val">Stage 2: First response 4h</div></div>
+    </div>
+  </div>
+</div><!-- end tab-journey -->
+
+<!-- ════════════════════════════════════════════════════════════════════
+     TAB 02: FLEX MESSAGE PREVIEWS
+════════════════════════════════════════════════════════════════════ -->
+<div id="tab-flexmsg" class="tab-content">
+  <div class="card">
+    <div class="card-title">💬 Flex Message Previews — Customer-facing (LINE OA)</div>
+    <div class="info-box">
+      Flex Messages ด้านล่างเป็น visual mockup สำหรับลูกค้าที่รับผ่าน <strong>LINE OA</strong> เท่านั้น (ไม่ใช่ internal team)
+      ทุก bubble สร้างจาก <code>flex_builder.py</code> → <code>build_flex(event_type, payload)</code> → ส่งผ่าน <code>line_oa.py</code>
+    </div>
+  </div>
+
+  <div class="section-title">Stage 01 — Welcome Message</div>
+  <div class="flex-grid">
+    <div class="flex-mock">
+      <div class="flex-header" style="background:var(--line);">
+        <div class="icon">👋</div>
+        <div class="title">ยินดีต้อนรับสู่ MONOLITH!</div>
+      </div>
+      <div class="flex-body">
+        <div class="flex-row"><span class="flex-label">บริษัท</span><span class="flex-val">MONOLITH Furniture Co., Ltd.</span></div>
+        <div class="flex-row"><span class="flex-label">บริการ</span><span class="flex-val">เฟอร์นิเจอร์ Built-in Premium</span></div>
+        <div class="flex-row"><span class="flex-label">ช่องทาง</span><span class="flex-val">LINE OA · Web · Showroom</span></div>
+        <div class="flex-row"><span class="flex-label">เวลาทำการ</span><span class="flex-val">จ–ศ 8:30–17:30 น.</span></div>
+        <div class="flex-row"><span class="flex-label">โทร</span><span class="flex-val">02-xxx-xxxx</span></div>
+      </div>
+      <div class="flex-footer">
+        <button class="flex-btn flex-btn-green">สอบถามสินค้า</button>
+        <button class="flex-btn flex-btn-secondary">ดู Gallery ผลงาน</button>
+      </div>
+    </div>
+    <div style="padding:12px 0 0;font-size:13px;color:var(--muted);">
+      <strong>Event:</strong> follow (webhook)<br>
+      <strong>Trigger:</strong> ลูกค้า add LINE OA<br>
+      <strong>Header:</strong> LINE Green #06c755<br>
+      <strong>Action:</strong> URI → LIFF inquiry form<br>
+      <strong>Rich Menu:</strong> แสดงทันทีหลัง follow
+    </div>
+  </div>
+
+  <div class="section-title">Stage 02 — Inquiry Acknowledgment</div>
+  <div class="flex-grid">
+    <div class="flex-mock">
+      <div class="flex-header" style="background:var(--green);">
+        <div class="icon">✅</div>
+        <div class="title">รับเรื่องแล้ว! — #INQ-2025-001</div>
+      </div>
+      <div class="flex-body">
+        <div class="flex-row"><span class="flex-label">ลูกค้า</span><span class="flex-val">คุณสมชาย ใจดี</span></div>
+        <div class="flex-row"><span class="flex-label">สินค้า</span><span class="flex-val">ชุดครัว Built-in</span></div>
+        <div class="flex-row"><span class="flex-label">ช่องทาง</span><span class="flex-val">LINE OA</span></div>
+        <div class="flex-row"><span class="flex-label">รับเมื่อ</span><span class="flex-val">10 ก.ย. 2025 09:15</span></div>
+        <div class="flex-row"><span class="flex-label">⏰ ตอบกลับ</span><span class="flex-val" style="color:var(--red);">ภายใน 4 ชั่วโมง</span></div>
+      </div>
+      <div class="flex-footer">
+        <button class="flex-btn flex-btn-green">ดูสถานะ Inquiry</button>
+        <button class="flex-btn flex-btn-secondary">ติดต่อ Sale โดยตรง</button>
+      </div>
+    </div>
+    <div style="padding:12px 0 0;font-size:13px;color:var(--muted);">
+      <strong>Event:</strong> new_inquiry<br>
+      <strong>Trigger:</strong> Sale Agent รับ inquiry<br>
+      <strong>Header:</strong> Green #2d7a4f<br>
+      <strong>SLA:</strong> ลูกค้าเห็น SLA 4h ชัดเจน<br>
+      <strong>Internal:</strong> Sale team group ก็ได้รับด้วย
+    </div>
+  </div>
+
+  <div class="section-title">Stage 04 — Design Approval Request</div>
+  <div class="flex-grid">
+    <div class="flex-mock">
+      <div class="flex-header" style="background:var(--gold);">
+        <div class="icon">🎨</div>
+        <div class="title">ขออนุมัติ Design v2 — The Residence</div>
+      </div>
+      <div class="flex-body">
+        <div class="flex-row"><span class="flex-label">Project</span><span class="flex-val">The Residence – ห้องนอน</span></div>
+        <div class="flex-row"><span class="flex-label">Rev</span><span class="flex-val">v2.0</span></div>
+        <div class="flex-row"><span class="flex-label">Designer</span><span class="flex-val">คุณกมลา สวยงาม</span></div>
+        <div class="flex-row"><span class="flex-label">ส่งเมื่อ</span><span class="flex-val">12 ก.ย. 2025 14:00</span></div>
+        <div class="flex-row"><span class="flex-label">Expire</span><span class="flex-val" style="color:var(--red);">24 ชั่วโมง</span></div>
+      </div>
+      <div class="flex-footer">
+        <button class="flex-btn flex-btn-gold">อนุมัติ ✓</button>
+        <button class="flex-btn flex-btn-secondary">ขอแก้ไข ✗</button>
+        <button class="flex-btn flex-btn-link">ดูแบบ 3D ↗</button>
+      </div>
+    </div>
+    <div style="padding:12px 0 0;font-size:13px;color:var(--muted);">
+      <strong>Event:</strong> approval_request<br>
+      <strong>Trigger:</strong> Design rev complete<br>
+      <strong>Header:</strong> Gold #c9a84c<br>
+      <strong>Postback:</strong> approve / reject<br>
+      <strong>URI:</strong> LIFF 3D viewer
+    </div>
+  </div>
+
+  <div class="section-title">Stage 08 — Installation Scheduled</div>
+  <div class="flex-grid">
+    <div class="flex-mock">
+      <div class="flex-header" style="background:var(--purple);">
+        <div class="icon">📅</div>
+        <div class="title">นัดหมายติดตั้งแล้ว!</div>
+      </div>
+      <div class="flex-body">
+        <div class="flex-row"><span class="flex-label">Project</span><span class="flex-val">The Residence</span></div>
+        <div class="flex-row"><span class="flex-label">วันติดตั้ง</span><span class="flex-val">20 ต.ค. 2025</span></div>
+        <div class="flex-row"><span class="flex-label">เวลา</span><span class="flex-val">08:00 – 17:00</span></div>
+        <div class="flex-row"><span class="flex-label">ทีมช่าง</span><span class="flex-val">นายวิชัย + ทีม 3 คน</span></div>
+        <div class="flex-row"><span class="flex-label">สถานที่</span><span class="flex-val">บ้านเลขที่ 99/5 ลาดพร้าว</span></div>
+      </div>
+      <div class="flex-footer">
+        <button class="flex-btn flex-btn-purple">ยืนยันนัดหมาย ✓</button>
+        <button class="flex-btn flex-btn-secondary">เลื่อนนัด</button>
+        <button class="flex-btn flex-btn-link">ดูแผนที่ ↗</button>
+      </div>
+    </div>
+    <div style="padding:12px 0 0;font-size:13px;color:var(--muted);">
+      <strong>Event:</strong> job_scheduled<br>
+      <strong>Trigger:</strong> Installation Agent<br>
+      <strong>Header:</strong> Purple #5b4fcf<br>
+      <strong>URI:</strong> Google Maps link<br>
+      <strong>Postback:</strong> confirm / reschedule
+    </div>
+  </div>
+
+  <div class="section-title">Stage 10 — Job Complete &amp; Sign-off</div>
+  <div class="flex-grid">
+    <div class="flex-mock">
+      <div class="flex-header" style="background:var(--green);">
+        <div class="icon">🎉</div>
+        <div class="title">ติดตั้งเสร็จสมบูรณ์!</div>
+      </div>
+      <div class="flex-body">
+        <div class="flex-row"><span class="flex-label">Project</span><span class="flex-val">The Residence</span></div>
+        <div class="flex-row"><span class="flex-label">ทีมช่าง</span><span class="flex-val">นายวิชัย + ทีม</span></div>
+        <div class="flex-row"><span class="flex-label">เสร็จเมื่อ</span><span class="flex-val">20 ต.ค. 2025 16:45</span></div>
+        <div class="flex-row"><span class="flex-label">SOP Steps</span><span class="flex-val" style="color:var(--green);">18/18 ✓ ครบ</span></div>
+        <div class="flex-row"><span class="flex-label">รูปผลงาน</span><span class="flex-val" style="color:var(--purple);">12 รูป พร้อมดู</span></div>
+      </div>
+      <div class="flex-footer">
+        <button class="flex-btn flex-btn-green">Sign-off ✓ รับงาน</button>
+        <button class="flex-btn flex-btn-secondary">ดูรูปผลงาน</button>
+        <button class="flex-btn flex-btn-link">ให้คะแนน ⭐ ↗</button>
+      </div>
+    </div>
+    <div style="padding:12px 0 0;font-size:13px;color:var(--muted);">
+      <strong>Event:</strong> job_complete<br>
+      <strong>Trigger:</strong> SOP 18/18 recorded<br>
+      <strong>Header:</strong> Green #2d7a4f<br>
+      <strong>Postback:</strong> sign_off<br>
+      <strong>URI:</strong> LIFF gallery + review form
+    </div>
+  </div>
+</div><!-- end tab-flexmsg -->
+
+<!-- ════════════════════════════════════════════════════════════════════
+     TAB 03: RICH MENU DESIGN
+════════════════════════════════════════════════════════════════════ -->
+<div id="tab-richmenu" class="tab-content">
+  <div class="card">
+    <div class="card-title">🎛️ Rich Menu — 3-Column Grid (6 Cells)</div>
+    <div class="tip-box">
+      <strong>Rich Menu Strategy:</strong> แสดงตลอดเวลาใน LINE OA chat |
+      ลูกค้าทุกคนเห็น Rich Menu เดียวกัน (Default) |
+      สามารถสลับ Rich Menu ตาม project stage ได้ผ่าน API |
+      Size: 2500 × 843 px (full) หรือ 2500 × 1686 px (tall)
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📐 Rich Menu Visual Preview</div>
+    <div class="rich-menu-wrap">
+      <div class="rich-menu-preview">
+        <div class="rich-menu-label">Rich Menu Preview (Default — All Customers)</div>
+        <div class="rich-menu-grid">
+          <div class="rich-cell">
+            <div class="icon">📊</div>
+            <div class="label">ดูสถานะงาน</div>
+          </div>
+          <div class="rich-cell gold">
+            <div class="icon">📅</div>
+            <div class="label">นัดหมาย</div>
+          </div>
+          <div class="rich-cell green">
+            <div class="icon">💬</div>
+            <div class="label">ติดต่อ Sale</div>
+          </div>
+          <div class="rich-cell" style="background:#2a3d7a;">
+            <div class="icon">🖼️</div>
+            <div class="label">Gallery ผลงาน</div>
+          </div>
+          <div class="rich-cell" style="background:#374151;">
+            <div class="icon">❓</div>
+            <div class="label">FAQ / ถามตอบ</div>
+          </div>
+          <div class="rich-cell" style="background:#7b0000;">
+            <div class="icon">📞</div>
+            <div class="label">โทรฉุกเฉิน</div>
+          </div>
+        </div>
+        <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:8px;">
+          2500 × 843 px · 3 columns × 2 rows · 6 cells
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📋 Rich Menu Cell Specifications</div>
+    <table class="spec-table">
+      <thead>
+        <tr><th>Cell</th><th>Label</th><th>Icon</th><th>Action Type</th><th>Action Value</th><th>Background</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>A1</strong> (Top-Left)</td>
+          <td>ดูสถานะงาน</td>
+          <td>📊</td>
+          <td>URI</td>
+          <td><code>https://liff.line.me/{LIFF_ID}/status</code></td>
+          <td style="background:#1f2d5a;color:#fff;">Navy #1f2d5a</td>
+        </tr>
+        <tr>
+          <td><strong>A2</strong> (Top-Center)</td>
+          <td>นัดหมาย</td>
+          <td>📅</td>
+          <td>URI</td>
+          <td><code>https://liff.line.me/{LIFF_ID}/schedule</code></td>
+          <td style="background:#c9a84c;color:#fff;">Gold #c9a84c</td>
+        </tr>
+        <tr>
+          <td><strong>A3</strong> (Top-Right)</td>
+          <td>ติดต่อ Sale</td>
+          <td>💬</td>
+          <td>postback</td>
+          <td><code>action=contact_sale</code></td>
+          <td style="background:#2d7a4f;color:#fff;">Green #2d7a4f</td>
+        </tr>
+        <tr>
+          <td><strong>B1</strong> (Bottom-Left)</td>
+          <td>Gallery ผลงาน</td>
+          <td>🖼️</td>
+          <td>URI</td>
+          <td><code>https://monolith.app/gallery</code></td>
+          <td style="background:#2a3d7a;color:#fff;">Navy Light</td>
+        </tr>
+        <tr>
+          <td><strong>B2</strong> (Bottom-Center)</td>
+          <td>FAQ / ถามตอบ</td>
+          <td>❓</td>
+          <td>postback</td>
+          <td><code>action=show_faq</code></td>
+          <td style="background:#374151;color:#fff;">Gray #374151</td>
+        </tr>
+        <tr>
+          <td><strong>B3</strong> (Bottom-Right)</td>
+          <td>โทรฉุกเฉิน</td>
+          <td>📞</td>
+          <td>URI</td>
+          <td><code>tel:02xxxxxxx</code></td>
+          <td style="background:#7b0000;color:#fff;">Dark Red</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔄 Dynamic Rich Menu (Stage-based Switching)</div>
+    <div class="tip-box">
+      <strong>Advanced:</strong> สลับ Rich Menu ให้ตรงกับ stage ปัจจุบันของลูกค้า ผ่าน
+      <code>POST /v2/bot/user/{userId}/richmenu/{richMenuId}</code>
+    </div>
+    <table class="spec-table">
+      <thead>
+        <tr><th>Stage</th><th>Rich Menu ID</th><th>เพิ่มเซลล์พิเศษ</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>New customer (No project)</td><td><code>rm_default</code></td><td>ดูสถานะ / นัดหมาย / ติดต่อ Sale / Gallery / FAQ / โทรฉุกเฉิน</td></tr>
+        <tr><td>Has active project</td><td><code>rm_project</code></td><td>เพิ่ม "ดูความคืบหน้า" แทน Gallery</td></tr>
+        <tr><td>Awaiting approval</td><td><code>rm_approval</code></td><td>เพิ่ม "อนุมัติแบบ" (Postback) แทน FAQ</td></tr>
+        <tr><td>Installation scheduled</td><td><code>rm_install</code></td><td>เพิ่ม "ยืนยันนัดหมาย" และ "แผนที่หน้างาน"</td></tr>
+        <tr><td>Job complete</td><td><code>rm_complete</code></td><td>เพิ่ม "Sign-off" และ "ให้คะแนน"</td></tr>
+      </tbody>
+    </table>
+
+    <div class="section-title">Rich Menu Switch Code</div>
+    <div class="code-block"><span class="k">import</span> os
+<span class="k">from</span> linebot.v3.messaging <span class="k">import</span> ApiClient, Configuration, RichMenuApi
+
+<span class="k">def</span> <span class="n">switch_rich_menu</span>(user_id: str, stage: str):
+    <span class="s">"""สลับ Rich Menu ตาม stage ของลูกค้า"""</span>
+    MENU_MAP = {
+        <span class="s">"default"</span>:    os.getenv(<span class="s">"RM_DEFAULT_ID"</span>),
+        <span class="s">"project"</span>:    os.getenv(<span class="s">"RM_PROJECT_ID"</span>),
+        <span class="s">"approval"</span>:   os.getenv(<span class="s">"RM_APPROVAL_ID"</span>),
+        <span class="s">"install"</span>:    os.getenv(<span class="s">"RM_INSTALL_ID"</span>),
+        <span class="s">"complete"</span>:   os.getenv(<span class="s">"RM_COMPLETE_ID"</span>),
+    }
+    menu_id = MENU_MAP.get(stage, MENU_MAP[<span class="s">"default"</span>])
+    config  = Configuration(access_token=os.getenv(<span class="s">"LINE_CHANNEL_ACCESS_TOKEN"</span>))
+    <span class="k">with</span> ApiClient(config) <span class="k">as</span> client:
+        api = RichMenuApi(client)
+        api.link_rich_menu_id_to_user(user_id=user_id, rich_menu_id=menu_id)
+</div>
+  </div>
+</div><!-- end tab-richmenu -->
+
+<!-- ════════════════════════════════════════════════════════════════════
+     TAB 04: LINE OA SETTINGS
+════════════════════════════════════════════════════════════════════ -->
+<div id="tab-settings" class="tab-content">
+  <div class="card">
+    <div class="card-title">⚙️ LINE OA Configuration Checklist</div>
+    <div class="warn-box">
+      <strong>⚠️ LINE Notify deprecated:</strong> LINE Notify (notify-api.line.me) ปิดให้บริการแล้วตั้งแต่ 31 มีนาคม 2025
+      — ใช้ <strong>LINE Messaging API</strong> เท่านั้นสำหรับการส่งข้อความทุกประเภท
+    </div>
+    <table class="spec-table">
+      <thead>
+        <tr><th>Setting</th><th>Value / Action</th><th>หมายเหตุ</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Account Type</strong></td>
+          <td>LINE Official Account (Verified)</td>
+          <td>ต้องยืนยันตัวตนธุรกิจ</td>
+        </tr>
+        <tr>
+          <td><strong>Response Mode</strong></td>
+          <td>Bot (Messaging API)</td>
+          <td>ปิด "Chat" mode — ใช้ webhook เท่านั้น</td>
+        </tr>
+        <tr>
+          <td><strong>Webhook URL</strong></td>
+          <td><code>https://api.monolith.app/webhook/line</code></td>
+          <td>ต้อง HTTPS · ต้องผ่าน signature verify</td>
+        </tr>
+        <tr>
+          <td><strong>Webhook Enable</strong></td>
+          <td>✅ Enabled</td>
+          <td>ต้องเปิดใน LINE Developer Console</td>
+        </tr>
+        <tr>
+          <td><strong>Auto-reply</strong></td>
+          <td>❌ Disabled (ใช้ Agent แทน)</td>
+          <td>ปิดเพื่อป้องกันตอบซ้ำกับ Bot</td>
+        </tr>
+        <tr>
+          <td><strong>Greeting Message</strong></td>
+          <td>Welcome Flex (ส่งผ่าน API ไม่ใช่ built-in)</td>
+          <td>ปิด built-in greeting → ใช้ follow event แทน</td>
+        </tr>
+        <tr>
+          <td><strong>Channel Access Token</strong></td>
+          <td><code>LINE_CHANNEL_ACCESS_TOKEN</code> (env var)</td>
+          <td>Long-lived token · rotate ทุก 30 วัน</td>
+        </tr>
+        <tr>
+          <td><strong>Channel Secret</strong></td>
+          <td><code>LINE_CHANNEL_SECRET</code> (env var)</td>
+          <td>ใช้ verify X-Line-Signature ใน webhook</td>
+        </tr>
+        <tr>
+          <td><strong>LIFF App</strong></td>
+          <td>Full (full browser) — LIFF ID ใน env</td>
+          <td>ใช้สำหรับ status page, gallery, approval</td>
+        </tr>
+        <tr>
+          <td><strong>Rich Menu</strong></td>
+          <td>5 menus (default + 4 stage-specific)</td>
+          <td>สร้างผ่าน Messaging API endpoint</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔑 Environment Variables ที่ต้องกำหนด</div>
+    <div class="code-block"><span class="c"># LINE OA — Messaging API</span>
+LINE_CHANNEL_ACCESS_TOKEN=<span class="s">"your_long_lived_access_token"</span>
+LINE_CHANNEL_SECRET=<span class="s">"your_channel_secret"</span>
+
+<span class="c"># LIFF App IDs</span>
+LIFF_ID_STATUS=<span class="s">"1234567890-xxxxxxxx"</span>    <span class="c"># ดูสถานะโครงการ</span>
+LIFF_ID_SCHEDULE=<span class="s">"1234567890-yyyyyyyy"</span>  <span class="c"># นัดหมาย</span>
+LIFF_ID_GALLERY=<span class="s">"1234567890-zzzzzzzz"</span>   <span class="c"># Gallery ผลงาน</span>
+LIFF_ID_APPROVAL=<span class="s">"1234567890-aaaaaaaa"</span>  <span class="c"># อนุมัติแบบ</span>
+LIFF_ID_REVIEW=<span class="s">"1234567890-bbbbbbbb"</span>   <span class="c"># ให้คะแนน</span>
+
+<span class="c"># Rich Menu IDs (สร้างล่วงหน้าผ่าน API)</span>
+RM_DEFAULT_ID=<span class="s">"richmenu-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"</span>
+RM_PROJECT_ID=<span class="s">"richmenu-yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"</span>
+RM_APPROVAL_ID=<span class="s">"richmenu-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"</span>
+RM_INSTALL_ID=<span class="s">"richmenu-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"</span>
+RM_COMPLETE_ID=<span class="s">"richmenu-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"</span>
+</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📊 LINE OA Analytics ที่ควรติดตาม</div>
+    <table class="spec-table">
+      <thead>
+        <tr><th>Metric</th><th>คำนวณอย่างไร</th><th>Target</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Friend Count</td><td>LINE OA Manager Dashboard</td><td>เพิ่ม 10% ต่อเดือน</td></tr>
+        <tr><td>Message Open Rate</td><td>Sent vs Opened (Insight API)</td><td>≥ 60%</td></tr>
+        <tr><td>Flex CTA Click Rate</td><td>Postback count / Message sent</td><td>≥ 30%</td></tr>
+        <tr><td>Sign-off Rate</td><td>job_complete → sign_off postback</td><td>≥ 95%</td></tr>
+        <tr><td>Review Submission Rate</td><td>Review LIFF opens / job_complete</td><td>≥ 50%</td></tr>
+        <tr><td>Unfollow Rate</td><td>unfollow events / month</td><td>&lt; 2% per month</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div><!-- end tab-settings -->
+
+<!-- ════════════════════════════════════════════════════════════════════
+     TAB 05: AUTO-REPLY RULES
+════════════════════════════════════════════════════════════════════ -->
+<div id="tab-autoreply" class="tab-content">
+  <div class="card">
+    <div class="card-title">🤖 Keyword Auto-reply Rules</div>
+    <div class="info-box">
+      Auto-reply ทั้งหมดจัดการผ่าน webhook handler (Sale Agent) — ไม่ใช้ built-in auto-reply ของ LINE OA Manager
+      เพื่อให้ตอบสนองได้ dynamic ตาม context ของแต่ละลูกค้า
+    </div>
+  </div>
+
+  <div class="rule-card">
+    <div class="rule-header">
+      <span>Rule 01 — สถานะโครงการ</span>
+      <span style="font-size:12px;opacity:.7;">Sale Agent handles</span>
+    </div>
+    <div class="rule-body">
+      <strong>Keywords:</strong>
+      <span class="rule-keyword">สถานะ</span>
+      <span class="rule-keyword">ความคืบหน้า</span>
+      <span class="rule-keyword">งานไปถึงไหนแล้ว</span>
+      <span class="rule-keyword">status</span>
+      <p style="margin-top:10px;"><strong>Action:</strong> ดึง project status จาก Supabase → ส่ง <code>status_update</code> Flex Message พร้อม progress % และ stage ปัจจุบัน</p>
+    </div>
+  </div>
+
+  <div class="rule-card">
+    <div class="rule-header">
+      <span>Rule 02 — ติดต่อพนักงาน</span>
+      <span style="font-size:12px;opacity:.7;">Sale Agent → human handoff</span>
+    </div>
+    <div class="rule-body">
+      <strong>Keywords:</strong>
+      <span class="rule-keyword">คุยกับคน</span>
+      <span class="rule-keyword">ต้องการพนักงาน</span>
+      <span class="rule-keyword">โทรหาผม</span>
+      <span class="rule-keyword">urgent</span>
+      <span class="rule-keyword">ด่วน</span>
+      <p style="margin-top:10px;"><strong>Action:</strong> ส่ง Flex พร้อมเบอร์โทรตรง + notify Sale team ใน LINE Group ว่ามีลูกค้าขอคุยกับคน</p>
+    </div>
+  </div>
+
+  <div class="rule-card">
+    <div class="rule-header">
+      <span>Rule 03 — นัดหมาย</span>
+      <span style="font-size:12px;opacity:.7;">Sale Agent → LIFF redirect</span>
+    </div>
+    <div class="rule-body">
+      <strong>Keywords:</strong>
+      <span class="rule-keyword">นัดหมาย</span>
+      <span class="rule-keyword">จะมาดูหน้างาน</span>
+      <span class="rule-keyword">วันติดตั้ง</span>
+      <span class="rule-keyword">เลื่อนนัด</span>
+      <p style="margin-top:10px;"><strong>Action:</strong> ส่ง URI button → เปิด LIFF schedule page <code>liff.line.me/{LIFF_ID_SCHEDULE}</code></p>
+    </div>
+  </div>
+
+  <div class="rule-card">
+    <div class="rule-header">
+      <span>Rule 04 — ราคา / ใบเสนอราคา</span>
+      <span style="font-size:12px;opacity:.7;">Sale Agent → inquiry form</span>
+    </div>
+    <div class="rule-body">
+      <strong>Keywords:</strong>
+      <span class="rule-keyword">ราคา</span>
+      <span class="rule-keyword">ใบเสนอราคา</span>
+      <span class="rule-keyword">quotation</span>
+      <span class="rule-keyword">งบประมาณ</span>
+      <span class="rule-keyword">ค่าใช้จ่าย</span>
+      <p style="margin-top:10px;"><strong>Action:</strong> ส่ง Flex พร้อม "กรอกฟอร์มขอใบเสนอราคา" → URI → LIFF inquiry form</p>
+    </div>
+  </div>
+
+  <div class="rule-card">
+    <div class="rule-header">
+      <span>Rule 05 — FAQ / ข้อมูลทั่วไป</span>
+      <span style="font-size:12px;opacity:.7;">Sale Agent → knowledge base lookup</span>
+    </div>
+    <div class="rule-body">
+      <strong>Keywords:</strong>
+      <span class="rule-keyword">วัสดุ</span>
+      <span class="rule-keyword">ประกัน</span>
+      <span class="rule-keyword">warranty</span>
+      <span class="rule-keyword">ระยะเวลา</span>
+      <span class="rule-keyword">ผลิตจากอะไร</span>
+      <p style="margin-top:10px;"><strong>Action:</strong> Sale Agent ค้นหาใน knowledge base → ตอบด้วย text หรือ Flex card พร้อม source reference</p>
+    </div>
+  </div>
+
+  <div class="rule-card">
+    <div class="rule-header">
+      <span>Rule 06 — Default (ไม่ match keyword ใด)</span>
+      <span style="font-size:12px;opacity:.7;">Sale Agent → NLU fallback</span>
+    </div>
+    <div class="rule-body">
+      <strong>Pattern:</strong> ข้อความที่ไม่ตรง keyword ใดๆ
+      <p style="margin-top:10px;"><strong>Action:</strong> Sale Agent ประมวลผลด้วย LLM → ตอบ text message ทั่วไป → ถ้า confidence ต่ำ → แนบ Rich Card "ให้พนักงานช่วยเหลือ"</p>
+    </div>
+  </div>
+</div><!-- end tab-autoreply -->
+
+<!-- ════════════════════════════════════════════════════════════════════
+     TAB 06: LIFF & TECH SETUP
+════════════════════════════════════════════════════════════════════ -->
+<div id="tab-setup" class="tab-content">
+  <div class="card">
+    <div class="card-title">🔌 LINE Login &amp; LIFF Integration</div>
+    <div class="info-box">
+      LIFF (LINE Front-end Framework) ใช้สำหรับหน้าเว็บที่ต้องการ LINE user context เช่น
+      ดูสถานะโครงการ, อนุมัติแบบ, ดู gallery, ให้คะแนน — เปิดในแอป LINE โดยตรง
+    </div>
+    <table class="spec-table">
+      <thead>
+        <tr><th>LIFF Page</th><th>URL</th><th>LIFF Size</th><th>Auth Required</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Project Status</td><td><code>/liff/status/{project_id}</code></td><td>Full</td><td>LINE Login (auto)</td></tr>
+        <tr><td>Schedule / นัดหมาย</td><td><code>/liff/schedule</code></td><td>Tall</td><td>LINE Login (auto)</td></tr>
+        <tr><td>Design Approval</td><td><code>/liff/approval/{project_id}</code></td><td>Full</td><td>LINE Login + Project verify</td></tr>
+        <tr><td>Gallery</td><td><code>/liff/gallery/{project_id}</code></td><td>Full</td><td>LINE Login</td></tr>
+        <tr><td>Review &amp; Rating</td><td><code>/liff/review/{job_id}</code></td><td>Compact</td><td>LINE Login</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🏗️ Architecture Overview</div>
+    <div class="flow-row" style="flex-wrap:wrap;gap:8px;margin-bottom:16px;">
+      <div class="flow-box" style="background:#f0fdf4;border-color:var(--line);color:var(--green);">📱 LINE App</div>
+      <div class="flow-arrow">↕</div>
+      <div class="flow-box" style="background:#eff6ff;border-color:var(--navy);">LINE Platform</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box agent">Webhook /webhook/line</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box agent">Sale Agent (LangChain)</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box flex">Flex Builder</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box flex">line_oa.py push</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box" style="background:#eff6ff;border-color:var(--navy);">LINE OA → 📱</div>
+    </div>
+
+    <div class="section-title">line_oa.py — Push Flex to Customer</div>
+    <div class="code-block"><span class="k">import</span> os
+<span class="k">from</span> linebot.v3.messaging <span class="k">import</span> (
+    ApiClient, Configuration, MessagingApi,
+    PushMessageRequest, FlexMessage, FlexContainer
+)
+<span class="k">from</span> services.flex_builder <span class="k">import</span> build_flex
+
+config = Configuration(
+    access_token=os.getenv(<span class="s">"LINE_CHANNEL_ACCESS_TOKEN"</span>)
+)
+
+<span class="k">def</span> <span class="n">notify_customer</span>(line_user_id: str, event_type: str, payload: dict):
+    <span class="s">"""Push Flex Message ให้ลูกค้า 1 คน ผ่าน LINE OA"""</span>
+    flex_json = build_flex(event_type, payload)
+    message   = FlexMessage(
+        alt_text=flex_json[<span class="s">"altText"</span>],
+        contents=FlexContainer.from_dict(flex_json[<span class="s">"contents"</span>])
+    )
+    <span class="k">with</span> ApiClient(config) <span class="k">as</span> client:
+        api = MessagingApi(client)
+        api.push_message(PushMessageRequest(
+            to=line_user_id,
+            messages=[message]
+        ))
+
+<span class="k">def</span> <span class="n">broadcast_to_customers</span>(user_ids: list, event_type: str, payload: dict):
+    <span class="s">"""Push Flex ให้หลายคนพร้อมกัน (max 500 per call)"""</span>
+    flex_json = build_flex(event_type, payload)
+    message   = FlexMessage(
+        alt_text=flex_json[<span class="s">"altText"</span>],
+        contents=FlexContainer.from_dict(flex_json[<span class="s">"contents"</span>])
+    )
+    <span class="c"># Split into chunks of 500 (LINE API limit)</span>
+    <span class="k">for</span> i <span class="k">in</span> range(0, len(user_ids), 500):
+        chunk = user_ids[i:i+500]
+        <span class="k">with</span> ApiClient(config) <span class="k">as</span> client:
+            api = MessagingApi(client)
+            api.multicast_message(
+                MulticastMessageRequest(to=chunk, messages=[message])
+            )
+</div>
+  </div>
+
+  <!-- LIFF TypeScript Implementations -->
+  <div class="card">
+    <div class="card-title">📱 LIFF App Implementation — TypeScript + Supabase Realtime</div>
+
+    <div class="section-title">LIFF_ID_STATUS — TypeScript + Supabase Realtime</div>
+    <p style="margin:0 0 10px;font-size:14px;color:#555;">
+      หน้า <code>/liff/status/{project_id}</code> — ดึงสถานะโครงการแบบ real-time จาก Supabase
+      channel <code>projects</code> และแสดงผลใน LINE Full-size LIFF context
+    </p>
+    <div class="code-block"><pre><span class="c">// liff-status.ts — LIFF_ID_STATUS page</span>
+<span class="k">import</span> liff <span class="k">from</span> <span class="s">"@line/liff"</span>;
+<span class="k">import</span> { createClient, RealtimeChannel } <span class="k">from</span> <span class="s">"@supabase/supabase-js"</span>;
+
+<span class="c">// ─── env vars (Vite / Next.js public) ────────────────────────────────────────</span>
+<span class="k">const</span> LIFF_ID   = import.meta.env.VITE_LIFF_ID_STATUS <span class="k">as</span> string;
+<span class="k">const</span> SB_URL    = import.meta.env.VITE_SUPABASE_URL   <span class="k">as</span> string;
+<span class="k">const</span> SB_KEY    = import.meta.env.VITE_SUPABASE_ANON_KEY <span class="k">as</span> string;
+
+<span class="c">// ─── Supabase client ──────────────────────────────────────────────────────────</span>
+<span class="k">const</span> supabase = createClient(SB_URL, SB_KEY);
+
+<span class="c">// ─── types ────────────────────────────────────────────────────────────────────</span>
+<span class="k">interface</span> Project {
+  id:           string;
+  project_code: string;
+  line_user_id: string;
+  status:       <span class="s">"pending"</span> | <span class="s">"in_design"</span> | <span class="s">"production"</span> | <span class="s">"installation"</span> | <span class="s">"complete"</span>;
+  stage_label:  string;
+  updated_at:   string;
+}
+
+<span class="k">interface</span> RealtimePayload {
+  new: Project;
+  old: Project;
+  eventType: <span class="s">"INSERT"</span> | <span class="s">"UPDATE"</span> | <span class="s">"DELETE"</span>;
+}
+
+<span class="c">// ─── DOM helpers ─────────────────────────────────────────────────────────────</span>
+<span class="k">const</span> el = (id: string) =&gt; document.getElementById(id)!;
+
+<span class="k">function</span> renderStatus(project: Project): void {
+  el(<span class="s">"project-code"</span>).textContent = project.project_code;
+  el(<span class="s">"stage-label"</span>).textContent  = project.stage_label;
+  el(<span class="s">"updated-at"</span>).textContent   =
+    <span class="k">new</span> Date(project.updated_at).toLocaleString(<span class="s">"th-TH"</span>, { timeZone: <span class="s">"Asia/Bangkok"</span> });
+
+  <span class="c">// progress bar (0–4 stages)</span>
+  <span class="k">const</span> stages = [<span class="s">"pending"</span>, <span class="s">"in_design"</span>, <span class="s">"production"</span>, <span class="s">"installation"</span>, <span class="s">"complete"</span>];
+  <span class="k">const</span> pct    = ((stages.indexOf(project.status) + 1) / stages.length) * 100;
+  (el(<span class="s">"progress-bar"</span>) <span class="k">as</span> HTMLElement).style.width = <span class="s">`${pct}%`</span>;
+}
+
+<span class="c">// ─── subscribe to Supabase real-time ─────────────────────────────────────────</span>
+<span class="k">function</span> subscribeProject(projectId: string): RealtimeChannel {
+  <span class="k">return</span> supabase
+    .channel(<span class="s">`project-status-${projectId}`</span>)
+    .on&lt;Project&gt;(
+      <span class="s">"postgres_changes"</span>,
+      {
+        event:  <span class="s">"UPDATE"</span>,
+        schema: <span class="s">"public"</span>,
+        table:  <span class="s">"projects"</span>,
+        filter: <span class="s">`id=eq.${projectId}`</span>,
+      },
+      (payload: RealtimePayload) =&gt; {
+        renderStatus(payload.new);
+        <span class="c">// pulse animation feedback</span>
+        el(<span class="s">"status-card"</span>).classList.add(<span class="s">"pulse"</span>);
+        setTimeout(() =&gt; el(<span class="s">"status-card"</span>).classList.remove(<span class="s">"pulse"</span>), 1000);
+      }
+    )
+    .subscribe();
+}
+
+<span class="c">// ─── main init ───────────────────────────────────────────────────────────────</span>
+<span class="k">async function</span> init(): Promise&lt;void&gt; {
+  <span class="c">// 1. init LIFF</span>
+  <span class="k">await</span> liff.init({ liffId: LIFF_ID });
+
+  <span class="k">if</span> (!liff.isLoggedIn()) {
+    liff.login({ redirectUri: window.location.href });
+    <span class="k">return</span>;
+  }
+
+  <span class="c">// 2. get LINE user profile</span>
+  <span class="k">const</span> profile = <span class="k">await</span> liff.getProfile();
+  el(<span class="s">"user-name"</span>).textContent = profile.displayName;
+  el(<span class="s">"avatar"</span>).setAttribute(<span class="s">"src"</span>, profile.pictureUrl ?? <span class="s">""</span>);
+
+  <span class="c">// 3. get projectId from URL path /liff/status/:projectId</span>
+  <span class="k">const</span> projectId = window.location.pathname.split(<span class="s">"/"</span>).pop()!;
+
+  <span class="c">// 4. fetch initial project data from Supabase</span>
+  <span class="k">const</span> { data, error } = <span class="k">await</span> supabase
+    .from(<span class="s">"projects"</span>)
+    .select(<span class="s">"id, project_code, line_user_id, status, stage_label, updated_at"</span>)
+    .eq(<span class="s">"id"</span>, projectId)
+    .eq(<span class="s">"line_user_id"</span>, profile.userId)   <span class="c">// security: own projects only</span>
+    .single();
+
+  <span class="k">if</span> (error || !data) {
+    el(<span class="s">"error-msg"</span>).textContent = <span class="s">"ไม่พบข้อมูลโครงการ หรือไม่มีสิทธิ์เข้าถึง"</span>;
+    <span class="k">return</span>;
+  }
+
+  renderStatus(data);
+
+  <span class="c">// 5. subscribe to live updates</span>
+  subscribeProject(projectId);
+}
+
+init().catch(console.error);</pre></div>
+
+    <div class="section-title" style="margin-top:24px;">LIFF_ID_APPROVAL — TypeScript + Supabase Realtime</div>
+    <p style="margin:0 0 10px;font-size:14px;color:#555;">
+      หน้า <code>/liff/approval/{project_id}</code> — ลูกค้า review แบบ 3D แล้วกด Approve/Request Change
+      ผ่าน Supabase <code>design_approvals</code> table พร้อม real-time sync
+    </p>
+    <div class="code-block"><pre><span class="c">// liff-approval.ts — LIFF_ID_APPROVAL page</span>
+<span class="k">import</span> liff <span class="k">from</span> <span class="s">"@line/liff"</span>;
+<span class="k">import</span> { createClient, RealtimeChannel } <span class="k">from</span> <span class="s">"@supabase/supabase-js"</span>;
+
+<span class="c">// ─── env vars ────────────────────────────────────────────────────────────────</span>
+<span class="k">const</span> LIFF_ID = import.meta.env.VITE_LIFF_ID_APPROVAL <span class="k">as</span> string;
+<span class="k">const</span> SB_URL  = import.meta.env.VITE_SUPABASE_URL      <span class="k">as</span> string;
+<span class="k">const</span> SB_KEY  = import.meta.env.VITE_SUPABASE_ANON_KEY <span class="k">as</span> string;
+
+<span class="k">const</span> supabase = createClient(SB_URL, SB_KEY);
+
+<span class="c">// ─── types ────────────────────────────────────────────────────────────────────</span>
+<span class="k">type</span> ApprovalStatus = <span class="s">"pending"</span> | <span class="s">"approved"</span> | <span class="s">"change_requested"</span> | <span class="s">"revision_submitted"</span>;
+
+<span class="k">interface</span> DesignApproval {
+  id:              string;
+  project_id:      string;
+  version:         number;
+  design_url:      string;
+  status:          ApprovalStatus;
+  reviewer_notes:  string | null;
+  approved_at:     string | null;
+  line_user_id:    string;
+}
+
+<span class="c">// ─── submit approval action ───────────────────────────────────────────────────</span>
+<span class="k">async function</span> submitApproval(
+  approvalId: string,
+  action:     <span class="s">"approved"</span> | <span class="s">"change_requested"</span>,
+  notes:      string
+): Promise&lt;void&gt; {
+  <span class="k">const</span> update: Partial&lt;DesignApproval&gt; = {
+    status:         action,
+    reviewer_notes: notes || null,
+    approved_at:    action === <span class="s">"approved"</span> ? <span class="k">new</span> Date().toISOString() : null,
+  };
+
+  <span class="k">const</span> { error } = <span class="k">await</span> supabase
+    .from(<span class="s">"design_approvals"</span>)
+    .update(update)
+    .eq(<span class="s">"id"</span>, approvalId);
+
+  <span class="k">if</span> (error) <span class="k">throw new</span> Error(error.message);
+
+  <span class="c">// close LIFF window after action</span>
+  <span class="k">await</span> new Promise(r =&gt; setTimeout(r, 800));
+  liff.closeWindow();
+}
+
+<span class="c">// ─── real-time: watch for Designer revisions ─────────────────────────────────</span>
+<span class="k">function</span> subscribeApproval(approvalId: string): RealtimeChannel {
+  <span class="k">return</span> supabase
+    .channel(<span class="s">`approval-${approvalId}`</span>)
+    .on&lt;DesignApproval&gt;(
+      <span class="s">"postgres_changes"</span>,
+      {
+        event:  <span class="s">"UPDATE"</span>,
+        schema: <span class="s">"public"</span>,
+        table:  <span class="s">"design_approvals"</span>,
+        filter: <span class="s">`id=eq.${approvalId}`</span>,
+      },
+      (payload) =&gt; {
+        <span class="k">const</span> rec = payload.new;
+        <span class="k">if</span> (rec.status === <span class="s">"revision_submitted"</span>) {
+          <span class="c">// Designer uploaded a new revision — reload preview</span>
+          (document.getElementById(<span class="s">"design-frame"</span>) <span class="k">as</span> HTMLIFrameElement).src =
+            rec.design_url + <span class="s">"?v="</span> + rec.version;
+          document.getElementById(<span class="s">"version-badge"</span>)!.textContent =
+            <span class="s">`Rev ${rec.version}`</span>;
+          document.getElementById(<span class="s">"action-panel"</span>)!.style.display = <span class="s">"block"</span>;
+        }
+      }
+    )
+    .subscribe();
+}
+
+<span class="c">// ─── main init ───────────────────────────────────────────────────────────────</span>
+<span class="k">async function</span> init(): Promise&lt;void&gt; {
+  <span class="k">await</span> liff.init({ liffId: LIFF_ID });
+
+  <span class="k">if</span> (!liff.isLoggedIn()) {
+    liff.login({ redirectUri: window.location.href });
+    <span class="k">return</span>;
+  }
+
+  <span class="k">const</span> profile   = <span class="k">await</span> liff.getProfile();
+  <span class="k">const</span> projectId = window.location.pathname.split(<span class="s">"/"</span>).pop()!;
+
+  <span class="c">// fetch latest pending approval for this project + user</span>
+  <span class="k">const</span> { data: approval, error } = <span class="k">await</span> supabase
+    .from(<span class="s">"design_approvals"</span>)
+    .select(<span class="s">"*"</span>)
+    .eq(<span class="s">"project_id"</span>, projectId)
+    .eq(<span class="s">"line_user_id"</span>, profile.userId)
+    .in(<span class="s">"status"</span>, [<span class="s">"pending"</span>, <span class="s">"revision_submitted"</span>])
+    .order(<span class="s">"version"</span>, { ascending: false })
+    .limit(1)
+    .single();
+
+  <span class="k">if</span> (error || !approval) {
+    document.getElementById(<span class="s">"error-msg"</span>)!.textContent =
+      <span class="s">"ไม่มีแบบที่รอการอนุมัติในขณะนี้"</span>;
+    <span class="k">return</span>;
+  }
+
+  <span class="c">// render design preview + version badge</span>
+  (document.getElementById(<span class="s">"design-frame"</span>) <span class="k">as</span> HTMLIFrameElement).src =
+    approval.design_url;
+  document.getElementById(<span class="s">"version-badge"</span>)!.textContent =
+    <span class="s">`Rev ${approval.version}`</span>;
+  document.getElementById(<span class="s">"user-name"</span>)!.textContent = profile.displayName;
+
+  <span class="c">// bind approve / request-change buttons</span>
+  document.getElementById(<span class="s">"btn-approve"</span>)!.addEventListener(<span class="s">"click"</span>, <span class="k">async</span> () =&gt; {
+    <span class="k">await</span> submitApproval(approval.id, <span class="s">"approved"</span>, <span class="s">""</span>);
+  });
+
+  document.getElementById(<span class="s">"btn-change"</span>)!.addEventListener(<span class="s">"click"</span>, <span class="k">async</span> () =&gt; {
+    <span class="k">const</span> notes = (document.getElementById(<span class="s">"change-notes"</span>) <span class="k">as</span> HTMLTextAreaElement).value;
+    <span class="k">if</span> (!notes.trim()) {
+      alert(<span class="s">"กรุณาระบุรายละเอียดที่ต้องการแก้ไข"</span>);
+      <span class="k">return</span>;
+    }
+    <span class="k">await</span> submitApproval(approval.id, <span class="s">"change_requested"</span>, notes);
+  });
+
+  <span class="c">// subscribe to Designer revisions in real-time</span>
+  subscribeApproval(approval.id);
+}
+
+init().catch(console.error);</pre></div>
+
+    <p style="margin:12px 0 0;font-size:12px;color:#888;border-top:1px solid #eee;padding-top:10px;">
+      <strong>Dependencies:</strong>
+      <code>npm install @line/liff @supabase/supabase-js</code> &nbsp;|&nbsp;
+      <strong>Env:</strong> <code>VITE_LIFF_ID_STATUS</code>, <code>VITE_LIFF_ID_APPROVAL</code>,
+      <code>VITE_SUPABASE_URL</code>, <code>VITE_SUPABASE_ANON_KEY</code> &nbsp;|&nbsp;
+      <strong>RLS:</strong> Supabase Row-Level Security ต้องเปิดใน <code>projects</code> + <code>design_approvals</code>
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">✅ Go-Live Checklist</div>
+    <ul class="steps-list">
+      <li>
+        <div class="step-num">1</div>
+        <div class="step-content"><strong>LINE Developer Console:</strong> สร้าง Provider + Messaging API Channel + LIFF Apps (5 apps)</div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div class="step-content"><strong>Webhook:</strong> ตั้ง Webhook URL = <code>https://api.monolith.app/webhook/line</code> → Verify ผ่าน</div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div class="step-content"><strong>Env Vars:</strong> กำหนด <code>LINE_CHANNEL_ACCESS_TOKEN</code>, <code>LINE_CHANNEL_SECRET</code>, LIFF IDs ทั้งหมด</div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div class="step-content"><strong>Rich Menus:</strong> สร้าง 5 rich menus ผ่าน Messaging API → บันทึก IDs ลง env vars</div>
+      </li>
+      <li>
+        <div class="step-num">5</div>
+        <div class="step-content"><strong>Default Rich Menu:</strong> ตั้ง rm_default เป็น default ผ่าน <code>POST /v2/bot/user/all/richmenu/{richMenuId}</code></div>
+      </li>
+      <li>
+        <div class="step-num">6</div>
+        <div class="step-content"><strong>Test Follow:</strong> Scan QR → เห็น Welcome Flex + Rich Menu ปรากฏ</div>
+      </li>
+      <li>
+        <div class="step-num">7</div>
+        <div class="step-content"><strong>Test Flex ทุก event:</strong> ใช้ test script <code>python tests/test_flex_all_events.py</code></div>
+      </li>
+      <li>
+        <div class="step-num">8</div>
+        <div class="step-content"><strong>Test Postback:</strong> กด approve / reject / sign-off → ตรวจ Supabase ว่า action บันทึกถูกต้อง</div>
+      </li>
+      <li>
+        <div class="step-num">9</div>
+        <div class="step-content"><strong>Test LIFF:</strong> เปิด status LIFF → ดูข้อมูลจาก Supabase ถูกต้องตาม user context</div>
+      </li>
+      <li>
+        <div class="step-num">10</div>
+        <div class="step-content"><strong>Analytics:</strong> เปิด LINE OA Insight API → ตรวจ open rate และ CTA click rate week 1</div>
+      </li>
+    </ul>
+  </div>
+</div><!-- end tab-setup -->
+
+<script>
+function switchTab(id,btn){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>

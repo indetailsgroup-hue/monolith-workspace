@@ -68,6 +68,172 @@ function resetStores() {
 // T022 - SAVE / LOAD INTEGRATION TESTS
 // ============================================
 
+describe('project identity and scene isolation regressions', () => {
+  beforeEach(resetStores);
+  afterEach(() => useProjectStore.getState().setAutoSave(false));
+
+  it('loads either saved project by ID and resumes the selected project after restart', () => {
+    useProjectStore.getState().newProject('Project A');
+    useCabinetStore.getState().setDimension('width', 800);
+    useProjectStore.getState().saveProject();
+    const idA = useProjectStore.getState().metadata!.id;
+    useProjectStore.getState().newProject('Project B');
+    useCabinetStore.getState().setDimension('width', 900);
+    useProjectStore.getState().saveProject();
+    const idB = useProjectStore.getState().metadata!.id;
+
+    expect(useProjectStore.getState().loadProject(idA)).toBe(true);
+    expect(useCabinetStore.getState().cabinet?.dimensions.width).toBe(800);
+    useProjectStore.setState({ metadata: null });
+    useProjectStore.getState().initialize();
+    expect(useProjectStore.getState().metadata?.id).toBe(idA);
+    expect(useProjectStore.getState().loadProject(idB)).toBe(true);
+    expect(useCabinetStore.getState().cabinet?.dimensions.width).toBe(900);
+  });
+
+  it('preserves a legacy current-only project before a new project replaces current', () => {
+    useProjectStore.getState().newProject('Legacy A');
+    const id = useProjectStore.getState().metadata!.id;
+    const legacy = localStorageMock._getStore()['monolith-current-project'];
+    localStorageMock.clear();
+    localStorageMock.setItem('monolith-current-project', legacy);
+    useProjectStore.getState().newProject('New B');
+    expect(useProjectStore.getState().loadProject(id)).toBe(true);
+    expect(useProjectStore.getState().metadata?.name).toBe('Legacy A');
+  });
+
+  it('preserves current-only saves accepted through the older metadata schema', () => {
+    useProjectStore.getState().newProject('Older metadata');
+    const id = useProjectStore.getState().metadata!.id;
+    const legacy = JSON.parse(localStorageMock._getStore()['monolith-current-project']);
+    delete legacy.metadata.version;
+    localStorageMock.clear();
+    localStorageMock.setItem('monolith-current-project', JSON.stringify(legacy));
+    useProjectStore.getState().newProject('Next project');
+    expect(useProjectStore.getState().loadProject(id)).toBe(true);
+  });
+
+  it('rejects imports without an active cabinet identity without replacing the scene', () => {
+    useProjectStore.getState().newProject('Keep scene');
+    const prior = useProjectStore.getState().exportProject();
+    const invalid = JSON.parse(prior);
+    delete invalid.cabinet.id;
+    expect(useProjectStore.getState().importProject(JSON.stringify(invalid))).toBe(false);
+    expect(useProjectStore.getState().exportProject()).toBe(prior);
+  });
+
+  it('rejects a mismatched per-ID payload without selecting the wrong scene', () => {
+    useProjectStore.getState().newProject('Keep scene');
+    const prior = useProjectStore.getState().exportProject();
+    localStorageMock.setItem('monolith-project:requested-id', prior);
+    expect(useProjectStore.getState().loadProject('requested-id')).toBe(false);
+    expect(useProjectStore.getState().exportProject()).toBe(prior);
+  });
+
+  it('initializes the readable current project when storage writes are denied', () => {
+    useProjectStore.getState().newProject('Readable saved project');
+    useCabinetStore.getState().setDimension('width', 820);
+    useProjectStore.getState().saveProject();
+    const id = useProjectStore.getState().metadata!.id;
+    useProjectStore.setState({ metadata: null });
+    useCabinetStore.setState({ cabinet: null, cabinets: [], activeCabinetId: null });
+    const originalSetItem = localStorageMock.setItem.getMockImplementation()!;
+    localStorageMock.setItem.mockImplementation(() => { throw new Error('Storage write denied'); });
+    try {
+      useProjectStore.getState().initialize();
+      expect(useProjectStore.getState().metadata?.id).toBe(id);
+      expect(useCabinetStore.getState().cabinet?.dimensions.width).toBe(820);
+    } finally {
+      localStorageMock.setItem.mockImplementation(originalSetItem);
+    }
+  });
+
+  it('rejects duplicate scene identities without replacing the current scene', () => {
+    useProjectStore.getState().newProject('Keep current');
+    const prior = useProjectStore.getState().exportProject();
+    const invalid = JSON.parse(prior);
+    invalid.cabinets = [invalid.cabinet, { ...invalid.cabinet, name: 'Duplicate identity' }];
+    expect(useProjectStore.getState().importProject(JSON.stringify(invalid))).toBe(false);
+    expect(useProjectStore.getState().exportProject()).toBe(prior);
+  });
+
+  it('exports and imports the whole scene without retaining the destination scene', () => {
+    useProjectStore.getState().newProject('Source scene');
+    useCabinetStore.getState().addCabinet('BASE', 'Second', { width: 600 }, [600, 0, 0]);
+    const sourceIds = useCabinetStore.getState().cabinets.map((cabinet) => cabinet.id);
+    const sourceActiveId = useCabinetStore.getState().activeCabinetId;
+    const exported = useProjectStore.getState().exportProject();
+    expect(JSON.parse(exported).cabinets).toHaveLength(2);
+
+    useProjectStore.getState().newProject('Destination scene');
+    const destinationId = useCabinetStore.getState().activeCabinetId;
+    expect(useProjectStore.getState().importProject(exported)).toBe(true);
+    expect(useCabinetStore.getState().cabinets.map((cabinet) => cabinet.id)).toEqual(sourceIds);
+    expect(useCabinetStore.getState().activeCabinetId).toBe(sourceActiveId);
+    expect(useCabinetStore.getState().cabinets.some((cabinet) => cabinet.id === destinationId)).toBe(false);
+    useCabinetStore.setState({ cabinet: null, cabinets: [], activeCabinetId: null });
+    expect(useProjectStore.getState().loadProject()).toBe(true);
+    expect(useCabinetStore.getState().cabinets.map((cabinet) => cabinet.id)).toEqual(sourceIds);
+  });
+
+  it('preserves active cabinet moves and rotations through save/load and export/import', () => {
+    useProjectStore.getState().newProject('Moved scene');
+    const cabinetId = useCabinetStore.getState().activeCabinetId!;
+    useCabinetStore.getState().updateCabinetPosition(cabinetId, [600, 0, 120]);
+    useCabinetStore.getState().updateCabinetRotation(cabinetId, [0, Math.PI / 2, 0]);
+    useProjectStore.getState().saveProject();
+    const exported = useProjectStore.getState().exportProject();
+
+    for (const restore of [
+      () => useProjectStore.getState().loadProject(),
+      () => useProjectStore.getState().importProject(exported),
+    ]) {
+      expect(restore()).toBe(true);
+      const state = useCabinetStore.getState();
+      expect(state.cabinet?.scenePosition).toEqual([600, 0, 120]);
+      expect(state.cabinet?.sceneRotation).toEqual([0, Math.PI / 2, 0]);
+      expect(state.cabinets.find((cabinet) => cabinet.id === cabinetId)?.scenePosition).toEqual([600, 0, 120]);
+      expect(state.cabinets.find((cabinet) => cabinet.id === cabinetId)?.sceneRotation).toEqual([0, Math.PI / 2, 0]);
+    }
+  });
+
+  it('imports legacy single-cabinet files into a coherent replacement scene', () => {
+    useProjectStore.getState().newProject('Legacy source');
+    const exported = JSON.parse(useProjectStore.getState().exportProject());
+    delete exported.cabinets;
+    useProjectStore.getState().newProject('Old destination');
+    useCabinetStore.setState({ selectedPanelId: 'old-panel' });
+    expect(useProjectStore.getState().importProject(JSON.stringify(exported))).toBe(true);
+    expect(useCabinetStore.getState().cabinets.map((cabinet) => cabinet.id)).toEqual([exported.cabinet.id]);
+    expect(useCabinetStore.getState().activeCabinetId).toBe(exported.cabinet.id);
+    expect(useCabinetStore.getState().selectedPanelId).toBeNull();
+  });
+
+  it('clears panel selection when creating or loading a different project', () => {
+    useProjectStore.getState().newProject('First');
+    const id = useProjectStore.getState().metadata!.id;
+    useCabinetStore.setState({ selectedPanelId: 'old-panel' });
+    useProjectStore.getState().newProject('Second');
+    expect(useCabinetStore.getState().selectedPanelId).toBeNull();
+    useCabinetStore.setState({ selectedPanelId: 'another-panel' });
+    expect(useProjectStore.getState().loadProject(id)).toBe(true);
+    expect(useCabinetStore.getState().selectedPanelId).toBeNull();
+  });
+
+  it('deletes only the selected saved project and clears an active deleted scene', () => {
+    useProjectStore.getState().newProject('Keep A');
+    const idA = useProjectStore.getState().metadata!.id;
+    useProjectStore.getState().newProject('Delete B');
+    const idB = useProjectStore.getState().metadata!.id;
+    useProjectStore.getState().deleteProject(idB);
+    expect(useCabinetStore.getState().cabinet).toBeNull();
+    expect(useCabinetStore.getState().cabinets).toEqual([]);
+    expect(useCabinetStore.getState().activeCabinetId).toBeNull();
+    expect(useProjectStore.getState().loadProject(idB)).toBe(false);
+    expect(useProjectStore.getState().loadProject(idA)).toBe(true);
+  });
+});
+
 describe('T022 - Save/Load Integration', () => {
   beforeEach(() => {
     resetStores();

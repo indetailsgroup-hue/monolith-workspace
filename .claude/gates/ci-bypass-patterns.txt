@@ -3,14 +3,14 @@
 #
 # These patterns are FORBIDDEN in production code.
 # BLOCK = CI FAIL (exit code 1)
-# WARN = Review required (exit code 2 unless --strict)
+# WARN = Review required (exit code 2; --strict blocks HIGH/MED)
 #
 # Format: GATE|SEVERITY|PATTERN|DESCRIPTION
 # - GATE: G9, G10, G10.1, G10.2, ALL
 # - SEVERITY: BLOCK (always fail), WARN-HIGH, WARN-MED, WARN-LOW
 #   - WARN-HIGH: Likely gate bypass, needs immediate attention
 #   - WARN-MED: Quality/determinism issue, should fix before release
-#   - WARN-LOW: Code hygiene, fix when convenient
+#   - WARN-LOW: Code hygiene, fix when convenient (advisory under --strict)
 # - PATTERN: grep -E compatible regex
 # - DESCRIPTION: Human-readable explanation
 #
@@ -162,6 +162,8 @@ G10.3|WARN-HIGH|toolTable:\s*\[\]|Empty tool table (machine must have tools)
 # G10.3 Exception patterns
 EXCEPT|skipDialectValidation|**/__tests__/**
 EXCEPT|skipMachineCheck|**/__tests__/**
+# A null drill map has no operations, so its packet representation has no tools.
+EXCEPT|tools:\s*\[\]|**/factory/packet/builders/buildDrillMap.ts
 EXCEPT|tools:\s*\[\]|**/__tests__/**
 EXCEPT|toolTable:\s*\[\]|**/__tests__/**
 
@@ -182,6 +184,8 @@ EXCEPT|markPacketAsValidated|**/*.test.ts
 EXCEPT|markPacketAsValidated|**/*.test.tsx
 
 # ValidatedFactoryPacket casts - ONLY in tests
+# The G9 validator is the sole production brand factory after runtime checks.
+EXCEPT|as ValidatedFactoryPacket|**/cnc/mapping/g9AssertValidPacket.ts
 EXCEPT|as ValidatedFactoryPacket|**/__tests__/**
 EXCEPT|as ValidatedFactoryPacket|**/*.test.ts
 

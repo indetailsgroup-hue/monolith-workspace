@@ -79,7 +79,7 @@ export function formatOverlapMessage(args: {
   bId: string;
   penetrationMm: number;
 }): string {
-  return `Collision overlap detected: ${args.aId} and ${args.bId} overlap by ${args.penetrationMm.toFixed(2)}mm`;
+  return `Collision overlap detected: ${args.aId} and ${args.bId} overlap by ${args.penetrationMm.toFixed(4)}mm`;
 }
 
 /**
@@ -91,7 +91,7 @@ export function formatMinGapMessage(args: {
   gapMm: number;
   requiredMm: number;
 }): string {
-  return `Minimum gap violation: ${args.aId} and ${args.bId} are ${args.gapMm.toFixed(2)}mm apart (required: ${args.requiredMm}mm)`;
+  return `Minimum gap violation: ${args.aId} and ${args.bId} are ${args.gapMm.toFixed(4)}mm apart (required: ${args.requiredMm}mm)`;
 }
 
 /**

@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Phase 2 Go-Live Operations Plan Brief — S53 MONOLITH DAPH Decor</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 14mm 14mm 12mm 14mm; }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Sarabun', sans-serif;
+    font-size: 9.5pt;
+    color: #1a2240;
+    background: #ffffff;
+    line-height: 1.45;
+  }
+
+  /* ── Page header ── */
+  .page-header {
+    border-bottom: 3pt solid #1f2d5a;
+    padding-bottom: 7pt;
+    margin-bottom: 10pt;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .page-header .brand { font-size: 8.5pt; font-weight: 700; color: #1f2d5a; letter-spacing: .5px; text-transform: uppercase; }
+  .page-header .doc-meta { font-size: 7.5pt; color: #7a8ab2; text-align: right; }
+
+  /* ── Title block ── */
+  .title-block {
+    background: #1f2d5a;
+    color: #ffffff;
+    padding: 10pt 12pt;
+    border-radius: 4pt;
+    margin-bottom: 9pt;
+  }
+  .title-block .doc-tag {
+    font-size: 7pt; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+    color: #c9a84c; margin-bottom: 4pt;
+  }
+  .title-block h1 { font-size: 14pt; font-weight: 700; line-height: 1.2; margin-bottom: 3pt; }
+  .title-block h1 span { color: #c9a84c; }
+  .title-block .title-sub { font-size: 8.5pt; color: rgba(255,255,255,.65); }
+  .title-block .kpi-row {
+    display: flex; gap: 14pt; margin-top: 8pt; padding-top: 7pt;
+    border-top: 1pt solid rgba(201,168,76,.3); flex-wrap: wrap;
+  }
+  .kpi-item { text-align: center; }
+  .kpi-item .kval { font-size: 16pt; font-weight: 800; color: #c9a84c; line-height: 1; }
+  .kpi-item .klbl { font-size: 7pt; color: rgba(255,255,255,.55); text-transform: uppercase; letter-spacing: .8px; margin-top: 1pt; }
+
+  /* ── Section header ── */
+  .section-hdr {
+    display: flex; align-items: center; gap: 7pt;
+    border-left: 3pt solid #c9a84c; padding-left: 7pt;
+    margin-bottom: 6pt; margin-top: 9pt;
+  }
+  .section-hdr h2 { font-size: 10.5pt; font-weight: 700; color: #1f2d5a; }
+  .section-hdr .hbadge {
+    font-size: 7pt; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    background: #c9a84c; color: #1f2d5a; padding: 2pt 6pt; border-radius: 2pt;
+  }
+
+  /* ── GL-CHK checklist table ── */
+  table.glchk-tbl {
+    width: 100%; border-collapse: collapse; font-size: 8pt;
+    margin-bottom: 9pt;
+  }
+  table.glchk-tbl th {
+    background: #1f2d5a; color: rgba(255,255,255,.85);
+    font-size: 7.5pt; font-weight: 700; padding: 5pt 6pt;
+    text-align: left; letter-spacing: .4px;
+  }
+  table.glchk-tbl td { padding: 4.5pt 6pt; border-bottom: .5pt solid #e5e8f0; vertical-align: top; }
+  table.glchk-tbl tr:nth-child(even) td { background: #f8f9fc; }
+  table.glchk-tbl tr:last-child td { border-bottom: none; }
+  .glchk-id { font-size: 7.5pt; font-weight: 700; color: #c9a84c; white-space: nowrap; }
+  .cb { width: 9pt; height: 9pt; border: 1.2pt solid #7a8ab2; border-radius: 1.5pt; display: inline-block; }
+
+  /* ── Phase badges ── */
+  .phase-badge {
+    display: inline-block; font-size: 6.5pt; font-weight: 700; padding: 1.5pt 5pt;
+    border-radius: 2pt; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap;
+  }
+  .ph-pre   { background: #eef2fa; color: #4060a0; }
+  .ph-sit   { background: #fff4e0; color: #a06010; }
+  .ph-uat   { background: #e8f3ff; color: #1060a0; }
+  .ph-go    { background: #e4f5ea; color: #1a6b35; }
+  .ph-bau   { background: #f0f0f0; color: #505060; }
+  .ph-t0    { background: #fce8e8; color: #9b2020; }
+
+  /* ── Cutover timeline ── */
+  .cutover-wrap {
+    display: flex; gap: 0; margin-bottom: 9pt; align-items: stretch;
+  }
+  .co-step {
+    flex: 1; border: .5pt solid #d0d8ea; border-right: none; padding: 6pt 5pt;
+    background: #f8f9fc; text-align: center; position: relative;
+  }
+  .co-step:last-child { border-right: .5pt solid #d0d8ea; border-radius: 0 3pt 3pt 0; }
+  .co-step:first-child { border-radius: 3pt 0 0 3pt; }
+  .co-step.t0 { background: #1f2d5a; color: #fff; }
+  .co-step.t0 .co-label { color: #c9a84c; }
+  .co-step.t0 .co-day  { color: #fff; }
+  .co-step.t0 .co-desc { color: rgba(255,255,255,.7); }
+  .co-step.t0plus { background: #2d7a4f; color: #fff; }
+  .co-step.t0plus .co-label { color: #c9a84c; }
+  .co-step.t0plus .co-day  { color: #fff; }
+  .co-step.t0plus .co-desc { color: rgba(255,255,255,.7); }
+  .co-label { font-size: 8.5pt; font-weight: 800; color: #1f2d5a; margin-bottom: 2pt; }
+  .co-day   { font-size: 7pt; font-weight: 700; color: #7a8ab2; margin-bottom: 3pt; }
+  .co-desc  { font-size: 7pt; color: #4a5570; line-height: 1.35; }
+
+  /* ── BAU transition table ── */
+  table.bau-tbl {
+    width: 100%; border-collapse: collapse; font-size: 8pt; margin-bottom: 9pt;
+  }
+  table.bau-tbl th {
+    background: #1f2d5a; color: rgba(255,255,255,.85);
+    font-size: 7.5pt; font-weight: 700; padding: 5pt 6pt; text-align: left; letter-spacing: .4px;
+  }
+  table.bau-tbl td { padding: 5pt 6pt; border-bottom: .5pt solid #e5e8f0; vertical-align: top; }
+  table.bau-tbl tr:nth-child(even) td { background: #f8f9fc; }
+  table.bau-tbl tr:last-child td { border-bottom: none; }
+  .bau-phase { font-size: 8.5pt; font-weight: 700; color: #1f2d5a; }
+  .bau-range { font-size: 7.5pt; color: #7a8ab2; }
+
+  /* ── Phase 3 gate panel ── */
+  .gate-panel {
+    border: 1pt solid #d0d8ea; border-radius: 4pt; padding: 8pt 10pt; margin-bottom: 9pt;
+    background: #fafbfd;
+  }
+  .gate-panel .gate-title {
+    font-size: 9pt; font-weight: 700; color: #1f2d5a; margin-bottom: 6pt;
+    padding-bottom: 5pt; border-bottom: .5pt solid #d0d8ea;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .gate-panel .gate-title .gbadge {
+    font-size: 7pt; font-weight: 700; padding: 2pt 7pt; border-radius: 2pt;
+    background: #2d7a4f; color: #fff; text-transform: uppercase; letter-spacing: .5px;
+  }
+  .gap-grid {
+    display: flex; flex-wrap: wrap; gap: 5pt; margin-bottom: 7pt;
+  }
+  .gap-card {
+    border: .5pt solid #b8c8e0; border-radius: 3pt; padding: 4pt 7pt;
+    background: #fff; text-align: center; min-width: 60pt;
+  }
+  .gap-card .gap-id { font-size: 7.5pt; font-weight: 700; color: #1f2d5a; }
+  .gap-card .gap-status {
+    font-size: 6.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+    margin-top: 2pt; color: #2d7a4f;
+  }
+  .gap-card.phase3 .gap-status { color: #7a8ab2; }
+
+  /* ── Coverage ladder ── */
+  .coverage-row {
+    display: flex; gap: 0; align-items: center; margin-top: 5pt;
+  }
+  .cov-step {
+    flex: 1; text-align: center; padding: 4pt 3pt; border: .5pt solid #d0d8ea;
+    border-right: none; background: #f0f3fa;
+  }
+  .cov-step:last-child { border-right: .5pt solid #d0d8ea; border-radius: 0 3pt 3pt 0; }
+  .cov-step:first-child { border-radius: 3pt 0 0 3pt; }
+  .cov-step.active { background: #1f2d5a; }
+  .cov-step.active .cov-pct { color: #c9a84c; }
+  .cov-step.active .cov-lbl { color: rgba(255,255,255,.65); }
+  .cov-pct { font-size: 13pt; font-weight: 800; color: #4060a0; line-height: 1; }
+  .cov-lbl { font-size: 7pt; color: #7a8ab2; text-transform: uppercase; letter-spacing: .6px; margin-top: 1pt; }
+
+  /* ── Info row ── */
+  .info-row {
+    display: flex; gap: 8pt; margin-bottom: 7pt; flex-wrap: wrap;
+  }
+  .info-pill {
+    background: #f0f3fa; border: .5pt solid #d0d8ea; border-radius: 12pt;
+    padding: 3pt 9pt; font-size: 7.5pt; color: #4a5570;
+  }
+  .info-pill strong { color: #1f2d5a; }
+
+  /* ── Agents row ── */
+  .agents-row { display: flex; gap: 5pt; flex-wrap: wrap; margin-bottom: 8pt; margin-top: 4pt; }
+  .agent-chip {
+    font-size: 7pt; font-weight: 600; padding: 2pt 7pt;
+    border-radius: 10pt; border: .5pt solid #c9a84c;
+    background: #fff8e8; color: #7a4e10;
+    white-space: nowrap;
+  }
+
+  /* ── Footer ── */
+  .doc-footer {
+    border-top: 1pt solid #d0d8ea; padding-top: 5pt;
+    font-size: 7pt; color: #9aa0b8;
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 6pt;
+  }
+
+  /* ── Page break ── */
+  .page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════ PAGE 1 ══════════════════════ -->
+
+<!-- Page Header -->
+<div class="page-header">
+  <div class="brand">MONOLITH · DAPH Decor AI Agent Programme</div>
+  <div class="doc-meta">
+    MONOLITH-S53-GOLIVE-001 v1.0 &nbsp;|&nbsp; Phase 2 · P2-M3 · Q2 2033<br>
+    Owner: Programme Director &nbsp;|&nbsp; Trigger: V-CHK-08
+  </div>
+</div>
+
+<!-- Title Block -->
+<div class="title-block">
+  <div class="doc-tag">S53 · Phase 2 Go-Live Operations Plan — MONOLITH DAPH Decor AI Agent Programme</div>
+  <h1>แผนปฏิบัติการ <span>Go-Live Phase 2</span></h1>
+  <div class="title-sub">ตาราง Cutover Schedule · BAU Transition 4 ช่วง 90 วัน · Phase 3 Readiness Gate Criteria</div>
+  <div class="kpi-row">
+    <div class="kpi-item"><div class="kval">10</div><div class="klbl">GL-CHK</div></div>
+    <div class="kpi-item"><div class="kval">3</div><div class="klbl">Go-Live Windows</div></div>
+    <div class="kpi-item"><div class="kval">90</div><div class="klbl">วัน BAU Transition</div></div>
+    <div class="kpi-item"><div class="kval">80%</div><div class="klbl">Coverage Gate</div></div>
+    <div class="kpi-item"><div class="kval">Q2 2033</div><div class="klbl">เป้าหมาย</div></div>
+  </div>
+</div>
+
+<!-- Info row -->
+<div class="info-row">
+  <div class="info-pill"><strong>Living Document:</strong> MONOLITH-S53-GOLIVE-001 v1.0</div>
+  <div class="info-pill"><strong>Trigger:</strong> V-CHK-08 Complete</div>
+  <div class="info-pill"><strong>Owner:</strong> Programme Director</div>
+  <div class="info-pill"><strong>Milestone:</strong> P2-M3 · Q2 2033</div>
+</div>
+
+<!-- Section: Cutover Schedule -->
+<div class="section-hdr">
+  <h2>53.3 ตาราง Cutover Schedule</h2>
+  <span class="hbadge">T-5 → T+72h</span>
+</div>
+<div class="cutover-wrap">
+  <div class="co-step">
+    <div class="co-label">T−5 วัน</div>
+    <div class="co-day">Change Freeze</div>
+    <div class="co-desc">ระงับ Production changes ทุกรายการ · ยืนยัน rollback plan</div>
+  </div>
+  <div class="co-step">
+    <div class="co-label">T−2 วัน</div>
+    <div class="co-day">Final Delta</div>
+    <div class="co-desc">Delta data sync · smoke test ครั้งสุดท้าย · ยืนยัน resource standby</div>
+  </div>
+  <div class="co-step">
+    <div class="co-label">T−1 วัน</div>
+    <div class="co-day">Readiness Call</div>
+    <div class="co-desc">Go/No-Go call · GL-CHK-01–03 ผ่านครบ · ทีมพร้อมทุกฝ่าย</div>
+  </div>
+  <div class="co-step t0">
+    <div class="co-label">T+0</div>
+    <div class="co-day">Window 1 · จ. 06:00–10:00</div>
+    <div class="co-desc">AIE-001 (Core API) &amp; AIE-002 (Aria Creative) · cutover live</div>
+  </div>
+  <div class="co-step t0plus">
+    <div class="co-label">T+48h</div>
+    <div class="co-day">Window 2 · พ. 06:00–10:00</div>
+    <div class="co-desc">AIE-003/004/005 · (Signal Hub, Nova Analytics, Nexus Routing)</div>
+  </div>
+  <div class="co-step">
+    <div class="co-label">T+72h</div>
+    <div class="co-day">Stability</div>
+    <div class="co-desc">ยืนยัน SLA baseline · เปิด Hypercare Phase A อย่างเป็นทางการ</div>
+  </div>
+</div>
+
+<!-- Section: GL-CHK-01–10 Checklist -->
+<div class="section-hdr">
+  <h2>53.6 GL-CHK-01–10 Checklist (Living Document)</h2>
+  <span class="hbadge">MONOLITH-S53-GOLIVE-001</span>
+</div>
+<table class="glchk-tbl">
+  <thead>
+    <tr>
+      <th style="width:6%">☐</th>
+      <th style="width:11%">GL-CHK</th>
+      <th style="width:34%">รายการตรวจสอบ</th>
+      <th style="width:14%">ช่วงเวลา</th>
+      <th style="width:18%">เฟสอ้างอิง</th>
+      <th style="width:17%">ผู้รับผิดชอบ</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="cb"></span></td>
+      <td><span class="glchk-id">GL-CHK-01</span></td>
+      <td>V-CHK-01–12 ผ่านครบทั้งหมด (100% completion rate)</td>
+      <td>≥48h ก่อน cutover</td>
+      <td><span class="phase-badge ph-pre">Pre-GoLive</span></td>
+      <td>Programme Director</td>
+    </tr>
+    <tr>
+      <td><span class="cb"></span></td>
+      <td><span class="glchk-id">GL-CHK-02</span></td>
+      <td>Production environment validation เสร็จสมบูรณ์ — infra, network, security ผ่าน</td>
+      <td>≥48h ก่อน cutover</td>
+      <td><span class="phase-badge ph-pre">Pre-GoLive</span></td>
+      <td>Technical Lead</td>
+    </tr>
+    <tr>
+      <td><span class="cb"></span></td>
+      <td><span class="glchk-id">GL-CHK-03</span></td>
+      <td>Rollback rehearsal ผ่าน — ทดสอบ rollback สำเร็จใน ≤2h ภายใต้ sandbox</td>
+      <td>≥48h ก่อน cutover</td>
+      <td><span class="phase-badge ph-pre">Pre-GoLive</span></td>
+      <td>Technical Lead</td>
+    </tr>
+    <tr>
+      <td><span class="cb"></span></td>
+      <td><span class="glchk-id">GL-CHK-04</span></td>
+      <td>Hypercare Phase A เริ่มต้น (Day 1) — enhanced monitoring dashboard live</td>
+      <td>Day 1 (T+0)</td>
+      <td><span class="phase-badge ph-t0">T+0 Go-Live</span></td>
+      <td>Signal / Ops</td>
+    </tr>
+    <tr>
+      <td><span class="cb"></span></td>
+      <td><span class="glchk-id">GL-CHK-05</span></td>
+      <td>SLA baseline ยืนยัน Day 3 (T+72h) — AIE-001–005 อยู่ในเกณฑ์ target SLA</td>
+      <td>Day 3 (T+72h)</td>
+      <td><span class="phase-badge ph-t0">T+72h</span></td>
+      <td>Signal / Programme Director</td>
+    </tr>
+    <tr>
+      <td><span class="cb"></span></td>
+      <td><span class="glchk-id">GL-CHK-06</span></td>
+      <td>Hypercare Phase B เปลี่ยน (Day 31) — ลด monitoring cadence เป็น standard</td>
+      <td>Day 31</td>
+      <td><span class="phase-badge ph-go">Phase B</span></td>
+      <td>Signal / Ops</td>
+    </tr>
+    <tr>
+      <td><span class="cb"></span></td>
+      <td><span class="glchk-id">GL-CHK-07</span></td>
+      <td>Hypercare Phase C เปลี่ยน (Day 61) — ส่งมอบ ownership ให้ BAU operations team</td>
+      <td>Day 61</td>
+      <td><span class="phase-badge ph-go">Phase C</span></td>
+      <td>Programme Director</td>
+    </tr>
+    <tr>
+      <td><span class="cb"></span></td>
+      <td><span class="glchk-id">GL-CHK-08</span></td>
+      <td>Hypercare Phase D ปิด (Day 91) — BAU confirmed, hypercare escalation matrix ยกเลิก</td>
+      <td>Day 91</td>
+      <td><span class="phase-badge ph-bau">BAU</span></td>
+      <td>Programme Director</td>
+    </tr>
+    <tr>
+      <td><span class="cb"></span></td>
+      <td><span class="glchk-id">GL-CHK-09</span></td>
+      <td>GAP-05/06/09/10/11/12 ทั้ง 6 รายการปิด CLOSED และ coverage ≥80% ยืนยัน</td>
+      <td>Day 61–90</td>
+      <td><span class="phase-badge ph-go">Phase 3 Gate</span></td>
+      <td>Programme Director</td>
+    </tr>
+    <tr>
+      <td><span class="cb"></span></td>
+      <td><span class="glchk-id">GL-CHK-10</span></td>
+      <td>SC อนุมัติ Phase 3 PDD — formal approval ครบ, Phase 3 kick-off authorized</td>
+      <td>Day 61–90</td>
+      <td><span class="phase-badge ph-go">Phase 3 Gate</span></td>
+      <td>SC Chair / Programme Director</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ══════════════════════ PAGE 2 ══════════════════════ -->
+<div class="page-break"></div>
+
+<!-- Page Header (page 2) -->
+<div class="page-header">
+  <div class="brand">MONOLITH · DAPH Decor AI Agent Programme</div>
+  <div class="doc-meta">
+    MONOLITH-S53-GOLIVE-001 v1.0 &nbsp;|&nbsp; หน้า 2/2<br>
+    BAU Transition · Phase 3 Readiness Gate
+  </div>
+</div>
+
+<!-- Section: BAU Transition -->
+<div class="section-hdr">
+  <h2>53.4 BAU Transition — 4 ช่วง 90 วัน</h2>
+  <span class="hbadge">GL-CHK-04–08</span>
+</div>
+<table class="bau-tbl">
+  <thead>
+    <tr>
+      <th style="width:14%">ช่วง</th>
+      <th style="width:18%">ระยะเวลา</th>
+      <th style="width:12%">GL-CHK</th>
+      <th style="width:26%">กิจกรรมหลัก</th>
+      <th style="width:16%">Monitoring</th>
+      <th style="width:14%">ทีมรับผิดชอบ</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>
+        <div class="bau-phase">Phase A</div>
+        <div class="bau-range">Enhanced Hypercare</div>
+      </td>
+      <td><span class="phase-badge ph-t0">Day 1–30</span></td>
+      <td><span class="glchk-id">GL-CHK-04, 05</span></td>
+      <td>Enhanced monitoring 24/7 · incident response ≤30 min · daily status report · escalation L1–L4 active</td>
+      <td>Continuous 24/7<br>Daily stand-up</td>
+      <td>Signal + Vendor</td>
+    </tr>
+    <tr>
+      <td>
+        <div class="bau-phase">Phase B</div>
+        <div class="bau-range">Standard Hypercare</div>
+      </td>
+      <td><span class="phase-badge ph-go">Day 31–60</span></td>
+      <td><span class="glchk-id">GL-CHK-06</span></td>
+      <td>ลด monitoring cadence · ปิด L4 escalation · bi-weekly review · incident SLA ≤2h</td>
+      <td>Business hours +<br>On-call</td>
+      <td>Signal + Ops</td>
+    </tr>
+    <tr>
+      <td>
+        <div class="bau-phase">Phase C</div>
+        <div class="bau-range">Pre-BAU</div>
+      </td>
+      <td><span class="phase-badge ph-go">Day 61–90</span></td>
+      <td><span class="glchk-id">GL-CHK-07, 09, 10</span></td>
+      <td>ส่งมอบ ownership ให้ BAU team · ตรวจ Phase 3 gate criteria · ยืนยัน GAP closure</td>
+      <td>Business hours<br>Weekly review</td>
+      <td>Programme Director</td>
+    </tr>
+    <tr>
+      <td>
+        <div class="bau-phase">Phase D</div>
+        <div class="bau-range">Full BAU</div>
+      </td>
+      <td><span class="phase-badge ph-bau">Day 91+</span></td>
+      <td><span class="glchk-id">GL-CHK-08</span></td>
+      <td>BAU operations ปกติ · hypercare escalation matrix ยกเลิก · Phase 3 kick-off หากผ่าน gate</td>
+      <td>Standard BAU<br>SLA dashboard</td>
+      <td>BAU Ops Team</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Section: Phase 3 Readiness Gate -->
+<div class="section-hdr">
+  <h2>53.5 Phase 3 Readiness Gate</h2>
+  <span class="hbadge">GL-CHK-09–10</span>
+</div>
+<div class="gate-panel">
+  <div class="gate-title">
+    <span>Phase 2 GAPs ต้องปิดทั้งหมดก่อน SC อนุมัติ Phase 3 PDD</span>
+    <span class="gbadge">Coverage Gate ≥80%</span>
+  </div>
+
+  <div style="font-size:8pt; font-weight:700; color:#1f2d5a; margin-bottom:5pt;">Phase 2 — ต้องปิด CLOSED (6 รายการ)</div>
+  <div class="gap-grid">
+    <div class="gap-card">
+      <div class="gap-id">GAP-05</div>
+      <div style="font-size:6.5pt;color:#4a5570;margin:1pt 0;">AI Creative Engine</div>
+      <div class="gap-status">● CLOSED</div>
+    </div>
+    <div class="gap-card">
+      <div class="gap-id">GAP-06</div>
+      <div style="font-size:6.5pt;color:#4a5570;margin:1pt 0;">Cross-Pillar Event Bus</div>
+      <div class="gap-status">● CLOSED</div>
+    </div>
+    <div class="gap-card">
+      <div class="gap-id">GAP-09</div>
+      <div style="font-size:6.5pt;color:#4a5570;margin:1pt 0;">Procurement Automation</div>
+      <div class="gap-status">● CLOSED</div>
+    </div>
+    <div class="gap-card">
+      <div class="gap-id">GAP-10</div>
+      <div style="font-size:6.5pt;color:#4a5570;margin:1pt 0;">Compliance Engine</div>
+      <div class="gap-status">● CLOSED</div>
+    </div>
+    <div class="gap-card">
+      <div class="gap-id">GAP-11</div>
+      <div style="font-size:6.5pt;color:#4a5570;margin:1pt 0;">Advanced Analytics</div>
+      <div class="gap-status">● CLOSED</div>
+    </div>
+    <div class="gap-card">
+      <div class="gap-id">GAP-12</div>
+      <div style="font-size:6.5pt;color:#4a5570;margin:1pt 0;">Integration Mesh</div>
+      <div class="gap-status">● CLOSED</div>
+    </div>
+  </div>
+
+  <div style="font-size:8pt; font-weight:700; color:#1f2d5a; margin-bottom:5pt; margin-top:7pt;">Phase 3 — scope ต่อไป (7 รายการ · coverage จะเพิ่มเป็น 92%)</div>
+  <div class="gap-grid">
+    <div class="gap-card phase3">
+      <div class="gap-id">GAP-01</div>
+      <div style="font-size:6.5pt;color:#4a5570;margin:1pt 0;">Biophilic Design</div>
+      <div class="gap-status">→ Phase 3</div>
+    </div>
+    <div class="gap-card phase3">
+      <div class="gap-id">GAP-02</div>
+      <div style="font-size:6.5pt;color:#4a5570;margin:1pt 0;">Design Freeze Gate</div>
+      <div class="gap-status">→ Phase 3</div>
+    </div>
+    <div class="gap-card phase3">
+      <div class="gap-id">GAP-03</div>
+      <div style="font-size:6.5pt;color:#4a5570;margin:1pt 0;">Sensory Commissioning</div>
+      <div class="gap-status">→ Phase 3</div>
+    </div>
+    <div class="gap-card phase3">
+      <div class="gap-id">GAP-04</div>
+      <div style="font-size:6.5pt;color:#4a5570;margin:1pt 0;">Post-Occupancy Eval</div>
+      <div class="gap-status">→ Phase 3</div>
+    </div>
+    <div class="gap-card phase3">
+      <div class="gap-id">GAP-13</div>
+      <div style="font-size:6.5pt;color:#4a5570;margin:1pt 0;">TBD Phase 3</div>
+      <div class="gap-status">→ Phase 3</div>
+    </div>
+    <div class="gap-card phase3">
+      <div class="gap-id">GAP-14</div>
+      <div style="font-size:6.5pt;color:#4a5570;margin:1pt 0;">TBD Phase 3</div>
+      <div class="gap-status">→ Phase 3</div>
+    </div>
+    <div class="gap-card phase3">
+      <div class="gap-id">GAP-15</div>
+      <div style="font-size:6.5pt;color:#4a5570;margin:1pt 0;">TBD Phase 3</div>
+      <div class="gap-status">→ Phase 3</div>
+    </div>
+  </div>
+
+  <!-- Coverage Ladder -->
+  <div style="font-size:8pt; font-weight:700; color:#1f2d5a; margin-bottom:4pt; margin-top:7pt;">Coverage Ladder — เส้นทางสู่ 92%</div>
+  <div class="coverage-row">
+    <div class="cov-step">
+      <div class="cov-pct">56%</div>
+      <div class="cov-lbl">Baseline</div>
+    </div>
+    <div class="cov-step">
+      <div class="cov-pct">68%</div>
+      <div class="cov-lbl">Phase 1</div>
+    </div>
+    <div class="cov-step active">
+      <div class="cov-pct">80%</div>
+      <div class="cov-lbl">Phase 2 ← Gate</div>
+    </div>
+    <div class="cov-step">
+      <div class="cov-pct">92%</div>
+      <div class="cov-lbl">Phase 3</div>
+    </div>
+  </div>
+</div>
+
+<!-- Agents Row -->
+<div style="font-size:8pt; font-weight:700; color:#1f2d5a; margin-bottom:4pt;">Agents ที่เกี่ยวข้อง — Go-Live Operations</div>
+<div class="agents-row">
+  <span class="agent-chip">Signal</span>
+  <span class="agent-chip">Core</span>
+  <span class="agent-chip">Nova</span>
+  <span class="agent-chip">Nexus</span>
+  <span class="agent-chip">Aria</span>
+  <span class="agent-chip">Guardian</span>
+  <span class="agent-chip">Atlas</span>
+  <span class="agent-chip">Ops</span>
+  <span class="agent-chip">Pulse</span>
+  <span class="agent-chip">Ledger</span>
+  <span class="agent-chip">Vega</span>
+  <span class="agent-chip">Rex</span>
+</div>
+
+<!-- Footer -->
+<div class="doc-footer">
+  <span>MONOLITH · DAPH Decor AI Agent Programme · S53 Phase 2 Go-Live Operations Plan</span>
+  <span>MONOLITH-S53-GOLIVE-001 v1.0 · Programme Director · 4 September 2026</span>
+</div>
+
+</body>
+</html>

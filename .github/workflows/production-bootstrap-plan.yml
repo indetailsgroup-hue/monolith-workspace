@@ -1,0 +1,405 @@
+name: Production Bootstrap Plan (no writes)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/tests/**'
+      - 'scripts/capture_hosted_bootstrap_inventory.sh'
+      - 'scripts/create_production_bootstrap_plan.sh'
+      - 'scripts/compare_hosted_migration_inventory.mjs'
+      - 'scripts/prepare_supabase_migrations_ci.sh'
+      - 'scripts/simulate_hosted_schema_reconciliation.sh'
+      - '.github/workflows/production-bootstrap-plan.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  inspect-hosted:
+    name: Inspect hosted schema (read-only)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      SUPABASE_PROJECT_REF: ${{ secrets.MONOLITH_SUPABASE_PROJECT_REF }}
+      PGOPTIONS: '-c default_transaction_read_only=on'
+
+    steps:
+      - name: Validate target credentials
+        run: |
+          if [ -z "$DATABASE_URL" ] || [ -z "$SUPABASE_PROJECT_REF" ]; then
+            echo "::error::DATABASE_URL and SUPABASE_PROJECT_REF are required."
+            exit 1
+          fi
+          if [[ "$DATABASE_URL" != postgres://* && "$DATABASE_URL" != postgresql://* ]]; then
+            echo "::error::DATABASE_URL must be a full PostgreSQL connection URI."
+            exit 1
+          fi
+          if [[ "$DATABASE_URL" != *"$SUPABASE_PROJECT_REF"* ]]; then
+            echo "::error::DATABASE_URL does not target SUPABASE_PROJECT_REF."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends postgresql-client
+
+      - name: Capture hosted bootstrap inventory
+        run: bash scripts/capture_hosted_bootstrap_inventory.sh hosted-bootstrap-inventory.json
+
+      - name: Upload hosted inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: hosted-bootstrap-inventory-${{ github.sha }}
+          path: hosted-bootstrap-inventory.json
+          retention-days: 30
+
+  validate-plan:
+    name: Render and assess exact bootstrap bundle locally
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
+        with:
+          version: 2.116.0
+
+      - name: Install PostgreSQL and pgTAP tooling
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            postgresql-client \
+            libtap-parser-sourcehandler-pgtap-perl
+
+      - name: Render deterministic bootstrap plan
+        run: bash scripts/create_production_bootstrap_plan.sh bootstrap-plan
+
+      - name: Apply rendered bundle to a fresh local Supabase database
+        working-directory: bootstrap-plan
+        run: |
+          # The bootstrap gate only needs PostgreSQL. Disable the local mail
+          # catcher to avoid runner-level SMTP/UI port collisions.
+          sed -i '/^\[inbucket\]/,/^\[storage\]/{
+            s/^enabled = true/enabled = false/
+          }' supabase/config.toml
+          supabase start
+
+      - name: Verify core schema and run all pgTAP assertions
+        run: |
+          DB_URL="postgresql://supabase_admin:postgres@127.0.0.1:54322/postgres"
+          RENDERED_MIGRATIONS="$(jq -r '.renderedMigrationFiles' bootstrap-plan/plan-summary.json)"
+
+          if [[ ! "$RENDERED_MIGRATIONS" =~ ^[0-9]+$ ]]; then
+            echo "::error::Rendered migration count is not numeric."
+            exit 1
+          fi
+
+          psql "$DB_URL" -tA -v ON_ERROR_STOP=1 -c "SELECT jsonb_build_object(
+            'renderedMigrationFiles', $RENDERED_MIGRATIONS,
+            'migrationsApplied', (SELECT count(*) FROM supabase_migrations.schema_migrations),
+            'allRenderedMigrationsApplied', (
+              (SELECT count(*) FROM supabase_migrations.schema_migrations)
+              = $RENDERED_MIGRATIONS
+            ),
+            'coreSchemaReady', (
+              to_regclass('public.organizations') IS NOT NULL
+              AND to_regclass('public.org_members') IS NOT NULL
+              AND to_regclass('public.super_admins') IS NOT NULL
+              AND to_regclass('public.notification_digest_queue') IS NOT NULL
+              AND to_regclass('public.platform_metrics_snapshots') IS NOT NULL
+            ),
+            'productionWritesPerformed', false
+          );" | tee bootstrap-plan/local-bootstrap-result.json
+
+          jq -e '.coreSchemaReady == true and .allRenderedMigrationsApplied == true' \
+            bootstrap-plan/local-bootstrap-result.json >/dev/null
+
+          set +e
+          set -o pipefail
+          supabase db lint \
+            --db-url "$DB_URL" \
+            --schema public \
+            --level error \
+            --fail-on error \
+            2>&1 | tee bootstrap-plan/bootstrap-db-lint.txt
+          DB_LINT_EXIT=${PIPESTATUS[0]}
+          set +o pipefail
+          set -e
+
+          jq \
+            --argjson lintExitCode "$DB_LINT_EXIT" \
+            '. + {
+              databaseLintExitCode: $lintExitCode,
+              databaseLintClean: ($lintExitCode == 0),
+              productionBootstrapReady: (
+                .coreSchemaReady
+                and .allRenderedMigrationsApplied
+                and ($lintExitCode == 0)
+              )
+            }' \
+            bootstrap-plan/local-bootstrap-result.json \
+            > bootstrap-plan/local-bootstrap-result.tmp
+          mv bootstrap-plan/local-bootstrap-result.tmp \
+            bootstrap-plan/local-bootstrap-result.json
+
+          if [ "$DB_LINT_EXIT" -ne 0 ]; then
+            echo "::warning title=Production bootstrap blocked::The exact bundle applies and will still run pgTAP, but database lint found schema drift. Review bootstrap-db-lint.txt; do not apply this plan to production."
+          fi
+
+          psql "$DB_URL" -v ON_ERROR_STOP=1 \
+            -c "CREATE EXTENSION IF NOT EXISTS pgtap;"
+          pg_prove \
+            --dbname "$DB_URL" \
+            --verbose \
+            bootstrap-plan/supabase/tests/*.sql \
+            | tee bootstrap-plan/bootstrap-pgtap.tap
+
+          if ! grep -qE '^ok ' bootstrap-plan/bootstrap-pgtap.tap; then
+            echo "::error::No pgTAP assertions ran against the rendered bundle."
+            exit 1
+          fi
+
+          if [ "$DB_LINT_EXIT" -ne 0 ]; then
+            echo "::error::Database lint reported errors; production bootstrap is blocked."
+            exit "$DB_LINT_EXIT"
+          fi
+
+      - name: Upload exact reviewed bootstrap plan
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-bootstrap-plan-${{ github.sha }}
+          path: |
+            bootstrap-plan/plan-summary.json
+            bootstrap-plan/migration-manifest.tsv
+            bootstrap-plan/duplicate-version-map.tsv
+            bootstrap-plan/semantic-version-map.tsv
+            bootstrap-plan/local-bootstrap-result.json
+            bootstrap-plan/bootstrap-db-lint.txt
+            bootstrap-plan/bootstrap-pgtap.tap
+            bootstrap-plan/supabase/migrations/
+            bootstrap-plan/supabase/tests/
+          retention-days: 30
+
+      - name: Stop local Supabase
+        if: always()
+        working-directory: bootstrap-plan
+        run: supabase stop --no-backup || true
+
+  reconcile-hosted:
+    name: Compare hosted and canonical migration history
+    if: github.event_name == 'workflow_dispatch'
+    needs: [inspect-hosted, validate-plan]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download hosted inventory
+        uses: actions/download-artifact@v8
+        with:
+          name: hosted-bootstrap-inventory-${{ github.sha }}
+          path: reconciliation-input/hosted
+
+      - name: Download canonical plan
+        uses: actions/download-artifact@v8
+        with:
+          name: production-bootstrap-plan-${{ github.sha }}
+          path: reconciliation-input/canonical
+
+      - name: Build reconciliation report
+        run: |
+          node scripts/compare_hosted_migration_inventory.mjs \
+            reconciliation-input/hosted/hosted-bootstrap-inventory.json \
+            reconciliation-input/canonical/migration-manifest.tsv \
+            reconciliation-input/canonical/duplicate-version-map.tsv \
+            hosted-migration-reconciliation.json \
+            hosted-migration-reconciliation.md
+
+      - name: Upload reconciliation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: hosted-migration-reconciliation-${{ github.sha }}
+          path: |
+            hosted-migration-reconciliation.json
+            hosted-migration-reconciliation.md
+          retention-days: 30
+
+  simulate-hosted-schema:
+    name: Simulate pending migrations on hosted schema clone
+    if: github.event_name == 'workflow_dispatch'
+    needs: [inspect-hosted, validate-plan, reconcile-hosted]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      SUPABASE_PROJECT_REF: ${{ secrets.MONOLITH_SUPABASE_PROJECT_REF }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
+        with:
+          version: 2.116.0
+
+      - name: Install PostgreSQL and pgTAP tooling
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            postgresql-client \
+            libtap-parser-sourcehandler-pgtap-perl
+
+      - name: Download hosted inventory
+        uses: actions/download-artifact@v8
+        with:
+          name: hosted-bootstrap-inventory-${{ github.sha }}
+          path: reconciliation-input/hosted
+
+      - name: Download canonical plan
+        uses: actions/download-artifact@v8
+        with:
+          name: production-bootstrap-plan-${{ github.sha }}
+          path: reconciliation-input/canonical
+
+      - name: Download reconciliation report
+        uses: actions/download-artifact@v8
+        with:
+          name: hosted-migration-reconciliation-${{ github.sha }}
+          path: reconciliation-input/report
+
+      - name: Validate target and reconciliation history
+        run: |
+          if [ -z "$DATABASE_URL" ] || [ -z "$SUPABASE_PROJECT_REF" ]; then
+            echo "::error::DATABASE_URL and SUPABASE_PROJECT_REF are required."
+            exit 1
+          fi
+          if [[ "$DATABASE_URL" != postgres://* && "$DATABASE_URL" != postgresql://* ]]; then
+            echo "::error::DATABASE_URL must be a full PostgreSQL connection URI."
+            exit 1
+          fi
+          if [[ "$DATABASE_URL" != *"$SUPABASE_PROJECT_REF"* ]]; then
+            echo "::error::DATABASE_URL does not target SUPABASE_PROJECT_REF."
+            exit 1
+          fi
+
+          jq -e '
+            .historyOrderingCandidate == true
+            and .canonicalVersionsMissing > 0
+            and .historicalGapCount == 0
+            and (.hostedVersionsNotCanonical | length) == 0
+            and (.duplicateHostedVersions | length) == 0
+            and .productionWritesPerformed == false
+          ' reconciliation-input/report/hosted-migration-reconciliation.json \
+            > /dev/null
+
+      - name: Capture hosted public schema without data
+        run: |
+          mkdir -p reconciliation-simulation/results
+          # Keep GRANT/REVOKE ACLs: pgTAP switches to authenticated/service
+          # roles, so a clone without privileges cannot exercise hosted RLS.
+          # --schema-only guarantees that no production rows are copied.
+          docker run --rm \
+            -e DATABASE_URL \
+            -e PGOPTIONS="-c default_transaction_read_only=on" \
+            -v "$PWD/reconciliation-simulation:/output" \
+            postgres:17 \
+            sh -ceu 'pg_dump "$DATABASE_URL" \
+              --schema-only \
+              --schema=public \
+              --no-owner \
+              --file=/output/hosted-public-schema.sql'
+
+          test -s reconciliation-simulation/hosted-public-schema.sql
+
+      - name: Start an empty local Supabase matching hosted PostgreSQL
+        run: |
+          mkdir -p hosted-schema-clone/supabase/migrations
+          cp supabase/config.toml hosted-schema-clone/supabase/config.toml
+          cp supabase/import_map.json hosted-schema-clone/supabase/import_map.json
+          cp -R supabase/functions hosted-schema-clone/supabase/functions
+
+          # The schema-only simulation needs PostgreSQL, not the local mail
+          # catcher. Disabling Inbucket avoids runner-level SMTP/POP3 port
+          # collisions (notably 54326) without changing the database surface.
+          sed -i '/^\[inbucket\]/,/^\[storage\]/{
+            s/^enabled = true/enabled = false/
+          }' hosted-schema-clone/supabase/config.toml
+
+          HOSTED_MAJOR_VERSION="$(jq -r '.serverVersionNum / 10000 | floor' \
+            reconciliation-input/hosted/hosted-bootstrap-inventory.json)"
+          if [[ ! "$HOSTED_MAJOR_VERSION" =~ ^[0-9]+$ ]]; then
+            echo "::error::Hosted PostgreSQL major version is invalid."
+            exit 1
+          fi
+
+          sed -i -E \
+            "s/major_version[[:space:]]*=[[:space:]]*[0-9]+/major_version = $HOSTED_MAJOR_VERSION/" \
+            hosted-schema-clone/supabase/config.toml
+
+          cd hosted-schema-clone
+          set -o pipefail
+          supabase start 2>&1 \
+            | tee "$GITHUB_WORKSPACE/reconciliation-simulation/results/local-supabase-start.log"
+
+      - name: Apply pending migrations to the schema-only clone
+        run: |
+          bash scripts/simulate_hosted_schema_reconciliation.sh \
+            reconciliation-simulation/hosted-public-schema.sql \
+            reconciliation-input/hosted/hosted-bootstrap-inventory.json \
+            reconciliation-input/report/hosted-migration-reconciliation.json \
+            reconciliation-input/canonical \
+            reconciliation-simulation/results \
+            postgresql://supabase_admin:postgres@127.0.0.1:54322/postgres
+
+      - name: Upload schema-clone reconciliation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hosted-schema-reconciliation-simulation-${{ github.sha }}
+          path: |
+            reconciliation-simulation/results/
+          retention-days: 30
+
+      - name: Enforce structural reconciliation gate
+        run: |
+          jq -e '
+            .schemaRestoreSucceeded == true
+            and .localDependencyExtensionsReady == true
+            and .allMissingMigrationsApplied == true
+            and .coreSchemaReadyAfter == true
+            and .pgtapTestFileCount > 0
+            and .pgtapPassed == true
+            and .pgtapAssertionCount > 0
+            and .legacyPgTapRoutinesIsolated == true
+            and .dataBearingMigrationFixturePassed == true
+            and .canonicalStaticSeedRestored == true
+            and .databaseLintClean == true
+            and .productionDataCopied == false
+            and .productionWritesPerformed == false
+          ' reconciliation-simulation/results/reconciliation-simulation.json \
+            > /dev/null
+
+      - name: Stop local Supabase
+        if: always()
+        working-directory: hosted-schema-clone
+        run: supabase stop --no-backup || true

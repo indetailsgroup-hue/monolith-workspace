@@ -1,0 +1,88 @@
+services:
+  influxdb:
+    image: influxdb:2.7
+    container_name: monolith-influxdb
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=monolith
+      - DOCKER_INFLUXDB_INIT_PASSWORD=monolith-secret-2024
+      - DOCKER_INFLUXDB_INIT_ORG=daph-decor
+      - DOCKER_INFLUXDB_INIT_BUCKET=digital-shadow
+      - DOCKER_INFLUXDB_INIT_RETENTION=30d
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=monolith-dev-token
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+    restart: unless-stopped
+
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: monolith-mosquitto
+    ports:
+      - "1883:1883"
+      - "8883:8883"
+    volumes:
+      - ./infra/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./infra/mosquitto/certs:/mosquitto/certs
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: monolith-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+  digital-shadow:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: monolith-digital-shadow
+    ports:
+      - "3100:3100"
+    environment:
+      - NODE_ENV=production
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_TOKEN=monolith-dev-token
+      - INFLUXDB_ORG=daph-decor
+      - INFLUXDB_BUCKET=digital-shadow
+      - MQTT_BROKER_URL=mqtt://mosquitto:1883
+      - REDIS_URL=redis://redis:6379
+      - LOG_LEVEL=info
+    depends_on:
+      - influxdb
+      - mosquitto
+      - redis
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana-oss:10.4.0
+    container_name: monolith-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=monolith-grafana
+      - GF_INSTALL_PLUGINS=redis-datasource
+    volumes:
+      - ./infra/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./infra/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./infra/grafana/provisioning/dashboards/digital-shadow-factory.json:/var/lib/grafana/dashboards/digital-shadow-factory.json
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - influxdb
+      - redis
+    restart: unless-stopped
+
+volumes:
+  influxdb-data:
+  mosquitto-data:
+  mosquitto-log:
+  redis-data:
+  grafana-data:

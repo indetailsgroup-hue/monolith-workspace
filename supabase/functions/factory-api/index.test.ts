@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   deriveServerActor,
@@ -401,7 +402,7 @@ describe("S17-2 RELEASED-only invariant", () => {
 
   it("SQL migration 0162 removes legacy actor overloads and re-checks RELEASED under lock", () => {
     const sql = readFileSync(
-      new URL("../../migrations/0162_factory_server_identity_released_only.sql", import.meta.url),
+      resolve(process.cwd(), "supabase/migrations/0162_factory_server_identity_released_only.sql"),
       "utf8",
     );
     expect(sql).toContain("drop function if exists public.rpc_factory_job_transition(text, text, text, text, text, text)");
@@ -470,7 +471,7 @@ describe("S18 jobs list real fields (0170)", () => {
 
     // SQL side: parameter names declared by 0170's create function.
     const sql = readFileSync(
-      new URL("../../migrations/0170_factory_jobs_list_real_fields.sql", import.meta.url),
+      resolve(process.cwd(), "supabase/migrations/0170_factory_jobs_list_real_fields.sql"),
       "utf8",
     );
     const declaration = /create function public\.rpc_factory_job_record_packet\(([^)]*)\)/.exec(sql);
@@ -484,7 +485,7 @@ describe("S18 jobs list real fields (0170)", () => {
 
   it("0170 keeps the old edge callable and documents the human apply order (ADR-066)", () => {
     const sql = readFileSync(
-      new URL("../../migrations/0170_factory_jobs_list_real_fields.sql", import.meta.url),
+      resolve(process.cwd(), "supabase/migrations/0170_factory_jobs_list_real_fields.sql"),
       "utf8",
     );
     // Transition safety: an edge deployed before S18 omits the two new params,
@@ -499,7 +500,7 @@ describe("S18 jobs list real fields (0170)", () => {
 
   it("SQL migration 0170 adds jobName, pieceCount, and short packet hash to the jobs list", () => {
     const sql = readFileSync(
-      new URL("../../migrations/0170_factory_jobs_list_real_fields.sql", import.meta.url),
+      resolve(process.cwd(), "supabase/migrations/0170_factory_jobs_list_real_fields.sql"),
       "utf8",
     );
     // Columns behind the new fields.

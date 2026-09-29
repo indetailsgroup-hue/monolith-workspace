@@ -14,5 +14,9 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
+    // Security hardening: bind the Vitest dev server to loopback only so it is
+    // never reachable from other hosts on the network (resolves npm-audit P0
+    // vitest SSRF finding — see npm-audit-fix-plan.md §P0).
+    server: { host: '127.0.0.1' },
   },
 });

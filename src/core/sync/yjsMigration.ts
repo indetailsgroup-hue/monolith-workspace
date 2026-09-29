@@ -23,7 +23,7 @@
 import type { MonolithDoc } from './types';
 import { MIGRATION_FLAG_KEY, type MigrationResult } from './types';
 import { populateDoc } from './yjsDocument';
-import { readString } from '../persistence/unsafeStorage';
+import { readString, remove, writeRaw } from '../persistence/unsafeStorage';
 
 // ============================================================================
 // Constants
@@ -43,7 +43,7 @@ const LEGACY_PROJECT_KEY = 'monolith-current-project';
  */
 export function hasMigrated(): boolean {
   try {
-    return localStorage.getItem(MIGRATION_FLAG_KEY) === '1';
+    return readString(MIGRATION_FLAG_KEY) === '1';
   } catch {
     return false;
   }
@@ -191,7 +191,7 @@ export function migrateFromLocalStorage(
  */
 export function resetMigrationFlag(): void {
   try {
-    localStorage.removeItem(MIGRATION_FLAG_KEY);
+    remove(MIGRATION_FLAG_KEY);
   } catch {
     // Ignore
   }
@@ -203,7 +203,7 @@ export function resetMigrationFlag(): void {
 
 function setMigrationFlag(): void {
   try {
-    localStorage.setItem(MIGRATION_FLAG_KEY, '1');
+    writeRaw(MIGRATION_FLAG_KEY, '1');
   } catch {
     // Ignore — migration still succeeds even if flag can't be persisted
   }

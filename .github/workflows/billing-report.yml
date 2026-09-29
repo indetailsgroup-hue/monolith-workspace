@@ -1,0 +1,110 @@
+name: Monthly Billing Report
+
+on:
+  schedule:
+    - cron: '0 0 1 * *'
+  workflow_dispatch:
+    inputs:
+      alert_threshold_usd:
+        description: 'Flag sampled runner-cost estimates at or above this USD amount in the job summary'
+        required: false
+        default: '20'
+        type: string
+  pull_request:
+    paths:
+      - '.github/workflows/billing-report.yml'
+      - 'scripts/*billing*'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/billing-report.yml'
+      - 'scripts/*billing*'
+
+concurrency:
+  group: billing-report-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  validate:
+    name: Billing regression checks (offline)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: node --test scripts/billing-workflow.test.mjs
+      - run: python3 -m unittest scripts.test_gh_billing_report
+
+  report:
+    name: Generate sampled GitHub Actions cost report
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Compute previous-month date bounds
+        id: dates
+        run: |
+          python3 - << 'EOF'
+          import datetime, os
+          first_of_this_month = datetime.datetime.now(datetime.timezone.utc).date().replace(day=1)
+          last_month = first_of_this_month - datetime.timedelta(days=1)
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as f:
+              f.write(f"since={last_month.replace(day=1).isoformat()}\n")
+              f.write(f"until={first_of_this_month.isoformat()}\n")
+              f.write(f"report_name=billing_report_{last_month.strftime('%Y-%m')}.csv\n")
+              f.write(f"month_label={last_month.strftime('%B %Y')}\n")
+          EOF
+
+      - name: Run billing report
+        id: billing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_OWNER: ${{ github.repository_owner }}
+          GH_REPO: ${{ github.event.repository.name }}
+          REPORT_SINCE: ${{ steps.dates.outputs.since }}
+          REPORT_UNTIL: ${{ steps.dates.outputs.until }}
+          REPORT_FILE: ${{ steps.dates.outputs.report_name }}
+        run: |
+          set -o pipefail
+          python3 scripts/gh_billing_report.py \
+            --since "$REPORT_SINCE" --until "$REPORT_UNTIL" \
+            --csv "$REPORT_FILE" 2>&1 | tee billing-report.log
+
+      - name: Publish billing summary
+        if: ${{ always() }}
+        env:
+          REPORT_FILE: ${{ steps.dates.outputs.report_name }}
+          MONTH_LABEL: ${{ steps.dates.outputs.month_label }}
+          BILLING_OUTCOME: ${{ steps.billing.outcome }}
+          THRESHOLD_USD: ${{ inputs.alert_threshold_usd || '20' }}
+          SUMMARY_FILE: billing-summary.md
+        run: python3 scripts/gh_billing_summary.py
+
+      - name: Upload billing CSV and diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: billing-report-${{ github.run_id }}
+          path: |
+            billing_report_*.csv
+            billing-report.log
+            billing-summary.md
+          retention-days: 90
+          if-no-files-found: error

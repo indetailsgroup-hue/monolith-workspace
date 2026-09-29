@@ -12,18 +12,38 @@
  * /validation                  - Redirect to /projects/current/validation
  * /release                     - Release wizard
  * /packet/:id                  - View released packet
+ * /jobs                         - Job Board (DESIGNER, FACTORY, ADMIN)
+ * /jobs/new                     - Create Job wizard (DESIGNER, ADMIN)
+ * /jobs/:jobId                  - Job detail (DESIGNER, FACTORY, ADMIN)
+ * /quotations                   - Quotation list (FINANCE, ADMIN)
  * /factory                     - Factory dashboard (FACTORY role)
  * /factory/jobs/:jobId         - Factory job detail (FACTORY role)
  * /finance                     - Finance screen (FINANCE role)
+ * /etax                        - eTax Compliance Dashboard (OWNER, ADMIN, FINANCE)
+ * /accounting                  - Accounting Management UI (OWNER, ADMIN, FINANCE)
+ * /modules                     - v17.5/v18 Business Modules Hub
+ * /people                      - People Directory
+ * /people/:employeeId/ai-readiness - Super Employee Tracker
+ * /training                    - Training Tracker
+ * /culture/metrics             - Culture Metrics Dashboard
+ * /ai/costs                    - AI Cost Estimation
+ * /ai/scheduler                - AI Production Scheduler
+ * /structure/org-chart         - Interactive OrgChart
+ * /structure/role-network      - Role Network View
+ * /quality/anomalies           - QC Anomaly Detection
+ * /ai/quotation-drafts         - AI Quotation Draft
+ * /culture/leadership-actions  - Leadership Action Tracker
  * /safety                      - Redirect to /diagnostics/safety
  * /diagnostics/safety          - Safety diagnostics (local-only, not authoritative)
  *
- * @version 0.12.6
+ * @version 0.13.0
  */
 
 import { useMemo, useEffect, useState, useCallback, Suspense, lazy, type ComponentType } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate, Link, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { isPitchMode, withSearchParams } from '../core/ui/pitch';
+import { useJobStore } from '../jobs/jobStore';
+import { useQuotationStore } from '../quotation/quotationStore';
 
 // ============================================================================
 // T018 + O3 + O4: Route-level Lazy Loading
@@ -41,6 +61,60 @@ const SafetyGatePage = lazy(() =>
 // O4: Factory dashboard app
 const FactoryApp = lazy(() =>
   import('../factory/FactoryApp').then(m => ({ default: m.FactoryApp }))
+);
+
+// v15: Job lifecycle pages
+const JobBoardPage = lazy(() =>
+  import('../jobs/JobBoard').then(m => ({ default: m.JobBoard }))
+);
+const CreateJobWizardPage = lazy(() =>
+  import('../jobs/CreateJobWizard').then(m => ({ default: m.CreateJobWizard }))
+);
+const JobDetailPageComponent = lazy(() =>
+  import('../jobs/JobDetailPage').then(m => ({ default: m.JobDetailPage }))
+);
+const JobsLayoutComponent = lazy(() =>
+  import('../jobs/JobsLayout').then(m => ({ default: m.JobsLayout }))
+);
+const JobAnalyticsDashboardComponent = lazy(() =>
+  import('../jobs/JobAnalyticsDashboard').then(m => ({ default: m.JobAnalyticsDashboard }))
+);
+const DndKanbanBoardComponent = lazy(() =>
+  import('../jobs/DndKanbanBoard').then(m => ({ default: m.DndKanbanBoard }))
+);
+
+// v16: Tenant onboarding
+const TenantOnboardingPage = lazy(() =>
+  import('../tenant/TenantOnboarding').then(m => ({ default: m.TenantOnboarding }))
+);
+
+// v16.1: Settings & Billing
+const OrgSettingsPageComponent = lazy(() =>
+  import('../tenant/OrgSettingsPage').then(m => ({ default: m.OrgSettingsPage }))
+);
+const BillingPageComponent = lazy(() =>
+  import('../tenant/BillingPage').then(m => ({ default: m.BillingPage }))
+);
+const AuditLogViewerComponent = lazy(() =>
+  import('../tenant/AuditLogViewer').then(m => ({ default: m.AuditLogViewer }))
+);
+const UsageDashboardComponent = lazy(() =>
+  import('../tenant/UsageDashboard').then(m => ({ default: m.UsageDashboard }))
+);
+
+// v16.4: Super Admin Dashboard
+const SuperAdminDashboardComponent = lazy(() =>
+  import('../admin/SuperAdminDashboard').then(m => ({ default: m.SuperAdminDashboard }))
+);
+
+// v16.4: Notification Preferences
+const NotificationPreferencesComponent = lazy(() =>
+  import('../notifications/NotificationPreferencesPage').then(m => ({ default: m.NotificationPreferencesPage }))
+);
+
+// v15: Quotation builder
+const QuotationBuilderPage = lazy(() =>
+  import('../quotation/QuotationBuilder').then(m => ({ default: m.QuotationBuilder }))
 );
 
 // S18 L7 Slice 4: Finance dashboard (built by lane L4 as src/pages/FinanceDashboard).
@@ -61,6 +135,20 @@ const FinanceDashboard = lazy(() =>
         default: m.FinanceDashboard ?? m.default ?? FinanceComingSoon,
       }))
     : Promise.resolve({ default: FinanceComingSoon })
+);
+
+// release/15.0.0: eTax Compliance Dashboard (src/pages/EtaxComplianceDashboard.tsx)
+const EtaxComplianceDashboard = lazy(() =>
+  import('../pages/EtaxComplianceDashboard').then((m) => ({
+    default: m.default,
+  }))
+);
+
+// release/15.0.0: Accounting Management UI (src/pages/AccountingManagement.tsx)
+const AccountingManagement = lazy(() =>
+  import('../pages/AccountingManagement').then((m) => ({
+    default: m.default,
+  }))
 );
 
 /**
@@ -138,6 +226,20 @@ import { useSpecStore } from '../core/store/useSpecStore';
 import { useVerifyStatusStore } from '../core/store/useVerifyStatusStore';
 import { VerifyVerdictPill } from '../components/ui/VerifyVerdictPill';
 import { RoleGateDialog } from '../components/ui/RoleGateDialog';
+import {
+  AiCostsRoute,
+  AiQuotationDraftsRoute,
+  AiSchedulerRoute,
+  BusinessModulesHome,
+  CultureMetricsRoute,
+  LeadershipActionsRoute,
+  OrgChartRoute,
+  PeopleDirectoryRoute,
+  QcAnomaliesRoute,
+  RoleNetworkRoute,
+  SuperEmployeeRoute,
+  TrainingTrackerRoute,
+} from './BusinessModuleRoutes';
 
 // ============================================================================
 // Types
@@ -763,6 +865,123 @@ function ProjectValidationPage() {
 // Factory Job Detail Page Wrapper (URL-based routing)
 // ============================================================================
 
+// ============================================================================
+// Job Detail Page Wrapper (v15.2)
+// ============================================================================
+
+function JobDetailPageWrapper() {
+  const { jobId } = useParams<{ jobId: string }>();
+  const navigate = useNavigate();
+
+  if (!jobId) {
+    return <Navigate to="/jobs" replace />;
+  }
+
+  return (
+    <Suspense fallback={<PageLoadingFallback message="Loading Job Detail…" />}>
+      <JobDetailPageComponent jobId={jobId} onNavigate={(path) => navigate(path)} />
+    </Suspense>
+  );
+}
+
+function CreateJobWizardRoute() {
+  const navigate = useNavigate();
+
+  return (
+    <CreateJobWizardPage
+      onComplete={(job) => navigate(`/jobs/${job.jobId}`)}
+      onCancel={() => navigate('/jobs')}
+    />
+  );
+}
+
+function QuotationRoute() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const search = new URLSearchParams(location.search);
+  const jobId = search.get('jobId');
+  const quotationId = search.get('id');
+  const job = useJobStore((state) =>
+    jobId ? state.jobs.find((candidate) => candidate.jobId === jobId) : undefined,
+  );
+  const linkQuotation = useJobStore((state) => state.linkQuotation);
+  const linkInvoice = useJobStore((state) => state.linkInvoice);
+  const quotation = useQuotationStore((state) =>
+    quotationId ? state.quotations.find((candidate) => candidate.quotationId === quotationId) : undefined,
+  );
+  const invoice = useQuotationStore((state) =>
+    quotationId ? state.invoices.find((candidate) => candidate.quotationId === quotationId) : undefined,
+  );
+  const approveQuotation = useQuotationStore((state) => state.approveQuotation);
+
+  if (quotationId) {
+    if (!quotation) {
+      return (
+        <div data-testid="quotation-not-found" style={{ padding: '24px', color: '#f3f4f6' }}>
+          ไม่พบใบเสนอราคาที่ต้องการ
+        </div>
+      );
+    }
+
+    return (
+      <div data-testid="quotation-detail" style={{ maxWidth: '720px', margin: '0 auto', padding: '24px', color: '#f3f4f6' }}>
+        <h2>{quotation.quotationCode}</h2>
+        <p>{quotation.customerName}</p>
+        <p data-testid={`quotation-status-${quotation.status}`}>สถานะ: {quotation.status}</p>
+        <p>ยอดสุทธิ: ฿{quotation.total.toLocaleString('th-TH')}</p>
+        {quotation.status !== 'APPROVED' && (
+          <button
+            type="button"
+            data-testid="btn-approve-quotation"
+            onClick={() => {
+              const result = approveQuotation(quotation.quotationId, 'finance-user');
+              if (result.success && result.invoice && quotation.jobId) {
+                linkInvoice(quotation.jobId, result.invoice.invoiceId);
+              }
+            }}
+          >
+            อนุมัติใบเสนอราคา
+          </button>
+        )}
+        {invoice && (
+          <div data-testid="auto-invoice-created">
+            สร้างใบแจ้งหนี้ {invoice.invoiceCode} แล้ว — ยอดรวม
+            <span data-testid="invoice-total"> ฿{invoice.total.toLocaleString('th-TH')}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (!jobId) {
+    return (
+      <div style={{ padding: '24px', color: '#f3f4f6', fontFamily: 'Inter, system-ui, sans-serif' }}>
+        <h2>Quotation Management</h2>
+        <p style={{ color: '#9ca3af' }}>Select a job from the Job Board to create a quotation.</p>
+      </div>
+    );
+  }
+
+  if (!job) {
+    return (
+      <div data-testid="quotation-job-not-found" style={{ padding: '24px', color: '#f3f4f6' }}>
+        ไม่พบงานที่ต้องการสร้างใบเสนอราคา
+      </div>
+    );
+  }
+
+  return (
+    <QuotationBuilderPage
+      job={job}
+      onComplete={(quotationId) => {
+        linkQuotation(job.jobId, quotationId);
+        navigate(`/quotations?id=${quotationId}`);
+      }}
+      onCancel={() => navigate(`/jobs/${job.jobId}`)}
+    />
+  );
+}
+
 function FactoryJobDetailPage() {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
@@ -967,6 +1186,44 @@ function NotFoundPage() {
 // Router Configuration
 // ============================================================================
 
+function ProjectDesignPage() {
+  const { projectId } = useParams<{ projectId: string }>();
+  const selectedId = useProjectStore((state) => state.metadata?.id);
+  const [resolved, setResolved] = useState<{ requestedId?: string; loadedId?: string } | null>(null);
+
+  useEffect(() => {
+    const store = useProjectStore.getState();
+    const loaded = !!projectId && store.loadProject(projectId === 'current' ? undefined : projectId);
+    setResolved({ requestedId: projectId, loadedId: loaded ? useProjectStore.getState().metadata?.id : undefined });
+  }, [projectId]);
+
+  // A new URL must resolve before the previous designer can render under it.
+  if (!resolved || resolved.requestedId !== projectId) return <WorkspaceLoadingFallback />;
+  if (projectId === 'current' && resolved.loadedId) {
+    return <Navigate to={`/projects/${encodeURIComponent(resolved.loadedId)}/design`} replace />;
+  }
+  if (!resolved.loadedId || selectedId !== resolved.loadedId) {
+    const changed = !!resolved.loadedId;
+    return (
+      <div className="min-h-screen bg-surface-0 text-textc-primary flex items-center justify-center p-8">
+        <div role="alert" className="max-w-lg space-y-4">
+          <h1 className="text-xl font-semibold">{changed ? 'Project changed / โครงการเปลี่ยน' : 'Project unavailable / ไม่สามารถเปิดโครงการได้'}</h1>
+          <p>{changed
+            ? 'Open the selected project to continue. / เปิดโครงการที่เลือกเพื่อทำงานต่อ'
+            : 'This project could not be loaded from this browser. / ไม่สามารถโหลดโครงการนี้จากเบราว์เซอร์นี้ได้'}</p>
+          {changed && selectedId && (
+            <Link className="block underline" to={`/projects/${encodeURIComponent(selectedId)}/design`}>
+              Open selected project / เปิดโครงการที่เลือก
+            </Link>
+          )}
+          <Link className="block underline" to="/projects">Back to projects / กลับไปที่โครงการ</Link>
+        </div>
+      </div>
+    );
+  }
+  return <Suspense fallback={<WorkspaceLoadingFallback />}><DesignerWorkspace key={resolved.loadedId} /></Suspense>;
+}
+
 export const router = createBrowserRouter([
   // Designer Workspace (default) - T018: Lazy loaded
   {
@@ -995,11 +1252,7 @@ export const router = createBrowserRouter([
   // Project Designer - T018: Lazy loaded
   {
     path: '/projects/:projectId/design',
-    element: (
-      <Suspense fallback={<WorkspaceLoadingFallback />}>
-        <DesignerWorkspace />
-      </Suspense>
-    ),
+    element: <ProjectDesignPage />,
   },
   // Project Validation
   {
@@ -1025,6 +1278,141 @@ export const router = createBrowserRouter([
   {
     path: '/packet/:id',
     element: <PacketViewerPage />,
+  },
+  // ── Job Lifecycle Routes (v15.4) — wrapped with JobsLayout for toasts ───
+  // Job Board — accessible to DESIGNER, FACTORY, ADMIN
+  {
+    path: '/jobs',
+    element: (
+      <RequireRole allow={['DESIGNER', 'FACTORY', 'ADMIN']}>
+        <Suspense fallback={<PageLoadingFallback message="Loading Job Board…" />}>
+          <JobsLayoutComponent>
+            <JobBoardPage />
+          </JobsLayoutComponent>
+        </Suspense>
+      </RequireRole>
+    ),
+  },
+  // Create Job Wizard — only DESIGNER and ADMIN can create jobs
+  {
+    path: '/jobs/new',
+    element: (
+      <RequireRole allow={['DESIGNER', 'ADMIN']}>
+        <Suspense fallback={<PageLoadingFallback message="Loading Job Wizard…" />}>
+          <JobsLayoutComponent>
+            <CreateJobWizardRoute />
+          </JobsLayoutComponent>
+        </Suspense>
+      </RequireRole>
+    ),
+  },
+  // Job Detail — accessible to DESIGNER, FACTORY, ADMIN
+  {
+    path: '/jobs/:jobId',
+    element: (
+      <RequireRole allow={['DESIGNER', 'FACTORY', 'ADMIN']}>
+        <Suspense fallback={<PageLoadingFallback message="Loading Job Detail…" />}>
+          <JobsLayoutComponent>
+            <JobDetailPageWrapper />
+          </JobsLayoutComponent>
+        </Suspense>
+      </RequireRole>
+    ),
+  },
+  // Job Analytics Dashboard — ADMIN and FINANCE
+  {
+    path: '/jobs/analytics',
+    element: (
+      <RequireRole allow={['ADMIN', 'FINANCE']}>
+        <Suspense fallback={<PageLoadingFallback message="Loading Analytics…" />}>
+          <JobsLayoutComponent>
+            <JobAnalyticsDashboardComponent />
+          </JobsLayoutComponent>
+        </Suspense>
+      </RequireRole>
+    ),
+  },
+  // Drag-and-Drop Kanban Board — FACTORY and ADMIN
+  {
+    path: '/jobs/kanban',
+    element: (
+      <RequireRole allow={['DESIGNER', 'FACTORY', 'ADMIN']}>
+        <Suspense fallback={<PageLoadingFallback message="Loading Kanban…" />}>
+          <JobsLayoutComponent>
+            <DndKanbanBoardComponent />
+          </JobsLayoutComponent>
+        </Suspense>
+      </RequireRole>
+    ),
+  },
+  // v16: Tenant Onboarding — self-service org registration
+  {
+    path: '/onboarding',
+    element: (
+      <Suspense fallback={<PageLoadingFallback message="Loading Onboarding…" />}>
+        <TenantOnboardingPage
+          userId="pending"
+          userEmail="pending@monolith.app"
+          userDisplayName="New User"
+          onComplete={() => { window.location.href = '/jobs'; }}
+        />
+      </Suspense>
+    ),
+  },
+  // v16.1: Org Settings — ADMIN and OWNER
+  {
+    path: '/settings',
+    element: (
+      <RequireRole allow={['ADMIN']}>
+        <Suspense fallback={<PageLoadingFallback message="Loading Settings…" />}>
+          <OrgSettingsPageComponent />
+        </Suspense>
+      </RequireRole>
+    ),
+  },
+  // v16.1: Billing — OWNER only
+  {
+    path: '/settings/billing',
+    element: (
+      <RequireRole allow={['ADMIN']}>
+        <Suspense fallback={<PageLoadingFallback message="Loading Billing…" />}>
+          <BillingPageComponent />
+        </Suspense>
+      </RequireRole>
+    ),
+  },
+  // v16.2: Audit Log — OWNER/ADMIN only
+  {
+    path: '/settings/audit-log',
+    element: (
+      <RequireRole allow={['ADMIN']}>
+        <Suspense fallback={<PageLoadingFallback message="Loading Audit Log…" />}>
+          <AuditLogViewerComponent />
+        </Suspense>
+      </RequireRole>
+    ),
+  },
+  // v16.2: Usage Dashboard — OWNER/ADMIN only
+  {
+    path: '/settings/usage',
+    element: (
+      <RequireRole allow={['ADMIN']}>
+        <Suspense fallback={<PageLoadingFallback message="Loading Usage…" />}>
+          <UsageDashboardComponent />
+        </Suspense>
+      </RequireRole>
+    ),
+  },
+  // Quotation management — FINANCE and ADMIN only
+  {
+    path: '/quotations',
+    element: (
+      <RequireRole allow={['FINANCE', 'ADMIN']}>
+        <Suspense fallback={<PageLoadingFallback message="Loading Quotations…" />}>
+          <QuotationRoute />
+        </Suspense>
+      </RequireRole>
+    ),
   },
   // Factory dashboard (role-protected) - O4: Lazy loaded
   // S18 L7 Slice 3: no silent bounce — default RoleGateDialog fallback explains
@@ -1059,6 +1447,41 @@ export const router = createBrowserRouter([
       </RequireRole>
     ),
   },
+  // release/15.0.0: eTax Compliance Dashboard (OWNER, ADMIN, FINANCE)
+  {
+    path: '/etax',
+    element: (
+      <RequireRole allow={['ADMIN', 'FINANCE']}>
+        <Suspense fallback={<PageLoadingFallback message="Loading eTax Dashboard…" />}>
+          <EtaxComplianceDashboard />
+        </Suspense>
+      </RequireRole>
+    ),
+  },
+  // release/15.0.0: Accounting Management UI (OWNER, ADMIN, FINANCE)
+  {
+    path: '/accounting',
+    element: (
+      <RequireRole allow={['ADMIN', 'FINANCE']}>
+        <Suspense fallback={<PageLoadingFallback message="Loading Accounting…" />}>
+          <AccountingManagement />
+        </Suspense>
+      </RequireRole>
+    ),
+  },
+  // v17.5/v18.0 business modules — tenant role + plan gates live in each route boundary.
+  { path: '/modules', element: <BusinessModulesHome /> },
+  { path: '/people', element: <PeopleDirectoryRoute /> },
+  { path: '/people/:employeeId/ai-readiness', element: <SuperEmployeeRoute /> },
+  { path: '/training', element: <TrainingTrackerRoute /> },
+  { path: '/culture/metrics', element: <CultureMetricsRoute /> },
+  { path: '/ai/costs', element: <AiCostsRoute /> },
+  { path: '/ai/scheduler', element: <AiSchedulerRoute /> },
+  { path: '/structure/org-chart', element: <OrgChartRoute /> },
+  { path: '/structure/role-network', element: <RoleNetworkRoute /> },
+  { path: '/quality/anomalies', element: <QcAnomaliesRoute /> },
+  { path: '/ai/quotation-drafts', element: <AiQuotationDraftsRoute /> },
+  { path: '/culture/leadership-actions', element: <LeadershipActionsRoute /> },
   // Legacy safety route - redirect to diagnostics
   {
     path: '/safety',
@@ -1070,6 +1493,24 @@ export const router = createBrowserRouter([
     element: (
       <Suspense fallback={<PageLoadingFallback message="Loading Safety Diagnostics…" />}>
         <SafetyGatePage />
+      </Suspense>
+    ),
+  },
+  // v16.4: Super Admin Dashboard — platform operators only
+  {
+    path: '/admin',
+    element: (
+      <Suspense fallback={<PageLoadingFallback message="Loading Admin Dashboard…" />}>
+        <SuperAdminDashboardComponent />
+      </Suspense>
+    ),
+  },
+  // v16.4: Notification Preferences — any authenticated user
+  {
+    path: '/settings/notifications',
+    element: (
+      <Suspense fallback={<PageLoadingFallback message="Loading Notification Settings…" />}>
+        <NotificationPreferencesComponent />
       </Suspense>
     ),
   },

@@ -122,6 +122,47 @@ export interface PanelComputed {
   co2: number;            // kg CO2
 }
 
+// ============================================
+// CURVED PANEL TYPES (Phase 1 — spec curved-panel-system)
+// ============================================
+
+/**
+ * Which physical edge of a panel the curve is applied to.
+ * Used by PanelProfile ARC and S_CURVE variants.
+ */
+export type PanelEdge = 'TOP' | 'BOTTOM' | 'LEFT' | 'RIGHT';
+
+/**
+ * Panel shape profile — discriminated union (spec design.md §Data Model).
+ *
+ * RECT (default / absent) = flat rectangular panel — backward compatible.
+ * ROUNDED_CORNER = per-corner fillet radii (radius in mm per corner key).
+ * ARC = single arc on one edge (radius mm + sweep angle degrees).
+ * S_CURVE = tangent-continuous double arc on one edge (r1, r2 + sweep angles).
+ *
+ * Phase 1: stored on CabinetPanel; validation/rendering wired in Phase 3+.
+ */
+export type PanelProfile =
+  | { kind: 'RECT' }
+  | { kind: 'ROUNDED_CORNER'; corners: { TL?: number; TR?: number; BL?: number; BR?: number } }
+  | { kind: 'ARC';     edge: PanelEdge; radius: number; sweepDeg: number }
+  | { kind: 'S_CURVE'; edge: PanelEdge; r1: number; r2: number; sweepDeg1: number; sweepDeg2: number };
+
+/** Which face of the panel the skin is applied to. */
+export type SkinSide = 'KERF_FACE' | 'OUTER_FACE' | 'BOTH';
+
+/**
+ * Optional skin / veneer config (spec design.md §Data Model, มติ #3).
+ *
+ * SKIN_PANEL   — physical HDF/MDF 3–4mm cover sheet; becomes a separate BOM line item.
+ * SURFACE_FINISH — veneer or laminate in the material stack (no separate cut).
+ *
+ * Phase 1: stored on CabinetPanel; BOM/export integration wired in Phase 6.
+ */
+export type SkinConfig =
+  | { mode: 'SKIN_PANEL';      materialId: string; thickness: number; side: SkinSide }
+  | { mode: 'SURFACE_FINISH';  materialId: string;                    side: SkinSide };
+
 export interface CabinetPanel {
   id: string;
   role: PanelRole;
@@ -149,6 +190,18 @@ export interface CabinetPanel {
   // Per-panel position overrides (for shelves/dividers)
   positionOverrides?: PanelPositionOverrides;
   useCustomPosition?: boolean;
+
+  /**
+   * Curved panel profile — Phase 1 (spec curved-panel-system design.md)
+   * Absent / { kind: 'RECT' } = flat panel (backward compatible default).
+   */
+  profile?: PanelProfile;
+
+  /**
+   * Optional skin / veneer layer over the kerf face or outer face.
+   * Phase 1 data only — rendering/export uses this from Phase 5 onwards.
+   */
+  skin?: SkinConfig;
 
   /**
    * Run this panel belongs to, when it is a RUN-level part rather than a
@@ -720,6 +773,11 @@ export interface Cabinet {
   id: string;
   name: string;
   type: CabinetType;
+  /** Legacy grouping label retained when loading older project files. */
+  category?: string;
+  /** Scene placement for multi-cabinet layouts. */
+  scenePosition?: [number, number, number];
+  sceneRotation?: [number, number, number];
 
   // Configuration
   dimensions: CabinetDimensions;

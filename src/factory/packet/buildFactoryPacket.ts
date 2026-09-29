@@ -189,10 +189,12 @@ export async function buildFactoryPacketFromStores(
   const { useCabinetStore } = await import('../../core/store/useCabinetStore');
   const { useDrillMapStore } = await import('../../core/store/useDrillMapStore');
   const { useGateStore } = await import('../../gate/ui/gateStore');
+  const { useNestingStore } = await import('../../core/store/useNestingStore');
 
   const cabinetState = useCabinetStore.getState();
   const drillMapState = useDrillMapStore.getState();
   const gateState = useGateStore.getState();
+  const nestingState = useNestingStore.getState();
 
   const context: FactoryPacketContext = {
     cabinets: cabinetState.cabinets,
@@ -200,5 +202,12 @@ export async function buildFactoryPacketFromStores(
     gateResult: gateState.lastResult,
   };
 
-  return buildFactoryPacket(input, context);
+  const result = await buildFactoryPacket(input, context);
+
+  // Attach nesting sheets to the packet if available (complete layout only)
+  if (nestingState.nestingSheets && nestingState.unplacedParts.length === 0) {
+    result.packet.nestingSheets = nestingState.nestingSheets;
+  }
+
+  return result;
 }

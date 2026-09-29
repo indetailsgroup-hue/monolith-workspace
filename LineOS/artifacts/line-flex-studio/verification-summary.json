@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-02T06:06:07.7342428Z",
+  "repository": {
+    "root": "parent",
+    "commit": "b66699aedf0ef5f8e333f603aa22b5e3e4f1e66b",
+    "branch": "guardrails/claim-linters",
+    "evidenceCommitBoundary": "Task 9 artifacts, reports, and docs-contract changes were uncommitted when this tested-HEAD observation was captured."
+  },
+  "runtime": {
+    "node": "v22.21.1",
+    "python": "3.14.2",
+    "playwright": "1.61.0",
+    "browser": "Chromium 149.0.7827.55",
+    "url": "http://localhost:4177/line-flex-studio.html"
+  },
+  "automated": {
+    "command": "npm.cmd --prefix LineOS run test",
+    "exitCode": 0,
+    "tests": 68,
+    "failures": 0
+  },
+  "browser": {
+    "presetsChecked": 5,
+    "languagesChecked": [
+      "th",
+      "en"
+    ],
+    "widthsChecked": [
+      1440,
+      1024,
+      768,
+      390,
+      360,
+      320
+    ],
+    "externalRequests": 0,
+    "networkRecord": {
+      "requestCount": 208,
+      "allowedHosts": [
+        "localhost"
+      ],
+      "externalRequestCount": 0,
+      "lineSupabaseAnalyticsRequestCount": 0,
+      "unexpectedConsoleErrorCount": 0,
+      "pageErrorCount": 0,
+      "expectedInducedLocalHeroAbortErrors": 1,
+      "journeys": [
+        "design-approval:th",
+        "quote-order:th",
+        "sla-escalation:th",
+        "site-update:th",
+        "issue-evidence:th",
+        "design-approval:en",
+        "quote-order:en",
+        "sla-escalation:en",
+        "site-update:en",
+        "issue-evidence:en"
+      ],
+      "journeyAssertions": [
+        "local hero, tenant, audience, and exported action inspected",
+        "Header, Hero, Body, and Footer edited",
+        "preview, JSON, and validation updated",
+        "blocking error induced and fixed",
+        "valid JSON copied and downloaded",
+        "Mock LIFF exact-action review completed",
+        "demo intent confirmed and demo receipt inspected",
+        "opposite-language preset restored without field leak"
+      ],
+      "responsiveLayouts": {
+        "1440": "three-column PASS",
+        "1024": "two-row PASS",
+        "768": "two-row transition PASS",
+        "390": "mobile tabs PASS",
+        "360": "mobile tabs PASS",
+        "320": "mobile tabs PASS"
+      },
+      "horizontalOverflowPixels": {
+        "1440": 0,
+        "1024": 0,
+        "768": 0,
+        "390": 0,
+        "360": 0,
+        "320": 0
+      },
+      "staleRevisionFailClosed": true,
+      "keyboardOnlyCompletion": true,
+      "visibleFocus": "3px solid rgb(240, 185, 77)",
+      "dialogFocusReturned": true,
+      "reducedMotion": "0.01ms equivalent animation and transition duration",
+      "thaiLongText": "PASS",
+      "englishLongText": "PASS",
+      "emoji": "PASS",
+      "missingHeroFallback": "PASS after one intentionally aborted localhost image request"
+    },
+    "screenshots": {
+      "desktop1440": {
+        "path": "artifacts/line-flex-studio/desktop-1440.png",
+        "sha256": "ADF558EB75167322BF062A26255DEB77AAF807343A649DC7691C3F3743829494",
+        "visualInspection": "PASS"
+      },
+      "mobile390": {
+        "path": "artifacts/line-flex-studio/mobile-390.png",
+        "sha256": "8A3570FE6C2569C8AD32BE6CCFD15868C340C7B7F1BC05130C66E3113317B6CD",
+        "visualInspection": "PASS"
+      }
+    }
+  },
+  "acceptanceGates": [
+    {
+      "id": 1,
+      "name": "Five governed journeys in Thai and English",
+      "status": "PASS",
+      "evidence": "artifacts/line-flex-studio/verification-summary.json#/browser/networkRecord"
+    },
+    {
+      "id": 2,
+      "name": "Single-state preview, JSON, and validation",
+      "status": "PASS",
+      "evidence": "tests/line-flex-studio-state.test.mjs#field-changes-update-preview-json-and-validation-from-one-draft"
+    },
+    {
+      "id": 3,
+      "name": "Blocking errors fail closed for export and journey",
+      "status": "PASS",
+      "evidence": "tests/line-flex-studio-state.test.mjs#blocking-errors-disable-copy-download-and-journey"
+    },
+    {
+      "id": 4,
+      "name": "Exact-action review and stale revision rejection",
+      "status": "PASS",
+      "evidence": "tests/line-flex-actions-receipt.test.mjs#fails-closed-when-any-bound-value-changes"
+    },
+    {
+      "id": 5,
+      "name": "Truthful deterministic demo receipt",
+      "status": "PASS",
+      "evidence": "tests/line-flex-actions-receipt.test.mjs#creates-a-labelled-deterministic-sha-256-digest-that-changes-on-bound-input"
+    },
+    {
+      "id": 6,
+      "name": "Desktop Trust Concierge composition",
+      "status": "PASS",
+      "evidence": "artifacts/line-flex-studio/desktop-1440.png"
+    },
+    {
+      "id": 7,
+      "name": "Mobile approval preview and tabs",
+      "status": "PASS",
+      "evidence": "artifacts/line-flex-studio/mobile-390.png"
+    },
+    {
+      "id": 8,
+      "name": "Semantic keyboard and dialog structure",
+      "status": "PASS",
+      "evidence": "tests/line-flex-structure.test.mjs#studio-shell-exposes-semantic-controls-and-dialogs"
+    },
+    {
+      "id": 9,
+      "name": "Localhost-only browser network boundary",
+      "status": "PASS",
+      "evidence": "artifacts/line-flex-studio/verification-summary.json#/browser/networkRecord"
+    },
+    {
+      "id": 10,
+      "name": "Bilingual report and evidence contract",
+      "status": "PASS",
+      "evidence": "tests/docs-contract.test.mjs#verification-evidence-is-complete-and-rejects-unsafe-substitutions"
+    }
+  ],
+  "liveLineMessageSent": false,
+  "productionSignatureCreated": false,
+  "broaderCustomerMessagingDecision": "NO-GO_PENDING_TRUST_P0"
+}

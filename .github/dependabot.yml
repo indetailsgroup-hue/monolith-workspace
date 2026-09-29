@@ -1,0 +1,117 @@
+version: 2
+
+updates:
+  # ────────────────────────────────────────────────────────────────
+  # npm — frontend / Storybook / Chromatic / Vitest packages
+  # ────────────────────────────────────────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Bangkok"
+    open-pull-requests-limit: 10
+    target-branch: "main"
+    labels:
+      - "dependencies"
+      - "npm"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    # Group Storybook packages into a single PR (they must stay in sync)
+    groups:
+      storybook:
+        patterns:
+          - "@storybook/*"
+          - "storybook"
+        update-types:
+          - "minor"
+          - "patch"
+      chromatic:
+        patterns:
+          - "@chromatic-com/*"
+          - "chromatic"
+        update-types:
+          - "minor"
+          - "patch"
+      vitest:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+          - "@testing-library/*"
+        update-types:
+          - "minor"
+          - "patch"
+    # Allow major version bumps only for these packages (open separate PRs)
+    allow:
+      - dependency-name: "@storybook/*"
+        dependency-type: "direct"
+      - dependency-name: "storybook"
+        dependency-type: "direct"
+      - dependency-name: "@chromatic-com/*"
+        dependency-type: "direct"
+      - dependency-name: "chromatic"
+        dependency-type: "direct"
+      - dependency-name: "vitest"
+        dependency-type: "direct"
+      - dependency-name: "@vitest/*"
+        dependency-type: "direct"
+      - dependency-name: "@testing-library/*"
+        dependency-type: "direct"
+    reviewers:
+      - "indetailsgroup-hue/people-culture"
+      - "indetailsgroup-hue/monolith-core"
+    ignore:
+      # Pin Storybook major versions — bump manually after migration guide review
+      - dependency-name: "@storybook/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "storybook"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@chromatic-com/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "chromatic"
+        update-types: ["version-update:semver-major"]
+
+  # ────────────────────────────────────────────────────────────────
+  # npm — server packages (separate directory)
+  # ────────────────────────────────────────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/server"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Bangkok"
+    open-pull-requests-limit: 5
+    target-branch: "main"
+    labels:
+      - "dependencies"
+      - "npm"
+      - "server"
+    commit-message:
+      prefix: "chore(deps/server)"
+      include: "scope"
+    reviewers:
+      - "indetailsgroup-hue/monolith-core"
+
+  # ────────────────────────────────────────────────────────────────
+  # GitHub Actions — pin digests and auto-update action versions
+  # ────────────────────────────────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Bangkok"
+    open-pull-requests-limit: 5
+    target-branch: "main"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(actions)"
+      include: "scope"
+    reviewers:
+      - "indetailsgroup-hue/monolith-core"

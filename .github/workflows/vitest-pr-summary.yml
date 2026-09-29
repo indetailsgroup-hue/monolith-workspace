@@ -1,0 +1,176 @@
+name: Vitest PR Summary
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/people/**'
+      - 'src/culture/**'
+      - '.github/workflows/vitest-pr-summary.yml'
+
+permissions:
+  pull-requests: write
+  contents: read
+
+
+concurrency:
+  group: vitest-pr-summary-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    name: Run Vitest & post summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Vitest (JSON reporter)
+        run: npx vitest run --reporter=json --outputFile=vitest-results.json
+
+      - name: Upload raw test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: vitest-results
+          path: vitest-results.json
+          if-no-files-found: warn
+
+      - name: Post test summary comment
+        if: always()
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs   = require('fs');
+            const path = require('path');
+
+            const MARKER = '<!-- vitest-pr-summary -->';
+
+            // ── Parse results ──────────────────────────────────────────────────
+            let results = null;
+            try {
+              results = JSON.parse(fs.readFileSync('vitest-results.json', 'utf8'));
+            } catch (_) { /* file missing or malformed */ }
+
+            let body;
+
+            if (!results) {
+              body = [
+                MARKER,
+                '## ❌ Vitest PR Summary',
+                '',
+                'Test runner did not produce a results file — check the workflow logs for errors.',
+              ].join('\n');
+            } else {
+              const {
+                numTotalTests   = 0,
+                numPassedTests  = 0,
+                numFailedTests  = 0,
+                numPendingTests = 0,
+                testResults     = [],
+              } = results;
+
+              const allPassed  = numFailedTests === 0;
+              const topEmoji   = allPassed ? '✅' : '❌';
+              const statusLine = allPassed
+                ? `**All ${numTotalTests} tests passed** ✅`
+                : `**${numFailedTests} test(s) failed** out of ${numTotalTests}`;
+
+              // Suite breakdown table
+              const suiteRows = testResults.map((suite) => {
+                const assertions = suite.assertionResults ?? [];
+                const passed  = assertions.filter(t => t.status === 'passed').length;
+                const failed  = assertions.filter(t => t.status === 'failed').length;
+                const emoji   = failed === 0 ? '✅' : '❌';
+                const relPath = suite.testFilePath
+                  ? suite.testFilePath.replace(process.env.GITHUB_WORKSPACE + '/', '')
+                  : '(unknown)';
+                return `| ${emoji} | \`${relPath}\` | ${passed} / ${assertions.length} |`;
+              }).join('\n');
+
+              // Failed test detail (collapsed if none)
+              let failedSection = '';
+              if (numFailedTests > 0) {
+                const lines = testResults.flatMap((suite) => {
+                  const fileName = suite.testFilePath
+                    ? path.basename(suite.testFilePath)
+                    : 'unknown';
+                  return (suite.assertionResults ?? [])
+                    .filter(t => t.status === 'failed')
+                    .map(t => {
+                      const firstMsg = (t.failureMessages?.[0] ?? 'no message')
+                        .split('\n')[0]
+                        .slice(0, 120);
+                      return `- **${fileName}** › ${t.fullName}\n  \`${firstMsg}\``;
+                    });
+                });
+                failedSection = [
+                  '',
+                  '### Failed Tests',
+                  '',
+                  ...lines,
+                ].join('\n');
+              }
+
+              body = [
+                MARKER,
+                `## ${topEmoji} Vitest PR Summary`,
+                '',
+                statusLine,
+                '',
+                '| | Count |',
+                '|---|---|',
+                `| ✅ Passed  | ${numPassedTests} |`,
+                `| ❌ Failed  | ${numFailedTests} |`,
+                `| ⏭️ Skipped | ${numPendingTests} |`,
+                `| 📦 Suites  | ${testResults.length} |`,
+                failedSection,
+                '',
+                '<details>',
+                '<summary>Suite breakdown</summary>',
+                '',
+                '| | File | Passed / Total |',
+                '|---|---|---|',
+                suiteRows,
+                '',
+                '</details>',
+              ].join('\n');
+            }
+
+            // ── Upsert comment (update if already exists) ─────────────────────
+            const { data: comments } = await github.rest.issues.listComments({
+              owner:        context.repo.owner,
+              repo:         context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.find(c => c.body && c.body.includes(MARKER));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner:      context.repo.owner,
+                repo:       context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+              console.log(`Updated existing comment ${existing.id} on PR #${context.issue.number}`);
+            } else {
+              await github.rest.issues.createComment({
+                owner:        context.repo.owner,
+                repo:         context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+              console.log(`Created new comment on PR #${context.issue.number}`);
+            }

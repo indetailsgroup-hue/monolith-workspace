@@ -1,0 +1,671 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-08-03T09:01:14.784660Z",
+  "producer": {
+    "path": "tests/line-design-approval-browser-evidence.py",
+    "normalization": "canonical-lf",
+    "canonicalLfBytes": 31785,
+    "canonicalLfSha256": "8BDEA0AD16721A222E02BEA52939FA26E59681C4380FBC09B5B2009FAF9AB160"
+  },
+  "output": {
+    "mode": "canonical",
+    "directory": "artifacts/line-design-approval-a1"
+  },
+  "server": {
+    "host": "127.0.0.1",
+    "port": 4179,
+    "url": "http://localhost:4179/line-flex-studio.html",
+    "shutdownCompleted": true
+  },
+  "browserVersion": "149.0.7827.55",
+  "headless": true,
+  "waitCondition": "networkidle",
+  "matrix": [
+    {
+      "language": "en",
+      "width": 1440,
+      "uiJourneys": {
+        "success": {
+          "status": "PASS",
+          "outcome": "sandbox_recorded",
+          "receiptTitle": "Sandbox Verification Record — Demo · No Business Effect"
+        },
+        "cancel": {
+          "status": "PASS",
+          "outcome": "cancelled_locally",
+          "focusReturned": true
+        },
+        "legacy_preset": {
+          "status": "PASS",
+          "outcome": "legacy_demo_receipt",
+          "receiptTitle": "Verification Receipt — Demo"
+        }
+      },
+      "portContractProbes": {
+        "replay": {
+          "status": "PASS",
+          "outcome": "sandbox_replayed",
+          "errorCode": null
+        },
+        "stale_revision": {
+          "status": "PASS",
+          "outcome": "stale_revision",
+          "errorCode": "stale_revision"
+        },
+        "expired": {
+          "status": "PASS",
+          "outcome": "expired",
+          "errorCode": "expired"
+        }
+      },
+      "horizontalOverflowPixels": 0,
+      "copyReadability": "PASS",
+      "focusReturnAfterSuccess": true,
+      "focusReturnAfterCancel": true,
+      "recordRowCount": 18,
+      "reducedMotion": {
+        "animationDuration": "1e-05s",
+        "transitionDuration": "1e-05s",
+        "animationDurationMs": 0.01,
+        "transitionDurationMs": 0.01
+      }
+    },
+    {
+      "language": "en",
+      "width": 390,
+      "uiJourneys": {
+        "success": {
+          "status": "PASS",
+          "outcome": "sandbox_recorded",
+          "receiptTitle": "Sandbox Verification Record — Demo · No Business Effect"
+        },
+        "cancel": {
+          "status": "PASS",
+          "outcome": "cancelled_locally",
+          "focusReturned": true
+        },
+        "legacy_preset": {
+          "status": "PASS",
+          "outcome": "legacy_demo_receipt",
+          "receiptTitle": "Verification Receipt — Demo"
+        }
+      },
+      "portContractProbes": {
+        "replay": {
+          "status": "PASS",
+          "outcome": "sandbox_replayed",
+          "errorCode": null
+        },
+        "stale_revision": {
+          "status": "PASS",
+          "outcome": "stale_revision",
+          "errorCode": "stale_revision"
+        },
+        "expired": {
+          "status": "PASS",
+          "outcome": "expired",
+          "errorCode": "expired"
+        }
+      },
+      "horizontalOverflowPixels": 0,
+      "copyReadability": "PASS",
+      "focusReturnAfterSuccess": true,
+      "focusReturnAfterCancel": true,
+      "recordRowCount": 18,
+      "reducedMotion": {
+        "animationDuration": "1e-05s",
+        "transitionDuration": "1e-05s",
+        "animationDurationMs": 0.01,
+        "transitionDurationMs": 0.01
+      }
+    },
+    {
+      "language": "th",
+      "width": 1440,
+      "uiJourneys": {
+        "success": {
+          "status": "PASS",
+          "outcome": "sandbox_recorded",
+          "receiptTitle": "Sandbox Verification Record — Demo · No Business Effect"
+        },
+        "cancel": {
+          "status": "PASS",
+          "outcome": "cancelled_locally",
+          "focusReturned": true
+        },
+        "legacy_preset": {
+          "status": "PASS",
+          "outcome": "legacy_demo_receipt",
+          "receiptTitle": "หลักฐานการยืนยัน — Demo · Verification Receipt — Demo"
+        }
+      },
+      "portContractProbes": {
+        "replay": {
+          "status": "PASS",
+          "outcome": "sandbox_replayed",
+          "errorCode": null
+        },
+        "stale_revision": {
+          "status": "PASS",
+          "outcome": "stale_revision",
+          "errorCode": "stale_revision"
+        },
+        "expired": {
+          "status": "PASS",
+          "outcome": "expired",
+          "errorCode": "expired"
+        }
+      },
+      "horizontalOverflowPixels": 0,
+      "copyReadability": "PASS",
+      "focusReturnAfterSuccess": true,
+      "focusReturnAfterCancel": true,
+      "recordRowCount": 18,
+      "reducedMotion": {
+        "animationDuration": "1e-05s",
+        "transitionDuration": "1e-05s",
+        "animationDurationMs": 0.01,
+        "transitionDurationMs": 0.01
+      }
+    },
+    {
+      "language": "th",
+      "width": 390,
+      "uiJourneys": {
+        "success": {
+          "status": "PASS",
+          "outcome": "sandbox_recorded",
+          "receiptTitle": "Sandbox Verification Record — Demo · No Business Effect"
+        },
+        "cancel": {
+          "status": "PASS",
+          "outcome": "cancelled_locally",
+          "focusReturned": true
+        },
+        "legacy_preset": {
+          "status": "PASS",
+          "outcome": "legacy_demo_receipt",
+          "receiptTitle": "หลักฐานการยืนยัน — Demo · Verification Receipt — Demo"
+        }
+      },
+      "portContractProbes": {
+        "replay": {
+          "status": "PASS",
+          "outcome": "sandbox_replayed",
+          "errorCode": null
+        },
+        "stale_revision": {
+          "status": "PASS",
+          "outcome": "stale_revision",
+          "errorCode": "stale_revision"
+        },
+        "expired": {
+          "status": "PASS",
+          "outcome": "expired",
+          "errorCode": "expired"
+        }
+      },
+      "horizontalOverflowPixels": 0,
+      "copyReadability": "PASS",
+      "focusReturnAfterSuccess": true,
+      "focusReturnAfterCancel": true,
+      "recordRowCount": 18,
+      "reducedMotion": {
+        "animationDuration": "1e-05s",
+        "transitionDuration": "1e-05s",
+        "animationDurationMs": 0.01,
+        "transitionDurationMs": 0.01
+      }
+    }
+  ],
+  "network": {
+    "events": {
+      "requests": [
+        {
+          "url": "http://localhost:4179/line-flex-studio.html",
+          "method": "GET",
+          "resourceType": "document"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-studio.css",
+          "method": "GET",
+          "resourceType": "stylesheet"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-studio.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-model.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-presets.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-json.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-validator.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-actions.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-receipt.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-design-approval-contract.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-design-approval-record.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-design-approval-sandbox.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/assets/line-flex-studio/design-approval-hero.svg",
+          "method": "GET",
+          "resourceType": "image"
+        },
+        {
+          "url": "http://localhost:4179/assets/line-flex-studio/quote-order-hero.svg",
+          "method": "GET",
+          "resourceType": "image"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-studio.html",
+          "method": "GET",
+          "resourceType": "document"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-studio.css",
+          "method": "GET",
+          "resourceType": "stylesheet"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-studio.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-model.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-presets.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-json.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-validator.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-actions.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-receipt.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-design-approval-contract.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-design-approval-record.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-design-approval-sandbox.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/assets/line-flex-studio/design-approval-hero.svg",
+          "method": "GET",
+          "resourceType": "image"
+        },
+        {
+          "url": "http://localhost:4179/assets/line-flex-studio/quote-order-hero.svg",
+          "method": "GET",
+          "resourceType": "image"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-studio.html",
+          "method": "GET",
+          "resourceType": "document"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-studio.css",
+          "method": "GET",
+          "resourceType": "stylesheet"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-studio.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-model.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-presets.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-json.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-validator.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-actions.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-receipt.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-design-approval-contract.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-design-approval-record.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-design-approval-sandbox.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/assets/line-flex-studio/design-approval-hero.svg",
+          "method": "GET",
+          "resourceType": "image"
+        },
+        {
+          "url": "http://localhost:4179/assets/line-flex-studio/quote-order-hero.svg",
+          "method": "GET",
+          "resourceType": "image"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-studio.html",
+          "method": "GET",
+          "resourceType": "document"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-studio.css",
+          "method": "GET",
+          "resourceType": "stylesheet"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-studio.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-model.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-presets.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-json.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-validator.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-actions.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-flex-receipt.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-design-approval-contract.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-design-approval-record.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/line-design-approval-sandbox.mjs",
+          "method": "GET",
+          "resourceType": "script"
+        },
+        {
+          "url": "http://localhost:4179/assets/line-flex-studio/design-approval-hero.svg",
+          "method": "GET",
+          "resourceType": "image"
+        },
+        {
+          "url": "http://localhost:4179/assets/line-flex-studio/quote-order-hero.svg",
+          "method": "GET",
+          "resourceType": "image"
+        }
+      ],
+      "failedRequests": [],
+      "httpErrors": [],
+      "consoleErrors": [],
+      "pageErrors": []
+    }
+  },
+  "sourceSnapshot": {
+    "normalization": "canonical-lf",
+    "canonicalLfSha256": "B1289E1BF03136CA4BE362B711786590B844249DBE5CAAF5C06D5F6D060D8DC4",
+    "files": [
+      {
+        "path": "assets/line-flex-studio/design-approval-hero.svg",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 548,
+        "canonicalLfSha256": "460FB55418C0C102F5B92437D74BB7A38A17525A6EB0A862970959E24D4C0DF2"
+      },
+      {
+        "path": "assets/line-flex-studio/quote-order-hero.svg",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 636,
+        "canonicalLfSha256": "127A91E454776DFA7B01AD77D312102B61F63285F8112EC423FD01EEBAC0C48E"
+      },
+      {
+        "path": "line-design-approval-contract.mjs",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 5766,
+        "canonicalLfSha256": "2C84F8DCE9472A4B9B83946998AAF9B5D9AD8B7627D241ABEB9F7685660B61BF"
+      },
+      {
+        "path": "line-design-approval-record.mjs",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 7063,
+        "canonicalLfSha256": "2A244FF64844517154B64ED584EB65338ED446F01F88619733B74F0D7F7EBD4C"
+      },
+      {
+        "path": "line-design-approval-sandbox.mjs",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 22092,
+        "canonicalLfSha256": "633E1B390F7324A4E2059D9CB6634B9A12C501E58E7C18D3A2D2B99A7FF53F0D"
+      },
+      {
+        "path": "line-flex-actions.mjs",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 5508,
+        "canonicalLfSha256": "5C030C3064C89A9C57167A0D61E3E1F28F62C354B8C52C783903CA4F8FFC0DF9"
+      },
+      {
+        "path": "line-flex-json.mjs",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 2879,
+        "canonicalLfSha256": "04575581CD9B8B7D5F6DACBEBC418871ABD85B57DBB1976D8A91D08DA23023D5"
+      },
+      {
+        "path": "line-flex-model.mjs",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 1760,
+        "canonicalLfSha256": "87B1E968D7550400C5E4FE8C6D0481988B56380892E3FD03C5D9009D4A25A36A"
+      },
+      {
+        "path": "line-flex-presets.mjs",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 11280,
+        "canonicalLfSha256": "091B79D06B619E15A7A10D89F09AE480189CACA744E31C173D551C5CD7278A14"
+      },
+      {
+        "path": "line-flex-receipt.mjs",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 1263,
+        "canonicalLfSha256": "20A34348F29E26833D013C47780094E69B39F50927B12423D7ADEC768F4DAB76"
+      },
+      {
+        "path": "line-flex-studio.css",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 9787,
+        "canonicalLfSha256": "3FBF6138A8DD2B69BC27A2A52F74853FC71E5A227F50D051721A8096209AD9B7"
+      },
+      {
+        "path": "line-flex-studio.html",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 5492,
+        "canonicalLfSha256": "A0FF1165A4DF205E54F3247C01025FBB1AF1923D95873C0DDC153149B014AC7B"
+      },
+      {
+        "path": "line-flex-studio.mjs",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 54525,
+        "canonicalLfSha256": "175B690175F0A4E14EC61AB17EE8EBE5F7E6A6C214ECDD8853BC394429A258F5"
+      },
+      {
+        "path": "line-flex-validator.mjs",
+        "normalization": "canonical-lf",
+        "canonicalLfBytes": 8139,
+        "canonicalLfSha256": "78D4F1319E54409380539ADCF54BA6139CD1B29CC5E9641C98A5942F983C1D5E"
+      }
+    ]
+  },
+  "screenshots": {
+    "desktop1440": {
+      "path": "artifacts/line-design-approval-a1/desktop-1440.png",
+      "sha256": "C1E35E86FDE474203F89393F1B6584FF728E3B519E939E766A0A9C3B780C4CB3",
+      "width": 1440,
+      "height": 1000,
+      "sourceSnapshotCanonicalLfSha256": "B1289E1BF03136CA4BE362B711786590B844249DBE5CAAF5C06D5F6D060D8DC4",
+      "baseCommitAtCapture": "d0d2db69c66d850871633bb62cde9ad3ee7d3964"
+    },
+    "mobile390": {
+      "path": "artifacts/line-design-approval-a1/mobile-390.png",
+      "sha256": "7499CED9BCA4A24DB15961D4491CE23E4CE1D3D973CEC8BC2CCAA42CF61E9BD7",
+      "width": 390,
+      "height": 844,
+      "sourceSnapshotCanonicalLfSha256": "B1289E1BF03136CA4BE362B711786590B844249DBE5CAAF5C06D5F6D060D8DC4",
+      "baseCommitAtCapture": "d0d2db69c66d850871633bb62cde9ad3ee7d3964"
+    }
+  },
+  "recordForbiddenFieldScan": {
+    "fields": [
+      "tenant",
+      "tenantid",
+      "tenantassertion",
+      "customer",
+      "customerid",
+      "customeridentity",
+      "role",
+      "recipient",
+      "project",
+      "projectid",
+      "projectowner",
+      "approvalstatus",
+      "approved",
+      "signature",
+      "signaturestatus",
+      "keyid",
+      "privatekey",
+      "publickey",
+      "signingkey",
+      "secret",
+      "lineidtoken",
+      "accesstoken"
+    ],
+    "occurrences": 0,
+    "matches": [],
+    "recordKeys": [
+      "title",
+      "recordVersion",
+      "mode",
+      "businessEffect",
+      "recordId",
+      "correlationId",
+      "reviewSessionId",
+      "providerContext",
+      "scopeContext",
+      "workItemRef",
+      "approvalRequestRef",
+      "revisionLabel",
+      "revisionId",
+      "artifactManifestSha256",
+      "requestedCanonicalAction",
+      "outcome",
+      "createdAt",
+      "confirmedAt",
+      "digestAlgorithm",
+      "canonicalizationVersion",
+      "recordDigest"
+    ],
+    "recordDigest": "98aa18f7ac400d7739ba66b9c9dc876f5df3ffbc9a6aae582e0fb10b8b046861"
+  }
+}

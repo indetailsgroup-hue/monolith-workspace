@@ -1,0 +1,109 @@
+name: People & Culture CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/people-culture-module]
+    paths:
+      - 'src/people/**'
+      - 'src/culture/**'
+      - 'vite.config.ts'
+      - 'vitest.setup.ts'
+      - 'tsconfig.json'
+      - 'tsconfig.people-culture.json'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/people-culture-ci.yml'
+      - '.storybook/**'
+      - '**/*.stories.tsx'
+  pull_request:
+    # Required PR checks must report for every change to these target branches.
+    branches: [main, develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    name: Unit Tests (people + culture)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run people & culture tests with coverage
+        run: npx vitest run src/people/ src/culture/ --coverage --reporter=verbose
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: people-culture-coverage
+          path: coverage/
+          retention-days: 14
+
+  typecheck:
+    name: TypeScript Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeCheck
+        run: npx tsc --noEmit -p tsconfig.people-culture.json
+
+  storybook-build:
+    name: Storybook Build (CI verify)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [typecheck]
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Storybook
+        run: npx storybook build --quiet
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || 'https://placeholder-api.example.com' }}
+          VITE_USE_MOCK: 'true'
+          VITE_FACTORY_API_BASE: ${{ secrets.VITE_FACTORY_API_BASE || 'https://placeholder-factory.example.com' }}
+
+      - name: Upload Storybook build artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: storybook-static
+          path: storybook-static/
+          retention-days: 7

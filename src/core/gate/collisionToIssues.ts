@@ -87,8 +87,8 @@ export function collisionPairToGateIssues(args: {
     subjectId: pair.aId,
     relatedId: pair.bId,
     metrics: {
-      penetrationMm: Number(pair.penetrationMm.toFixed(3)),
-      gapMm: Number(pair.gapMm.toFixed(3)),
+      penetrationMm: Number(pair.penetrationMm.toFixed(4)),
+      gapMm: Number(pair.gapMm.toFixed(4)),
       source: pair.source,
     },
   });
@@ -115,8 +115,8 @@ export function collisionPairToGateIssues(args: {
       subjectId: pair.bId,
       relatedId: pair.aId,
       metrics: {
-        penetrationMm: Number(pair.penetrationMm.toFixed(3)),
-        gapMm: Number(pair.gapMm.toFixed(3)),
+        penetrationMm: Number(pair.penetrationMm.toFixed(4)),
+        gapMm: Number(pair.gapMm.toFixed(4)),
         source: pair.source,
       },
     });

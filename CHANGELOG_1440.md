@@ -1,0 +1,39 @@
+## [14.4.0] – 2026-08-28
+
+### Added
+
+#### Migration 0192 — `mv_etax_health_trend` (`supabase/migrations/0192_mv_etax_health_trend.sql`)
+Materializes the daily 30-day eTax health trend computed by `v_etax_health_trend` (Migration 0191) into a pre-aggregated, indexed snapshot table. Adds a daily pg_cron refresh, two SECURITY DEFINER cached RPCs, and a staleness lag view.
+
+- **`etax_health_trend_mv_refresh_log`** — Audit trail table capturing `refreshed_at`, `duration_ms`, `row_count`, and `triggered_by` (`pg_cron` | `manual` | `migration` | `test`) for every MV refresh event. `authenticated` has no access; `service_role` gets SELECT only.
+- **`mv_etax_health_trend`** — Materialized view snapshotting all 17 columns from `v_etax_health_trend`. Created `WITH NO DATA`; populated by `fn_refresh_etax_health_trend_mv('migration')` at migration time.
+  - `uq_mv_etax_health_trend_org_day` — UNIQUE index on `(org_id, submission_day)` enabling `REFRESH MATERIALIZED VIEW CONCURRENTLY` so reads are never blocked during nightly rebuild.
+  - `idx_mv_etax_health_trend_rank` — non-unique index on `(org_id, day_rank)` for fast "top N days" dashboard queries.
+- **`v_mv_health_trend_lag`** — Staleness view reading the latest row from `etax_health_trend_mv_refresh_log`. Exposes `last_refreshed_at`, `lag_seconds`, `duration_ms`, `row_count`, `triggered_by`, and `freshness_status`. Thresholds: **fresh** < 86 400 s (24 h) | **stale** 86 400–172 800 s (24–48 h) | **critical** > 172 800 s (> 48 h). Accessible to `service_role` only.
+- **`fn_refresh_etax_health_trend_mv(p_triggered_by TEXT)`** — SECURITY DEFINER refresh procedure. Attempts `REFRESH MATERIALIZED VIEW CONCURRENTLY`; on failure (empty unique index on first run) falls back to a blocking `REFRESH MATERIALIZED VIEW`. Writes a `etax_health_trend_mv_refresh_log` row and returns a JSONB result: `{ status, refreshed_at, duration_ms, row_count, triggered_by }`. Callable only by `service_role`.
+- **`rpc_etax_health_trend_cached(p_days INTEGER DEFAULT 30)`** — Authenticated, SECURITY DEFINER RPC. Enforces `OWNER / ADMIN / FINANCE` role gate; resolves caller's org via `org_members`; reads `mv_etax_health_trend` filtered to the caller's org and top `p_days` ranks. Appends `mv_last_refreshed_at` (TIMESTAMPTZ) and `mv_age_seconds` (INTEGER) to every row so the client can surface staleness warnings. `p_days` clamped to [1, 30].
+- **`rpc_etax_health_trend_cached_admin(p_org_id UUID DEFAULT NULL, p_days INTEGER DEFAULT 30)`** — SECURITY DEFINER, callable by `service_role` only; raises `EXCEPTION` if called under `authenticated`. Filters to `p_org_id` when supplied; returns all orgs when NULL. Both RPCs include identical `mv_last_refreshed_at` / `mv_age_seconds` metadata.
+- **pg_cron job `refresh-etax-health-trend-mv`** scheduled at `0 0 * * *` (daily midnight UTC). Registered conditionally inside a `DO $$` block that checks for the `pg_cron` extension; emits `RAISE WARNING` with the manual `cron.schedule(...)` call when the extension is absent (e.g. local dev). Previous schedule of the same job name is unscheduled before re-registration to make the migration re-runnable.
+- **Inline verification** `DO $$` block asserts the MV, both RPCs, the lag view, and the log table all exist, and that the initial population produced at least one refresh-log row, before committing.
+- **`supabase/config.toml` note** — ASCII schedule table (in SQL comment) updated to document the 5th cron job alongside the four existing ones.
+
+**Prerequisite:** `0191_etax_health_trend.sql` (`v_etax_health_trend`).
+
+---
+
+#### Test Suite — `0191_etax_health_trend.test.ts` (`src/__tests__/rls/0191_etax_health_trend.test.ts`)
+Test suite for `v_etax_health_trend` and its three RPCs (885 lines, Groups A–G, 57 tests):
+
+- **Group A — Schema** (10 tests): view exists in `information_schema.views`; all 17 expected columns present (`org_id`, `submission_day`, `day_rank`, `daily_total`, `daily_submitted`, `daily_failed`, `daily_exhausted`, `daily_queued`, `daily_pdf_ok`, `daily_pdf_fail`, `daily_pdf_pending`, `retry_exhaustion_rate_pct`, `success_rate_pct`, `pdf_success_rate_pct`, `avg_attempt_count`, `max_attempt_count`, `p95_attempt_count`); `authenticated` has no direct SELECT; all three RPCs exist in `pg_proc` with `prosecdef = TRUE`; index `idx_etaxsub_org_created_at` present.
+- **Group B — Org Isolation** (8 tests): `rpc_etax_health_trend()` returns only caller org rows; cross-org submissions absent; `VIEWER` and `DESIGNER` roles rejected with `P0001`; unauthenticated call rejected; `rpc_etax_health_trend_admin(UUID)` with explicit org filter returns only that org; `rpc_etax_health_trend_admin()` (all-orgs variant) returns rows for multiple orgs without cross-contamination.
+- **Group C — 30-Day Window Boundary** (8 tests): submission created at `CURRENT_DATE - 29 days + TIME '12:00'` (inside) appears in results; submission at `CURRENT_DATE - 30 days + TIME '12:00'` (outside) is absent; boundary is evaluated in UTC via `DATE(created_at AT TIME ZONE 'UTC')`; submission at exactly `CURRENT_DATE + TIME '23:59'` (today, end-of-day) is included; window re-evaluated on each query call (no caching).
+- **Group D — `day_rank` Ordering** (8 tests): `day_rank = 1` corresponds to `submission_day = CURRENT_DATE`; ranks are sequential integers with no gaps; rank 2 = yesterday, rank 3 = 2 days ago; ordering `DESC` by `submission_day`; days with zero submissions produce no row (no gap-filled zeros); `day_rank` is scoped per `org_id` via `PARTITION BY org_id`.
+- **Group E — `retry_exhaustion_rate_pct` Daily Precision** (8 tests): 0 exhausted / 4 total → `0.00`; 1 exhausted / 4 total → `25.00`; 2 exhausted / 4 total → `50.00`; exhaustion criterion: `attempt_count >= 5 AND status = 'failed'`; ROUND to 2 decimal places; `daily_exhausted` counter matches manually counted rows; a single exhausted submission in an otherwise-submitted batch changes rate from `0.00` to a positive value.
+- **Group F — Admin RPC Variants** (7 tests): `rpc_etax_health_trend_admin()` (no arg) returns all orgs' rows; `rpc_etax_health_trend_admin(NULL::UUID)` equivalent to no-arg form; `rpc_etax_health_trend_admin(p_org_id)` filters to single org; admin RPC called by `authenticated` role is rejected; `day_rank = 1` in admin results matches today's date per org; admin RPC returns correct `daily_exhausted` counts.
+- **Group G — Edge Cases** (6 tests): org with zero submissions returns no rows (no error); single-day org produces `day_rank = 1` with no further ranks; all-submitted org shows `retry_exhaustion_rate_pct = 0.00`; all-exhausted org shows `retry_exhaustion_rate_pct = 100.00`; `daily_total = daily_submitted + daily_failed + daily_queued` invariant holds; `success_rate_pct + (100 - success_rate_pct) = 100.00` accounting invariant holds.
+- **Helpers:** `todayUTC()` → `'YYYY-MM-DD'`; `daysAgoTs(n)` → ISO timestamp noon UTC n days ago; `daysAgoUTC(n)` → date string; `insertSubmission(opts)` accepts `createdAt` override; `TEST_TAG = '0191_test_suite'`; `afterEach` purges via `metadata->>'test_tag' = '0191_test_suite'`.
+
+### Notes
+- `mv_etax_health_trend` uses a **daily** refresh cycle (midnight UTC), unlike the 15-min `mv_etax_compliance_dashboard`. This is intentional: daily trend data does not change within the same calendar day in normal operation; a near-real-time refresh would add pg_cron pressure for no analytical benefit.
+- The `freshness_status` thresholds for the health-trend lag view (fresh < 86 400 s) are coarser than the compliance MV thresholds (fresh < 900 s). Dashboards that surface `mv_age_seconds > 86 400` should prompt the operator to inspect the pg_cron run log rather than treat it as an incident.
+- `rpc_etax_health_trend_cached_admin` deliberately raises `EXCEPTION` rather than returning an empty set when called under `authenticated`. This produces an HTTP 400 from PostgREST, allowing API clients to distinguish "no data" from "wrong role."

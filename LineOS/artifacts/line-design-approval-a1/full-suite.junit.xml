@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+	<testcase name="canonical-LF evidence identities survive Windows checkout conversion and reject content mutation" time="0.002961" classname="test"/>
+	<testcase name="approved document manifest is bilingual, standalone, and deterministically rendered" time="1.855111" classname="test"/>
+	<testcase name="A1 browser evidence and bilingual implementation reports preserve the final decision record" time="0.017327" classname="test"/>
+	<testcase name="A1 captured provenance survives replayed history but rejects falsified capture data" time="0.004068" classname="test"/>
+	<testcase name="A1 report contract rejects decision evidence hidden from readers" time="0.014523" classname="test"/>
+	<testcase name="A1 browser evidence producer help is inert and temp output cannot overwrite canonical evidence" time="14.474645" classname="test"/>
+	<testcase name="implementation reports expose the complete decision record" time="0.001797" classname="test"/>
+	<testcase name="verification evidence is complete and rejects unsafe substitutions" time="0.015870" classname="test"/>
+	<testcase name="prose normalization ignores code fixtures but preserves policy violations" time="0.000665" classname="test"/>
+	<testcase name="project Markdown has no prose markers or replacement characters" time="0.010897" classname="test"/>
+	<testcase name="every project Markdown edition is free of trailing spaces and tabs" time="0.008951" classname="test"/>
+	<testcase name="both research editions require the exact source-presence readiness boundary" time="0.001605" classname="test"/>
+	<testcase name="no document prose promotes source or test presence to production readiness" time="0.007369" classname="test"/>
+	<testcase name="installation guides preserve the console, LIFF, and secret-safety contract" time="0.000657" classname="test"/>
+	<testcase name="LIFF guides separate transaction, liff.state, OAuth state, and OIDC nonce semantics" time="0.002623" classname="test"/>
+	<testcase name="closed-delivery environments disable Official Account default messages" time="0.000757" classname="test"/>
+	<testcase name="Studio user guides cover the complete safe operator journey" time="0.000655" classname="test"/>
+	<testcase name="A1 operating guides preserve exact claims in their intended sections and ordered A2 gates" time="0.004027" classname="test"/>
+	<testcase name="A1 guide contract rejects removed negation and affirmative authority mutations in both languages" time="0.002108" classname="test"/>
+	<testsuite name="A1 guide contract rejects visible affirmative runtime, production, and workflow equivalents" time="0.001863" disabled="0" errors="0" tests="6" failures="0" skipped="0" hostname="Santi">
+		<testcase name="en: runtime connection" time="0.000195" classname="test"/>
+		<testcase name="en: production readiness" time="0.000101" classname="test"/>
+		<testcase name="en: workflow mutation" time="0.000099" classname="test"/>
+		<testcase name="th: runtime connection" time="0.000121" classname="test"/>
+		<testcase name="th: production readiness" time="0.000088" classname="test"/>
+		<testcase name="th: workflow mutation" time="0.000091" classname="test"/>
+	</testsuite>
+	<testsuite name="A1 guide contract scans inline-formatted authority claims and active approval voice" time="0.002762" disabled="0" errors="0" tests="8" failures="0" skipped="0" hostname="Santi">
+		<testcase name="en: formatted runtime subject" time="0.000191" classname="test"/>
+		<testcase name="en: formatted production predicate" time="0.000097" classname="test"/>
+		<testcase name="en: formatted workflow object" time="0.000096" classname="test"/>
+		<testcase name="en: active approval voice" time="0.000123" classname="test"/>
+		<testcase name="th: formatted runtime subject" time="0.000132" classname="test"/>
+		<testcase name="th: formatted production predicate" time="0.000133" classname="test"/>
+		<testcase name="th: formatted workflow object" time="0.000099" classname="test"/>
+		<testcase name="th: active approval voice" time="0.000110" classname="test"/>
+	</testsuite>
+	<testsuite name="A1 guide contract rejects natural perfect-tense and integration authority claims" time="0.002594" disabled="0" errors="0" tests="6" failures="0" skipped="0" hostname="Santi">
+		<testcase name="en: runtime integration" time="0.000212" classname="test"/>
+		<testcase name="en: workflow update" time="0.000115" classname="test"/>
+		<testcase name="en: approval record" time="0.000136" classname="test"/>
+		<testcase name="th: runtime integration" time="0.000146" classname="test"/>
+		<testcase name="th: workflow update" time="0.000100" classname="test"/>
+		<testcase name="th: approval record" time="0.000105" classname="test"/>
+	</testsuite>
+	<testcase name="A1 guide contract does not classify explicit bilingual negations as affirmative authority" time="0.000609" classname="test"/>
+	<testsuite name="A1 required claims must remain visible rather than living in comments or code fixtures" time="0.009358" disabled="0" errors="0" tests="12" failures="0" skipped="0" hostname="Santi">
+		<testcase name="en: runtime-disconnected in HTML comment" time="0.001056" classname="test"/>
+		<testcase name="en: runtime-disconnected in fenced fixture" time="0.000601" classname="test"/>
+		<testcase name="en: runtime-disconnected in fence closed by a longer delimiter" time="0.000742" classname="test"/>
+		<testcase name="en: no-effect in HTML comment" time="0.000387" classname="test"/>
+		<testcase name="en: no-effect in fenced fixture" time="0.000499" classname="test"/>
+		<testcase name="en: no-effect in fence closed by a longer delimiter" time="0.000336" classname="test"/>
+		<testcase name="th: runtime-disconnected in HTML comment" time="0.000956" classname="test"/>
+		<testcase name="th: runtime-disconnected in fenced fixture" time="0.000525" classname="test"/>
+		<testcase name="th: runtime-disconnected in fence closed by a longer delimiter" time="0.000676" classname="test"/>
+		<testcase name="th: no-effect in HTML comment" time="0.000385" classname="test"/>
+		<testcase name="th: no-effect in fenced fixture" time="0.000465" classname="test"/>
+		<testcase name="th: no-effect in fence closed by a longer delimiter" time="0.000373" classname="test"/>
+	</testsuite>
+	<testsuite name="A1 runtime-disconnected preamble cannot be satisfied by whole-claim inline code" time="0.003075" disabled="0" errors="0" tests="2" failures="0" skipped="0" hostname="Santi">
+		<testcase name="en" time="0.001831" classname="test"/>
+		<testcase name="th" time="0.000981" classname="test"/>
+	</testsuite>
+	<testsuite name="A1 unclosed HTML comments hide mandatory prose through end of file" time="0.002036" disabled="0" errors="0" tests="2" failures="0" skipped="0" hostname="Santi">
+		<testcase name="en" time="0.001040" classname="test"/>
+		<testcase name="th" time="0.000766" classname="test"/>
+	</testsuite>
+	<testcase name="A1 guide contract rejects A2 gates moved out of section 9 or placed out of order" time="0.004989" classname="test"/>
+	<testsuite name="A1 section 9 stops at CommonMark H2 headings indented up to three spaces" time="0.002579" disabled="0" errors="0" tests="2" failures="0" skipped="0" hostname="Santi">
+		<testcase name="en" time="0.001118" classname="test"/>
+		<testcase name="th" time="0.001166" classname="test"/>
+	</testsuite>
+	<testsuite name="A1 numbered section headings must be visible rather than hidden in comments or fences" time="0.003523" disabled="0" errors="0" tests="8" failures="0" skipped="0" hostname="Santi">
+		<testcase name="en: section 2 in multiline HTML comment" time="0.000317" classname="test"/>
+		<testcase name="en: section 2 in fenced block" time="0.000399" classname="test"/>
+		<testcase name="en: section 9 in multiline HTML comment" time="0.000238" classname="test"/>
+		<testcase name="en: section 9 in fenced block" time="0.000192" classname="test"/>
+		<testcase name="th: section 2 in multiline HTML comment" time="0.000254" classname="test"/>
+		<testcase name="th: section 2 in fenced block" time="0.000195" classname="test"/>
+		<testcase name="th: section 9 in multiline HTML comment" time="0.000170" classname="test"/>
+		<testcase name="th: section 9 in fenced block" time="0.000180" classname="test"/>
+	</testsuite>
+	<testsuite name="A1 guide contract parses A2 gates only from visible section-9 prose" time="0.006097" disabled="0" errors="0" tests="4" failures="0" skipped="0" hostname="Santi">
+		<testcase name="en: all gates in HTML comment" time="0.001339" classname="test"/>
+		<testcase name="en: all gates in fenced block" time="0.000685" classname="test"/>
+		<testcase name="th: all gates in HTML comment" time="0.001319" classname="test"/>
+		<testcase name="th: all gates in fenced block" time="0.000902" classname="test"/>
+	</testsuite>
+	<testcase name="standalone rehearsal ends with Verification Receipt Demo and reserves Signed Receipt" time="0.001263" classname="test"/>
+	<testcase name="action guides preserve the approved decision matrix and threat boundaries" time="0.000910" classname="test"/>
+	<testcase name="performance guides preserve LINE ceilings and MONOLITH rendering gates" time="0.000706" classname="test"/>
+	<testcase name="all guides cite current official LINE primary sources" time="0.003024" classname="test"/>
+	<testcase name="both reports have exactly 20 numbered sections and the exact board decision" time="0.001600" classname="test"/>
+	<testcase name="research labels evidence, cites primary sources, and records working-tree provenance honestly" time="0.002019" classname="test"/>
+	<testcase name="threat model separates duplicate-send and unknown-after-send controls" time="0.001350" classname="test"/>
+	<testcase name="every lifecycle stage names its Human Surface path and authoritative MONOLITH records" time="0.001258" classname="test"/>
+	<testcase name="reports preserve governed scope, roles, KPIs, roadmap, and gate schemas" time="0.002699" classname="test"/>
+	<testcase name="English and Thai preserve the same decision numbers and key identifiers" time="0.000891" classname="test"/>
+	<testcase name="standalone HTML matches Markdown headings and key claims" time="0.002331" classname="test"/>
+	<testcase name="gives only Design Approval one opaque non-secret review token" time="0.001883" classname="test"/>
+	<testcase name="puts only the encoded review token on the approved Design Approval URI" time="0.001252" classname="test"/>
+	<testcase name="keeps the other four preset action payloads unchanged" time="0.000599" classname="test"/>
+	<testcase name="accepts only a complete A1 sandbox review snapshot" time="0.002979" classname="test"/>
+	<testcase name="rejects malformed review snapshot revision content hashes" time="0.000342" classname="test"/>
+	<testcase name="rejects noncanonical uppercase artifact manifest SHA-256 hex" time="0.000282" classname="test"/>
+	<testcase name="rejects an unknown review artifact kind" time="0.000299" classname="test"/>
+	<testcase name="rejects an alternate HTTPS review artifact origin" time="0.000199" classname="test"/>
+	<testcase name="rejects a review artifact path outside the sandbox prefix" time="0.000471" classname="test"/>
+	<testcase name="rejects credentials in a review artifact URL" time="0.000485" classname="test"/>
+	<testcase name="rejects a query in a review artifact URL" time="0.000246" classname="test"/>
+	<testcase name="rejects a hash in a review artifact URL" time="0.000169" classname="test"/>
+	<testcase name="rejects an empty review artifact path" time="0.000151" classname="test"/>
+	<testcase name="rejects a sparse review artifacts array" time="0.000197" classname="test"/>
+	<testcase name="rejects a non-enumerable extra own key on the review artifacts array" time="0.000183" classname="test"/>
+	<testcase name="rejects a symbol extra own key on the review artifacts array" time="0.000656" classname="test"/>
+	<testcase name="rejects top-level and nested authority fields in review snapshots" time="0.000643" classname="test"/>
+	<testcase name="rejects a non-enumerable extra own key in a review snapshot" time="0.000147" classname="test"/>
+	<testcase name="rejects a symbol extra own key in a review snapshot" time="0.000124" classname="test"/>
+	<testcase name="accepts only the four-field confirm input with decision confirm" time="0.000367" classname="test"/>
+	<testcase name="rejects malformed expected revision content hashes" time="0.000123" classname="test"/>
+	<testcase name="rejects a non-enumerable extra own key in confirm input" time="0.000075" classname="test"/>
+	<testcase name="rejects a symbol extra own key in confirm input" time="0.000055" classname="test"/>
+	<testcase name="exposes the exact deeply frozen A1 outcome registry" time="0.000070" classname="test"/>
+	<testcase name="creates the exact deterministic Sandbox Verification Record" time="0.007858" classname="test"/>
+	<testcase name="accepts the legitimate approval request reference prefix without authority semantics" time="0.000421" classname="test"/>
+	<testcase name="changes the digest when every caller-bound field changes" time="0.003167" classname="test"/>
+	<testcase name="ignores recursive object key insertion order when hashing" time="0.000773" classname="test"/>
+	<testcase name="deeply freezes records and bilingual visible rows" time="0.001405" classname="test"/>
+	<testcase name="rejects missing, enumerable extra, hidden, symbol, and accessor input fields" time="0.000793" classname="test"/>
+	<testcase name="rejects unsafe prototypes and non-scalar bound values" time="0.000628" classname="test"/>
+	<testcase name="rejects malformed, uppercase, and unbounded identifiers or digests" time="0.000360" classname="test"/>
+	<testcase name="rejects authority-like claims in record-visible input" time="0.000503" classname="test"/>
+	<testcase name="rejects a Thai authority claim from every visible caller-bound field" time="0.000846" classname="test"/>
+	<testcase name="rejects the literal secret from every visible caller-bound field" time="0.000765" classname="test"/>
+	<testcase name="rejects a tenant-prefixed value from every visible caller-bound field" time="0.000682" classname="test"/>
+	<testcase name="rejects an email address from every visible caller-bound field" time="0.000789" classname="test"/>
+	<testcase name="rejects a phone number from every visible caller-bound field" time="0.000739" classname="test"/>
+	<testcase name="requires canonical ordered UTC timestamps" time="0.000442" classname="test"/>
+	<testcase name="exposes only scalar textContent-ready English and Thai rows" time="0.003636" classname="test"/>
+	<testcase name="omits authority claims and rejects non-authentic records or languages" time="0.000668" classname="test"/>
+	<testcase name="opens one adapter-owned deeply frozen A1 ReviewSnapshot" time="0.013095" classname="test"/>
+	<testcase name="collapses invalid, missing, and cross-scope lookups into one neutral result" time="0.000503" classname="test"/>
+	<testcase name="validates all fixture-visible values before disclosing a snapshot" time="0.002427" classname="test"/>
+	<testcase name="rejects English artifact-label leakage before snapshot disclosure" time="0.000344" classname="test"/>
+	<testcase name="rejects Thai artifact-label leakage before snapshot disclosure" time="0.000187" classname="test"/>
+	<testcase name="rejects raw artifact-path leakage before snapshot disclosure" time="0.000148" classname="test"/>
+	<testcase name="rejects encoded English artifact-path leakage before snapshot disclosure" time="0.000319" classname="test"/>
+	<testcase name="rejects encoded Thai artifact-path leakage before snapshot disclosure" time="0.000154" classname="test"/>
+	<testcase name="rejects artifact-query leakage before snapshot disclosure" time="0.000365" classname="test"/>
+	<testcase name="rejects artifact-hash leakage before snapshot disclosure" time="0.000394" classname="test"/>
+	<testcase name="rejects English consequence leakage before snapshot disclosure" time="0.000220" classname="test"/>
+	<testcase name="rejects Thai consequence leakage before snapshot disclosure" time="0.000129" classname="test"/>
+	<testcase name="binds opaque fixture identity privately and rejects identity changes" time="0.005426" classname="test"/>
+	<testcase name="issues session and idempotency identity inside the adapter" time="0.001818" classname="test"/>
+	<testcase name="rejects malformed adapter-issued IDs with one bounded outcome" time="0.001765" classname="test"/>
+	<testcase name="rejects an idempotency-key collision across distinct sessions" time="0.000789" classname="test"/>
+	<testcase name="rejects duplicate record and correlation IDs before a second commit" time="0.004514" classname="test"/>
+	<testcase name="fails closed at the exact expiry boundary and remains expired" time="0.001202" classname="test"/>
+	<testcase name="rechecks revision, artifact manifest, and workflow version before recording" time="0.002664" classname="test"/>
+	<testcase name="rechecks expiry after an asynchronous record factory resolves" time="0.001877" classname="test"/>
+	<testcase name="rechecks every bound fixture category after an asynchronous record factory" time="0.005851" classname="test"/>
+	<testcase name="enforces the exact confirm shape and records only the stored snapshot" time="0.001409" classname="test"/>
+	<testcase name="rejects a stateful idempotency getter without executing it" time="0.000866" classname="test"/>
+	<testcase name="uses one frozen input capture across asynchronous confirmation" time="0.001897" classname="test"/>
+	<testcase name="rejects unsafe confirm descriptors and prototypes before use" time="0.001541" classname="test"/>
+	<testcase name="collapses hostile confirm proxy traps into invalid_request" time="0.001335" classname="test"/>
+	<testcase name="rejects a confirm proxy without invoking its value get trap" time="0.000663" classname="test"/>
+	<testcase name="rejects malformed or forged record-factory candidates before commit" time="0.006293" classname="test"/>
+	<testcase name="validates a recorded ledger entry again before replay" time="0.006664" classname="test"/>
+	<testcase name="requires an injected session ledger to be fresh and empty" time="0.000197" classname="test"/>
+	<testcase name="rejects Map subclasses and proxies without exposing their raw errors" time="0.000134" classname="test"/>
+	<testcase name="uses captured base Map operations when ledger instance methods are poisoned" time="0.001158" classname="test"/>
+	<testcase name="replays the exact same record for the same key and canonical payload" time="0.001293" classname="test"/>
+	<testcase name="rejects reuse of a recorded key with a different canonical payload" time="0.001635" classname="test"/>
+	<testcase name="single-flights concurrent identical confirms into one ledger record" time="0.001586" classname="test"/>
+	<testcase name="allows same-key retry after a pre-commit record-factory failure" time="0.001024" classname="test"/>
+	<testcase name="starts each default adapter with an empty session-only ledger" time="0.001602" classname="test"/>
+	<testcase name="uses no browser persistence, network, logging, or draft authority surface" time="0.000975" classname="test"/>
+	<testcase name="never leaks tokens, fixture identity, authority values, secrets, or raw errors" time="0.000765" classname="test"/>
+	<testcase name="runtime inventory is the exact recursive local shell and module closure" time="0.036879" classname="test"/>
+	<testcase name="runtime module closure has no network, persistence, SDK, credential, or logging capability" time="0.022579" classname="test"/>
+	<testsuite name="unsafe synthetic sources fail closed for every restricted capability class" time="0.007831" disabled="0" errors="0" tests="35" failures="0" skipped="0" hostname="Santi">
+		<testcase name="fetch" time="0.000723" classname="test"/>
+		<testcase name="XHR" time="0.000287" classname="test"/>
+		<testcase name="WebSocket" time="0.000129" classname="test"/>
+		<testcase name="EventSource" time="0.000096" classname="test"/>
+		<testcase name="beacon" time="0.000116" classname="test"/>
+		<testcase name="remote import" time="0.000232" classname="test"/>
+		<testcase name="comment-separated static import" time="0.000233" classname="test"/>
+		<testcase name="no-space static import" time="0.000150" classname="test"/>
+		<testcase name="multiline static import" time="0.000173" classname="test"/>
+		<testcase name="comment-separated export-from" time="0.000144" classname="test"/>
+		<testcase name="comment-separated dynamic import" time="0.000076" classname="test"/>
+		<testcase name="bare LINE import" time="0.000089" classname="test"/>
+		<testcase name="LINE token API" time="0.000093" classname="test"/>
+		<testcase name="LINE profile API" time="0.000093" classname="test"/>
+		<testcase name="Supabase" time="0.000113" classname="test"/>
+		<testcase name="computed Supabase call" time="0.000075" classname="test"/>
+		<testcase name="Authorization" time="0.000099" classname="test"/>
+		<testcase name="Headers Authorization tuple" time="0.000088" classname="test"/>
+		<testcase name="service key" time="0.000173" classname="test"/>
+		<testcase name="Supabase service role environment key" time="0.000120" classname="test"/>
+		<testcase name="token logging" time="0.000091" classname="test"/>
+		<testcase name="computed token logging" time="0.000190" classname="test"/>
+		<testcase name="local storage" time="0.000118" classname="test"/>
+		<testcase name="session storage" time="0.000143" classname="test"/>
+		<testcase name="IndexedDB" time="0.000090" classname="test"/>
+		<testcase name="cookie" time="0.000086" classname="test"/>
+		<testcase name="Cache Storage" time="0.000106" classname="test"/>
+		<testcase name="Storage Manager" time="0.000076" classname="test"/>
+		<testcase name="resource binding" time="0.000348" classname="test"/>
+		<testcase name="resource mutation" time="0.000137" classname="test"/>
+		<testcase name="loader injection" time="0.000180" classname="test"/>
+		<testcase name="HTML injection" time="0.000128" classname="test"/>
+		<testcase name="remote producer for classified href" time="0.000436" classname="test"/>
+		<testcase name="unclassified producer for validation source href" time="0.000145" classname="test"/>
+		<testcase name="unclassified producer for local preview asset" time="0.000140" classname="test"/>
+	</testsuite>
+	<testsuite name="valid JavaScript computed, escaped, template, and reflective bypasses fail closed" time="0.002043" disabled="0" errors="0" tests="11" failures="0" skipped="0" hostname="Santi">
+		<testcase name="computed global fetch" time="0.000294" classname="test"/>
+		<testcase name="computed global localStorage" time="0.000176" classname="test"/>
+		<testcase name="computed global console logging" time="0.000110" classname="test"/>
+		<testcase name="computed global Supabase call" time="0.000095" classname="test"/>
+		<testcase name="computed global LINE profile API" time="0.000109" classname="test"/>
+		<testcase name="template literal Authorization" time="0.000163" classname="test"/>
+		<testcase name="escaped string Authorization" time="0.000149" classname="test"/>
+		<testcase name="computed Supabase environment key" time="0.000150" classname="test"/>
+		<testcase name="escaped fetch identifier" time="0.000089" classname="test"/>
+		<testcase name="computed resource binding" time="0.000134" classname="test"/>
+		<testcase name="reflective resource mutation" time="0.000092" classname="test"/>
+	</testsuite>
+	<testcase name="approved current token shapes remain accepted as safe controls" time="0.000421" classname="test"/>
+	<testsuite name="valid JavaScript dynamic-code, hidden-header, global-open, and descriptor bypasses fail closed" time="0.002495" disabled="0" errors="0" tests="14" failures="0" skipped="0" hostname="Santi">
+		<testcase name="Function constructor" time="0.000287" classname="test"/>
+		<testcase name="eval" time="0.000103" classname="test"/>
+		<testcase name="AsyncFunction constructor" time="0.000123" classname="test"/>
+		<testcase name="GeneratorFunction constructor" time="0.000126" classname="test"/>
+		<testcase name="async function constructor property" time="0.000100" classname="test"/>
+		<testcase name="generator function constructor property" time="0.000126" classname="test"/>
+		<testcase name="string timeout" time="0.000114" classname="test"/>
+		<testcase name="template string interval" time="0.000109" classname="test"/>
+		<testcase name="interpolated Authorization header" time="0.000142" classname="test"/>
+		<testcase name="concatenated Authorization header" time="0.000108" classname="test"/>
+		<testcase name="template process environment key" time="0.000146" classname="test"/>
+		<testcase name="unqualified global open" time="0.000117" classname="test"/>
+		<testcase name="defineProperty resource mutation" time="0.000115" classname="test"/>
+		<testcase name="defineProperties resource mutation" time="0.000137" classname="test"/>
+	</testsuite>
+	<testcase name="every exact runtime file matches the canonical LF-normalized SHA-256 manifest" time="0.016729" classname="test"/>
+	<testsuite name="runtime manifest rejects semantic alias and resource-key compositions outside scanner understanding" time="0.029277" disabled="0" errors="0" tests="2" failures="0" skipped="0" hostname="Santi">
+		<testcase name="capability alias composition" time="0.016570" classname="test"/>
+		<testcase name="resource key composition" time="0.008876" classname="test"/>
+	</testsuite>
+	<testsuite name="equivalent English and Thai authority claims fail closed" time="0.001465" disabled="0" errors="0" tests="5" failures="0" skipped="0" hostname="Santi">
+		<testcase name="Ready for production" time="0.000195" classname="test"/>
+		<testcase name="Approval succeeded" time="0.000553" classname="test"/>
+		<testcase name="Verified signer" time="0.000209" classname="test"/>
+		<testcase name="อนุมัติแล้ว" time="0.000171" classname="test"/>
+		<testcase name="พร้อมใช้งานจริง" time="0.000056" classname="test"/>
+	</testsuite>
+	<testcase name="sandbox record exposes only the exact non-authoritative fields" time="0.003614" classname="test"/>
+	<testcase name="record and shell copy reject positive authority and production claims" time="0.001350" classname="test"/>
+	<testcase name="Design Approval confirmation cannot pass editable draft data into the record path" time="0.001432" classname="test"/>
+	<testcase name="package scripts expose the complete Design Approval gate and include it in core" time="0.000403" classname="test"/>
+	<testsuite name="core command inventory rejects removal or duplication of every test file" time="0.001567" disabled="0" errors="0" tests="16" failures="0" skipped="0" hostname="Santi">
+		<testcase name="remove tests/line-flex-model.test.mjs" time="0.000203" classname="test"/>
+		<testcase name="duplicate tests/line-flex-model.test.mjs" time="0.000089" classname="test"/>
+		<testcase name="remove tests/line-flex-json-validator.test.mjs" time="0.000051" classname="test"/>
+		<testcase name="duplicate tests/line-flex-json-validator.test.mjs" time="0.000048" classname="test"/>
+		<testcase name="remove tests/line-flex-actions-receipt.test.mjs" time="0.000043" classname="test"/>
+		<testcase name="duplicate tests/line-flex-actions-receipt.test.mjs" time="0.000043" classname="test"/>
+		<testcase name="remove tests/line-flex-studio-state.test.mjs" time="0.000043" classname="test"/>
+		<testcase name="duplicate tests/line-flex-studio-state.test.mjs" time="0.000040" classname="test"/>
+		<testcase name="remove tests/line-design-approval-contract.test.mjs" time="0.000041" classname="test"/>
+		<testcase name="duplicate tests/line-design-approval-contract.test.mjs" time="0.000036" classname="test"/>
+		<testcase name="remove tests/line-design-approval-record.test.mjs" time="0.000037" classname="test"/>
+		<testcase name="duplicate tests/line-design-approval-record.test.mjs" time="0.000037" classname="test"/>
+		<testcase name="remove tests/line-design-approval-sandbox.test.mjs" time="0.000037" classname="test"/>
+		<testcase name="duplicate tests/line-design-approval-sandbox.test.mjs" time="0.000040" classname="test"/>
+		<testcase name="remove tests/line-design-approval-security.test.mjs" time="0.000046" classname="test"/>
+		<testcase name="duplicate tests/line-design-approval-security.test.mjs" time="0.000039" classname="test"/>
+	</testsuite>
+	<testcase name="routes every consequential action through LIFF URI" time="0.000782" classname="test"/>
+	<testcase name="exports a URI for a high-risk postback request while reporting MON-ACT-001" time="0.007250" classname="test"/>
+	<testcase name="allows low-risk acknowledgement postback" time="0.000090" classname="test"/>
+	<testcase name="fails closed to LIFF URI for unknown or malformed risk" time="0.000121" classname="test"/>
+	<testcase name="binds tenant recipient revision action and expiry" time="0.000853" classname="test"/>
+	<testcase name="fails closed when any bound value changes" time="0.001877" classname="test"/>
+	<testcase name="rejects cloned tampered and rebound transactions" time="0.000883" classname="test"/>
+	<testcase name="rejects invalid creation time and transaction TTL" time="0.000540" classname="test"/>
+	<testcase name="rejects parseable noncanonical creation timestamps" time="0.000434" classname="test"/>
+	<testcase name="accepts its internally generated canonical creation timestamp" time="0.000603" classname="test"/>
+	<testcase name="allows the expiry instant and rejects time after it" time="0.000500" classname="test"/>
+	<testcase name="rejects invalid confirmation time and transaction expiry" time="0.000392" classname="test"/>
+	<testcase name="rejects parseable noncanonical confirmation and expiry timestamps" time="0.000506" classname="test"/>
+	<testcase name="rejects a receipt made from a different transaction confirmation pair" time="0.000612" classname="test"/>
+	<testcase name="creates a labelled deterministic SHA-256 digest that changes on bound input" time="0.007022" classname="test"/>
+	<testcase name="freezes authentic receipt evidence before rendering" time="0.001034" classname="test"/>
+	<testcase name="changes the digest when provider amount or deadline changes" time="0.001766" classname="test"/>
+	<testcase name="builds deterministic Header Hero Body Footer JSON" time="0.002089" classname="test"/>
+	<testcase name="routes Design Approval through the tokenized private review URI" time="0.000313" classname="test"/>
+	<testcase name="measures the bubble as UTF-8 and accepts the approved preset" time="0.007762" classname="test"/>
+	<testcase name="blocks a high-risk postback and cites it as MONOLITH best practice" time="0.000384" classname="test"/>
+	<testcase name="blocks official alt text, URL and label limits" time="0.000230" classname="test"/>
+	<testcase name="warns at the 24 KB MONOLITH soft budget and errors at the 30 KB official ceiling" time="0.001150" classname="test"/>
+	<testcase name="reports malformed draft string values instead of throwing" time="0.000746" classname="test"/>
+	<testcase name="reports malformed action values and tolerates missing actions" time="0.000560" classname="test"/>
+	<testcase name="keeps the exact 15-rule registry deeply immutable" time="0.000834" classname="test"/>
+	<testcase name="applies exact 24 KiB and 30 KiB byte boundaries" time="0.001993" classname="test"/>
+	<testcase name="returns exact bilingual copy and finding keys for every rule" time="0.002954" classname="test"/>
+	<testcase name="orders findings by severity and rule ID" time="0.000351" classname="test"/>
+	<testcase name="ships exactly the five approved immutable presets" time="0.002161" classname="test"/>
+	<testcase name="creates isolated bilingual drafts" time="0.000332" classname="test"/>
+	<testcase name="updates a nested field without mutating the previous draft" time="0.000309" classname="test"/>
+	<testcase name="rejects invalid update path shapes" time="0.000535" classname="test"/>
+	<testcase name="rejects prototype path segments without polluting prototypes" time="0.000311" classname="test"/>
+	<testcase name="requires own properties for update path traversal and target" time="0.000363" classname="test"/>
+	<testcase name="freezes descendants of a pre-frozen cyclic root" time="0.000213" classname="test"/>
+	<testcase name="canonicalize sorts object keys recursively" time="0.000194" classname="test"/>
+	<testcase name="Studio shell exposes semantic controls and dialogs" time="0.007009" classname="test"/>
+	<testcase name="Trust Concierge shell exposes truthful sandbox review and record semantics" time="0.004944" classname="test"/>
+	<testcase name="each consequential dialog uniquely owns and describes its exact visible sandbox warning" time="0.001735" classname="test"/>
+	<testcase name="Trust Concierge styles preserve warning, digest, focus, scroll, mobile, and reduced-motion access" time="0.000763" classname="test"/>
+	<testcase name="sandbox height tokens keep ordered vh fallbacks before dvh overrides" time="0.001236" classname="test"/>
+	<testcase name="global and sandbox focus indicators use measured contrasting dual rings" time="0.001591" classname="test"/>
+	<testcase name="runtime shell uses only the approved local stylesheet and module" time="0.003049" classname="test"/>
+	<testcase name="runtime allowlist rejects extra loaders, inline styles, remote resources, and CSS URLs" time="0.002347" classname="test"/>
+	<testcase name="runtime shell rejects inline event-handler attributes" time="0.001068" classname="test"/>
+	<testcase name="runtime shell rejects entity-encoded meta refresh directives" time="0.001937" classname="test"/>
+	<testcase name="responsive grid keeps 1440 three-column and makes 1024 a two-row layout" time="0.000492" classname="test"/>
+	<testcase name="all five local SVG assets are self-contained" time="0.002071" classname="test"/>
+	<testcase name="encoded numeric references cannot hide remote SVG resources" time="0.000234" classname="test"/>
+	<testcase name="starts with the Thai design approval preset" time="0.000721" classname="test"/>
+	<testcase name="language and preset changes create fresh valid views" time="0.007338" classname="test"/>
+	<testcase name="field changes update preview JSON and validation from one draft" time="0.000432" classname="test"/>
+	<testcase name="blocking errors disable copy download and journey" time="0.000575" classname="test"/>
+	<testcase name="dirty state follows draft values instead of edit events" time="0.000378" classname="test"/>
+	<testcase name="receipt rows expose the exact English and Thai visible evidence contract" time="0.000559" classname="test"/>
+	<testcase name="routes only Design Approval to the port and fails closed for unknown presets" time="0.000262" classname="test"/>
+	<testcase name="renders Design Approval review rows only from the captured adapter snapshot" time="0.001126" classname="test"/>
+	<testcase name="confirms with only captured adapter-bound values and returns authentic record rows" time="0.006801" classname="test"/>
+	<testcase name="keeps one active confirmation while the adapter owns duplicate semantics" time="0.001128" classname="test"/>
+	<testcase name="clears active review for every studio and dialog lifecycle boundary" time="0.001022" classname="test"/>
+	<testcase name="clears terminal adapter outcomes and exposes exact neutral bilingual copy" time="0.003468" classname="test"/>
+	<testcase name="maps thrown adapter errors to neutral temporary failure without leaking details" time="0.000474" classname="test"/>
+	<testcase name="uses the exact approved Design Approval receipt disclosure in both languages" time="0.000307" classname="test"/>
+	<testcase name="uses a visible busy state as UX while the adapter remains authoritative" time="0.000194" classname="test"/>
+	<testcase name="bindStudio accepts an injected port and constructs the sandbox default only at browser binding" time="0.000221" classname="test"/>
+	<testcase name="bindStudio drives the adapter-owned review and record surfaces end to end" time="0.011258" classname="test"/>
+	<testcase name="bindStudio releases a pending open immediately on preset change" time="0.002893" classname="test"/>
+	<testcase name="bindStudio releases a pending open immediately on language change" time="0.002789" classname="test"/>
+	<testcase name="bindStudio releases a pending open immediately on field change" time="0.001523" classname="test"/>
+	<testcase name="bindStudio releases a pending open immediately on reset change" time="0.002108" classname="test"/>
+	<testcase name="bindStudio releases a pending confirm immediately on cancel" time="0.003880" classname="test"/>
+	<testcase name="bindStudio releases a pending confirm immediately on dialog.cancel" time="0.003047" classname="test"/>
+	<testcase name="bindStudio releases a pending confirm immediately on dialog.close" time="0.003932" classname="test"/>
+	<testcase name="a stale open finally cannot release a newer pending open" time="0.002581" classname="test"/>
+	<testcase name="a stale confirm finally cannot release a newer pending confirm" time="0.003224" classname="test"/>
+	<testcase name="bindStudio shows a bounded open error in a visible non-confirmable dialog" time="0.000907" classname="test"/>
+	<testcase name="bindStudio keeps a bounded confirm error visible until acknowledgment" time="0.001066" classname="test"/>
+	<testcase name="bindStudio preserves all four legacy routes without calling the Design Approval port" time="0.002287" classname="test"/>
+	<testcase name="bindStudio still completes a current legacy confirmation with its demo receipt" time="0.002573" classname="test"/>
+	<testcase name="bindStudio still renders a bounded current legacy rejection" time="0.001400" classname="test"/>
+	<testcase name="a canceled legacy digest success cannot overwrite a newer busy Design Approval" time="0.003534" classname="test"/>
+	<testcase name="a canceled legacy digest rejection cannot clear a newer busy Design Approval" time="0.003687" classname="test"/>
+	<!-- tests 351 -->
+	<!-- suites 0 -->
+	<!-- pass 351 -->
+	<!-- fail 0 -->
+	<!-- cancelled 0 -->
+	<!-- skipped 0 -->
+	<!-- todo 0 -->
+	<!-- duration_ms 16574.2882 -->
+</testsuites>

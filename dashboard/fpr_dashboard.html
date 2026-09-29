@@ -1,0 +1,2080 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monolith — FPR Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <style>
+    :root {
+      --brand: #1d4ed8;
+      --brand-dark: #1e3a8a;
+    }
+    body { font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; }
+    .status-pending    { background:#fef9c3; color:#854d0e; border:1px solid #fde68a; }
+    .status-approved   { background:#dcfce7; color:#166534; border:1px solid #bbf7d0; }
+    .status-rejected   { background:#fee2e2; color:#991b1b; border:1px solid #fecaca; }
+    .status-purchased  { background:#dbeafe; color:#1e40af; border:1px solid #bfdbfe; }
+    .status-closed     { background:#f3f4f6; color:#374151; border:1px solid #d1d5db; }
+    .status-cancelled  { background:#fed7aa; color:#9a3412; border:1px solid #fdba74; }
+    .level-tl   { background:#fdf4ff; color:#6b21a8; border:1px solid #e9d5ff; }
+    .level-pm   { background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; }
+    .level-md   { background:#fff7ed; color:#9a3412; border:1px solid #fed7aa; }
+    .spinning { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .fade-in { animation: fadeIn .35s ease-in-out; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+    ::-webkit-scrollbar { width:5px; height:5px; }
+    ::-webkit-scrollbar-track { background:#f1f5f9; }
+    ::-webkit-scrollbar-thumb { background:#94a3b8; border-radius:9999px; }
+    #fpr-table tbody tr:hover { background:#f8fafc; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+
+<!-- ════════════════════════════════════════════════════════════════
+     LOGIN OVERLAY — shown until user is authenticated
+     ════════════════════════════════════════════════════════════════ -->
+<div id="login-overlay"
+     class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm hidden">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 fade-in overflow-hidden">
+
+    <!-- Brand header -->
+    <div class="bg-gradient-to-r from-blue-700 to-blue-900 px-8 py-6">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-lg font-bold text-white">Monolith FPR</h2>
+          <p class="text-xs text-blue-200">Field Purchase Request Dashboard</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="px-8 py-6 space-y-5">
+
+      <!-- ── Connection settings (collapsed when already stored) ── -->
+      <div>
+        <button onclick="toggleConnFields()"
+          class="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 mb-2">
+          <svg id="conn-chevron" class="w-3 h-3 transition-transform rotate-90"
+            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+          <span id="conn-toggle-label">การตั้งค่าการเชื่อมต่อ</span>
+        </button>
+        <div id="conn-fields" class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">
+              Supabase URL <span class="text-red-500">*</span>
+            </label>
+            <input id="cfg-url" type="url" placeholder="https://xxxx.supabase.co"
+              class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">
+              Anon Key <span class="text-red-500">*</span>
+              <span class="text-slate-400 font-normal">(public key for API calls)</span>
+            </label>
+            <input id="cfg-anon-key" type="text"
+              placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+              class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <button onclick="saveConn()"
+            class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold py-2 rounded-lg transition-colors">
+            บันทึกการเชื่อมต่อ
+          </button>
+        </div>
+      </div>
+
+      <div class="border-t border-slate-100 -mx-8"></div>
+
+      <!-- ── Login form ── -->
+      <div class="space-y-3">
+        <p class="text-xs font-semibold text-slate-600">เข้าสู่ระบบด้วยอีเมล</p>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">อีเมล <span class="text-red-500">*</span></label>
+          <input id="login-email" type="email" placeholder="you@example.com"
+            autocomplete="email"
+            class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onkeydown="if(event.key==='Enter')document.getElementById('login-password').focus()" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">รหัสผ่าน <span class="text-red-500">*</span></label>
+          <input id="login-password" type="password" placeholder="••••••••"
+            autocomplete="current-password"
+            class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onkeydown="if(event.key==='Enter')doLogin()" />
+        </div>
+      </div>
+
+      <div id="login-error" class="hidden text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2"></div>
+
+      <button id="login-btn" onclick="doLogin()"
+        class="w-full bg-blue-700 hover:bg-blue-800 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2">
+        <svg id="login-spinner" class="w-4 h-4 spinning hidden"
+          fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        <span id="login-btn-text">เข้าสู่ระบบ</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     MAIN LAYOUT
+     ════════════════════════════════════════════════════════════════ -->
+<div id="main-content" class="hidden">
+
+  <!-- ── Header ── -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-blue-700 flex items-center justify-center shrink-0">
+          <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+          </svg>
+        </div>
+        <div>
+          <span class="text-sm font-bold text-slate-800">Monolith</span>
+          <span class="text-sm text-slate-400 ml-1.5">/ FPR Dashboard</span>
+        </div>
+        <span class="hidden sm:inline text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-2.5 py-0.5 font-medium ml-2">
+          Field Purchase Request
+        </span>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <!-- Refresh countdown -->
+        <div class="hidden sm:flex items-center gap-1.5 text-xs text-slate-400">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span>รีเฟรชใน <span id="countdown" class="font-semibold text-slate-600">60</span>s</span>
+        </div>
+
+        <!-- Last updated -->
+        <div class="hidden md:block text-xs text-slate-400">
+          อัปเดต: <span id="last-updated" class="text-slate-600">—</span>
+        </div>
+
+        <!-- Manual refresh button -->
+        <button onclick="loadDashboard()"
+          class="flex items-center gap-1.5 text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium px-3 py-1.5 rounded-lg transition-colors">
+          <svg id="refresh-icon" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          รีเฟรช
+        </button>
+
+        <!-- User info + logout -->
+        <div class="flex items-center gap-2 border-l border-slate-200 pl-3 ml-1">
+          <span id="header-user-email"
+            class="hidden sm:inline text-xs text-slate-500 max-w-[140px] truncate"></span>
+          <button onclick="doLogout()" title="ออกจากระบบ"
+            class="flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-600 border border-slate-200 hover:border-red-300 bg-white hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition-colors">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+            </svg>
+            <span>ออก</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Filter Bar ── -->
+  <div class="bg-white border-b border-slate-100">
+    <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center gap-3">
+      <div class="flex items-center gap-2">
+        <label class="text-xs font-medium text-slate-500">กรองสถานะ:</label>
+        <select id="filter-status"
+          onchange="applyFilters()"
+          class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+          <option value="">ทั้งหมด</option>
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+          <option value="purchased">Purchased</option>
+          <option value="closed">Closed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div class="flex items-center gap-2">
+        <label class="text-xs font-medium text-slate-500">Site:</label>
+        <select id="filter-site"
+          onchange="applyFilters()"
+          class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+          <option value="">ทั้งหมด</option>
+        </select>
+      </div>
+      <div class="flex items-center gap-2">
+        <label class="text-xs font-medium text-slate-500">ระดับอนุมัติ:</label>
+        <select id="filter-level"
+          onchange="applyFilters()"
+          class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+          <option value="">ทั้งหมด</option>
+          <option value="team_lead">Team Lead</option>
+          <option value="project_manager">Project Manager</option>
+          <option value="managing_director">Managing Director</option>
+        </select>
+      </div>
+      <div class="flex-1 min-w-[180px]">
+        <input id="filter-search" type="text" placeholder="ค้นหาเหตุผล / ผู้ขอ / site..."
+          oninput="applyFilters()"
+          class="w-full text-xs border border-slate-200 rounded-lg px-3 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+      <!-- Date range filter -->
+      <div class="flex items-center gap-2">
+        <label class="text-xs font-medium text-slate-500">จากวันที่:</label>
+        <input id="filter-date-from" type="date"
+          oninput="applyFilters()"
+          class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
+      </div>
+      <div class="flex items-center gap-2">
+        <label class="text-xs font-medium text-slate-500">ถึงวันที่:</label>
+        <input id="filter-date-to" type="date"
+          oninput="applyFilters()"
+          class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
+      </div>
+      <div id="filter-count" class="text-xs text-slate-400 whitespace-nowrap"></div>
+    </div>
+  </div>
+
+  <!-- ── Body ── -->
+  <main class="max-w-screen-2xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+    <!-- Error banner -->
+    <div id="error-banner" class="hidden bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm flex items-start gap-3">
+      <svg class="w-4 h-4 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <span id="error-text"></span>
+    </div>
+
+    <!-- ── Stat cards ── -->
+    <section id="stats-section" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+      <!-- Total -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 lg:col-span-1">
+        <p class="text-xs font-medium text-slate-500">คำขอทั้งหมด</p>
+        <p id="stat-total" class="text-2xl font-bold text-slate-800 mt-1">—</p>
+        <p class="text-xs text-slate-400 mt-0.5">Total FPRs</p>
+      </div>
+      <!-- Total amount -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 lg:col-span-1">
+        <p class="text-xs font-medium text-slate-500">มูลค่ารวม</p>
+        <p id="stat-amount" class="text-2xl font-bold text-slate-800 mt-1">—</p>
+        <p class="text-xs text-slate-400 mt-0.5">Total Amount (฿)</p>
+      </div>
+      <!-- Pending -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 cursor-pointer hover:shadow transition-shadow"
+           onclick="quickFilter('status','pending')">
+        <div class="flex items-center justify-between mb-1">
+          <p class="text-xs font-medium text-slate-500">Pending</p>
+          <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+        </div>
+        <p id="stat-pending" class="text-2xl font-bold text-yellow-700 mt-1">—</p>
+        <p class="text-xs text-slate-400 mt-0.5">รอดำเนินการ</p>
+      </div>
+      <!-- Approved -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 cursor-pointer hover:shadow transition-shadow"
+           onclick="quickFilter('status','approved')">
+        <div class="flex items-center justify-between mb-1">
+          <p class="text-xs font-medium text-slate-500">Approved</p>
+          <span class="w-2 h-2 rounded-full bg-green-400"></span>
+        </div>
+        <p id="stat-approved" class="text-2xl font-bold text-green-700 mt-1">—</p>
+        <p class="text-xs text-slate-400 mt-0.5">อนุมัติแล้ว</p>
+      </div>
+      <!-- Rejected -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 cursor-pointer hover:shadow transition-shadow"
+           onclick="quickFilter('status','rejected')">
+        <div class="flex items-center justify-between mb-1">
+          <p class="text-xs font-medium text-slate-500">Rejected</p>
+          <span class="w-2 h-2 rounded-full bg-red-400"></span>
+        </div>
+        <p id="stat-rejected" class="text-2xl font-bold text-red-700 mt-1">—</p>
+        <p class="text-xs text-slate-400 mt-0.5">ปฏิเสธ</p>
+      </div>
+      <!-- Purchased -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 cursor-pointer hover:shadow transition-shadow"
+           onclick="quickFilter('status','purchased')">
+        <div class="flex items-center justify-between mb-1">
+          <p class="text-xs font-medium text-slate-500">Purchased</p>
+          <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+        </div>
+        <p id="stat-purchased" class="text-2xl font-bold text-blue-700 mt-1">—</p>
+        <p class="text-xs text-slate-400 mt-0.5">ซื้อแล้ว</p>
+      </div>
+      <!-- Closed -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 cursor-pointer hover:shadow transition-shadow"
+           onclick="quickFilter('status','closed')">
+        <div class="flex items-center justify-between mb-1">
+          <p class="text-xs font-medium text-slate-500">Closed</p>
+          <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+        </div>
+        <p id="stat-closed" class="text-2xl font-bold text-slate-600 mt-1">—</p>
+        <p class="text-xs text-slate-400 mt-0.5">ปิดแล้ว</p>
+      </div>
+      <!-- Cancelled -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 cursor-pointer hover:shadow transition-shadow"
+           onclick="quickFilter('status','cancelled')">
+        <div class="flex items-center justify-between mb-1">
+          <p class="text-xs font-medium text-slate-500">Cancelled</p>
+          <span class="w-2 h-2 rounded-full bg-orange-400"></span>
+        </div>
+        <p id="stat-cancelled" class="text-2xl font-bold text-orange-700 mt-1">—</p>
+        <p class="text-xs text-slate-400 mt-0.5">ยกเลิกแล้ว</p>
+      </div>
+    </section>
+
+    <!-- ── Chart + Top Sites ── -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <!-- Donut chart -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col">
+        <h3 class="text-sm font-semibold text-slate-700 mb-4">สัดส่วนสถานะ</h3>
+        <div class="flex-1 flex items-center justify-center" style="min-height:200px; max-height:240px;">
+          <canvas id="status-chart"></canvas>
+        </div>
+      </div>
+
+      <!-- Top sites by amount -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 lg:col-span-2">
+        <h3 class="text-sm font-semibold text-slate-700 mb-4">มูลค่าสูงสุดตาม Site (Top 8)</h3>
+        <div id="site-bars" class="space-y-2.5">
+          <div class="text-xs text-slate-400">กำลังโหลด...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Daily Trend Chart ── -->
+    <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <h3 class="text-sm font-semibold text-slate-700">แนวโน้มรายวัน (จำนวน FPR)</h3>
+        <span class="text-xs text-slate-400" id="trend-chart-range"></span>
+      </div>
+      <div style="position:relative; height:220px;">
+        <canvas id="trend-chart"></canvas>
+      </div>
+    </section>
+
+    <!-- ── Approval Queue Panel ── -->
+    <section id="approval-queue-section" class="bg-white rounded-xl border border-amber-100 shadow-sm overflow-hidden mb-4">
+      <div class="flex flex-wrap items-center gap-3 px-5 py-4 border-b border-amber-50">
+        <h3 class="text-sm font-semibold text-slate-700 flex items-center gap-2 flex-1 min-w-0">
+          <svg class="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          คิวรออนุมัติ (ของฉัน)
+          <span id="queue-count-badge"
+            class="hidden ml-1 px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-bold leading-none"></span>
+        </h3>
+        <!-- Site filter dropdown — populated after first load -->
+        <select id="queue-site-filter"
+          onchange="loadApprovalQueue(getConfig())"
+          class="text-xs border border-amber-200 bg-amber-50 text-amber-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-300 cursor-pointer">
+          <option value="">ทุก Site</option>
+        </select>
+        <button onclick="loadApprovalQueue(getConfig())"
+          class="text-xs bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 px-3 py-1.5 rounded-lg font-medium transition-colors">
+          รีเฟรช
+        </button>
+        <button id="btn-retry-line" onclick="doRetryLineNotifications()"
+          class="text-xs bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 px-3 py-1.5 rounded-lg font-medium transition-colors">
+          ↺ Retry LINE
+        </button>
+      </div>
+      <div id="approval-queue-body" class="p-4 space-y-3">
+        <div class="text-xs text-slate-400">กำลังโหลดคิวอนุมัติ...</div>
+      </div>
+    </section>
+
+    <!-- ── Dead-Letter Panel ── -->
+    <section id="dead-letter-section" class="bg-white rounded-xl border border-red-200 shadow-sm overflow-hidden mb-4">
+      <div class="flex flex-wrap items-center gap-3 px-5 py-4 border-b border-red-100 bg-red-50">
+        <!-- Icon -->
+        <svg class="w-4 h-4 text-red-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+        </svg>
+        <h3 class="text-sm font-semibold text-red-700 flex items-center gap-2 flex-1 min-w-0">
+          LINE Dead-Letter Messages
+          <span id="dl-count-badge"
+            class="hidden ml-1 px-1.5 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-bold leading-none"></span>
+        </h3>
+        <!-- Site filter -->
+        <select id="dl-site-filter"
+          onchange="loadDeadLetterPanel(getConfig())"
+          class="text-xs border border-red-200 bg-white text-red-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-red-300 cursor-pointer">
+          <option value="">ทุก Site</option>
+        </select>
+        <button onclick="loadDeadLetterPanel(getConfig())"
+          class="text-xs bg-white hover:bg-red-50 border border-red-200 text-red-700 px-3 py-1.5 rounded-lg font-medium transition-colors">
+          รีเฟรช
+        </button>
+        <a id="dl-help-link" href="#"
+          onclick="event.preventDefault(); document.getElementById('dl-help-note').classList.toggle('hidden')"
+          class="text-xs text-red-400 hover:text-red-600 underline ml-auto">คืออะไร?</a>
+      </div>
+      <div id="dl-help-note" class="hidden px-5 py-3 text-xs text-red-600 bg-red-50 border-b border-red-100">
+        Dead-letter messages คือ LINE notifications ที่ส่งไม่สำเร็จ ≥ 3 ครั้ง (retried_count ≥ 3) และถูกตั้งสถานะเป็น
+        <code class="bg-red-100 px-1 rounded">dead</code>. ต้อง reset ด้วยตรง DB หรือ
+        รอ fix ที่ต้นเหตุ (LINE token / template ผิด) แล้วรัน SQL:
+        <code class="bg-red-100 px-1 rounded">UPDATE line_oa_outbound_messages SET status='pending', retried_count=0 WHERE status='dead';</code>
+      </div>
+      <div id="dead-letter-body" class="overflow-x-auto">
+        <div class="text-xs text-slate-400 px-5 py-4 animate-pulse">กำลังโหลด dead-letter messages...</div>
+      </div>
+    </section>
+
+    <!-- ── Data table ── -->
+    <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <h3 class="text-sm font-semibold text-slate-700">
+          รายการคำขอ
+          <span id="table-subtitle" class="font-normal text-slate-400 text-xs ml-1.5"></span>
+        </h3>
+        <div class="flex items-center gap-2">
+          <span id="table-count" class="text-xs text-slate-400"></span>
+          <button onclick="exportCsv()"
+            class="text-xs bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg font-medium transition-colors">
+            ส่งออก CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- Bulk-action toolbar (hidden until rows are selected) -->
+      <div id="bulk-toolbar" class="hidden items-center gap-3 px-5 py-3 bg-blue-50 border-b border-blue-100">
+        <span id="bulk-selected-label" class="text-xs font-semibold text-blue-700">0 รายการที่เลือก</span>
+        <div class="flex items-center gap-2 ml-auto">
+          <button onclick="doBulkClose()"
+            class="text-xs bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-medium transition-colors">
+            ปิด (Bulk Close)
+          </button>
+          <button onclick="doBulkReopen()"
+            class="text-xs bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-medium transition-colors">
+            เปิดใหม่ (Bulk Reopen)
+          </button>
+          <button onclick="doBulkApprove()"
+            class="text-xs bg-green-50 hover:bg-green-100 border border-green-200 text-green-700 px-3 py-1.5 rounded-lg font-medium transition-colors">
+            อนุมัติ (Bulk Approve)
+          </button>
+          <button onclick="doBulkReject()"
+            class="text-xs bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 px-3 py-1.5 rounded-lg font-medium transition-colors">
+            ปฏิเสธ (Bulk Reject)
+          </button>
+          <button onclick="doBulkCancel()"
+            class="text-xs bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 px-3 py-1.5 rounded-lg font-medium transition-colors">
+            ยกเลิก (Bulk Cancel)
+          </button>
+          <button onclick="doBulkUncancel()"
+            class="text-xs bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 px-3 py-1.5 rounded-lg font-medium transition-colors">
+            คืนสถานะ (Uncancel)
+          </button>
+          <button onclick="openForceCloseModal()"
+            class="text-xs bg-red-700 hover:bg-red-800 border border-red-800 text-white px-3 py-1.5 rounded-lg font-medium transition-colors">
+            บังคับปิด (Force Close)
+          </button>
+          <button onclick="clearSelection()"
+            class="text-xs text-slate-400 hover:text-slate-600 px-2 py-1.5 transition-colors">
+            ยกเลิกการเลือก
+          </button>
+        </div>
+      </div>
+
+      <!-- Skeleton loader -->
+      <div id="table-skeleton" class="p-5 space-y-3">
+        <div class="h-4 bg-slate-100 rounded animate-pulse w-full"></div>
+        <div class="h-4 bg-slate-100 rounded animate-pulse w-5/6"></div>
+        <div class="h-4 bg-slate-100 rounded animate-pulse w-4/6"></div>
+        <div class="h-4 bg-slate-100 rounded animate-pulse w-full"></div>
+        <div class="h-4 bg-slate-100 rounded animate-pulse w-3/4"></div>
+      </div>
+
+      <!-- Table -->
+      <div id="table-wrap" class="hidden overflow-x-auto">
+        <table id="fpr-table" class="w-full text-xs">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-100 text-left">
+              <th class="px-4 py-3 w-8">
+                <input type="checkbox" id="select-all-cb"
+                  onchange="toggleSelectAll(this.checked)"
+                  class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  title="เลือกทั้งหมด">
+              </th>
+              <th class="px-4 py-3 font-semibold text-slate-500 whitespace-nowrap">#</th>
+              <th class="px-4 py-3 font-semibold text-slate-500 whitespace-nowrap cursor-pointer hover:text-blue-600"
+                  onclick="sortBy('site_code')">Site ▾</th>
+              <th class="px-4 py-3 font-semibold text-slate-500 whitespace-nowrap">ผู้ขอ</th>
+              <th class="px-4 py-3 font-semibold text-slate-500 whitespace-nowrap">รายละเอียด</th>
+              <th class="px-4 py-3 font-semibold text-slate-500 whitespace-nowrap cursor-pointer hover:text-blue-600 text-right"
+                  onclick="sortBy('amount')">จำนวน (฿) ▾</th>
+              <th class="px-4 py-3 font-semibold text-slate-500 whitespace-nowrap">สถานะ</th>
+              <th class="px-4 py-3 font-semibold text-slate-500 whitespace-nowrap">ระดับอนุมัติ</th>
+              <th class="px-4 py-3 font-semibold text-slate-500 whitespace-nowrap cursor-pointer hover:text-blue-600 text-right"
+                  onclick="sortBy('age_days')">อายุ (วัน) ▾</th>
+              <th class="px-4 py-3 font-semibold text-slate-500 whitespace-nowrap cursor-pointer hover:text-blue-600"
+                  onclick="sortBy('created_at')">วันที่สร้าง ▾</th>
+            </tr>
+          </thead>
+          <tbody id="fpr-tbody" class="divide-y divide-slate-50"></tbody>
+        </table>
+        <div id="no-rows" class="hidden text-center py-12 text-sm text-slate-400">
+          ไม่พบรายการที่ตรงกับเงื่อนไข
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ── Footer ── -->
+  <footer class="border-t border-slate-200 bg-white mt-6">
+    <div class="max-w-screen-2xl mx-auto px-6 py-3 flex items-center justify-between text-xs text-slate-400">
+      <span>Monolith Manufacturing OS — FPR Dashboard v1.0</span>
+      <span>v_field_purchase_request_summary · Migration 0184</span>
+    </div>
+  </footer>
+
+</div><!-- /main-content -->
+
+<!-- ════════════════════════════════════════════════════════════════
+     SCRIPT
+     ════════════════════════════════════════════════════════════════ -->
+<script>
+// ─── Auth & Config ───────────────────────────────────────────────────────────
+// Connection (URL + anon key) persists in localStorage across sessions.
+// Auth session (access_token + user email) lives in sessionStorage only.
+const CONN_KEY    = 'monolith_fpr_conn';     // localStorage: { url, anonKey }
+const SESSION_KEY = 'monolith_fpr_session';  // sessionStorage: { jwt, email }
+
+function getConn() {
+  try { return JSON.parse(localStorage.getItem(CONN_KEY) || 'null'); }
+  catch { return null; }
+}
+function getConfig() {
+  // Returns combined { url, jwt (access_token), anonKey, email } or null
+  const conn = getConn();
+  const sess = (() => {
+    try { return JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null'); }
+    catch { return null; }
+  })();
+  if (!conn || !sess) return null;
+  return { url: conn.url, anonKey: conn.anonKey, jwt: sess.jwt, email: sess.email };
+}
+
+// Persist connection settings (URL + anon key) to localStorage
+function saveConn() {
+  const url     = document.getElementById('cfg-url').value.trim().replace(/\/$/, '');
+  const anonKey = document.getElementById('cfg-anon-key').value.trim();
+  if (!url || !anonKey) {
+    showLoginError('กรุณากรอก Supabase URL และ Anon Key');
+    return;
+  }
+  if (!url.startsWith('http')) {
+    showLoginError('URL ต้องเริ่มด้วย http:// หรือ https://');
+    return;
+  }
+  localStorage.setItem(CONN_KEY, JSON.stringify({ url, anonKey }));
+  // Auto-collapse connection fields after saving
+  document.getElementById('conn-fields').classList.add('hidden');
+  document.getElementById('conn-chevron').classList.remove('rotate-90');
+  document.getElementById('conn-toggle-label').textContent = 'การตั้งค่าการเชื่อมต่อ ✓';
+  hideLoginError();
+}
+
+function toggleConnFields() {
+  const fields  = document.getElementById('conn-fields');
+  const chevron = document.getElementById('conn-chevron');
+  const isHidden = fields.classList.contains('hidden');
+  fields.classList.toggle('hidden');
+  chevron.classList.toggle('rotate-90', isHidden);
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('login-error');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+function hideLoginError() {
+  document.getElementById('login-error').classList.add('hidden');
+}
+
+async function doLogin() {
+  hideLoginError();
+  const conn = getConn();
+  if (!conn) {
+    showLoginError('กรุณาตั้งค่า Supabase URL และ Anon Key ก่อน');
+    // Auto-expand connection fields
+    document.getElementById('conn-fields').classList.remove('hidden');
+    document.getElementById('conn-chevron').classList.add('rotate-90');
+    return;
+  }
+
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) {
+    showLoginError('กรุณากรอกอีเมลและรหัสผ่าน');
+    return;
+  }
+
+  // Show spinner
+  const btn     = document.getElementById('login-btn');
+  const spinner = document.getElementById('login-spinner');
+  const btnText = document.getElementById('login-btn-text');
+  btn.disabled  = true;
+  spinner.classList.remove('hidden');
+  btnText.textContent = 'กำลังเข้าสู่ระบบ...';
+
+  try {
+    const res = await fetch(
+      `${conn.url}/auth/v1/token?grant_type=password`,
+      {
+        method:  'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': conn.anonKey,
+        },
+        body: JSON.stringify({ email, password }),
+      }
+    );
+    const data = await res.json();
+    if (!res.ok || !data.access_token) {
+      const msg = data?.error_description || data?.msg || data?.message || 'เข้าสู่ระบบไม่สำเร็จ';
+      showLoginError(msg);
+      return;
+    }
+
+    // Store session
+    const userEmail = data.user?.email || email;
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+      jwt:   data.access_token,
+      email: userEmail,
+    }));
+
+    // Update header and show dashboard
+    updateHeaderUser(userEmail);
+    document.getElementById('login-overlay').classList.add('hidden');
+    document.getElementById('main-content').classList.remove('hidden');
+    loadDashboard();
+    initRealtime(getConfig());
+  } catch (e) {
+    showLoginError('เชื่อมต่อ Supabase ไม่ได้: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    spinner.classList.add('hidden');
+    btnText.textContent = 'เข้าสู่ระบบ';
+  }
+}
+
+function doLogout() {
+  teardownRealtime();
+  sessionStorage.removeItem(SESSION_KEY);
+  document.getElementById('main-content').classList.add('hidden');
+  // Pre-fill connection fields
+  const conn = getConn() || {};
+  document.getElementById('cfg-url').value = conn.url || '';
+  document.getElementById('cfg-anon-key').value = conn.anonKey || '';
+  // Reset login form
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-password').value = '';
+  hideLoginError();
+  document.getElementById('login-overlay').classList.remove('hidden');
+}
+
+function updateHeaderUser(email) {
+  const el = document.getElementById('header-user-email');
+  if (el) el.textContent = email || '';
+}
+
+// ─── Data ────────────────────────────────────────────────────────────────────
+let allRows = [];        // raw rows from view
+let filteredRows = [];   // after applyFilters()
+let sortField = 'created_at';
+let sortDir = 'desc';
+let statusChart = null;
+let countdownVal = 60;
+let countdownTimer = null;
+
+// ─── Fetch ───────────────────────────────────────────────────────────────────
+async function fetchSummary() {
+  const cfg = getConfig();
+  if (!cfg) return null;
+
+  const res = await fetch(
+    `${cfg.url}/rest/v1/v_field_purchase_request_summary?select=request_id,site_code,requester,reason,item_hint,amount,status,approval_level,approver,created_at,updated_at,age_days,journal_entry_id&order=created_at.desc&limit=500`,
+    {
+      headers: {
+        'apikey': cfg.anonKey,         // public anon key for PostgREST access
+        'Authorization': `Bearer ${cfg.jwt}`, // user access_token for RLS
+        'Accept': 'application/json',
+      }
+    }
+  );
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`HTTP ${res.status}: ${txt.substring(0, 200)}`);
+  }
+  return res.json();
+}
+
+// ─── Load ─────────────────────────────────────────────────────────────────────
+// ─── Approval Queue ──────────────────────────────────────────────────────────
+const LEVEL_LABEL_Q = { team_lead: 'Team Lead', project_manager: 'Project Manager', managing_director: 'MD' };
+const LEVEL_COLOR_Q = { team_lead: '#6b21a8', project_manager: '#1d4ed8', managing_director: '#9a3412' };
+
+// ─── Queue site filter population ────────────────────────────────────────────
+function _populateQueueSiteFilter(rows, currentSelection) {
+  const sel = document.getElementById('queue-site-filter');
+  if (!sel) return;
+  // Collect distinct site_codes from the FULL queue (unfiltered call supplies all)
+  const sites = [...new Set((Array.isArray(rows) ? rows : []).map(r => r.site_code).filter(Boolean))].sort();
+  // Rebuild options; preserve current selection if still valid
+  const prevVal = currentSelection || sel.value || '';
+  sel.innerHTML = '<option value="">ทุก Site</option>';
+  for (const s of sites) {
+    const opt = document.createElement('option');
+    opt.value = s;
+    opt.textContent = s;
+    if (s === prevVal) opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
+async function loadApprovalQueue(cfg) {
+  if (!cfg) return;
+  const body = document.getElementById('approval-queue-body');
+  if (!body) return;
+  body.innerHTML = '<div class="text-xs text-slate-400 animate-pulse">กำลังโหลด...</div>';
+
+  // Read site filter (empty string = "all sites" → pass null to RPC)
+  const siteFilter = document.getElementById('queue-site-filter')?.value || null;
+
+  try {
+    const res = await fetch(`${cfg.url}/rest/v1/rpc/rpc_get_fpr_approval_queue`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': cfg.anonKey,
+        'Authorization': `Bearer ${cfg.jwt}`,
+      },
+      body: JSON.stringify({ p_site_code: siteFilter }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const rows = await res.json();
+
+    // Update count badge
+    const badge = document.getElementById('queue-count-badge');
+    if (badge) {
+      if (Array.isArray(rows) && rows.length > 0) {
+        badge.textContent = String(rows.length);
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    // Populate site filter dropdown (preserve current selection)
+    _populateQueueSiteFilter(rows, siteFilter);
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      body.innerHTML = `<div class="flex flex-col items-center py-8 text-slate-400">
+        <svg class="w-10 h-10 mb-2 text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+        <span class="text-xs">ไม่มีรายการรออนุมัติ</span>
+      </div>`;
+      return;
+    }
+
+    const _queueIds = rows.map(r => r.request_id);
+    const serverNotifMap = await fetchNotifStatuses(cfg, _queueIds);
+
+    body.innerHTML = rows.map(r => {
+      const amt = parseFloat(r.amount || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 });
+      const lvlLabel = LEVEL_LABEL_Q[r.approval_level] || r.approval_level;
+      const lvlColor = LEVEL_COLOR_Q[r.approval_level] || '#374151';
+      const ageMin = r.age_minutes != null ? `${r.age_minutes} นาที` : '—';
+      const sNotifHtml = serverNotifBadgeHtml(serverNotifMap.get(r.request_id));
+      return `<div class="border border-slate-100 rounded-xl p-4 bg-slate-50 fade-in" id="qcard-${r.request_id}">
+        <div class="flex items-start justify-between gap-3 mb-3">
+          <div class="min-w-0">
+            <div class="text-xs font-semibold text-slate-700 truncate">${r.reason || '—'}</div>
+            <div class="text-xs text-slate-400 mt-0.5">${r.site_code} · ${r.requester || '—'} · ${ageMin}</div>
+          </div>
+          <div class="flex-shrink-0 flex flex-col items-end gap-1">
+            <span class="text-sm font-bold text-slate-800 tabular-nums">฿${amt}</span>
+            <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background:${lvlColor}20;color:${lvlColor}">
+              ${lvlLabel}
+            </span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2" id="qcard-actions-${r.request_id}">
+          <button onclick="approveRequest('${r.request_id}', getConfig())"
+            class="flex-1 text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg font-semibold transition-colors">
+            อนุมัติ
+          </button>
+          <button onclick="showRejectInput('${r.request_id}')"
+            class="flex-1 text-xs bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 px-3 py-1.5 rounded-lg font-semibold transition-colors">
+            ปฏิเสธ
+          </button>
+        </div>
+        <div id="qcard-reject-${r.request_id}" class="hidden mt-2">
+          <textarea id="qcard-note-${r.request_id}" rows="2"
+            placeholder="เหตุผลในการปฏิเสธ..."
+            class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-300 resize-none"></textarea>
+          <div class="flex gap-2 mt-1.5">
+            <button onclick="rejectRequest('${r.request_id}', getConfig())"
+              class="flex-1 text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-semibold transition-colors">
+              ยืนยันปฏิเสธ
+            </button>
+            <button onclick="document.getElementById('qcard-reject-${r.request_id}').classList.add('hidden')"
+              class="text-xs text-slate-500 hover:text-slate-700 px-3 py-1.5 rounded-lg transition-colors">
+              ยกเลิก
+            </button>
+          </div>
+        </div>
+        <div id="qcard-notif-${r.request_id}" class="mt-2 text-xs px-1${sNotifHtml ? '' : ' hidden'}">${sNotifHtml}</div>
+      </div>`;
+    }).join('');
+    // restore notification badges for any requests already processed this session
+    notifiedIds.forEach((state, rid) => updateNotifBadge(rid, state.ok, state.detail));
+  } catch (e) {
+    body.innerHTML = `<div class="text-xs text-red-500 px-1">โหลดคิวอนุมัติไม่สำเร็จ: ${e.message}</div>`;
+    console.error('loadApprovalQueue:', e);
+  }
+}
+
+function showRejectInput(requestId) {
+  const el = document.getElementById(`qcard-reject-${requestId}`);
+  if (el) el.classList.toggle('hidden');
+}
+
+async function approveRequest(requestId, cfg) {
+  if (!cfg) return;
+  const card = document.getElementById(`qcard-${requestId}`);
+  if (!card) return;
+  const actionsEl = document.getElementById(`qcard-actions-${requestId}`);
+  if (actionsEl) actionsEl.innerHTML = '<span class="text-xs text-slate-400 animate-pulse">กำลังอนุมัติ...</span>';
+  try {
+    const res = await fetch(`${cfg.url}/rest/v1/rpc/rpc_handle_fpr_postback`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': cfg.anonKey,
+        'Authorization': `Bearer ${cfg.jwt}`,
+      },
+      body: JSON.stringify({
+        p_action: 'fpr_approve',
+        p_line_user_id: null,
+        p_group_id: null,
+        p_reply_token: null,
+        p_params: { request_id: requestId },
+        p_actor: cfg.email,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.message || `HTTP ${res.status}`);
+    card.innerHTML = `<div class="flex items-center gap-2 py-2 px-3 bg-green-50 rounded-xl border border-green-100">
+      <svg class="w-4 h-4 text-green-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+      </svg>
+      <span class="text-xs text-green-700 font-semibold">อนุมัติสำเร็จ</span>
+    </div>`;
+    setTimeout(() => { card.remove(); }, 2000);
+  } catch (e) {
+    if (actionsEl) actionsEl.innerHTML = `<span class="text-xs text-red-500">ผิดพลาด: ${e.message}</span>`;
+    console.error('approveRequest:', e);
+  }
+}
+
+async function rejectRequest(requestId, cfg) {
+  if (!cfg) return;
+  const noteEl = document.getElementById(`qcard-note-${requestId}`);
+  const note = noteEl ? noteEl.value.trim() : '';
+  const card = document.getElementById(`qcard-${requestId}`);
+  if (!card) return;
+  const actionsEl = document.getElementById(`qcard-actions-${requestId}`);
+  if (actionsEl) actionsEl.innerHTML = '<span class="text-xs text-slate-400 animate-pulse">กำลังปฏิเสธ...</span>';
+  try {
+    const res = await fetch(`${cfg.url}/rest/v1/rpc/rpc_handle_fpr_postback`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': cfg.anonKey,
+        'Authorization': `Bearer ${cfg.jwt}`,
+      },
+      body: JSON.stringify({
+        p_action: 'fpr_reject_note',
+        p_line_user_id: null,
+        p_group_id: null,
+        p_reply_token: null,
+        p_params: { request_id: requestId, note },
+        p_actor: cfg.email,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.message || `HTTP ${res.status}`);
+    card.innerHTML = `<div class="flex items-center gap-2 py-2 px-3 bg-red-50 rounded-xl border border-red-100">
+      <svg class="w-4 h-4 text-red-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+      <span class="text-xs text-red-700 font-semibold">ปฏิเสธสำเร็จ</span>
+    </div>`;
+    setTimeout(() => { card.remove(); }, 2000);
+  } catch (e) {
+    if (actionsEl) actionsEl.innerHTML = `<span class="text-xs text-red-500">ผิดพลาด: ${e.message}</span>`;
+    console.error('rejectRequest:', e);
+  }
+}
+
+async function loadDashboard() {
+  const icon = document.getElementById('refresh-icon');
+  icon.classList.add('spinning');
+  document.getElementById('error-banner').classList.add('hidden');
+
+  // Reset countdown
+  clearInterval(countdownTimer);
+  countdownVal = 60;
+  document.getElementById('countdown').textContent = '60';
+  countdownTimer = setInterval(() => {
+    countdownVal--;
+    document.getElementById('countdown').textContent = countdownVal;
+    if (countdownVal <= 0) { loadDashboard(); }
+  }, 1000);
+
+  try {
+    const rows = await fetchSummary();
+    allRows = rows || [];
+    populateSiteFilter(allRows);
+    applyFilters();
+    renderStats(allRows);
+    renderChart(allRows);
+    renderSiteBars(allRows);
+    renderTrendChart(allRows);
+    loadApprovalQueue(getConfig());
+    loadDeadLetterPanel(getConfig());
+    document.getElementById('last-updated').textContent = new Date().toLocaleTimeString('th-TH');
+    document.getElementById('table-skeleton').classList.add('hidden');
+    document.getElementById('table-wrap').classList.remove('hidden');
+  } catch (e) {
+    document.getElementById('error-text').textContent = `โหลดข้อมูลไม่สำเร็จ: ${e.message}`;
+    document.getElementById('error-banner').classList.remove('hidden');
+    console.error(e);
+  } finally {
+    icon.classList.remove('spinning');
+  }
+}
+
+// ─── Stats ────────────────────────────────────────────────────────────────────
+function renderStats(rows) {
+  const counts = { pending:0, approved:0, rejected:0, purchased:0, closed:0, cancelled:0 };
+  let totalAmt = 0;
+  for (const r of rows) {
+    if (counts[r.status] !== undefined) counts[r.status]++;
+    totalAmt += parseFloat(r.amount || 0);
+  }
+  document.getElementById('stat-total').textContent    = rows.length.toLocaleString();
+  document.getElementById('stat-amount').textContent   = '฿' + totalAmt.toLocaleString('th-TH', { maximumFractionDigits: 0 });
+  document.getElementById('stat-pending').textContent   = counts.pending;
+  document.getElementById('stat-approved').textContent  = counts.approved;
+  document.getElementById('stat-rejected').textContent  = counts.rejected;
+  document.getElementById('stat-purchased').textContent = counts.purchased;
+  document.getElementById('stat-closed').textContent    = counts.closed;
+  document.getElementById('stat-cancelled').textContent = counts.cancelled;
+}
+
+// ─── Chart ───────────────────────────────────────────────────────────────────
+function renderChart(rows) {
+  const counts = { pending:0, approved:0, rejected:0, purchased:0, closed:0, cancelled:0 };
+  for (const r of rows) if (counts[r.status] !== undefined) counts[r.status]++;
+
+  const labels = ['Pending', 'Approved', 'Rejected', 'Purchased', 'Closed', 'Cancelled'];
+  const data   = [counts.pending, counts.approved, counts.rejected, counts.purchased, counts.closed, counts.cancelled];
+  const colors = ['#facc15','#4ade80','#f87171','#60a5fa','#94a3b8','#fb923c'];
+
+  const ctx = document.getElementById('status-chart').getContext('2d');
+  if (statusChart) statusChart.destroy();
+  statusChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{ data, backgroundColor: colors, borderWidth: 2, borderColor: '#ffffff', hoverOffset: 4 }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      cutout: '60%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { font: { size: 11 }, padding: 10, usePointStyle: true, pointStyleWidth: 8 }
+        },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ` ${ctx.label}: ${ctx.parsed} (${((ctx.parsed / rows.length)*100).toFixed(1)}%)`
+          }
+        }
+      }
+    }
+  });
+}
+
+// ─── Site Bars ───────────────────────────────────────────────────────────────
+function renderSiteBars(rows) {
+  const siteAmt = {};
+  for (const r of rows) {
+    siteAmt[r.site_code] = (siteAmt[r.site_code] || 0) + parseFloat(r.amount || 0);
+  }
+  const sorted = Object.entries(siteAmt).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const maxAmt = sorted.length ? sorted[0][1] : 1;
+
+  const container = document.getElementById('site-bars');
+  if (!sorted.length) { container.innerHTML = '<div class="text-xs text-slate-400">ไม่มีข้อมูล</div>'; return; }
+
+  container.innerHTML = sorted.map(([site, amt]) => `
+    <div class="flex items-center gap-3">
+      <div class="w-28 text-xs text-slate-600 font-medium truncate shrink-0 cursor-pointer hover:text-blue-600"
+           onclick="quickFilter('site','${site}')">${site}</div>
+      <div class="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
+        <div class="h-2 rounded-full bg-blue-500 transition-all duration-500"
+             style="width:${Math.max(2,(amt/maxAmt*100)).toFixed(1)}%"></div>
+      </div>
+      <div class="text-xs font-semibold text-slate-700 whitespace-nowrap w-24 text-right">
+        ฿${amt.toLocaleString('th-TH',{maximumFractionDigits:0})}
+      </div>
+    </div>`).join('');
+}
+
+// ─── Daily Trend Chart ───────────────────────────────────────────────────────
+let trendChartInstance = null;
+
+function renderTrendChart(rows) {
+  // Bucket requests by day (created_at date string YYYY-MM-DD)
+  const dayCounts = {};
+  for (const r of rows) {
+    if (!r.created_at) continue;
+    const day = r.created_at.slice(0, 10); // "YYYY-MM-DD"
+    dayCounts[day] = (dayCounts[day] || 0) + 1;
+  }
+
+  const sortedDays = Object.keys(dayCounts).sort();
+  if (sortedDays.length === 0) {
+    const canvas = document.getElementById('trend-chart');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    document.getElementById('trend-chart-range').textContent = 'ไม่มีข้อมูล';
+    return;
+  }
+
+  const labels = sortedDays;
+  const data   = sortedDays.map(d => dayCounts[d]);
+
+  document.getElementById('trend-chart-range').textContent =
+    `${sortedDays[0]}  →  ${sortedDays[sortedDays.length - 1]}`;
+
+  const canvas = document.getElementById('trend-chart');
+  if (trendChartInstance) { trendChartInstance.destroy(); trendChartInstance = null; }
+
+  trendChartInstance = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'จำนวน FPR / วัน',
+        data,
+        tension: 0.35,
+        fill: true,
+        borderColor: 'rgb(59,130,246)',
+        backgroundColor: 'rgba(59,130,246,0.08)',
+        pointRadius: data.length <= 30 ? 4 : 2,
+        pointHoverRadius: 6,
+        borderWidth: 2,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.parsed.y} คำขอ`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { maxTicksLimit: 14, font: { size: 11 } },
+          grid: { display: false },
+        },
+        y: {
+          beginAtZero: true,
+          ticks: { precision: 0, font: { size: 11 } },
+          grid: { color: 'rgba(148,163,184,0.15)' },
+        },
+      },
+    },
+  });
+}
+
+// ─── Site filter population ───────────────────────────────────────────────────
+function populateSiteFilter(rows) {
+  const sites = [...new Set(rows.map(r => r.site_code))].sort();
+  const sel = document.getElementById('filter-site');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">ทั้งหมด</option>' +
+    sites.map(s => `<option value="${s}"${s===current?' selected':''}>${s}</option>`).join('');
+}
+
+// ─── Filters ─────────────────────────────────────────────────────────────────
+function applyFilters() {
+  const status    = document.getElementById('filter-status').value;
+  const site      = document.getElementById('filter-site').value;
+  const level     = document.getElementById('filter-level').value;
+  const dateFrom  = document.getElementById('filter-date-from').value;  // "YYYY-MM-DD" or ""
+  const dateTo    = document.getElementById('filter-date-to').value;
+  const search = document.getElementById('filter-search').value.trim().toLowerCase();
+
+  filteredRows = allRows.filter(r => {
+    if (status && r.status !== status) return false;
+    if (site   && r.site_code !== site) return false;
+    if (level  && r.approval_level !== level) return false;
+    if (dateFrom && r.created_at && r.created_at.slice(0,10) < dateFrom) return false;
+    if (dateTo   && r.created_at && r.created_at.slice(0,10) > dateTo)   return false;
+    if (search) {
+      const hay = [r.reason,r.item_hint,r.requester,r.site_code,r.status,r.approver]
+        .filter(Boolean).join(' ').toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  // Apply current sort
+  sortRows();
+  renderTable(filteredRows);
+
+  const filterCount = document.getElementById('filter-count');
+  // Also re-render trend chart with filtered rows
+  renderTrendChart(filteredRows);
+
+  if (status || site || level || search || dateFrom || dateTo) {
+    filterCount.textContent = `แสดง ${filteredRows.length} / ${allRows.length} รายการ`;
+  } else {
+    filterCount.textContent = '';
+  }
+}
+
+function quickFilter(type, value) {
+  document.getElementById(`filter-${type}`).value = value;
+  applyFilters();
+  document.getElementById('fpr-table').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ─── Sort ────────────────────────────────────────────────────────────────────
+function sortBy(field) {
+  if (sortField === field) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  else { sortField = field; sortDir = 'desc'; }
+  sortRows();
+  renderTable(filteredRows);
+}
+function sortRows() {
+  filteredRows.sort((a, b) => {
+    let va = a[sortField], vb = b[sortField];
+    if (sortField === 'amount' || sortField === 'age_days') {
+      va = parseFloat(va || 0); vb = parseFloat(vb || 0);
+    } else {
+      va = String(va || ''); vb = String(vb || '');
+    }
+    if (va < vb) return sortDir === 'asc' ? -1 : 1;
+    if (va > vb) return sortDir === 'asc' ? 1  : -1;
+    return 0;
+  });
+}
+
+// ─── Render table ────────────────────────────────────────────────────────────
+const STATUS_CLASS = {
+  pending:   'status-pending',
+  approved:  'status-approved',
+  rejected:  'status-rejected',
+  purchased: 'status-purchased',
+  closed:    'status-closed',
+  cancelled: 'status-cancelled',
+};
+const STATUS_LABEL = {
+  pending:'Pending', approved:'Approved', rejected:'Rejected',
+  purchased:'Purchased', closed:'Closed', cancelled:'Cancelled'
+};
+const LEVEL_CLASS = {
+  team_lead:'level-tl', project_manager:'level-pm', managing_director:'level-md'
+};
+const LEVEL_LABEL = {
+  team_lead:'Team Lead', project_manager:'Project Manager', managing_director:'Managing Director'
+};
+
+function ageBadge(days) {
+  if (days === null || days === undefined) return '—';
+  const n = parseInt(days);
+  const cls = n >= 14 ? 'text-red-600 font-semibold' : n >= 7 ? 'text-orange-600' : 'text-slate-600';
+  return `<span class="${cls}">${n}</span>`;
+}
+
+function renderTable(rows) {
+  const tbody = document.getElementById('fpr-tbody');
+  const noRows = document.getElementById('no-rows');
+  const sub = document.getElementById('table-subtitle');
+  const countEl = document.getElementById('table-count');
+
+  countEl.textContent = `${rows.length} รายการ`;
+  sub.textContent = rows.length < allRows.length ? `(กรองแล้ว)` : '';
+
+  if (!rows.length) {
+    tbody.innerHTML = '';
+    noRows.classList.remove('hidden');
+    return;
+  }
+  noRows.classList.add('hidden');
+
+  tbody.innerHTML = rows.map((r, i) => {
+    const sc  = STATUS_CLASS[r.status] || '';
+    const lc  = LEVEL_CLASS[r.approval_level] || '';
+    const sl  = STATUS_LABEL[r.status] || r.status;
+    const ll  = LEVEL_LABEL[r.approval_level] || r.approval_level;
+    const amt = parseFloat(r.amount || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 });
+    const dt  = r.created_at ? new Date(r.created_at).toLocaleDateString('th-TH', { year:'numeric', month:'short', day:'numeric' }) : '—';
+    const hint = [r.reason, r.item_hint].filter(Boolean).join(' · ') || '—';
+    const shortId = r.request_id ? r.request_id.substring(0, 8) + '…' : '—';
+
+    return `<tr class="fade-in text-slate-700" id="fpr-row-${r.request_id}">
+      <td class="px-4 py-3 w-8">
+        <input type="checkbox" class="row-cb rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+          data-id="${r.request_id}"
+          onchange="toggleRowSelect('${r.request_id}', this.checked)">
+      </td>
+      <td class="px-4 py-3 text-slate-400 font-mono text-xs">${i+1}</td>
+      <td class="px-4 py-3 font-semibold text-blue-700 whitespace-nowrap cursor-pointer hover:underline"
+          onclick="quickFilter('site','${r.site_code}')">${r.site_code || '—'}</td>
+      <td class="px-4 py-3 text-slate-600 whitespace-nowrap">${r.requester || '—'}</td>
+      <td class="px-4 py-3 max-w-xs">
+        <div class="truncate text-slate-700" title="${hint}">${hint}</div>
+        <div class="text-slate-400 font-mono text-xs mt-0.5" title="${r.request_id}">${shortId}</div>
+      </td>
+      <td class="px-4 py-3 text-right font-semibold tabular-nums">฿${amt}</td>
+      <td class="px-4 py-3 whitespace-nowrap">
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${sc}">${sl}</span>
+      </td>
+      <td class="px-4 py-3 whitespace-nowrap">
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${lc}">${ll}</span>
+      </td>
+      <td class="px-4 py-3 text-right tabular-nums">${ageBadge(r.age_days)}</td>
+      <td class="px-4 py-3 whitespace-nowrap text-slate-500">${dt}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── CSV Export ──────────────────────────────────────────────────────────────
+function exportCsv() {
+  const cols = ['request_id','site_code','requester','reason','item_hint','amount','status','approval_level','approver','age_days','created_at'];
+  const header = cols.join(',');
+  const body = filteredRows.map(r =>
+    cols.map(c => {
+      const v = r[c] ?? '';
+      const s = String(v).replace(/"/g, '""');
+      return /[,"\n]/.test(s) ? `"${s}"` : s;
+    }).join(',')
+  ).join('\n');
+
+  const blob = new Blob(['\ufeff' + header + '\n' + body], { type:'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `fpr_export_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ─── Bulk-action selection ───────────────────────────────────────────────────
+let selectedIds = new Set();
+const notifiedIds = new Map(); // request_id → { ok, detail }
+
+// ─── Realtime (Supabase Realtime postgres_changes) ───────────────────────────
+let _realtimeClient = null;
+let _realtimeSub = null;
+
+function initRealtime(cfg) {
+  if (!cfg || !cfg.url || !cfg.anonKey || !cfg.jwt) return;
+  teardownRealtime(); // clean up any existing subscription
+
+  try {
+    _realtimeClient = supabase.createClient(cfg.url, cfg.anonKey, {
+      global: { headers: { Authorization: `Bearer ${cfg.jwt}` } },
+      realtime: { params: { eventsPerSecond: 2 } },
+    });
+
+    _realtimeSub = _realtimeClient
+      .channel('fpr-queue-watch')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'field_purchase_request',
+        },
+        (_payload) => {
+          // Auto-refresh the approval queue and dead-letter panel on any FPR change
+          loadApprovalQueue(getConfig());
+          loadDeadLetterPanel(getConfig());
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('[realtime] subscribed to field_purchase_request changes');
+        }
+      });
+  } catch (e) {
+    console.warn('[realtime] init error:', e.message);
+  }
+}
+
+function teardownRealtime() {
+  if (_realtimeSub) {
+    try { _realtimeSub.unsubscribe(); } catch (_) {}
+    _realtimeSub = null;
+  }
+  if (_realtimeClient) {
+    try { _realtimeClient.removeAllChannels(); } catch (_) {}
+    _realtimeClient = null;
+  }
+}
+
+// ─── Retry LINE notifications ─────────────────────────────────────────────────
+async function doRetryLineNotifications() {
+  const cfg = getConfig();
+  if (!cfg) return;
+
+  const btn = document.getElementById('btn-retry-line');
+  const originalText = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'กำลัง Retry...'; }
+
+  try {
+    const siteCode = document.getElementById('queue-site-filter')?.value || null;
+    const params = { p_older_than: '5 minutes' };
+    if (siteCode) params.p_site_code = siteCode;
+
+    const res = await fetch(`${cfg.url}/rest/v1/rpc/rpc_retry_fpr_notifications`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: cfg.anonKey,
+        Authorization: `Bearer ${cfg.jwt}`,
+      },
+      body: JSON.stringify(params),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      alert(`Retry LINE ล้มเหลว: ${err.message || res.statusText}`);
+      return;
+    }
+
+    const data = await res.json();
+    const count = data?.retried_count ?? data ?? 0;
+    alert(`↺ Retry LINE: รีเซ็ต ${count} รายการกลับเป็น pending สำเร็จ`);
+
+    if (count > 0) {
+      loadApprovalQueue(cfg);
+    }
+  } catch (e) {
+    console.error('doRetryLineNotifications:', e);
+    alert(`Retry LINE error: ${e.message}`);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = originalText; }
+  }
+}
+
+
+// ─── Dead-Letter Panel ───────────────────────────────────────────────────────
+
+/**
+ * Loads v_fpr_outbound_dead_letter rows and renders the triage panel.
+ * Uses REST GET on the view (read-only, no RPC needed).
+ * Operators see: site, requester, template, retried_count, age_hours, status, IDs.
+ */
+async function loadDeadLetterPanel(cfg) {
+  if (!cfg) return;
+  const body = document.getElementById('dead-letter-body');
+  if (!body) return;
+
+  const siteFilter = document.getElementById('dl-site-filter')?.value || null;
+
+  try {
+    // Build query — site filter on site_code, only dead rows (view already filters)
+    let url = `${cfg.url}/rest/v1/v_fpr_outbound_dead_letter?select=message_id,request_id,site_code,requester,template_key,retried_count,message_age_hours,request_status,amount,message_created_at&order=message_created_at.desc&limit=200`;
+    if (siteFilter) url += `&site_code=eq.${encodeURIComponent(siteFilter)}`;
+
+    const res = await fetch(url, {
+      headers: {
+        'apikey': cfg.anonKey,
+        'Authorization': `Bearer ${cfg.jwt}`,
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      body.innerHTML = `<div class="text-xs text-red-500 px-5 py-4">โหลด dead-letter ไม่สำเร็จ: ${err.message || res.statusText}</div>`;
+      return;
+    }
+
+    const rows = await res.json();
+
+    // Update count badge
+    const badge = document.getElementById('dl-count-badge');
+    if (badge) {
+      if (Array.isArray(rows) && rows.length > 0) {
+        badge.textContent = String(rows.length);
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    // Populate site filter dropdown
+    _populateDlSiteFilter(rows, siteFilter);
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      body.innerHTML = `<div class="flex flex-col items-center py-8 text-slate-400">
+        <svg class="w-10 h-10 mb-2 text-green-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span class="text-xs text-green-500 font-medium">ไม่มี dead-letter messages</span>
+      </div>`;
+      return;
+    }
+
+    // Render table
+    body.innerHTML = `
+      <table class="w-full text-xs border-collapse">
+        <thead>
+          <tr class="bg-red-50 text-red-600 text-left">
+            <th class="px-4 py-2 font-semibold border-b border-red-100 whitespace-nowrap">Site</th>
+            <th class="px-4 py-2 font-semibold border-b border-red-100 whitespace-nowrap">ผู้ขอ</th>
+            <th class="px-4 py-2 font-semibold border-b border-red-100 whitespace-nowrap">Template</th>
+            <th class="px-4 py-2 font-semibold border-b border-red-100 whitespace-nowrap text-center">Retry#</th>
+            <th class="px-4 py-2 font-semibold border-b border-red-100 whitespace-nowrap text-right">อายุ (ชม.)</th>
+            <th class="px-4 py-2 font-semibold border-b border-red-100 whitespace-nowrap">Request Status</th>
+            <th class="px-4 py-2 font-semibold border-b border-red-100 whitespace-nowrap">Message ID</th>
+            <th class="px-4 py-2 font-semibold border-b border-red-100 whitespace-nowrap">Request ID</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map((r, i) => {
+            const age = r.message_age_hours != null ? Number(r.message_age_hours).toFixed(1) : '—';
+            const statusColor = r.request_status === 'closed' ? '#6B7280'
+              : r.request_status === 'cancelled' ? '#F97316'
+              : r.request_status === 'pending' ? '#D97706'
+              : '#374151';
+            const rowBg = i % 2 === 0 ? '' : 'bg-red-50/30';
+            const msgShort = r.message_id ? r.message_id.split('-')[0] + '…' : '—';
+            const reqShort = r.request_id ? r.request_id.split('-')[0] + '…' : '—';
+            return `<tr class="${rowBg} hover:bg-red-50/60 transition-colors group">
+              <td class="px-4 py-2.5 font-medium text-slate-700 border-b border-slate-100 whitespace-nowrap">${r.site_code || '—'}</td>
+              <td class="px-4 py-2.5 text-slate-600 border-b border-slate-100 whitespace-nowrap">${r.requester || '—'}</td>
+              <td class="px-4 py-2.5 border-b border-slate-100">
+                <code class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px] whitespace-nowrap">${r.template_key || '—'}</code>
+              </td>
+              <td class="px-4 py-2.5 border-b border-slate-100 text-center">
+                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-bold
+                  ${r.retried_count >= 3 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}">
+                  ${r.retried_count ?? '—'}
+                </span>
+              </td>
+              <td class="px-4 py-2.5 border-b border-slate-100 text-right tabular-nums text-slate-600">${age}</td>
+              <td class="px-4 py-2.5 border-b border-slate-100">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-medium"
+                  style="background:${statusColor}20;color:${statusColor}">${r.request_status || '—'}</span>
+              </td>
+              <td class="px-4 py-2.5 border-b border-slate-100">
+                <button onclick="navigator.clipboard.writeText('${r.message_id || ''}').then(()=>showDlCopied(this,'message_id'))"
+                  title="Copy full message_id: ${r.message_id || ''}"
+                  class="font-mono text-[10px] text-red-400 hover:text-red-600 hover:underline cursor-pointer transition-colors">
+                  ${msgShort}
+                </button>
+              </td>
+              <td class="px-4 py-2.5 border-b border-slate-100">
+                <button onclick="navigator.clipboard.writeText('${r.request_id || ''}').then(()=>showDlCopied(this,'request_id'))"
+                  title="Copy full request_id: ${r.request_id || ''}"
+                  class="font-mono text-[10px] text-blue-400 hover:text-blue-600 hover:underline cursor-pointer transition-colors">
+                  ${reqShort}
+                </button>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+      <div class="px-5 py-3 bg-red-50 border-t border-red-100 text-xs text-red-500 flex items-center gap-2">
+        <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Dead-letter rows ต้อง reset ด้วย SQL โดยตรงหลัง fix ต้นเหตุ แล้วคลิก รีเฟรช
+      </div>`;
+  } catch (e) {
+    body.innerHTML = `<div class="text-xs text-red-500 px-5 py-4">โหลด dead-letter error: ${e.message}</div>`;
+    console.error('loadDeadLetterPanel:', e);
+  }
+}
+
+/** Show a brief "Copied!" tooltip on the clicked copy button. */
+function showDlCopied(btn, field) {
+  const original = btn.textContent;
+  btn.textContent = '✓ Copied';
+  btn.classList.add('text-green-600');
+  setTimeout(() => {
+    btn.textContent = original;
+    btn.classList.remove('text-green-600');
+  }, 1500);
+}
+
+/** Populate the dead-letter site filter dropdown from loaded rows. */
+function _populateDlSiteFilter(rows, currentSite) {
+  const sel = document.getElementById('dl-site-filter');
+  if (!sel || !Array.isArray(rows)) return;
+  const sites = [...new Set(rows.map(r => r.site_code).filter(Boolean))].sort();
+  const prev = currentSite || sel.value;
+  sel.innerHTML = '<option value="">ทุก Site</option>' +
+    sites.map(s => `<option value="${s}"${s === prev ? ' selected' : ''}>${s}</option>`).join('');
+}
+
+function toggleRowSelect(id, checked) {
+  if (checked) {
+    selectedIds.add(id);
+  } else {
+    selectedIds.delete(id);
+  }
+  updateBulkToolbar();
+}
+
+function toggleSelectAll(checked) {
+  // Operate only on the currently rendered (filtered) rows
+  document.querySelectorAll('.row-cb').forEach(cb => {
+    const id = cb.dataset.id;
+    if (!id) return;
+    cb.checked = checked;
+    if (checked) {
+      selectedIds.add(id);
+    } else {
+      selectedIds.delete(id);
+    }
+  });
+  updateBulkToolbar();
+}
+
+function updateBulkToolbar() {
+  const toolbar   = document.getElementById('bulk-toolbar');
+  const label     = document.getElementById('bulk-selected-label');
+  const selectAll = document.getElementById('select-all-cb');
+  const count     = selectedIds.size;
+
+  if (count > 0) {
+    toolbar.classList.remove('hidden');
+    toolbar.classList.add('flex');
+  } else {
+    toolbar.classList.add('hidden');
+    toolbar.classList.remove('flex');
+  }
+  if (label) label.textContent = `${count} รายการที่เลือก`;
+
+  // Sync select-all checkbox tri-state
+  if (selectAll) {
+    const totalVisible = document.querySelectorAll('.row-cb').length;
+    if (count === 0) {
+      selectAll.indeterminate = false;
+      selectAll.checked = false;
+    } else if (count === totalVisible) {
+      selectAll.indeterminate = false;
+      selectAll.checked = true;
+    } else {
+      selectAll.indeterminate = true;
+    }
+  }
+}
+
+function clearSelection() {
+  selectedIds.clear();
+  document.querySelectorAll('.row-cb').forEach(cb => { cb.checked = false; });
+  const selectAll = document.getElementById('select-all-cb');
+  if (selectAll) { selectAll.checked = false; selectAll.indeterminate = false; }
+  updateBulkToolbar();
+}
+
+function updateNotifBadge(requestId, ok, detail) {
+  notifiedIds.set(requestId, { ok, detail: detail || '' });
+  const el = document.getElementById(`qcard-notif-${requestId}`);
+  if (!el) return;
+  el.classList.remove('hidden');
+  if (ok) {
+    el.innerHTML = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">LINE แจ้งเตือนแล้ว ✓</span>';
+  } else {
+    const tip = detail ? ` title="${detail.replace(/"/g, '&quot;')}"` : '';
+    el.innerHTML = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium"${tip}>⚠ LINE ไม่ได้รับ</span>`;
+  }
+}
+
+async function fetchNotifStatuses(cfg, requestIds) {
+  if (!cfg || !requestIds || !requestIds.length) return new Map();
+  try {
+    const idsParam = requestIds.join(',');
+    const url = `${cfg.url}/rest/v1/v_fpr_notification_status?request_id=in.(${idsParam})&select=request_id,line_delivery_status&order=notification_queued_at.desc.nullslast`;
+    const res = await fetch(url, {
+      headers: {
+        'apikey':        cfg.anonKey,
+        'Authorization': `Bearer ${cfg.jwt}`,
+      },
+    });
+    if (!res.ok) return new Map();
+    const rows = await res.json();
+    const STATUS_RANK = { sent: 4, pending: 3, failed: 2, none: 1 };
+    const best = new Map();
+    for (const row of rows) {
+      const curr     = best.get(row.request_id);
+      const currRank = STATUS_RANK[curr] || 0;
+      const newRank  = STATUS_RANK[row.line_delivery_status] || 0;
+      if (newRank > currRank) best.set(row.request_id, row.line_delivery_status);
+    }
+    return best;
+  } catch {
+    return new Map();
+  }
+}
+
+function serverNotifBadgeHtml(status) {
+  if (status === 'sent')    return '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">LINE ส่งแล้ว ✓</span>';
+  if (status === 'pending') return '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">LINE รอส่ง ⏳</span>';
+  if (status === 'failed')  return '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">LINE ล้มเหลว ✗</span>';
+  return '';
+}
+
+async function doBulkClose() {
+  const cfg = getConfig();
+  if (!cfg) return;
+  const ids = [...selectedIds];
+  if (!ids.length) return;
+  if (!confirm(`ปิดคำขอ ${ids.length} รายการที่เลือก?`)) return;
+  try {
+    const res = await fetch(`${cfg.url}/rest/v1/rpc/rpc_bulk_close_field_purchase_request`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey':        cfg.anonKey,
+        'Authorization': `Bearer ${cfg.jwt}`,
+      },
+      body: JSON.stringify({ p_request_ids: ids }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data?.ok) throw new Error(data?.hint || data?.message || `HTTP ${res.status}`);
+    alert(`ปิดสำเร็จ ${data.closed_count ?? ids.length} รายการ`);
+    clearSelection();
+    loadDashboard();
+  } catch (e) {
+    alert(`Bulk Close ผิดพลาด: ${e.message}`);
+    console.error('doBulkClose:', e);
+  }
+}
+
+async function doBulkReopen() {
+  const cfg = getConfig();
+  if (!cfg) return;
+  const ids = [...selectedIds];
+  if (!ids.length) return;
+  if (!confirm(`เปิดใหม่คำขอ ${ids.length} รายการที่เลือก?`)) return;
+  try {
+    const res = await fetch(`${cfg.url}/rest/v1/rpc/rpc_bulk_reopen_field_purchase_request`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey':        cfg.anonKey,
+        'Authorization': `Bearer ${cfg.jwt}`,
+      },
+      body: JSON.stringify({ p_request_ids: ids }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data?.ok) throw new Error(data?.hint || data?.message || `HTTP ${res.status}`);
+    alert(`เปิดใหม่สำเร็จ ${data.reopened_count ?? ids.length} รายการ`);
+    clearSelection();
+    loadDashboard();
+  } catch (e) {
+    alert(`Bulk Reopen ผิดพลาด: ${e.message}`);
+    console.error('doBulkReopen:', e);
+  }
+}
+
+async function doBulkApprove() {
+  const cfg = getConfig();
+  if (!cfg) return;
+  const ids = [...selectedIds];
+  if (!ids.length) return;
+  if (!confirm(`อนุมัติคำขอ ${ids.length} รายการที่เลือก?`)) return;
+  try {
+    const res = await fetch(`${cfg.url}/rest/v1/rpc/rpc_bulk_approve_field_purchase_request`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey':        cfg.anonKey,
+        'Authorization': `Bearer ${cfg.jwt}`,
+      },
+      body: JSON.stringify({ p_request_ids: ids }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data?.ok) throw new Error(data?.hint || data?.message || `HTTP ${res.status}`);
+    const notifCount = Array.isArray(data.notifications)
+      ? data.notifications.filter(n => n.ok).length
+      : 0;
+    const notifNote = notifCount > 0
+      ? ` (ส่ง LINE แจ้งเตือน ${notifCount} รายการ)` : '';
+    alert(`อนุมัติสำเร็จ ${data.approved_count ?? ids.length} รายการ${notifNote}`);
+    // populate notification badges before queue reloads
+    if (Array.isArray(data.notifications)) {
+      data.notifications.forEach(n => {
+        if (n.request_id) updateNotifBadge(n.request_id, !!n.ok, n.error || '');
+      });
+    }
+    clearSelection();
+    loadDashboard();
+  } catch (e) {
+    alert(`Bulk Approve ผิดพลาด: ${e.message}`);
+    console.error('doBulkApprove:', e);
+  }
+}
+
+async function doBulkReject() {  const cfg = getConfig();
+  if (!cfg) return;
+  const ids = [...selectedIds];
+  if (!ids.length) return;
+  const note = prompt(`ระบุเหตุผลการปฏิเสธ ${ids.length} รายการ (ไม่บังคับ):`);
+  if (note === null) return; // user cancelled
+  if (!confirm(`ปฏิเสธคำขอ ${ids.length} รายการ?`)) return;
+  try {
+    const res = await fetch(`${cfg.url}/rest/v1/rpc/rpc_bulk_reject_field_purchase_request`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey':        cfg.anonKey,
+        'Authorization': `Bearer ${cfg.jwt}`,
+      },
+      body: JSON.stringify({ p_request_ids: ids, p_rejection_note: note || null }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data?.ok) throw new Error(data?.hint || data?.message || `HTTP ${res.status}`);
+    alert(`ปฏิเสธสำเร็จ ${data.rejected_count ?? ids.length} รายการ`);
+    clearSelection();
+    loadDashboard();
+  } catch (e) {
+    alert(`Bulk Reject ผิดพลาด: ${e.message}`);
+    console.error('doBulkReject:', e);
+  }
+}
+
+async function doBulkCancel() {
+  const cfg = getConfig();
+  if (!cfg) return;
+  const ids = [...selectedIds];
+  if (!ids.length) return;
+  const reason = prompt(`ระบุเหตุผลการยกเลิก ${ids.length} รายการ (ไม่บังคับ):`);
+  if (reason === null) return; // user dismissed dialog
+  if (!confirm(`ยืนยันยกเลิกคำขอ ${ids.length} รายการ?`)) return;
+  try {
+    const res = await fetch(`${cfg.url}/rest/v1/rpc/rpc_bulk_cancel_field_purchase_request`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey':        cfg.anonKey,
+        'Authorization': `Bearer ${cfg.jwt}`,
+      },
+      body: JSON.stringify({ p_request_ids: ids, p_cancel_reason: reason || null }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data?.ok) throw new Error(data?.hint || data?.message || `HTTP ${res.status}`);
+    alert(`ยกเลิกสำเร็จ ${data.cancelled_count ?? ids.length} รายการ`);
+    clearSelection();
+    loadDashboard();
+  } catch (e) {
+    alert(`Bulk Cancel ผิดพลาด: ${e.message}`);
+    console.error('doBulkCancel:', e);
+  }
+}
+
+async function doBulkUncancel() {
+  openUncancelModal();
+}
+
+// ─── Bulk-Uncancel Modal ─────────────────────────────────────────────────────
+function openUncancelModal() {
+  const ids = [...selectedIds];
+  if (!ids.length) return;
+  document.getElementById('uncancel-modal-count').textContent = ids.length;
+  document.getElementById('uncancel-note-input').value = '';
+  document.getElementById('uncancel-modal').classList.remove('hidden');
+}
+
+function closeUncancelModal() {
+  document.getElementById('uncancel-modal').classList.add('hidden');
+  document.getElementById('uncancel-note-input').value = '';
+}
+
+async function confirmBulkUncancel() {
+  const cfg = getConfig();
+  if (!cfg) return;
+  const ids  = [...selectedIds];
+  if (!ids.length) return;
+  const note = document.getElementById('uncancel-note-input').value.trim() || null;
+  const btn  = document.getElementById('uncancel-confirm-btn');
+  btn.disabled    = true;
+  btn.textContent = 'กำลังดำเนินการ…';
+  try {
+    const res = await fetch(`${cfg.url}/rest/v1/rpc/rpc_bulk_uncancel_field_purchase_request`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey':        cfg.anonKey,
+        'Authorization': `Bearer ${cfg.jwt}`,
+      },
+      body: JSON.stringify({ p_request_ids: ids, p_uncancel_note: note }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data?.ok) {
+      throw new Error(data?.hint || data?.message || `HTTP ${res.status}`);
+    }
+    const notifCount = Array.isArray(data.notifications)
+      ? data.notifications.filter((n) => n.ok).length
+      : 0;
+    closeUncancelModal();
+    clearSelection();
+    loadDashboard();
+    alert(
+      `คืนสถานะสำเร็จ ${data.uncancelled_count} รายการ` +
+      (notifCount ? `\nส่ง LINE แจ้งเตือน ${notifCount} รายการ` : ''),
+    );
+  } catch (e) {
+    alert(`Uncancel ผิดพลาด: ${e.message}`);
+    console.error('confirmBulkUncancel:', e);
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'ยืนยันคืนสถานะ';
+  }
+}
+
+// ─── Force-Close Modal ───────────────────────────────────────────────────────
+function openForceCloseModal() {
+  const ids = getSelectedIds();
+  if (ids.length === 0) return;
+  document.getElementById('force-close-modal-count').textContent = ids.length;
+  document.getElementById('force-close-note-input').value = '';
+  document.getElementById('force-close-modal').classList.remove('hidden');
+  document.getElementById('force-close-note-input').focus();
+}
+
+function closeForceCloseModal() {
+  document.getElementById('force-close-modal').classList.add('hidden');
+}
+
+async function confirmBulkForceClose() {
+  const ids  = getSelectedIds();
+  const note = document.getElementById('force-close-note-input').value.trim() || null;
+  const btn  = document.getElementById('force-close-confirm-btn');
+
+  if (ids.length === 0) { closeForceCloseModal(); return; }
+
+  btn.disabled    = true;
+  btn.textContent = 'กำลังดำเนินการ...';
+
+  const { supabase } = getDeps();
+  try {
+    const { data, error } = await supabase.rpc(
+      'rpc_bulk_force_close_field_purchase_request',
+      { p_request_ids: ids, p_close_note: note }
+    );
+    if (error) throw error;
+    closeForceCloseModal();
+    clearSelection();
+    showToast(
+      `บังคับปิดแล้ว ${(data && data.force_closed_count) || 0} รายการ`,
+      'success'
+    );
+    loadDashboard();
+  } catch (err) {
+    showToast('เกิดข้อผิดพลาด: ' + (err.message || err), 'error');
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'ยืนยันบังคับปิด';
+  }
+}
+
+// ─── Keyboard shortcuts ──────────────────────────────────────────────────────
+(function attachKeyboardShortcuts() {
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    // Close any open modal whose id ends with "-modal" and is not hidden
+    const openModals = document.querySelectorAll('[id$="-modal"]:not(.hidden)');
+    openModals.forEach(function (modal) {
+      // Find the first close button in the modal (onclick starts with "close")
+      const closeBtn = modal.querySelector('button[onclick^="close"]');
+      if (closeBtn) closeBtn.click();
+    });
+  });
+})();
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+(function init() {
+  const cfg = getConfig();
+  if (cfg) {
+    updateHeaderUser(cfg.email);
+    document.getElementById('main-content').classList.remove('hidden');
+    loadDashboard();
+  } else {
+    // Pre-fill connection fields from localStorage if stored
+    const conn = getConn() || {};
+    document.getElementById('cfg-url').value = conn.url || '';
+    document.getElementById('cfg-anon-key').value = conn.anonKey || '';
+    // Collapse conn section if already configured
+    if (conn.url && conn.anonKey) {
+      document.getElementById('conn-fields').classList.add('hidden');
+      document.getElementById('conn-chevron').classList.remove('rotate-90');
+      document.getElementById('conn-toggle-label').textContent = 'การตั้งค่าการเชื่อมต่อ ✓';
+    }
+    document.getElementById('login-overlay').classList.remove('hidden');
+  }
+})();
+</script>
+<!-- ── Bulk-Uncancel Confirmation Modal ──────────────────────────────────── -->
+<div id="uncancel-modal"
+     class="hidden fixed inset-0 z-50 flex items-center justify-center"
+     aria-modal="true" role="dialog" aria-labelledby="uncancel-modal-title">
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"
+       onclick="closeUncancelModal()"></div>
+  <!-- Card -->
+  <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
+    <!-- Header -->
+    <div class="flex items-center gap-3 mb-4">
+      <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-indigo-100">
+        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor"
+             stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M3 10h1m4 0h1m4 0h1M3 6h18M5 6V4a1 1 0 011-1h12a1 1 0 011 1v2
+                   M19 10v10a2 2 0 01-2 2H7a2 2 0 01-2-2V10"/>
+        </svg>
+      </span>
+      <div>
+        <h2 id="uncancel-modal-title"
+            class="text-base font-semibold text-gray-900">คืนสถานะคำขอ</h2>
+        <p class="text-sm text-gray-500">
+          รายการที่เลือก:
+          <span id="uncancel-modal-count"
+                class="font-bold text-indigo-600">0</span> รายการ
+        </p>
+      </div>
+    </div>
+
+    <!-- Note textarea -->
+    <label class="block mb-5">
+      <span class="text-sm font-medium text-gray-700">
+        หมายเหตุการคืนสถานะ
+        <span class="text-gray-400 font-normal">(ไม่บังคับ)</span>
+      </span>
+      <textarea id="uncancel-note-input" rows="3"
+                placeholder="ระบุเหตุผลในการคืนสถานะ…"
+                class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2
+                       text-sm text-gray-900 placeholder-gray-400
+                       focus:outline-none focus:ring-2 focus:ring-indigo-500
+                       focus:border-indigo-500 resize-none"></textarea>
+    </label>
+
+    <!-- Action buttons -->
+    <div class="flex justify-end gap-3">
+      <button onclick="closeUncancelModal()"
+              class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100
+                     hover:bg-gray-200 rounded-lg transition-colors">
+        ยกเลิก
+      </button>
+      <button id="uncancel-confirm-btn"
+              onclick="confirmBulkUncancel()"
+              class="px-4 py-2 text-sm font-medium text-white bg-indigo-600
+                     hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed
+                     rounded-lg transition-colors">
+        ยืนยันคืนสถานะ
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     Force-Close Confirmation Modal
+     Opened by: openForceCloseModal()  |  Confirmed by: confirmBulkForceClose()
+     ═══════════════════════════════════════════════════════════════════════ -->
+<div id="force-close-modal"
+     class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+     aria-modal="true" role="dialog" aria-labelledby="force-close-modal-title">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+    <!-- Header -->
+    <div class="bg-red-700 px-6 py-4 flex items-center gap-3">
+      <svg class="w-5 h-5 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+      </svg>
+      <h2 id="force-close-modal-title"
+          class="text-base font-semibold text-white leading-tight">
+        ยืนยันการบังคับปิดคำขอ
+      </h2>
+    </div>
+    <!-- Body -->
+    <div class="px-6 py-5 space-y-4">
+      <p class="text-sm text-slate-600">
+        คุณกำลังบังคับปิด
+        <span id="force-close-modal-count" class="font-semibold text-red-700">0</span>
+        รายการ การดำเนินการนี้ไม่สามารถย้อนกลับได้สำหรับรายการที่ไม่ได้ถูกยกเลิก
+      </p>
+      <div>
+        <label for="force-close-note-input"
+               class="block text-xs font-medium text-slate-700 mb-1">
+          หมายเหตุการปิด (ไม่บังคับ)
+        </label>
+        <textarea id="force-close-note-input" rows="3"
+          class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm
+                 focus:outline-none focus:ring-2 focus:ring-red-400 resize-none
+                 placeholder-slate-400"
+          placeholder="ระบุเหตุผลการบังคับปิด..."></textarea>
+      </div>
+    </div>
+    <!-- Footer -->
+    <div class="px-6 pb-5 flex justify-end gap-3">
+      <button onclick="closeForceCloseModal()"
+              class="text-sm px-4 py-2 border border-slate-200 text-slate-600
+                     hover:bg-slate-50 rounded-lg transition-colors">
+        ยกเลิก
+      </button>
+      <button id="force-close-confirm-btn" onclick="confirmBulkForceClose()"
+              class="text-sm px-4 py-2 bg-red-700 text-white font-medium
+                     hover:bg-red-800 disabled:opacity-60 disabled:cursor-not-allowed
+                     rounded-lg transition-colors">
+        ยืนยันบังคับปิด
+      </button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

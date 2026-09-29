@@ -1,0 +1,83 @@
+name: Validate Manufacturing OS Docs (CI)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/manufacturing-os-site/**'
+      - 'docs/chapters/**'
+      - 'scripts/docs/**'
+      - 'tests/docs/**'
+      - '.github/workflows/*docs*.yml'
+      - '.github/workflows/*chapter*.yml'
+      - '.github/workflows/generate-site-data.yml'
+      - '.github/workflows/lighthouse-audit.yml'
+      - '.github/workflows/notify-slack-deploy.yml'
+      - '.github/workflows/auto-update-changelog.yml'
+      - '.github/workflows/auto-deploy-scispace.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/chapter-cache.json'
+      - 'docs/manufacturing-os-site/**'
+      - 'docs/chapters/**'
+      - 'scripts/docs/**'
+      - 'tests/docs/**'
+      - '.github/workflows/*docs*.yml'
+      - '.github/workflows/*chapter*.yml'
+      - '.github/workflows/generate-site-data.yml'
+      - '.github/workflows/lighthouse-audit.yml'
+      - '.github/workflows/notify-slack-deploy.yml'
+      - '.github/workflows/auto-update-changelog.yml'
+      - '.github/workflows/auto-deploy-scispace.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Validate Site Files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install documentation dependencies
+        run: python -m pip install -r scripts/docs/requirements.txt
+
+      - name: Run documentation regression tests
+        run: python -m unittest discover -s tests/docs -v
+
+      - name: Check required files
+        run: |
+          echo "========================================"
+          echo "  Monolith Manufacturing OS — CI Check  "
+          echo "========================================"
+          SITE_DIR="docs/manufacturing-os-site"
+          REQUIRED_FILES=("index.html" "script.js" "style.css" "chapters.json" "search_index.json" "analytics.html" "changelog.html" "status.html" "README.md")
+          FAIL=0
+          for f in "${REQUIRED_FILES[@]}"; do
+            if [ -f "$SITE_DIR/$f" ]; then
+              SIZE=$(wc -c < "$SITE_DIR/$f")
+              echo "  ✅ $f — ${SIZE} bytes"
+            else
+              echo "  ❌ MISSING: $f"
+              FAIL=1
+            fi
+          done
+          if [ $FAIL -ne 0 ]; then
+            echo ""
+            echo "FAIL: One or more required files are missing."
+            exit 1
+          fi
+
+      - name: Validate JSON files
+        run: python -m scripts.docs.site_data
+
+      - name: Print site summary
+        run: echo "Documentation file, JSON contract and regression checks passed."

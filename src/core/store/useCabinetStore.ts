@@ -42,6 +42,11 @@ import {
   type DoorOverlayType,
   type DoorOpeningDirection,
   type GrainDirection,
+  type PanelProfile,
+  type SkinConfig,
+  type CoreMaterial,
+  type SurfaceMaterial,
+  type EdgeMaterial,
 } from '../types/Cabinet';
 import {
   generateDrawerPanels,
@@ -86,7 +91,6 @@ import {
 } from '../materials/PanelMaterialSystem';
 import {
   recomputeCabinetDerived,
-  type CabinetForDerivation,
 } from './cabinetDerivations';
 
 // ============================================
@@ -97,6 +101,12 @@ import {
 // Will be set on first use via dynamic import
 let _specStoreRef: { getState: () => { specState: SpecState } } | null = null;
 
+declare global {
+  interface Window {
+    __MONOLITH_SPEC_STORE__?: { getState: () => { specState: SpecState } };
+  }
+}
+
 /**
  * Get current spec state from SpecStore
  * Uses lazy initialization to avoid circular dependency
@@ -106,7 +116,7 @@ function getSpecState(): SpecState {
     // Synchronously access the already-loaded module from the module cache
     // This works because by the time this function is called, useSpecStore is already loaded
     try {
-      _specStoreRef = (window as any).__MONOLITH_SPEC_STORE__;
+      _specStoreRef = window.__MONOLITH_SPEC_STORE__ ?? null;
       if (!_specStoreRef) {
         // Fallback: return DRAFT to allow mutations if store not ready
         console.warn('[CabinetStore] SpecStore not ready, defaulting to DRAFT');
@@ -124,7 +134,7 @@ function getSpecState(): SpecState {
  */
 export function registerSpecStore(store: { getState: () => { specState: SpecState } }) {
   _specStoreRef = store;
-  (window as any).__MONOLITH_SPEC_STORE__ = store;
+  window.__MONOLITH_SPEC_STORE__ = store;
 }
 
 /**
@@ -1478,7 +1488,7 @@ function withActiveCabinet(
   // Recompute derived values (unless skipped for batch operations)
   if (!options.skipRecompute) {
     recomputeCabinetDerived(
-      cabinet as unknown as CabinetForDerivation,
+      cabinet,
       state.edgeMaterials
     );
   }
@@ -2266,18 +2276,18 @@ interface CabinetActions {
   setDefaultEdge: (materialId: string) => void;
   
   // Material CRUD - Core
-  addCoreMaterial: (material: any) => void;
-  updateCoreMaterial: (id: string, updates: any) => void;
+  addCoreMaterial: (material: CoreMaterial) => void;
+  updateCoreMaterial: (id: string, updates: Partial<CoreMaterial>) => void;
   deleteCoreMaterial: (id: string) => void;
   
   // Material CRUD - Surface
-  addSurfaceMaterial: (material: any) => void;
-  updateSurfaceMaterial: (id: string, updates: any) => void;
+  addSurfaceMaterial: (material: SurfaceMaterial) => void;
+  updateSurfaceMaterial: (id: string, updates: Partial<SurfaceMaterial>) => void;
   deleteSurfaceMaterial: (id: string) => void;
   
   // Material CRUD - Edge
-  addEdgeMaterial: (material: any) => void;
-  updateEdgeMaterial: (id: string, updates: any) => void;
+  addEdgeMaterial: (material: EdgeMaterial) => void;
+  updateEdgeMaterial: (id: string, updates: Partial<EdgeMaterial>) => void;
   deleteEdgeMaterial: (id: string) => void;
   
   // Panel selection
@@ -2290,6 +2300,10 @@ interface CabinetActions {
   updatePanelMaterial: (panelId: string, target: 'core' | 'faceA' | 'faceB', materialId: string) => void;
   updateGrainDirection: (panelId: string, direction: GrainDirection) => void;
   updatePanelEdge: (panelId: string, side: 'top' | 'bottom' | 'left' | 'right', edgeId: string | null) => void;
+
+  // Per-panel curved-profile actions (Phase 1 — Curved Panel System)
+  updatePanelProfile: (panelId: string, profile: PanelProfile | undefined) => void;
+  updateSkinConfig: (panelId: string, skin: SkinConfig | undefined) => void;
 
   // Per-panel position actions
   updatePanelPositionOverride: (panelId: string, field: keyof PanelPositionOverrides, value: number | null) => void;
@@ -2746,8 +2760,8 @@ export const useCabinetStore = create<CabinetStore>()(
       if (!source) return null;
 
       // Get source position and offset the duplicate
-      let sourcePos = (source as any).scenePosition || [0, 0, 0];
-      const sourceRot = (source as any).sceneRotation || [0, 0, 0];
+      let sourcePos = source.scenePosition ?? [0, 0, 0];
+      const sourceRot = source.sceneRotation ?? [0, 0, 0];
       const offsetX = source.dimensions.width + 100; // Offset by cabinet width + 100mm gap
 
       // SANITY CHECK: Source position should never exceed 10 meters (10000mm)
@@ -2758,7 +2772,7 @@ export const useCabinetStore = create<CabinetStore>()(
         sourcePos = [0, 0, 0];
         // Also fix the source cabinet's position in the store
         set((state) => {
-          const srcCabinet = state.cabinets.find(c => c.id === cabinetId) as any;
+          const srcCabinet = state.cabinets.find(c => c.id === cabinetId);
           if (srcCabinet) {
             srcCabinet.scenePosition = [0, 0, 0];
           }
@@ -2780,8 +2794,8 @@ export const useCabinetStore = create<CabinetStore>()(
       };
 
       // Set scene position for the new cabinet (offset from source)
-      (newCabinet as any).scenePosition = [sourcePos[0] + offsetX, sourcePos[1], sourcePos[2]];
-      (newCabinet as any).sceneRotation = [...sourceRot];
+      newCabinet.scenePosition = [sourcePos[0] + offsetX, sourcePos[1], sourcePos[2]];
+      newCabinet.sceneRotation = [...sourceRot];
 
       set((state) => {
         state.cabinets.push(newCabinet);
@@ -2826,7 +2840,7 @@ export const useCabinetStore = create<CabinetStore>()(
       }
 
       set((state) => {
-        const cabinet = state.cabinets.find(c => c.id === cabinetId) as any;
+        const cabinet = state.cabinets.find(c => c.id === cabinetId);
         if (cabinet) {
           cabinet.scenePosition = position;
         }
@@ -2835,7 +2849,7 @@ export const useCabinetStore = create<CabinetStore>()(
 
     updateCabinetRotation: (cabinetId, rotation) => {
       set((state) => {
-        const cabinet = state.cabinets.find(c => c.id === cabinetId) as any;
+        const cabinet = state.cabinets.find(c => c.id === cabinetId);
         if (cabinet) {
           cabinet.sceneRotation = rotation;
         }
@@ -2844,7 +2858,7 @@ export const useCabinetStore = create<CabinetStore>()(
 
     rotateCabinet90: (cabinetId, direction) => {
       set((state) => {
-        const cabinet = state.cabinets.find(c => c.id === cabinetId) as any;
+        const cabinet = state.cabinets.find(c => c.id === cabinetId);
         if (cabinet) {
           const currentY = cabinet.sceneRotation?.[1] || 0;
           // CW = clockwise = negative Y rotation, CCW = counter-clockwise = positive
@@ -2860,8 +2874,8 @@ export const useCabinetStore = create<CabinetStore>()(
       if (!source) return null;
 
       // Get source position
-      const sourcePos = (source as any).scenePosition || [0, 0, 0];
-      const sourceRot = (source as any).sceneRotation || [0, 0, 0];
+      const sourcePos = source.scenePosition ?? [0, 0, 0];
+      const sourceRot = source.sceneRotation ?? [0, 0, 0];
 
       // Deep clone the cabinet
       const newCabinet: Cabinet = {
@@ -2894,8 +2908,8 @@ export const useCabinetStore = create<CabinetStore>()(
         newRot = [sourceRot[0], sourceRot[1] + Math.PI, sourceRot[2]];
       }
 
-      (newCabinet as any).scenePosition = newPos;
-      (newCabinet as any).sceneRotation = newRot;
+      newCabinet.scenePosition = newPos;
+      newCabinet.sceneRotation = newRot;
 
       set((state) => {
         state.cabinets.push(newCabinet);
@@ -2911,7 +2925,7 @@ export const useCabinetStore = create<CabinetStore>()(
         let xOffset = 0;
         const gap = 100; // 100mm gap between cabinets
 
-        state.cabinets.forEach((cabinet: any) => {
+        state.cabinets.forEach((cabinet) => {
           const newPos: [number, number, number] = [xOffset, 0, 0];
           cabinet.scenePosition = newPos;
           cabinet.sceneRotation = [0, 0, 0];
@@ -3279,11 +3293,9 @@ export const useCabinetStore = create<CabinetStore>()(
     
     updateCoreMaterial: (id, updates) => {
       set((state) => {
-        if ((state.coreMaterials as Record<string, typeof state.coreMaterials[keyof typeof state.coreMaterials]>)[id]) {
-          state.coreMaterials = {
-            ...state.coreMaterials,
-            [id]: { ...(state.coreMaterials as any)[id], ...updates }
-          };
+        const catalog = state.coreMaterials as Record<string, CoreMaterial>;
+        if (catalog[id]) {
+          catalog[id] = { ...catalog[id], ...updates };
         }
       });
       get().recalculate();
@@ -3291,8 +3303,8 @@ export const useCabinetStore = create<CabinetStore>()(
     
     deleteCoreMaterial: (id) => {
       set((state) => {
-        const { [id]: removed, ...rest } = state.coreMaterials as any;
-        state.coreMaterials = rest as typeof state.coreMaterials;
+        const catalog = state.coreMaterials as Record<string, CoreMaterial>;
+        delete catalog[id];
       });
     },
     
@@ -3308,11 +3320,9 @@ export const useCabinetStore = create<CabinetStore>()(
     
     updateSurfaceMaterial: (id, updates) => {
       set((state) => {
-        if ((state.surfaceMaterials as any)[id]) {
-          state.surfaceMaterials = {
-            ...state.surfaceMaterials,
-            [id]: { ...(state.surfaceMaterials as any)[id], ...updates }
-          };
+        const catalog = state.surfaceMaterials as Record<string, SurfaceMaterial>;
+        if (catalog[id]) {
+          catalog[id] = { ...catalog[id], ...updates };
         }
       });
       get().recalculate();
@@ -3320,8 +3330,8 @@ export const useCabinetStore = create<CabinetStore>()(
     
     deleteSurfaceMaterial: (id) => {
       set((state) => {
-        const { [id]: removed, ...rest } = state.surfaceMaterials as any;
-        state.surfaceMaterials = rest as typeof state.surfaceMaterials;
+        const catalog = state.surfaceMaterials as Record<string, SurfaceMaterial>;
+        delete catalog[id];
       });
     },
     
@@ -3337,11 +3347,9 @@ export const useCabinetStore = create<CabinetStore>()(
     
     updateEdgeMaterial: (id, updates) => {
       set((state) => {
-        if ((state.edgeMaterials as any)[id]) {
-          state.edgeMaterials = {
-            ...state.edgeMaterials,
-            [id]: { ...(state.edgeMaterials as any)[id], ...updates }
-          };
+        const catalog = state.edgeMaterials as Record<string, EdgeMaterial>;
+        if (catalog[id]) {
+          catalog[id] = { ...catalog[id], ...updates };
         }
       });
       get().recalculate();
@@ -3349,8 +3357,8 @@ export const useCabinetStore = create<CabinetStore>()(
     
     deleteEdgeMaterial: (id) => {
       set((state) => {
-        const { [id]: removed, ...rest } = state.edgeMaterials as any;
-        state.edgeMaterials = rest as typeof state.edgeMaterials;
+        const catalog = state.edgeMaterials as Record<string, EdgeMaterial>;
+        delete catalog[id];
       });
     },
     
@@ -3419,6 +3427,34 @@ export const useCabinetStore = create<CabinetStore>()(
 
         panel.grainDirection = direction;
 
+        cabinet.updatedAt = Date.now();
+        state.cabinet = cabinet;
+      });
+    },
+
+    updatePanelProfile: (panelId, profile) => {
+      set((state) => {
+        if (!state.activeCabinetId) return;
+        const cabinetIndex = state.cabinets.findIndex(c => c.id === state.activeCabinetId);
+        if (cabinetIndex === -1) return;
+        const cabinet = state.cabinets[cabinetIndex];
+        const panel = cabinet.panels.find(p => p.id === panelId);
+        if (!panel) return;
+        panel.profile = profile;
+        cabinet.updatedAt = Date.now();
+        state.cabinet = cabinet;
+      });
+    },
+
+    updateSkinConfig: (panelId, skin) => {
+      set((state) => {
+        if (!state.activeCabinetId) return;
+        const cabinetIndex = state.cabinets.findIndex(c => c.id === state.activeCabinetId);
+        if (cabinetIndex === -1) return;
+        const cabinet = state.cabinets[cabinetIndex];
+        const panel = cabinet.panels.find(p => p.id === panelId);
+        if (!panel) return;
+        panel.skin = skin;
         cabinet.updatedAt = Date.now();
         state.cabinet = cabinet;
       });
@@ -4160,7 +4196,7 @@ export const useCabinetStore = create<CabinetStore>()(
         // PHASE 3: Sync to cabinet.manufacturing so DXF/CNC views stay in sync
         withActiveCabinet(state, (cabinet) => {
           if (sharedKeys.includes(key as string) && cabinet.manufacturing) {
-            (cabinet.manufacturing as unknown as Record<string, unknown>)[key as string] = value;
+            cabinet.manufacturing = { ...cabinet.manufacturing, [key]: value };
           }
         }, { skipRecompute: true });
       });

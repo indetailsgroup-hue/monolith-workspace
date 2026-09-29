@@ -1,0 +1,155 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# sync-chapters.yml
+# Auto-sync chapters.json + search_index.json into docs/manufacturing-os-site/
+# whenever a new GitHub Release is published on the monolith-workspace repo.
+#
+# Triggers:
+#   • release (published) — automatic sync on every new release
+#   • workflow_dispatch   — manual trigger with optional version input
+# ─────────────────────────────────────────────────────────────────────────────
+name: Sync Chapters on Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version to tag in chapters.json (e.g. v2.1.0)'
+        required: false
+        default: 'manual'
+      dry_run:
+        description: 'Dry run — build but do not commit'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['true', 'false']
+
+permissions:
+  contents: write
+
+jobs:
+  sync-chapters:
+    name: Rebuild & Sync Chapter Data
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ─────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      # ── 2. Setup Python ─────────────────────────────────────────────
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # ── 3. Install dependencies ─────────────────────────────────────
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r scripts/docs/requirements.txt
+
+      # ── 4. Determine release version ────────────────────────────────
+      - name: Resolve release version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── 5. Build chapters.json ───────────────────────────────────────
+      # Adapt this step to your actual source layout.
+      # Current implementation rebuilds from the existing docs/ markdown/HTML
+      # sources in the repository.  Replace the python script path or add your
+      # own content-generation logic here.
+      - name: Build chapters.json
+        id: build-chapters
+        run: |
+          python - << 'PYEOF'
+          import hashlib, os
+          from pathlib import Path
+          from scripts.docs.site_data import render_chapters, write_json
+          chapters = render_chapters('docs/chapters')
+          output = Path('docs/manufacturing-os-site/chapters.json')
+          write_json(output, chapters)
+          checksum = hashlib.sha256(output.read_bytes()).hexdigest()[:12]
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+              out.write(f'chapter_count={len(chapters)}\nchecksum={checksum}\n')
+          PYEOF
+
+      # ── 6. Rebuild search_index.json ────────────────────────────────
+      - name: Build search_index.json
+        run: |
+          python - << 'PYEOF'
+          import json
+          from pathlib import Path
+          from scripts.docs.site_data import search_index, write_json
+          site = Path('docs/manufacturing-os-site')
+          chapters = json.loads((site / 'chapters.json').read_text(encoding='utf-8'))
+          write_json(site / 'search_index.json', search_index(chapters))
+          PYEOF
+
+      # ── 7. Validate output ───────────────────────────────────────────
+      - name: Validate JSON outputs
+        run: |
+          python - << 'PYEOF'
+          import json
+          from pathlib import Path
+          from scripts.docs.site_data import validate_data
+          site = Path('docs/manufacturing-os-site')
+          validate_data(json.loads((site / 'chapters.json').read_text(encoding='utf-8')),
+                        json.loads((site / 'search_index.json').read_text(encoding='utf-8')),
+                        {str(n) for n in range(1, 56)})
+          print('Validated 55 chapters and matching search entries')
+          PYEOF
+
+      # ── 8. Commit & push (skipped on dry_run) ───────────────────────
+      - name: Commit updated chapter data
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add docs/manufacturing-os-site/chapters.json \
+                  docs/manufacturing-os-site/search_index.json
+
+          # Only commit if there are actual changes
+          if git diff --cached --quiet; then
+            echo "No changes to chapters.json or search_index.json — skipping commit."
+            exit 0
+          fi
+
+          VERSION="${{ steps.version.outputs.tag }}"
+          COUNT="${{ steps.build-chapters.outputs.chapter_count }}"
+          SUM="${{ steps.build-chapters.outputs.checksum }}"
+
+          git commit -m "chore(docs): sync chapters.json on release ${VERSION}
+
+          - Chapters: ${COUNT}
+          - SHA256: ${SUM}
+          - Triggered by: ${{ github.event_name }}
+          - Run: ${{ github.run_id }}"
+
+          git push origin main
+          echo "✅ chapters.json + search_index.json pushed to main"
+
+      # ── 9. Summary ──────────────────────────────────────────────────
+      - name: Write job summary
+        if: always()
+        run: |
+          echo "## Sync Chapters — Job Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Trigger | ${{ github.event_name }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Version | ${{ steps.version.outputs.tag }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Chapters | ${{ steps.build-chapters.outputs.chapter_count }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Checksum | ${{ steps.build-chapters.outputs.checksum }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Dry Run  | ${{ github.event.inputs.dry_run || 'false' }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Repo     | ${{ github.repository }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Run ID   | ${{ github.run_id }} |" >> "$GITHUB_STEP_SUMMARY"

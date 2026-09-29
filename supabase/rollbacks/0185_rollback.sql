@@ -1,0 +1,16 @@
+-- =============================================================================
+-- Migration 0185 Rollback — NO-OP
+-- =============================================================================
+-- Migration 0185 (0185_open_audit_findings_site_code_tables.sql) contains
+-- only comments and no DDL.  There is nothing to reverse.
+--
+-- This file exists solely to satisfy the CI idempotency gate that requires a
+-- paired rollback file for every forward migration.  Running it against any
+-- database state is safe and produces no changes.
+--
+-- Audit reference : v16.8.0 security audit — Phase 1 tracking record
+-- Author          : security-audit bot
+-- Date            : 2026-09-01
+-- =============================================================================
+
+-- intentionally empty

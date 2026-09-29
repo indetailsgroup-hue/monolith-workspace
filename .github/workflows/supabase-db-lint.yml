@@ -1,0 +1,332 @@
+name: Supabase DB Lint
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/seed.sql'
+      - '.github/workflows/supabase-db-lint.yml'
+    types: [opened, synchronize, reopened]
+
+# Optional repository secrets (the job reports a successful skip when absent):
+#   DATABASE_URL — direct PostgreSQL connection string for the hosted project.
+#                  Store it as a GitHub Actions secret; never commit it.
+#   SUPABASE_PROJECT_REF — project reference that DATABASE_URL must target.
+#
+# The lint job reads the remote project schema through DATABASE_URL, so no Docker
+# or temporary Supabase login role is required. It never applies migrations to
+# that project. Fresh migration execution is owned by the local pgTAP/db-verify
+# workflows before any production deploy.
+
+permissions:
+  pull-requests: write
+  issues: write
+  contents: read
+
+
+concurrency:
+  group: supabase-db-lint-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+jobs:
+  db-lint:
+    name: Supabase DB Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check database lint credentials
+        id: preflight
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SUPABASE_PROJECT_REF: ${{ secrets.MONOLITH_SUPABASE_PROJECT_REF }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Supabase DB lint skipped::DATABASE_URL is not configured; fresh local migration and pgTAP gates remain active."
+          elif [ -z "$SUPABASE_PROJECT_REF" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Supabase DB lint skipped::SUPABASE_PROJECT_REF is not configured, so the database target cannot be verified."
+          elif [[ "$DATABASE_URL" != postgres://* && "$DATABASE_URL" != postgresql://* ]]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::error title=Invalid database lint credential::DATABASE_URL must be a full PostgreSQL connection URI."
+            exit 1
+          elif [[ "$DATABASE_URL" != *"$SUPABASE_PROJECT_REF"* ]]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::error title=Database target mismatch::DATABASE_URL does not target the project configured by SUPABASE_PROJECT_REF."
+            exit 1
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.preflight.outputs.ready == 'true'
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Install PostgreSQL client
+        if: steps.preflight.outputs.ready == 'true'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends postgresql-client
+
+      - name: Check hosted schema prerequisites
+        id: schema_preflight
+        if: steps.preflight.outputs.ready == 'true'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PGOPTIONS: '-c default_transaction_read_only=on'
+        run: |
+          bash scripts/capture_hosted_bootstrap_inventory.sh \
+            hosted-lint-inventory.json
+          bash scripts/create_production_bootstrap_plan.sh hosted-lint-plan
+          node scripts/compare_hosted_migration_inventory.mjs \
+            hosted-lint-inventory.json \
+            hosted-lint-plan/migration-manifest.tsv \
+            hosted-lint-plan/duplicate-version-map.tsv \
+            hosted-lint-reconciliation.json \
+            hosted-lint-reconciliation.md
+
+          SCHEMA_READY="$(jq -r \
+            '[.coreTables[]] | all' hosted-lint-inventory.json)"
+          HISTORY_ORDERED="$(jq -r \
+            '.historyOrderingCandidate' hosted-lint-reconciliation.json)"
+          PENDING_MIGRATIONS="$(jq -r \
+            '.canonicalVersionsMissing' hosted-lint-reconciliation.json)"
+
+          if [ "$HISTORY_ORDERED" != "true" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::error title=Supabase DB lint blocked::Hosted migration history is not ordering-compatible with the canonical bundle."
+            exit 1
+          elif [ "$PENDING_MIGRATIONS" -gt 0 ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Supabase DB lint deferred::The hosted schema has $PENDING_MIGRATIONS canonical migrations pending. The guarded production apply owns the blocking post-apply lint."
+          elif [ "$SCHEMA_READY" = "true" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Supabase DB lint skipped::The hosted application schema is not bootstrapped yet; the fresh local migration, pgTAP, and bootstrap-plan gates remain active."
+          fi
+
+      - name: Install Supabase CLI
+        if: steps.schema_preflight.outputs.ready == 'true'
+        uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
+        with:
+          version: 2.116.0
+
+      - name: Run db lint
+        if: steps.schema_preflight.outputs.ready == 'true'
+        id: lint
+        # continue-on-error so the comment step always runs, even on lint failure
+        continue-on-error: true
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          supabase db lint --db-url "$DATABASE_URL" --level error --fail-on error 2>&1 | tee lint-output.txt
+          LINT_EXIT=${PIPESTATUS[0]}
+          echo "exit_code=$LINT_EXIT" >> "$GITHUB_OUTPUT"
+
+      - name: Parse lint output
+        if: always() && steps.schema_preflight.outputs.ready == 'true'
+        run: |
+          python3 << 'PYEOF'
+          import re, json, pathlib
+
+          raw = pathlib.Path("lint-output.txt").read_text(errors="replace")
+
+          findings = []
+          # Supabase CLI lint format:
+          #   WARNING  path/to/file.sql:line:col  rule_name  human-readable description
+          #   ERROR    path/to/file.sql:line:col  rule_name  human-readable description
+          pattern = re.compile(
+              r"^\s*(ERROR|WARNING|HINT|INFO)\s+"      # level
+              r"([\w./ \\-]+(?::\d+(?::\d+)?)?)\s+"   # location (file:line:col)
+              r"(\w[\w_-]*)\s+"                        # rule name
+              r"(.+)$",                                 # description
+              re.IGNORECASE | re.MULTILINE,
+          )
+          for m in pattern.finditer(raw):
+              level, location, rule, message = m.groups()
+              findings.append({
+                  "level":    level.upper(),
+                  "location": location.strip(),
+                  "rule":     rule.strip(),
+                  "message":  message.strip(),
+              })
+
+          # Fallback: capture any line that starts with ERROR or WARNING
+          if not findings:
+              for line in raw.splitlines():
+                  m2 = re.match(r"^\s*(ERROR|WARNING)\s+(.+)$", line, re.IGNORECASE)
+                  if m2:
+                      findings.append({
+                          "level":    m2.group(1).upper(),
+                          "location": "",
+                          "rule":     "",
+                          "message":  m2.group(2).strip(),
+                      })
+
+          error_count = sum(1 for f in findings if f["level"] == "ERROR")
+          warn_count  = sum(1 for f in findings if f["level"] == "WARNING")
+
+          result = {
+              "findings":    findings,
+              "error_count": error_count,
+              "warn_count":  warn_count,
+              "total":       len(findings),
+              # Truncate raw output to avoid huge JSON blobs
+              "raw_tail":    raw[-4000:] if len(raw) > 4000 else raw,
+          }
+          pathlib.Path("lint-results.json").write_text(json.dumps(result, indent=2))
+          print(f"Lint: {error_count} error(s), {warn_count} warning(s), {len(findings)} total")
+          PYEOF
+
+      - name: Upload lint artifacts
+        if: always() && steps.schema_preflight.outputs.ready == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: supabase-lint-results
+          path: |
+            lint-output.txt
+            lint-results.json
+          if-no-files-found: warn
+
+      - name: Post lint comment on PR
+        if: always() && steps.schema_preflight.outputs.ready == 'true'
+        continue-on-error: true
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+
+            const MARKER = '<!-- supabase-db-lint -->';
+
+            // ── Load parsed results ────────────────────────────────────────────
+            let data = null;
+            try {
+              data = JSON.parse(fs.readFileSync('lint-results.json', 'utf8'));
+            } catch (_) { /* file missing — lint step may have failed to produce output */ }
+
+            const lintExitCode = '${{ steps.lint.outputs.exit_code }}';
+            const lintFailed   = lintExitCode !== '0';
+
+            let body;
+
+            if (!data) {
+              // Lint runner itself failed (e.g. missing secret, network error)
+              body = [
+                MARKER,
+                '## 🔍 Supabase DB Lint',
+                '',
+                '> ❌ The lint runner did not produce output — check the workflow logs.',
+                '',
+                lintFailed
+                  ? `Lint exited with code \`${lintExitCode}\`.`
+                  : '',
+              ].join('\n');
+            } else {
+              const { findings, error_count, warn_count, total, raw_tail } = data;
+
+              const runnerFailed = lintFailed && error_count === 0;
+              const statusEmoji  = runnerFailed || error_count > 0 ? '❌' : warn_count > 0 ? '⚠️' : '✅';
+              const statusLabel  = runnerFailed
+                ? `**Lint command failed with exit code \`${lintExitCode}\`** — inspect the raw output; schema cleanliness was not established`
+                : error_count > 0
+                ? `**${error_count} error(s) found** — review required`
+                : warn_count > 0
+                  ? `**${warn_count} warning(s)** — no blocking errors`
+                  : '**No issues found** — all checks passed';
+
+              const lines = [
+                MARKER,
+                `## ${statusEmoji} Supabase DB Lint`,
+                '',
+                statusLabel,
+                '',
+                '| | Count |',
+                '|---|---|',
+                `| ❌ Errors   | ${error_count} |`,
+                `| ⚠️ Warnings | ${warn_count}  |`,
+                `| 📋 Total    | ${total}       |`,
+              ];
+
+              if (findings.length > 0) {
+                // Group by level: errors first, then warnings
+                const byLevel = (lvl) => findings.filter(f => f.level === lvl);
+                const errors   = byLevel('ERROR');
+                const warnings = byLevel('WARNING');
+                const others   = findings.filter(f => !['ERROR','WARNING'].includes(f.level));
+
+                const renderGroup = (label, emoji, items) => {
+                  if (!items.length) return [];
+                  const rows = items.map(f => {
+                    const loc  = f.location ? `\`${f.location}\`` : '—';
+                    const rule = f.rule     ? `\`${f.rule}\``     : '—';
+                    const msg  = f.message.slice(0, 150);
+                    return `| ${emoji} ${f.level} | ${loc} | ${rule} | ${msg} |`;
+                  });
+                  return [
+                    '',
+                    `### ${emoji} ${label}`,
+                    '',
+                    '| Level | Location | Rule | Message |',
+                    '|---|---|---|---|',
+                    ...rows,
+                  ];
+                };
+
+                lines.push(...renderGroup('Errors',   '❌', errors));
+                lines.push(...renderGroup('Warnings', '⚠️', warnings));
+                lines.push(...renderGroup('Other',    'ℹ️', others));
+              }
+
+              // Raw tail (collapsed) — useful for debugging rules not yet parsed
+              if (raw_tail && raw_tail.trim()) {
+                lines.push('');
+                lines.push('<details>');
+                lines.push('<summary>Raw lint output (tail)</summary>');
+                lines.push('');
+                lines.push('```');
+                lines.push(raw_tail.trim().slice(0, 3000));
+                lines.push('```');
+                lines.push('');
+                lines.push('</details>');
+              }
+
+              body = lines.join('\n');
+            }
+
+            // ── Upsert comment ─────────────────────────────────────────────────
+            const { data: comments } = await github.rest.issues.listComments({
+              owner:        context.repo.owner,
+              repo:         context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.find(c => c.body && c.body.includes(MARKER));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner:      context.repo.owner,
+                repo:       context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+              console.log(`Updated lint comment ${existing.id} on PR #${context.issue.number}`);
+            } else {
+              await github.rest.issues.createComment({
+                owner:        context.repo.owner,
+                repo:         context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+              console.log(`Created lint comment on PR #${context.issue.number}`);
+            }
+
+      # ── Hard-fail the job if lint reported errors ─────────────────────────────
+      # This runs AFTER the comment is posted so reviewers always see the output.
+      - name: Fail job on lint errors
+        if: steps.schema_preflight.outputs.ready == 'true' && steps.lint.outputs.exit_code != '0'
+        run: |
+          echo "::error::supabase db lint did not complete cleanly — see PR comment and raw artifact for details"
+          exit 1

@@ -1,0 +1,241 @@
+name: pgTAP Tests
+
+# This workflow is fully local and does not require hosted Supabase secrets.
+
+on:
+  schedule:
+    # Every Monday at 02:00 UTC — catches regressions from weekend dependency updates
+    - cron: '0 2 * * 1'
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  pgtap:
+    name: Run pgTAP suites against fresh Supabase DB
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      # -----------------------------------------------------------------------
+      # 1. Checkout repository
+      # -----------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install application dependencies
+        run: npm ci
+
+      # -----------------------------------------------------------------------
+      # 2. Lint RLS org_id coverage (delta mode — scoped to changed files)
+      #    Runs BEFORE any Supabase infra to fail fast on static analysis.
+      #    On pull_request: diffs against origin/<base_ref>.
+      #    On push to main:  diffs most recent commit (HEAD~1..HEAD).
+      #    Skips gracefully when no migration files were touched.
+      # -----------------------------------------------------------------------
+      - name: Lint RLS org_id coverage
+        run: |
+          # Fetch enough history for an accurate diff (shallow clone only has HEAD)
+          git fetch --depth=50 origin "${{ github.base_ref || 'main' }}" 2>/dev/null || true
+
+          # Collect non-rollback migration files changed in this event
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            CHANGED=$(git diff --name-only \
+              "origin/${{ github.base_ref }}...HEAD" \
+              -- 'supabase/migrations/*.sql' \
+              | grep -v '_rollback' || true)
+          else
+            # push to main: scope to files in the most recent commit
+            CHANGED=$(git diff --name-only HEAD~1 HEAD \
+              -- 'supabase/migrations/*.sql' \
+              | grep -v '_rollback' || true)
+          fi
+
+          if [ -z "$CHANGED" ]; then
+            echo "[lint-rls-org-id] No migration files changed — skipping lint."
+            exit 0
+          fi
+
+          echo "[lint-rls-org-id] Linting changed files:"
+          printf '  %s\n' $CHANGED
+
+          # Pass changed files as positional args (delta mode)
+          python3 scripts/lint-rls-org-id.py $CHANGED
+
+      # -----------------------------------------------------------------------
+      # 3. Set up Supabase CLI
+      # -----------------------------------------------------------------------
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
+        with:
+          version: 2.116.0
+
+      # -----------------------------------------------------------------------
+      # 4. Install pg_prove (TAP::Parser::SourceHandler::pgTAP)
+      # -----------------------------------------------------------------------
+      - name: Install pg_prove and pgTAP
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            postgresql-client \
+            libtap-parser-sourcehandler-pgtap-perl
+          # pg_prove is provided by the perl package above
+          pg_prove --version
+
+      # -----------------------------------------------------------------------
+      # 5. Prepare a deterministic fresh-database migration set.
+      #    The shared script splits the historical bootstrap on its SQL section
+      #    marker (never a line number), places it around 0172, and merges files
+      #    that share a Supabase migration version.
+      # -----------------------------------------------------------------------
+      - name: Prepare canonical fresh-DB migrations
+        run: bash scripts/prepare_supabase_migrations_ci.sh --merge-duplicates
+
+      # -----------------------------------------------------------------------
+      # 6. Start the repository's local Supabase stack (no hosted token needed)
+      # -----------------------------------------------------------------------
+      - name: Start Supabase local stack
+        run: supabase start
+
+      # -----------------------------------------------------------------------
+      # 7. Apply all migrations (db reset runs migrations from scratch)
+      #    NOTE: rollback scripts live in supabase/rollbacks/ (not migrations/)
+      #    so they are NOT applied by db reset. This avoids duplicate publication
+      #    membership errors (SQLSTATE 42710) that occur when rollback SQL runs
+      #    as a forward migration in CI.
+      # -----------------------------------------------------------------------
+      - name: Reset database and apply migrations
+        run: supabase db reset --local
+
+      # -----------------------------------------------------------------------
+      # 8. Enable pgTAP extension
+      # -----------------------------------------------------------------------
+      - name: Enable pgTAP extension
+        run: |
+          DB_URL="postgresql://supabase_admin:postgres@127.0.0.1:54322/postgres"
+          psql "$DB_URL" -c "CREATE EXTENSION IF NOT EXISTS pgtap;"
+        env:
+          PGPASSWORD: postgres
+
+      # -----------------------------------------------------------------------
+      # 9. Run pg_prove on all test files
+      #    Runs: supabase/tests/*.sql — 511 total pgTAP assertions:
+      #      • 474  forward migration tests
+      #             (0179 F1: 14 · 0179 NNB: 35 · 0180: 17 · 0181: 18 · 0182: 13 · 0183: 13 ·
+      #              0176 notification_preferences: 16 · 0186 critical_tables: 20 ·
+      #              0187 installation_domain: 53 · 0188 factory_domain: 25 ·
+      #              0189 line_oa_domain: 49)
+#              0190 finance_accounting_domain: 45)
+#              0191 package_sales_domain: 35)
+#              0192 capture_documents_domain: 35)
+#              0193 site_field_ops_domain: 35)
+#              0194 operational_misc_domain: 51)
+      #      •  12  rollback verification tests (0183_rollback_verification.sql)
+      #      •  25  cross-tenant isolation tests (cross_tenant_isolation.sql:
+      #             T01–T02 setup · T03–T08 SELECT · T09–T12 INSERT 42501 ·
+      #             T13–T14 UPDATE · T23–T25 DELETE · T15–T17 own-org · T18–T22 integrity)
+      #    Fails the job if any TAP assertion fails.
+      # -----------------------------------------------------------------------
+      - name: Run pg_prove on supabase/tests/*.sql
+        run: |
+          DB_URL="postgresql://supabase_admin:postgres@127.0.0.1:54322/postgres"
+          pg_prove \
+            --dbname "$DB_URL" \
+            --verbose \
+            supabase/tests/*.sql
+        env:
+          PGPASSWORD: postgres
+
+      # -----------------------------------------------------------------------
+      # 10. Run the TypeScript RLS/migration/integration suites against the
+      #     same real local stack. A nonzero test exit fails this job; retain
+      #     the JSON report on every outcome. Some legacy cases still have
+      #     conditional early returns, so suite success is not proof that
+      #     every optional database path was exercised.
+      # -----------------------------------------------------------------------
+      - name: Export local Supabase credentials
+        run: |
+          eval "$(supabase status --output env)"
+          echo "::add-mask::$ANON_KEY"
+          echo "::add-mask::$SERVICE_ROLE_KEY"
+          {
+            echo "SUPABASE_URL=$API_URL"
+            echo "SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "ANON_KEY=$ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+            echo "SUPABASE_SERVICE_KEY=$SERVICE_ROLE_KEY"
+            echo "SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+            echo "TEST_ORG_A_ID=aaaaaaaa-0000-0000-0000-000000000001"
+            echo "TEST_ORG_B_ID=bbbbbbbb-0000-0000-0000-000000000002"
+            echo "TEST_ORG_A_USER_EMAIL=org-a-user@monolith-test.local"
+            echo 'TEST_ORG_A_USER_PASS=TestPa$$0rg4'
+          } >> "$GITHUB_ENV"
+
+      - name: Install test-only SQL helper
+        run: |
+          psql \
+            "postgresql://supabase_admin:postgres@127.0.0.1:54322/postgres" \
+            --set ON_ERROR_STOP=1 \
+            --file scripts/setup_supabase_integration_ci.sql
+        env:
+          PGPASSWORD: postgres
+
+      - name: Seed deterministic tenant fixtures
+        run: node scripts/seed_supabase_integration_ci.mjs
+
+      - name: Run TypeScript database suites (required)
+        id: legacy_database_tests
+        run: npm run test:database -- --reporter=default --reporter=json --outputFile=database-vitest-report.json
+
+      - name: Report TypeScript database suite outcome
+        if: always()
+        run: |
+          case "${{ steps.legacy_database_tests.outcome }}" in
+            success)
+              echo "TypeScript database suites passed; inspect the JSON report and suite guards for coverage."
+              ;;
+            failure)
+              echo "::error::TypeScript database suites failed; this job is blocked. See the uploaded JSON report."
+              exit 1
+              ;;
+            skipped)
+              echo "::notice::TypeScript database suites were skipped; database verification was not established."
+              ;;
+            cancelled)
+              echo "::warning::TypeScript database suites were cancelled; database verification was not established."
+              ;;
+            *)
+              echo "::error::TypeScript database suite outcome is unavailable; database verification was not established."
+              exit 1
+              ;;
+          esac
+
+      - name: Upload database integration evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-integration-${{ github.sha }}
+          path: database-vitest-report.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      # -----------------------------------------------------------------------
+      # 11. Stop Supabase local stack (cleanup — always runs)
+      # -----------------------------------------------------------------------
+      - name: Stop Supabase local stack
+        if: always()
+        run: supabase stop

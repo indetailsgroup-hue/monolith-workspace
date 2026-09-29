@@ -1,31 +1,71 @@
-# CODEOWNERS - GitHub automatic review assignment
+# CODEOWNERS — MONOLITH Manufacturing OS
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 #
+# Rules are evaluated last-match-wins (bottom entry overrides top for the same path).
+# Every PR touching a listed path requires approval from the listed owner(s).
+
+# ──────────────────────────────────────────────────────────────────
+# Default owners — all files not matched by a more specific rule
+# ──────────────────────────────────────────────────────────────────
+*                                   @indetailsgroup-hue
+
+# ──────────────────────────────────────────────────────────────────
+# People & Culture Module
+# Owners: people-culture team
+# Covers: components, stores, types, tests, stories, and visual specs
+# ──────────────────────────────────────────────────────────────────
+src/people/                         @indetailsgroup-hue
+src/culture/                        @indetailsgroup-hue
+
+# People & Culture Storybook stories
+src/people/*.stories.tsx            @indetailsgroup-hue
+src/culture/*.stories.tsx           @indetailsgroup-hue
+
+# People & Culture Playwright visual specs
+src/people/__tests__/*.visual.spec.ts   @indetailsgroup-hue
+src/culture/__tests__/*.visual.spec.ts  @indetailsgroup-hue
+
+# ──────────────────────────────────────────────────────────────────
+# Database migrations — require both core and the relevant module team
+# ──────────────────────────────────────────────────────────────────
+supabase/migrations/                @indetailsgroup-hue
+supabase/migrations/*people*        @indetailsgroup-hue
+supabase/migrations/*culture*       @indetailsgroup-hue
+supabase/tests/                     @indetailsgroup-hue
+
+# ──────────────────────────────────────────────────────────────────
+# CI / Workflows — require core team sign-off on all workflow changes
+# ──────────────────────────────────────────────────────────────────
+.github/workflows/                  @indetailsgroup-hue
+.github/workflows/people-culture-ci.yml   @indetailsgroup-hue
+.github/workflows/chromatic.yml           @indetailsgroup-hue
+
+# ──────────────────────────────────────────────────────────────────
+# Multi-tenant core — require core team for any tenant/RLS changes
+# ──────────────────────────────────────────────────────────────────
+src/tenant/                         @indetailsgroup-hue
+src/tenant/types.ts                 @indetailsgroup-hue
+
+# ──────────────────────────────────────────────────────────────────
+# Security-sensitive migration files — require core team
+# ──────────────────────────────────────────────────────────────────
+**/20260828_multi_tenant_schema.sql       @indetailsgroup-hue
+**/20261001_people_culture_schema.sql     @indetailsgroup-hue
+docs/security-posture-report.md           @indetailsgroup-hue
+
+# ──────────────────────────────────────────────────────────────────
+# SECURITY-CRITICAL: Pinned Keysets — Dual Approval Required
 # PR-S4.3: Key Rotation Ceremony + Dual Approval (2-Man Rule)
-#
-# This file defines code ownership for security-sensitive files.
-# PRs that modify these files require review from the specified owners.
-#
-# For dual approval (2-man rule) on keyset changes:
-# - Both @security-custodian-a AND @security-custodian-b must approve
-# - Self-approval is not allowed (enforced by branch protection)
-#
+# Both @security-custodian-a AND @security-custodian-b must approve.
+# Self-approval is not allowed (enforced by branch protection).
 # See: security/key-ceremonies/CEREMONY_SPEC.md
-#
-# v0.10.8.5 - PR-S4.3: Key Rotation Ceremony
+# ──────────────────────────────────────────────────────────────────
 
-# =============================================================================
-# SECURITY-CRITICAL: Pinned Keysets (Dual Approval Required)
-# =============================================================================
-
-# Production keysets - require dual custodian approval
+# Production keysets — dual custodian approval
 /tools/iimos-verify/keys/*.json                    @security-custodian-a @security-custodian-b
 
-# Development keysets (less strict but still requires custodians)
+# Development keysets
 /tools/iimos-verify/keys/dev.*.json                @security-custodian-a
-
-# =============================================================================
-# SECURITY-SENSITIVE: Key Management Scripts
-# =============================================================================
 
 # Key lifecycle scripts
 /tools/iimos-verify/scripts/update_keyset.ts       @security-custodian-a @security-custodian-b
@@ -36,35 +76,23 @@
 # Key type definitions
 /tools/iimos-verify/src/keys/                      @security-custodian-a @security-custodian-b
 
-# =============================================================================
-# SECURITY-SENSITIVE: Key Rotation Ceremonies
-# =============================================================================
-
-# Ceremony documentation and evidence
+# Key rotation ceremony documentation and evidence
 /security/key-ceremonies/                          @security-custodian-a @security-custodian-b
 
-# =============================================================================
-# CI/CD Security Guards
-# =============================================================================
-
-# Keyset validation workflow
+# Keyset validation workflows
 /.github/workflows/keyset-validate.yml             @security-custodian-a @security-custodian-b
 /.github/workflows/keyset-dual-approval.yml        @security-custodian-a @security-custodian-b
 
-# This CODEOWNERS file itself
-/.github/CODEOWNERS                                @security-custodian-a @security-custodian-b
-
-# =============================================================================
-# RELEASE SECURITY
-# =============================================================================
-
-# Release/signing related code
+# Release and crypto signing code
 /src/release/                                      @security-custodian-a
 /src/crypto/                                       @security-custodian-a
 
-# =============================================================================
-# DEFAULT OWNERSHIP (Optional)
-# =============================================================================
-
-# All other files - standard review
-# * @default-reviewers
+# ──────────────────────────────────────────────────────────────────
+# Repository configuration — core team only
+# (Last-match-wins: this overrides the keyset-workflow rules above
+#  for .github/CODEOWNERS itself, requiring core + dual custodians)
+# ──────────────────────────────────────────────────────────────────
+.github/CODEOWNERS                  @indetailsgroup-hue @security-custodian-a @security-custodian-b
+.github/dependabot.yml              @indetailsgroup-hue
+.github/ISSUE_TEMPLATE/             @indetailsgroup-hue
+CHANGELOG.md                        @indetailsgroup-hue

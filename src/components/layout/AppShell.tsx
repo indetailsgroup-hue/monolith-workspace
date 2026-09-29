@@ -264,6 +264,15 @@ export function AppShell({
 
           <div className="h-6 w-px bg-oi-border" />
 
+          <Link
+            to="/modules"
+            className="text-xs font-medium text-gray-400 hover:text-green-400 transition-colors"
+          >
+            Business Modules
+          </Link>
+
+          <div className="h-6 w-px bg-oi-border" />
+
           <div className="flex items-center gap-2">
             <span className="text-textc-primary font-medium">{project.name}</span>
             <span className="text-xs font-mono text-gray-500 bg-surface-3 px-2 py-0.5 rounded border border-oi-border">v{project.version}</span>

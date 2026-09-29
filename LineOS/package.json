@@ -1,0 +1,12 @@
+{
+  "name": "monolith-line-flex-studio",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.20.0" },
+  "scripts": {
+    "test": "node --test",
+    "test:core": "node --test tests/line-flex-model.test.mjs tests/line-flex-json-validator.test.mjs tests/line-flex-actions-receipt.test.mjs tests/line-flex-studio-state.test.mjs tests/line-design-approval-contract.test.mjs tests/line-design-approval-record.test.mjs tests/line-design-approval-sandbox.test.mjs tests/line-design-approval-security.test.mjs",
+    "test:design-approval": "node --test tests/line-design-approval-contract.test.mjs tests/line-design-approval-record.test.mjs tests/line-design-approval-sandbox.test.mjs tests/line-design-approval-security.test.mjs tests/line-flex-json-validator.test.mjs tests/line-flex-structure.test.mjs tests/line-flex-studio-state.test.mjs",
+    "test:contracts": "node --test tests/line-flex-structure.test.mjs tests/docs-contract.test.mjs"
+  }
+}

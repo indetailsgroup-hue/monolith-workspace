@@ -8,12 +8,48 @@
  * - Rows sorted by cabinetId, then by partId
  * - Numbers rounded to 3 decimal places
  *
- * @version 1.0.0 - Phase B2: Factory Packet Generator MVP
+ * @version 1.1.0 - Task 12: compute developedLength + kerfCount for curved panels
  */
 
 import type { Cabinet, CabinetPanel } from '../../../core/types/Cabinet';
+import type { KerfMaterial, KerfToolProfile } from '../../../core/catalog/KerfBending';
 import type { PacketCutList, PacketCutListRow } from '../types';
 import { roundToPrecision, serializeDeterministicPretty } from '../manifestHash';
+import {
+  computeCurveFields,
+  resolveMaterial,
+  DEFAULT_KERF_TOOL,
+} from './curveFieldsComputer';
+
+// ============================================
+// OPTIONS
+// ============================================
+
+/**
+ * Options for buildCutListData() — all fields are optional, so existing callers
+ * continue to work without any changes.
+ */
+export interface BuildCutListOptions {
+  /**
+   * Explicit coreMaterialId → KerfMaterial mapping.
+   * When a panel's coreMaterialId appears here the value overrides the heuristic.
+   * Example: { 'mat-mdf-18': 'MDF', 'mat-birch-18': 'PLYWOOD' }
+   */
+  materialMap?: Record<string, KerfMaterial>;
+
+  /**
+   * KerfToolProfile to use for kerf-pattern generation.
+   * Defaults to DEFAULT_KERF_TOOL (SAW 3.2 mm blade, k_eff 3.4 mm).
+   */
+  kerfTool?: KerfToolProfile;
+
+  /**
+   * KerfMaterial to fall back to when coreMaterialId is not in materialMap
+   * and the heuristic returns 'MDF' (ambiguous).
+   * Defaults to 'MDF'.
+   */
+  fallbackMaterial?: KerfMaterial;
+}
 
 // ============================================
 // EDGE BANDING HELPERS
@@ -78,12 +114,17 @@ function calculateCutH(
 // ============================================
 
 /**
- * Convert a CabinetPanel to PacketCutListRow
+ * Convert a CabinetPanel to PacketCutListRow.
+ *
+ * When the panel has a curved profile (ARC / S_CURVE / ROUNDED_CORNER) and
+ * BuildCutListOptions are provided, `developedLength` and `kerfCount` are
+ * populated; otherwise both fields are left as `undefined`.
  */
 function panelToCutListRow(
   panel: CabinetPanel,
   cabinetId: string,
-  rowNo: number
+  rowNo: number,
+  options?: BuildCutListOptions,
 ): PacketCutListRow {
   // Get edge banding thicknesses
   const edgeL = getEdgeThickness(panel.edges.left);
@@ -110,6 +151,33 @@ function panelToCutListRow(
     panel.grainDirection === 'HORIZONTAL' ? 'HORIZONTAL' :
     panel.grainDirection === 'VERTICAL' ? 'VERTICAL' : 'NONE';
 
+  // ── Curve fields (Task 12) ──────────────────────────────────────────────
+  let developedLength: number | undefined;
+  let kerfCount: number | undefined;
+  let projectedDepth: number | undefined;
+  let curvedEdge: 'TOP' | 'BOTTOM' | 'LEFT' | 'RIGHT' | undefined;
+
+  if (panel.profile && panel.profile.kind !== 'RECT') {
+    const tool = options?.kerfTool ?? DEFAULT_KERF_TOOL;
+    const material = resolveMaterial(
+      panel.coreMaterialId,
+      options?.materialMap,
+      options?.fallbackMaterial,
+    );
+    const fields = computeCurveFields(panel, tool, material);
+    if (fields) {
+      developedLength = roundToPrecision(fields.developedLength);
+      kerfCount = fields.kerfCount; // integer — no rounding needed
+      if (fields.projectedDepth > 0) {
+        projectedDepth = roundToPrecision(fields.projectedDepth);
+      }
+      if (fields.curvedEdge !== null) {
+        curvedEdge = fields.curvedEdge;
+      }
+    }
+  }
+  // ────────────────────────────────────────────────────────────────────────
+
   return {
     rowNo,
     partId: panel.id,
@@ -134,6 +202,10 @@ function panelToCutListRow(
     cutH: roundToPrecision(cutH),
     grain,
     note: panel.role,
+    ...(developedLength !== undefined ? { developedLength } : {}),
+    ...(kerfCount !== undefined ? { kerfCount } : {}),
+    ...(projectedDepth !== undefined ? { projectedDepth } : {}),
+    ...(curvedEdge !== undefined ? { curvedEdge } : {}),
   };
 }
 
@@ -142,12 +214,16 @@ function panelToCutListRow(
 // ============================================
 
 /**
- * Build PacketCutList from Cabinet(s)
+ * Build PacketCutList from Cabinet(s).
  *
  * @param cabinets - Source Cabinet(s) from store
+ * @param options  - Optional curve-field computation options (Task 12)
  * @returns PacketCutList for factory packet
  */
-export function buildCutListData(cabinets: Cabinet | Cabinet[]): PacketCutList {
+export function buildCutListData(
+  cabinets: Cabinet | Cabinet[],
+  options?: BuildCutListOptions,
+): PacketCutList {
   const cabinetArray = Array.isArray(cabinets) ? cabinets : [cabinets];
 
   if (cabinetArray.length === 0) {
@@ -171,7 +247,7 @@ export function buildCutListData(cabinets: Cabinet | Cabinet[]): PacketCutList {
     const visiblePanels = cabinet.panels.filter(p => p.visible);
 
     for (const panel of visiblePanels) {
-      rows.push(panelToCutListRow(panel, cabinet.id, rowNo));
+      rows.push(panelToCutListRow(panel, cabinet.id, rowNo, options));
       rowNo++;
     }
   }
@@ -214,12 +290,16 @@ export function buildCutListData(cabinets: Cabinet | Cabinet[]): PacketCutList {
 }
 
 /**
- * Build Cut List JSON string
+ * Build Cut List JSON string.
  *
  * @param cabinets - Source Cabinet(s) from store
+ * @param options  - Optional curve-field computation options
  * @returns Deterministic JSON string
  */
-export function buildCutListJson(cabinets: Cabinet | Cabinet[]): string {
-  const data = buildCutListData(cabinets);
+export function buildCutListJson(
+  cabinets: Cabinet | Cabinet[],
+  options?: BuildCutListOptions,
+): string {
+  const data = buildCutListData(cabinets, options);
   return serializeDeterministicPretty(data);
 }

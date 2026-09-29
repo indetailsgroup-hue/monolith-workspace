@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>MONOLITH LINE Design Approval Port A1 — Design Specification</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1>MONOLITH LINE Design Approval Port A1 — Design Specification</h1>
+<ul>
+<li><strong>Edition:</strong> English</li>
+<li><strong>Design date:</strong> 2 August 2026</li>
+<li><strong>Status:</strong> Approved design; written specification awaiting owner approval</li>
+<li><strong>Approved experience:</strong> A — Trust Concierge</li>
+<li><strong>Approved first slice:</strong> Design Approval</li>
+<li><strong>Approved adapter level:</strong> A1 — Local sandbox product adapter</li>
+<li><strong>Decision owner:</strong> MONOLITH owner</li>
+</ul>
+<blockquote><p><strong>Design decision:</strong> retain LINE as the natural Human Surface while introducing only a narrow <code>DesignApprovalPort</code>. A1 proves the review, stale-revision, idempotency, and receipt contracts with a conspicuous no-business-effect sandbox adapter. It does not create a generic integration gateway, a second workflow source of truth, a production tenant claim, a live LIFF connection, a workflow mutation, or a signed receipt.</p></blockquote>
+<h2>1. Executive decision</h2>
+<p>The approved A1 outcome is:</p>
+<blockquote><p><strong>Human Surface contract-ready with sandbox adapter — not connected to MONOLITH runtime.</strong></p></blockquote>
+<p>The first journey is:</p>
+<p><code>Design ready -&gt; open private review -&gt; inspect bound revision -&gt; confirm sandbox attempt -&gt; receive Sandbox Verification Record — Demo · No Business Effect</code></p>
+<p>This phase is deliberately smaller than a runtime integration. It proves the client-side port, state machine, failure semantics, display provenance, and contract tests required before a Local Supabase or deployed LIFF adapter is permitted.</p>
+<h2>2. Problem and product principle</h2>
+<p>MONOLITH uses LINE in three natural communication lanes:</p>
+<ol>
+<li>LINE OA 1:1 for lead intake, sales discussion, customer identity binding, document delivery, approval requests, and structured orders;</li>
+<li>personal LINE Push for work notifications, SLA reminders, approvals, and escalation;</li>
+<li>LINE Groups for field communication, evidence capture, issue reporting, and curated customer updates.</li>
+</ol>
+<p>The controlling principle is:</p>
+<blockquote><p>The front of house may use LINE naturally, but every real business effect must return to MONOLITH's authoritative database, workflow, permissions, and audit controls.</p></blockquote>
+<p>A1 creates no real business effect. It must therefore identify itself as a sandbox at every consequential step and must never imply that MONOLITH workflow state changed.</p>
+<h2>3. Evidence baseline and repository routing</h2>
+<p>All current-state claims in this specification distinguish the two Git roots.</p>
+<div class="tablewrap"><table><thead><tr><th>Git root</th><th>Evidence role</th><th>Design-time snapshot</th><th>Scope statement</th></tr></thead><tbody>
+<tr><td><code>C:\Users\thai3\determined-williams (2)</code></td><td>Governance/bootstrap root and the current standalone LineOS Human Surface prototype</td><td><code>guardrails/claim-linters</code> / <code>f0753224b4e2f62df67347e08aa5063284b1a9ff</code></td><td>Supports claims about Flex Studio, mock review, demo receipt, documents, and this design only.</td></tr>
+<tr><td><code>C:\Users\thai3\determined-williams (2)\determined-williams</code></td><td>Active MONOLITH TypeScript/React/Supabase product repository</td><td><code>fix/dxf-truth-chain</code> / <code>a1e9006add32fe3ce5346eb6ca94e8bdce1d13ab</code></td><td>Supports claims about product identity, LIFF gatekeeper, workflow, RLS, approval RPCs, audit, lineage, and trust components.</td></tr>
+</tbody></table></div>
+<p>Both worktrees contain pre-existing or concurrent changes. The inspected LineOS Flex files and the nested design-view/approval files were clean in targeted status checks. The nested worktree has unrelated existing modifications, including <code>supabase/functions/_shared/order-adapter.ts</code>, <code>tests/line-oa-commerce/ts/orderNormalization.property.test.ts</code>, generated <code>dist</code> assets, and cache files. A1 implementation must not modify or normalize those paths.</p>
+<p>The 21 July 2026 repository-scope correction remains controlling: substantial product implementation exists in the nested repository, but production readiness and a canonical platform-tenant boundary are not established. The nested migrations are site-scoped; <code>site_code</code> is not automatically a tenant.</p>
+<h2>4. Verified existing substrate</h2>
+<h3>4.1 Parent Human Surface</h3>
+<p>The current standalone LineOS prototype implements this local-only chain:</p>
+<p><code>preset -&gt; editor -&gt; validator -&gt; Flex JSON -&gt; risk routing -&gt; mock private review -&gt; demo transaction -&gt; Verification Receipt — Demo</code></p>
+<p>Relevant evidence includes:</p>
+<ul>
+<li><code>LineOS/line-flex-studio.html</code> — standalone Studio and mock dialogs;</li>
+<li><code>LineOS/line-flex-studio.mjs</code> — state, preview, review journey, and receipt rendering;</li>
+<li><code>LineOS/line-flex-actions.mjs</code> — browser-local transaction binding and expiry checks;</li>
+<li><code>LineOS/line-flex-receipt.mjs</code> — SHA-256 demo digest explicitly labelled as non-production;</li>
+<li><code>LineOS/line-flex-presets.mjs</code> — editable demonstration values, not product authority.</li>
+</ul>
+<p>The current prototype is not connected to LINE SDKs, MONOLITH APIs, Supabase, workflow, or product audit.</p>
+<h3>4.2 Nested MONOLITH product</h3>
+<p>The nested product already contains substrate that future integration must reuse rather than rebuild:</p>
+<ul>
+<li><code>supabase/functions/customer-design-view/index.ts</code> verifies a LIFF ID token, resolves canonical customer identity, and calls a server-side allowlist RPC;</li>
+<li><code>supabase/migrations/0026_customer_sla_and_design_view.sql</code> restricts the customer view to matching work items, safe design artifacts, and pending customer approvals;</li>
+<li><code>supabase/functions/approval-postback/index.ts</code> handles signed LINE webhook approval transport;</li>
+<li><code>supabase/migrations/0031_order_keyed_process_model.sql</code> contains current approval decision logic, authorization, optimistic locking, idempotency, quorum effects, and audit writes;</li>
+<li><code>supabase/migrations/0003_workflow_audit_immutability.sql</code> enforces append-only workflow audit rows;</li>
+<li><code>src/core/lineage/lineageTypes.ts</code> defines content-hash revision identities, but the reviewed lineage writer currently persists browser-local JSONL and is not server authority.</li>
+</ul>
+<p>Presence is not proof of hosted deployment, current migration state, live tenant isolation, or production qualification.</p>
+<h2>5. Scrutinize outcome and approved alternative</h2>
+<p>The initial proposal introduced a generic MONOLITH Integration Gateway. End-to-end scrutiny rejected that shape for A1 because it duplicated the existing LIFF gatekeeper and created a second identity/trust boundary.</p>
+<p>Three approaches were considered:</p>
+<div class="tablewrap"><table><thead><tr><th>Approach</th><th>Result</th><th>Decision</th></tr></thead><tbody>
+<tr><td>Generic integration gateway</td><td>Broad abstraction across identity, project, workflow, audit, and receipt</td><td>Rejected: duplicates existing product boundaries and is too large for the first slice.</td></tr>
+<tr><td>Direct Local Supabase integration</td><td>Exercises real schema, RLS, RPCs, and Edge Functions</td><td>Deferred to A2: valuable only after revision and tenancy decisions and database contract tests.</td></tr>
+<tr><td>Narrow <code>DesignApprovalPort</code> with sandbox adapter</td><td>Proves the Human Surface contract without product mutation</td><td><strong>Approved for A1.</strong></td></tr>
+</tbody></table></div>
+<p>The approved simpler architecture is:</p>
+<p><code>Flex liff_uri with opaque review token -&gt; private review UI -&gt; DesignApprovalPort -&gt; A1 sandbox adapter</code></p>
+<p>The future production mapping is:</p>
+<p><code>DesignApprovalPort -&gt; existing customer-design-view identity/read path -&gt; purpose-built LIFF confirmation transport -&gt; existing customer approval RPC + workflow audit</code></p>
+<p>The production mapping is a design target, not A1 implementation scope.</p>
+<h2>6. Architecture and responsibility boundary</h2>
+<h3>6.1 Human Surface responsibilities</h3>
+<p>LineOS may:</p>
+<ul>
+<li>render the approved Flex Message and Trust Concierge review experience;</li>
+<li>carry an opaque, single-purpose review token;</li>
+<li>display a server- or adapter-owned review snapshot;</li>
+<li>return a server-issued idempotency key during confirmation;</li>
+<li>render bounded outcomes and a sandbox record.</li>
+</ul>
+<p>LineOS must not authoritatively set:</p>
+<ul>
+<li>tenant, organization, site, customer identity, actor, role, or permission;</li>
+<li>work-item ownership or approval-request eligibility;</li>
+<li>canonical revision identity, artifact manifest digest, or workflow version;</li>
+<li>approval outcome, audit status, signature status, or business effect.</li>
+</ul>
+<h3>6.2 Product responsibilities</h3>
+<p>The MONOLITH product remains responsible for all eventual real identity resolution, scope authorization, revision authority, workflow state, idempotency, audit, signing, revocation, and delivery. A1 does not implement those product effects.</p>
+<h3>6.3 No new generic gateway</h3>
+<p><code>DesignApprovalPort</code> is a use-case boundary, not a new enterprise gateway. It exposes only the two operations required by the approved journey. LINE Push, Groups, orders, SLA acknowledgement, and other presets must not be routed through this port unless separately designed and approved.</p>
+<h2>7. A1 port contract</h2>
+<h3>7.1 <code>openReview(reviewToken)</code></h3>
+<p>The adapter owns identity context internally. UI components never receive or manage a LINE ID token in A1.</p>
+<p>The returned <code>ReviewSnapshot</code> contains:</p>
+<ul>
+<li><code>reviewSessionId</code> — opaque and short-lived;</li>
+<li><code>serverIssuedIdempotencyKey</code> — bound to this session and action;</li>
+<li><code>mode: sandbox</code>;</li>
+<li><code>businessEffect: none</code>;</li>
+<li><code>providerContext</code> — display provenance, not a tenant assertion;</li>
+<li><code>workItemRef</code> and <code>approvalRequestRef</code> — opaque sandbox references;</li>
+<li><code>revisionLabel</code>;</li>
+<li><code>revisionId</code> — adapter-owned content hash;</li>
+<li><code>artifactManifestSha256</code>;</li>
+<li><code>digestAlgorithm</code> and <code>canonicalizationVersion</code>;</li>
+<li><code>expectedWorkflowVersion</code>;</li>
+<li>allowlisted review artifacts only;</li>
+<li>requested canonical action and plain-language consequence;</li>
+<li><code>issuedAt</code> and <code>expiresAt</code>.</li>
+</ul>
+<p>The Flex body is invitation and display content only. A1 must not treat its editable project, revision, recipient, or tenant-like fields as authority.</p>
+<h3>7.2 <code>confirmReview(input)</code></h3>
+<p>The UI returns only:</p>
+<ul>
+<li><code>reviewSessionId</code>;</li>
+<li><code>serverIssuedIdempotencyKey</code>;</li>
+<li><code>expectedRevisionId</code>;</li>
+<li><code>decision: confirm</code>.</li>
+</ul>
+<p>The UI must not submit tenant, customer identity, role, project owner, authoritative approval status, or a caller-selected effect mode.</p>
+<h3>7.3 Outcomes</h3>
+<p>A1 may return only:</p>
+<ul>
+<li><code>sandbox_recorded</code>;</li>
+<li><code>sandbox_replayed</code>;</li>
+<li><code>expired</code>;</li>
+<li><code>stale_revision</code>;</li>
+<li><code>version_conflict</code>;</li>
+<li><code>idempotency_conflict</code>;</li>
+<li><code>unauthorized</code>;</li>
+<li><code>not_available</code>;</li>
+<li><code>invalid_request</code>;</li>
+<li><code>temporarily_unavailable</code>.</li>
+</ul>
+<p>It must never return <code>approved</code>, <code>signed</code>, <code>audited</code>, or any equivalent production claim.</p>
+<h2>8. State machine and idempotency</h2>
+<p>The allowed state sequence is:</p>
+<p><code>issued -&gt; opened -&gt; sandbox_recorded -&gt; demo_record</code></p>
+<p>Terminal alternate states are:</p>
+<ul>
+<li><code>expired</code> when TTL is exceeded;</li>
+<li><code>stale_revision</code> when the bound revision changes;</li>
+<li><code>version_conflict</code> when the workflow snapshot changes concurrently;</li>
+<li><code>cancelled</code> when the user leaves without confirming;</li>
+<li><code>not_available</code> or <code>unauthorized</code> when the bounded review cannot be disclosed.</li>
+</ul>
+<p>Idempotency rules are:</p>
+<ol>
+<li>the adapter issues the key; the browser does not choose it;</li>
+<li>the same key and the same canonical payload return the same record within the A1 session;</li>
+<li>the same key with a different payload returns <code>idempotency_conflict</code>;</li>
+<li>double-clicks and concurrent calls create one sandbox ledger entry;</li>
+<li>a failed attempt that did not record an entry may be retried with the same key;</li>
+<li>button disabling is UX only; the adapter owns duplicate suppression.</li>
+</ol>
+<p>Because the A1 ledger is session-only, replay guarantees do not survive a browser restart. The UI and evidence must disclose that limitation.</p>
+<h2>9. Revision integrity contract</h2>
+<p>A1 binds the review session to:</p>
+<ul>
+<li>approval request reference;</li>
+<li>work item reference;</li>
+<li>revision ID;</li>
+<li>artifact manifest SHA-256;</li>
+<li>expected workflow version;</li>
+<li>canonical action and consequence;</li>
+<li>issue and expiry timestamps;</li>
+<li>canonicalization version.</li>
+</ul>
+<p>Before recording a confirmation, the adapter rechecks the bound snapshot. Any mismatch fails closed.</p>
+<p>This contract does not establish the production revision source. The current product project schema contains version and timestamps but no canonical server revision digest in the customer design-view response. The product lineage types define content-hash identity, but the reviewed writer is browser-local. A2 is blocked until the owner approves a server-owned revision source and persistence path.</p>
+<h2>10. Identity, tenancy, and security rules</h2>
+<h3>10.1 A1 identity</h3>
+<p>A1 uses a <code>SandboxIdentityFixture</code> selected by the adapter. The user interface cannot edit it. The journey displays <code>SANDBOX — NO BUSINESS EFFECT</code> at every consequential step.</p>
+<h3>10.2 Future LIFF identity</h3>
+<p>The future adapter may obtain the LINE ID token from the LIFF runtime and pass it directly to the existing server-side verification boundary. UI components, browser logs, receipt fields, analytics, URLs, and persistent storage must never contain the token.</p>
+<p>The server must reverify identity and authorization on both open and confirm. A successful open never authorizes a later confirm by itself.</p>
+<h3>10.3 Tenant boundary</h3>
+<p>A1 uses <code>providerContext</code> or <code>scopeContext</code>, not <code>tenantId</code>. It must not present Daph or any site as a verified platform tenant. No code may equate <code>site_code</code> with tenant or introduce <code>tenant_id</code> without the separately approved tenant–organization–site mapping, migration, RLS, uniqueness, key, export, deletion, and denial-test contract.</p>
+<h3>10.4 Threats that must fail closed</h3>
+<p>The design explicitly covers:</p>
+<ul>
+<li>client-field tampering;</li>
+<li>object-reference enumeration;</li>
+<li>token leakage;</li>
+<li>replay and double submission;</li>
+<li>stale revision and concurrent workflow updates;</li>
+<li>cross-customer or cross-scope disclosure;</li>
+<li>receipt confusion and false production authority;</li>
+<li>raw internal errors or secrets reaching LINE.</li>
+</ul>
+<h2>11. Failure and disclosure contract</h2>
+<div class="tablewrap"><table><thead><tr><th>Condition</th><th>Contract result</th><th>Required UX</th></tr></thead><tbody>
+<tr><td>Session expired</td><td><code>expired</code></td><td>Disable confirmation and start a new review.</td></tr>
+<tr><td>Revision changed</td><td><code>stale_revision</code></td><td>Load the latest revision; never confirm the old snapshot.</td></tr>
+<tr><td>Workflow version changed</td><td><code>version_conflict</code></td><td>Refresh current status.</td></tr>
+<tr><td>Same key, different payload</td><td><code>idempotency_conflict</code></td><td>Reject and display a correlation ID.</td></tr>
+<tr><td>Identity or permission failed</td><td><code>unauthorized</code></td><td>Neutral unavailable message; disclose no internal identifiers.</td></tr>
+<tr><td>Lookup miss or other-customer scope</td><td><code>not_available</code></td><td>Same neutral message to prevent enumeration.</td></tr>
+<tr><td>Temporary failure</td><td><code>temporarily_unavailable</code></td><td>Retry with the same adapter-issued key.</td></tr>
+</tbody></table></div>
+<p>Raw SQL errors, stack traces, internal roles, customer IDs, secrets, tokens, and implementation details must not be returned to LINE or shown in the receipt.</p>
+<h2>12. Sandbox ledger and receipt semantics</h2>
+<h3>12.1 Sandbox ledger</h3>
+<p>The A1 <code>SandboxAttemptLedger</code> is session-only and has no product database effect. It is not the MONOLITH audit log. Tests may inject a deterministic store to prove idempotency and concurrency. Reload or restart may clear it, and the UI must say so.</p>
+<h3>12.2 Record title</h3>
+<p>The fixed title is:</p>
+<blockquote><p><strong>Sandbox Verification Record — Demo · No Business Effect</strong></p></blockquote>
+<h3>12.3 Required record fields</h3>
+<ul>
+<li><code>recordVersion</code>;</li>
+<li><code>mode: sandbox</code>;</li>
+<li><code>businessEffect: none</code>;</li>
+<li><code>recordId</code> and <code>correlationId</code>;</li>
+<li><code>reviewSessionId</code>;</li>
+<li>provider/scope context;</li>
+<li>work item and approval request references;</li>
+<li>revision label, revision ID, and artifact manifest digest;</li>
+<li>requested canonical action;</li>
+<li>outcome;</li>
+<li>created and confirmed timestamps;</li>
+<li>digest algorithm and canonicalization version;</li>
+<li>record digest.</li>
+</ul>
+<h3>12.4 Prohibited fields and claims</h3>
+<p>The record must not contain or imply:</p>
+<ul>
+<li><code>approved</code> or an equivalent workflow result;</li>
+<li>a cryptographic signature, <code>keyId</code>, or verified-signer status;</li>
+<li>a tenant assertion;</li>
+<li>production audit completion;</li>
+<li>LINE tokens, secrets, or unnecessary personal data.</li>
+</ul>
+<p>A digest is integrity metadata, not a signature. Production Signed Receipt remains a separate future artifact gated by Trust Kernel, key custody, verification, revocation, and audit requirements.</p>
+<h2>13. Trust Concierge experience</h2>
+<p>The approved visual direction is warm, premium, and trustworthy. The journey must:</p>
+<ol>
+<li>use the Design Approval Flex preset and a primary <code>liff_uri</code> action;</li>
+<li>open a private review rather than mutate business state from the Flex button;</li>
+<li>show provider provenance, project display name, revision, artifact digest, consequence, and expiry;</li>
+<li>keep the sandbox warning continuously visible and visually prominent;</li>
+<li>confirm only a sandbox attempt;</li>
+<li>render the bounded sandbox record;</li>
+<li>explain that workflow and approval status did not change.</li>
+</ol>
+<p>Premium styling must not reduce, hide, euphemize, or visually subordinate the no-business-effect disclosure.</p>
+<h2>14. Repository and delivery boundary</h2>
+<div class="tablewrap"><table><thead><tr><th>Area</th><th>A1 action</th></tr></thead><tbody>
+<tr><td>Parent <code>LineOS/</code></td><td>Add the port contract, sandbox adapter, review integration, record rendering, and tests.</td></tr>
+<tr><td>Nested MONOLITH source</td><td>Use as evidence and future mapping only; no A1 production runtime or migration changes.</td></tr>
+<tr><td>Local Supabase</td><td>Not started in A1.</td></tr>
+<tr><td>LINE Platform</td><td>No live API call, credential, webhook, push, LIFF deployment, or message send.</td></tr>
+</tbody></table></div>
+<p>The A1 implementation plan must define exact files after this written specification is approved. It must preserve all unrelated dirty-worktree changes and must not touch the existing nested order-adapter lane.</p>
+<h2>15. Verification and acceptance criteria</h2>
+<p>A1 is acceptable only when fresh evidence proves:</p>
+<ul>
+<li>the Design Approval Flex action uses <code>liff_uri</code>;</li>
+<li>the Flex payload contains no token, tenant authority, or internal secret;</li>
+<li>UI controls cannot edit identity, revision digest, idempotency key, or effect mode;</li>
+<li>revision changes between open and confirm are rejected;</li>
+<li>expired sessions are rejected;</li>
+<li>the same key and payload return the same record within the session;</li>
+<li>the same key with a different payload returns <code>idempotency_conflict</code>;</li>
+<li>double-click and concurrent confirmation yield one ledger record;</li>
+<li>the record contains no <code>approved</code>, signature, key ID, tenant assertion, or audit-complete claim;</li>
+<li>A1 generates no external network request;</li>
+<li>browser storage and logs contain no token or secret;</li>
+<li>Thai and English desktop, mobile, and keyboard journeys work;</li>
+<li>no browser console or page error occurs;</li>
+<li>all existing Flex Studio tests remain green;</li>
+<li>new unit, contract, state-machine, negative, and browser tests pass;</li>
+<li>claim lint and placeholder/secret scans pass;</li>
+<li>the four bilingual specification files remain aligned and standalone-readable;</li>
+<li>the nested product worktree receives no new A1 diff.</li>
+</ul>
+<p>Future production work additionally requires database integration tests for customer-design-view allowlisting, cross-customer denial, not-found non-disclosure, stale revision, optimistic locking, idempotency, concurrent confirmation, audit completeness, and forbidden-artifact leakage.</p>
+<h2>16. Promotion gate to A2 — Local Supabase</h2>
+<p>A2 requires separate owner approval and may begin only when:</p>
+<ol>
+<li>A1 contract and browser evidence pass;</li>
+<li>a canonical server-owned revision source is approved;</li>
+<li>the tenant–organization–site mapping is approved or the slice is explicitly bounded to a non-tenant scope model;</li>
+<li>customer-design-view database contract tests exist and pass locally;</li>
+<li>a narrow LIFF confirmation transport design passes security review;</li>
+<li>rollback, idempotency, audit, and error semantics are proven;</li>
+<li>local environment and secret-handling authority are approved.</li>
+</ol>
+<p>A2 should reuse the existing design-view and customer approval substrate. It must not revive the rejected generic gateway.</p>
+<h2>17. Non-goals</h2>
+<p>A1 does not include:</p>
+<ul>
+<li>LINE Login or real LIFF SDK initialization;</li>
+<li>LINE webhook, push, group messaging, or live send;</li>
+<li>Local or hosted Supabase mutation;</li>
+<li>product workflow transition;</li>
+<li>a new product intent table;</li>
+<li>production tenant-isolation claims;</li>
+<li>cryptographic signing or Production Signed Receipt;</li>
+<li>deployment, production credentials, merge, push, PR, or release authorization.</li>
+</ul>
+<h2>18. Implementation sequence after written-spec approval</h2>
+<p>After the owner approves this written specification, a separate detailed implementation plan will:</p>
+<ol>
+<li>freeze fresh two-root status and exact file scope;</li>
+<li>define contract schemas and forbidden-field tests;</li>
+<li>implement the sandbox adapter test-first;</li>
+<li>integrate the port into the Design Approval journey;</li>
+<li>replace ambiguous demo receipt language with the approved sandbox record semantics;</li>
+<li>add state, idempotency, stale-revision, failure, accessibility, and browser tests;</li>
+<li>update aligned TH/EN user-facing documentation and HTML;</li>
+<li>run full LineOS verification, claim lint, secret scans, browser evidence, and exact diff checks;</li>
+<li>perform code review and final whole-range scrutiny;</li>
+<li>produce a bounded implementation report.</li>
+</ol>
+<p>No implementation code is authorized by this written-spec document alone until the owner explicitly approves it and the implementation plan is produced.</p>
+<h2>19. Written-spec self-review checklist</h2>
+<ul>
+<li><strong>Intent:</strong> the document states the real goal and the smaller approved alternative.</li>
+<li><strong>Repository truth:</strong> parent Human Surface and nested product evidence are separated.</li>
+<li><strong>No duplication:</strong> the generic gateway is explicitly rejected.</li>
+<li><strong>Authority:</strong> client display data is never promoted into product authority.</li>
+<li><strong>Revision:</strong> the missing canonical server digest is an explicit A2 blocker.</li>
+<li><strong>Tenancy:</strong> <code>site_code</code> is not equated with tenant.</li>
+<li><strong>Workflow:</strong> A1 has no real approval or product intent table.</li>
+<li><strong>Receipt:</strong> digest and signature semantics are distinct.</li>
+<li><strong>Security:</strong> identity, replay, enumeration, stale state, and disclosure failures are fail-closed.</li>
+<li><strong>Claims:</strong> A1 is contract-ready, not runtime-connected or production-ready.</li>
+<li><strong>Placeholders:</strong> a pre-publication placeholder and implementation-promise scan is mandatory.</li>
+</ul>
+</main></body>
+</html>

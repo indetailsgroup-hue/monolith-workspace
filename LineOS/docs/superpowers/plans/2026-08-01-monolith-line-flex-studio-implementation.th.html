@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>แผนดำเนินงาน MONOLITH LINE Flex Studio</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1>แผนดำเนินงาน MONOLITH LINE Flex Studio</h1>
+<blockquote><p><strong>สำหรับ agentic workers:</strong> REQUIRED SUB-SKILL: ใช้ superpowers:subagent-driven-development (แนะนำ) หรือ superpowers:executing-plans เพื่อดำเนินแผนนี้ทีละ Task โดยใช้ checkbox ติดตามผล</p></blockquote>
+<p><strong>เป้าหมาย:</strong> สร้าง Flex Message Studio แบบ standalone สองภาษาใน LineOS ที่มีรูปทรงพร้อมต่อยอดสู่ production ประกอบด้วย 5 presets, preview/JSON/validation แบบ real-time, Mock LIFF ที่ปลอดภัย, demo receipt ที่ไม่กล่าวอ้างเกินจริง, รายงานวิจัยระดับคณะกรรมการ และคู่มือติดตั้งที่ทำตามได้จริง</p>
+<p><strong>สถาปัตยกรรม:</strong> แอป browser แบบไม่พึ่ง dependency อ่าน preset ที่แก้ไขไม่ได้เข้าสู่ FlexDraft กลางหนึ่งชุด โมดูล pure function สร้าง Flex JSON, ผลตรวจสอบ, demo transaction ที่ผูก exact action และ SHA-256 demo receipt ส่วน DOM controller บาง ๆ แสดง Studio Console โดยไม่เรียกเครือข่าย nested product repository ไม่ถูกแก้ไขและใช้เป็นหลักฐานอ้างอิงสำหรับ integration ในอนาคตเท่านั้น</p>
+<p><strong>เทคโนโลยี:</strong> Semantic HTML5, CSS custom properties, browser-native ES modules, Web Crypto, Node.js built-in test runner, <code>tools/render_docs.py</code> ของ repository และการตรวจใน local browser</p>
+<blockquote><p>ชื่อ API, identifier, file path, test name และคำสั่งคงเป็นภาษาอังกฤษเพื่อป้องกันความคลาดเคลื่อน รายการโค้ดแบบ copy-paste ที่เป็นมาตรฐานอยู่ใน <a href="./2026-08-01-monolith-line-flex-studio-implementation.en.html">แผนฉบับอังกฤษ</a> ฉบับภาษาไทยนี้รักษา Task, interface, test, gate, ลำดับทำงาน และผลที่คาดหวังให้ตรงกันครบถ้วน</p></blockquote>
+<h2>ข้อจำกัดกลาง</h2>
+<ul>
+<li>ทำงานเฉพาะ parent root <code>C:\Users\thai3\determined-williams (2)</code></li>
+<li>ใช้ Node.js 22.20.0 ขึ้นไป; ตอนวางแผนตรวจพบ v22.21.1 และ npm 11.6.2</li>
+<li>ห้ามแก้ nested product repository <code>determined-williams/</code></li>
+<li>ตรวจ Git status แยกทั้งสอง root ก่อนทุก Task และรักษาการเปลี่ยนแปลงเดิมทั้งหมด</li>
+<li>จุดเริ่มต้น parent ที่ตรวจพบ: commit <code>f846044736c3</code>, branch <code>guardrails/claim-linters</code>, มี status entries 202 รายการ</li>
+<li>จุดเริ่มต้น nested ที่ตรวจพบ: commit <code>a1e9006add32</code>, branch <code>fix/dxf-truth-chain</code>, มี status entries 67 รายการ</li>
+<li>Runtime ต้องไม่เรียกเครือข่ายภายนอก ไม่มี LINE/Supabase credential และไม่มีเส้นทาง live send</li>
+<li>หน้าลูกค้าใช้แบรนด์ tenant-first พร้อม <code>Secured by MONOLITH</code>; หน้าภายในใช้ MONOLITH-first และแสดง tenant context ชัดเจน</li>
+<li>การแตะ Flex ไม่ถือเป็นการอนุมัติธุรกิจ งาน high risk ต้องเปิด Mock LIFF และคู่มือ production ต้องกำหนด Trust Kernel step-up</li>
+<li>ใบรับรองต้องชื่อ <code>Verification Receipt — Demo</code> และแสดง <code>DEMO — NOT A PRODUCTION SIGNATURE</code></li>
+<li>v1 รองรับหนึ่ง bubble และ 5 presets ที่อนุมัติแล้วเท่านั้น ไม่รวม carousel/video authoring, raw JSON editing และ production integration</li>
+<li>UI และเอกสารต้องมีไทย/อังกฤษ และ Markdown ทุกไฟล์ต้องมี standalone HTML คู่กัน</li>
+<li>ข้อจำกัดเทคนิคต้องอ้าง official LINE source ส่วนข้อเสนอ MONOLITH ต้องระบุว่าเป็น best practice</li>
+<li>ใช้ TDD: เขียน behavior test → รันให้เห็น failure ที่คาดไว้ → เขียน production code ขั้นต่ำ → รันให้ผ่าน</li>
+<li>stage และ commit เฉพาะไฟล์ที่ Task นั้นระบุ</li>
+</ul>
+<hr>
+<h2>แผนที่ไฟล์</h2>
+<h3>Runtime และโมดูลหลัก</h3>
+<div class="tablewrap"><table><thead><tr><th>ไฟล์</th><th>ความรับผิดชอบ</th></tr></thead><tbody>
+<tr><td><code>LineOS/package.json</code></td><td>คำสั่ง unit/contract tests แบบไม่มี dependency</td></tr>
+<tr><td><code>LineOS/line-flex-studio.html</code></td><td>Semantic shell, tabs, dialogs และ live regions</td></tr>
+<tr><td><code>LineOS/line-flex-studio.css</code></td><td>Trust Concierge tokens, 3-column layout, responsive tabs, focus และ reduced motion</td></tr>
+<tr><td><code>LineOS/line-flex-studio.mjs</code></td><td>State reducer, safe DOM binding, preview/JSON/validation, copy/download/reset และ dialog flow</td></tr>
+<tr><td><code>LineOS/line-flex-model.mjs</code></td><td>สร้าง/clone/update/canonicalize FlexDraft</td></tr>
+<tr><td><code>LineOS/line-flex-presets.mjs</code></td><td>5 bilingual frozen presets</td></tr>
+<tr><td><code>LineOS/line-flex-json.mjs</code></td><td>สร้าง Flex JSON ใน supported subset และนับ UTF-8 bytes</td></tr>
+<tr><td><code>LineOS/line-flex-validator.mjs</code></td><td>Registry/evaluator ที่ระบุ source และ classification</td></tr>
+<tr><td><code>LineOS/line-flex-actions.mjs</code></td><td>เลือก action, risk guard และ expiring demo transaction</td></tr>
+<tr><td><code>LineOS/line-flex-receipt.mjs</code></td><td>Canonical receipt payload และ SHA-256 digest</td></tr>
+</tbody></table></div>
+<h3>Visual assets ภายในเครื่อง</h3>
+<p><code>LineOS/assets/line-flex-studio/</code> ต้องมี <code>design-approval-hero.svg</code>, <code>quote-order-hero.svg</code>, <code>sla-escalation-hero.svg</code>, <code>site-update-hero.svg</code> และ <code>issue-evidence-hero.svg</code> โดย contract ต้อง reject script, bitmap และ external reference เพื่อคง SVG แบบ self-contained</p>
+<h3>Tests</h3>
+<div class="tablewrap"><table><thead><tr><th>ไฟล์</th><th>สัญญาที่ตรวจ</th></tr></thead><tbody>
+<tr><td><code>LineOS/tests/line-flex-model.test.mjs</code></td><td>Draft isolation, immutable update และ preset contract</td></tr>
+<tr><td><code>LineOS/tests/line-flex-json-validator.test.mjs</code></td><td>Deterministic JSON, source rules, size/action limits</td></tr>
+<tr><td><code>LineOS/tests/line-flex-actions-receipt.test.mjs</code></td><td>Risk routing, transaction binding, expiry และ digest</td></tr>
+<tr><td><code>LineOS/tests/line-flex-structure.test.mjs</code></td><td>Semantic HTML, local assets และ contract ที่ reject remote runtime dependency</td></tr>
+<tr><td><code>LineOS/tests/line-flex-studio-state.test.mjs</code></td><td>Reducer, language/preset/block change และ export gating</td></tr>
+<tr><td><code>LineOS/tests/docs-contract.test.mjs</code></td><td>คู่ TH/EN Markdown/HTML และข้อจำกัดด้าน claim/status</td></tr>
+</tbody></table></div>
+<h3>เอกสารและหลักฐาน</h3>
+<ul>
+<li><code>LineOS/docs/research/2026-08-01-monolith-line-human-surface-deep-research.{en,th}.{md,html}</code></li>
+<li><code>LineOS/docs/guides/line-flex-studio-user-guide.{en,th}.{md,html}</code></li>
+<li><code>LineOS/docs/guides/line-developer-console-installation.{en,th}.{md,html}</code></li>
+<li><code>LineOS/docs/guides/line-flex-action-vs-liff-decision-guide.{en,th}.{md,html}</code></li>
+<li><code>LineOS/docs/guides/line-flex-performance-rendering-checklist.{en,th}.{md,html}</code></li>
+<li><code>LineOS/docs/reports/2026-08-01-line-flex-studio-implementation-report.{en,th}.{md,html}</code></li>
+<li><code>LineOS/artifacts/line-flex-studio/</code> สำหรับภาพ desktop/mobile และ machine-readable verification summary</li>
+</ul>
+<hr>
+<h3>Task 1: สัญญา FlexDraft แบบ immutable และ 5 presets</h3>
+<p><strong>ไฟล์:</strong> สร้าง <code>LineOS/package.json</code>, <code>line-flex-model.mjs</code>, <code>line-flex-presets.mjs</code>; ทดสอบด้วย <code>tests/line-flex-model.test.mjs</code></p>
+<p><strong>Interfaces:</strong> ต้อง export <code>deepFreeze</code>, <code>cloneDraft</code>, <code>createDraft</code>, <code>updateDraftAtPath</code>, <code>canonicalize</code>, <code>PRESET_IDS</code>, <code>PRESETS</code>, <code>getPreset</code> และห้าม consumer ใดแก้ <code>PRESETS</code></p>
+<ul>
+<li>[ ] <strong>Step 1: สร้าง test command และ failing tests</strong></li>
+</ul>
+<p><code>package.json</code> ใช้ <code>type: module</code>, Node <code>&gt;=22.20.0</code>, <code>test: node --test</code>, พร้อม <code>test:core</code> และ <code>test:contracts</code> ตามรายชื่อในฉบับ EN Tests ต้องพิสูจน์ว่า:</p>
+<ol>
+<li>มี preset IDs ตามลำดับ <code>design-approval</code>, <code>quote-order</code>, <code>sla-escalation</code>, <code>site-update</code>, <code>issue-evidence</code> เท่านั้น;</li>
+<li>registry และ preset ทุกตัวถูก freeze;</li>
+<li>draft ไทย/อังกฤษแยกจากกันและไม่แก้ source;</li>
+<li>nested path update ไม่ mutate draft เดิม;</li>
+<li><code>canonicalize</code> เรียง object keys ซ้ำทุกระดับ</li>
+</ol>
+<ul>
+<li>[ ] <strong>Step 2: รันให้เห็น RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- --test-name-pattern "approved immutable|isolated bilingual|nested field|canonicalize"</code></pre>
+<p>คาดหวัง: FAIL เพราะโมดูลยังไม่มี</p>
+<ul>
+<li>[ ] <strong>Step 3: สร้าง immutable model ขั้นต่ำ</strong></li>
+</ul>
+<p>ใช้ <code>structuredClone</code>, clone ก่อน nested update, recursive <code>deepFreeze</code> และ recursive key-sorted <code>canonicalize</code> ตาม code listing ใน Task 1 ฉบับ EN; language ที่ไม่รองรับต้อง throw <code>unsupported_language</code> และ preset ที่ไม่รู้จักต้อง throw <code>unknown_preset</code></p>
+<ul>
+<li>[ ] <strong>Step 4: สร้างข้อมูล 5 bilingual presets ให้ครบ</strong></li>
+</ul>
+<p>ทุก preset ต้องมี <code>context</code>, <code>header</code>, <code>hero</code>, <code>body</code>, <code>footer</code>, <code>intent</code>, <code>evidence</code> และใช้ tenant demo <code>tenant_daph_demo</code> โดย Daph เป็นเพียง tenant ตัวอย่างหนึ่งราย:</p>
+<div class="tablewrap"><table><thead><tr><th>Preset</th><th>Audience</th><th>Canonical action</th><th>Risk</th><th>Requested action</th></tr></thead><tbody>
+<tr><td>design-approval</td><td>customer</td><td>design.approve_revision</td><td>high</td><td>liff_uri</td></tr>
+<tr><td>quote-order</td><td>customer</td><td>commerce.submit_order_intent</td><td>high</td><td>liff_uri</td></tr>
+<tr><td>sla-escalation</td><td>internal</td><td>workflow.acknowledge_sla</td><td>low</td><td>postback</td></tr>
+<tr><td>site-update</td><td>customer_group</td><td>field.view_curated_update</td><td>low</td><td>uri</td></tr>
+<tr><td>issue-evidence</td><td>internal_group</td><td>evidence.acknowledge_issue</td><td>low</td><td>postback</td></tr>
+</tbody></table></div>
+<p>ทุก preset ต้องมี copy ไทย/อังกฤษ, local SVG, HTTPS export URL, target reference, expiry, correlation prefix, revision, requester, amount/scope, deadline, summary, trust note, primary/secondary label และ alt text ตามฉบับ EN</p>
+<ul>
+<li>[ ] <strong>Step 5: รัน GREEN</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-flex-model.test.mjs</code></pre>
+<p>คาดหวัง: PASS 4 tests, 0 failures</p>
+<ul>
+<li>[ ] <strong>Step 6: Commit Task 1</strong></li>
+</ul>
+<pre><code class="language-powershell">git add -- LineOS/package.json LineOS/line-flex-model.mjs LineOS/line-flex-presets.mjs LineOS/tests/line-flex-model.test.mjs
+git commit -m "feat(lineos): add immutable Flex Studio presets"</code></pre>
+<hr>
+<h3>Task 2: Flex JSON แบบ deterministic และ validation ที่บอกแหล่งที่มา</h3>
+<p><strong>ไฟล์:</strong> สร้าง <code>line-flex-json.mjs</code>, <code>line-flex-validator.mjs</code>; ทดสอบด้วย <code>tests/line-flex-json-validator.test.mjs</code></p>
+<p><strong>Interfaces:</strong> <code>buildFlexMessage(draft)</code>, <code>measureUtf8Bytes(value)</code>, <code>VALIDATION_RULES</code>, <code>validateDraft(draft,message)</code>; finding ต้องมี <code>{ ruleId, severity, block, field, classification, sourceUrl, title, explanation, remediation }</code></p>
+<ul>
+<li>[ ] <strong>Step 1: เขียน failing tests</strong> ให้ตรวจลำดับ Header→Hero→Body→Footer, deterministic output, UTF-8 size, approved preset ไม่มี error, high-risk postback ถูก block, official limits และ soft/hard size gate โดยใช้ ASCII payload เพื่อให้ byte count แน่นอน</li>
+<li>[ ] <strong>Step 2: รัน RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-flex-json-validator.test.mjs</code></pre>
+<ul>
+<li>[ ] <strong>Step 3: สร้าง supported Flex subset</strong></li>
+</ul>
+<p>Envelope ต้องเป็น <code>{type:"flex",altText,contents:{type:"bubble",size:"mega",header,hero,body,footer}}</code>; action รองรับ message/postback/URI, footer มี dominant CTA เดียว, และ byte count ใช้ <code>TextEncoder</code> กับ JSON ของ <code>contents</code></p>
+<ul>
+<li>[ ] <strong>Step 4: สร้าง immutable validation registry</strong></li>
+</ul>
+<div class="tablewrap"><table><thead><tr><th>Rule</th><th>Severity</th><th>Classification</th><th>เงื่อนไข</th></tr></thead><tbody>
+<tr><td>LINE-ALT-001/002</td><td>error</td><td>official_constraint</td><td>altText ว่าง/เกิน 1,500</td></tr>
+<tr><td>LINE-SIZE-001</td><td>error</td><td>official_constraint</td><td>bubble เกิน 30 KB UTF-8</td></tr>
+<tr><td>LINE-IMG-001/002</td><td>error</td><td>official_constraint</td><td>ไม่ใช่ HTTPS/URL เกิน 2,000</td></tr>
+<tr><td>LINE-BTN-001</td><td>error</td><td>official_constraint</td><td>label ว่าง/เกิน 40</td></tr>
+<tr><td>LINE-POSTBACK-001</td><td>error</td><td>official_constraint</td><td>data เกิน 300</td></tr>
+<tr><td>LINE-MESSAGE-001</td><td>error</td><td>official_constraint</td><td>text เกิน 300</td></tr>
+<tr><td>LINE-URI-001</td><td>error</td><td>official_constraint</td><td>URI เกิน 1,000</td></tr>
+<tr><td>MON-SIZE-001</td><td>warning</td><td>monolith_best_practice</td><td>มากกว่า 24 KB แต่ไม่เกิน 30 KB</td></tr>
+<tr><td>MON-ACT-001</td><td>error</td><td>monolith_best_practice</td><td>high risk ขอ postback/message</td></tr>
+<tr><td>MON-CTA-001</td><td>warning</td><td>monolith_best_practice</td><td>มี dominant CTA มากกว่าหนึ่ง</td></tr>
+<tr><td>MON-TRUST-001</td><td>warning</td><td>monolith_best_practice</td><td>revision/deadline/requester/audience/trust note ไม่ครบ</td></tr>
+<tr><td>MON-MEDIA-001</td><td>guidance</td><td>monolith_best_practice</td><td>local preview ไม่ fetch export URL</td></tr>
+<tr><td>MON-PROD-001</td><td>guidance</td><td>monolith_best_practice</td><td>production action ต้องผ่าน Trust Kernel</td></tr>
+</tbody></table></div>
+<p>ใช้ official URLs ของ LINE Messaging API, Flex elements และ Actions; best practice ชี้ไป approved design spec ในเครื่อง การแสดงผลต้องเลือก copy <code>th/en</code>, เรียง error → warning → guidance แล้วเรียง rule ID ภายในระดับเดียวกัน โค้ด registry/evaluator ที่ต้องใช้ระบุครบใน Task 2 ฉบับ EN</p>
+<ul>
+<li>[ ] <strong>Step 5: รัน focused และ full tests</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-flex-json-validator.test.mjs
+npm.cmd --prefix LineOS run test</code></pre>
+<p>คาดหวัง: focused PASS 5/5 และทั้งหมด 0 failures</p>
+<ul>
+<li>[ ] <strong>Step 6: Commit Task 2</strong></li>
+</ul>
+<pre><code class="language-powershell">git add -- LineOS/line-flex-json.mjs LineOS/line-flex-validator.mjs LineOS/tests/line-flex-json-validator.test.mjs
+git commit -m "feat(lineos): generate and validate Flex JSON"</code></pre>
+<hr>
+<h3>Task 3: Action ตามความเสี่ยง, bound transaction และ receipt ที่ไม่กล่าวอ้างเกินจริง</h3>
+<p><strong>ไฟล์:</strong> สร้าง <code>line-flex-actions.mjs</code>, <code>line-flex-receipt.mjs</code>; ทดสอบด้วย <code>tests/line-flex-actions-receipt.test.mjs</code></p>
+<p><strong>Interfaces:</strong> <code>selectActionMode</code>, <code>createDemoTransaction</code>, <code>confirmDemoTransaction</code>, <code>createDemoReceipt</code></p>
+<ul>
+<li>[ ] <strong>Step 1: เขียน failing tests</strong> ให้พิสูจน์ว่า high risk ถูกบังคับเป็น <code>liff_uri</code>, low-risk acknowledgement ใช้ postback ได้, transaction ผูก tenant/recipient/target/revision/action/amount/deadline/expiry, revision เปลี่ยนหรือหมดอายุต้อง fail closed และ digest เปลี่ยนเมื่อ bound input เปลี่ยน</li>
+<li>[ ] <strong>Step 2: รัน RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-flex-actions-receipt.test.mjs</code></pre>
+<ul>
+<li>[ ] <strong>Step 3: สร้าง action guard และ bound transaction</strong></li>
+</ul>
+<p>High risk คืน <code>liff_uri</code> เสมอ Transaction ใช้ canonical payload และ expiry จาก <code>expiresInMinutes</code>; confirmation เปรียบเทียบ payload ปัจจุบันกับ <code>boundPayload</code> และ throw <code>transaction_expired</code> หรือ <code>bound_value_changed</code> ก่อนสร้าง outcome</p>
+<ul>
+<li>[ ] <strong>Step 4: สร้าง SHA-256 demo receipt</strong></li>
+</ul>
+<p>Digest ต้องมาจาก canonical payload ที่มี receiptVersion, transaction, tenant, recipient, target, revision, canonical action, createdAt, confirmedAt และ outcome ใช้ Web Crypto <code>SHA-256</code>; output ต้องมี label <code>DEMO — NOT A PRODUCTION SIGNATURE</code> และข้อความว่า production signing/audit ต้องใช้ MONOLITH Trust Kernel</p>
+<ul>
+<li>[ ] <strong>Step 5: รัน focused/full tests</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-flex-actions-receipt.test.mjs
+npm.cmd --prefix LineOS run test</code></pre>
+<p>คาดหวัง: focused PASS 5/5 และทั้งหมด 0 failures</p>
+<ul>
+<li>[ ] <strong>Step 6: Commit Task 3</strong></li>
+</ul>
+<pre><code class="language-powershell">git add -- LineOS/line-flex-actions.mjs LineOS/line-flex-receipt.mjs LineOS/tests/line-flex-actions-receipt.test.mjs
+git commit -m "feat(lineos): add safe demo approval receipts"</code></pre>
+<hr>
+<h3>Task 4: Semantic Studio Console และ Trust Concierge assets ภายในเครื่อง</h3>
+<p><strong>ไฟล์:</strong> สร้าง <code>line-flex-studio.html</code>, <code>line-flex-studio.css</code>, SVG 5 ไฟล์ และ <code>tests/line-flex-structure.test.mjs</code></p>
+<p><strong>Interfaces:</strong> HTML ต้อง expose IDs <code>language-toggle</code>, <code>tenant-context</code>, <code>preset-list</code>, <code>block-tabs</code>, <code>field-panel</code>, <code>phone-preview</code>, <code>json-output</code>, <code>validation-list</code>, <code>payload-count</code>, <code>copy-json</code>, <code>download-json</code>, <code>reset-draft</code>, <code>run-journey</code>, <code>liff-dialog</code>, <code>receipt-dialog</code>, <code>toast-live</code>; โหลดเฉพาะ CSS/MJS ภายในเครื่อง</p>
+<ul>
+<li>[ ] <strong>Step 1: เขียน structural contract</strong> ตรวจ semantic main, polite live region, native dialogs, module script, reject remote script/style/font/tracking และกำหนดให้ SVG ทุกไฟล์เริ่มด้วย <code>&lt;svg</code>, มี <code>aria-hidden="true"</code> พร้อม reject URL/script/foreignObject</li>
+<li>[ ] <strong>Step 2: รัน RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-flex-structure.test.mjs</code></pre>
+<ul>
+<li>[ ] <strong>Step 3: สร้าง semantic shell</strong> ตาม hierarchy ใน Task 4 ฉบับ EN: skip link, MONOLITH header, tenant context, 3 panes, editor/preset/block fields, phone preview, JSON/validation, buttons, Mock LIFF dialog, receipt dialog และ live announcer</li>
+<li>[ ] <strong>Step 4: สร้าง Trust Concierge layout</strong> ด้วย palette เขียวเข้ม/เขียว action/พื้น warm/gold attention, 3 columns ที่กว้างกว่า 1000, 2 แถวที่ 721–1000 และ tabs ที่ 720 ลงมา ต้องมี focus visible, disabled state, long digest wrapping, print CSS และ reduced-motion support โค้ด CSS มาตรฐานอยู่ในฉบับ EN</li>
+<li>[ ] <strong>Step 5: สร้าง 5 SVG</strong> ขนาด <code>viewBox="0 0 1200 780"</code>: ครัว isometric อบอุ่น, material/quote cards, SLA clock/workflow lane, curated site frames และ evidence/provenance/quarantine boundary ใช้ vectors ที่ระบุในฉบับ EN</li>
+<li>[ ] <strong>Step 6: รัน structural/full tests</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-flex-structure.test.mjs
+npm.cmd --prefix LineOS run test</code></pre>
+<p>คาดหวัง: structure PASS 3/3 และทั้งหมด 0 failures</p>
+<ul>
+<li>[ ] <strong>Step 7: Commit Task 4</strong></li>
+</ul>
+<pre><code class="language-powershell">git add -- LineOS/line-flex-studio.html LineOS/line-flex-studio.css LineOS/assets/line-flex-studio LineOS/tests/line-flex-structure.test.mjs
+git commit -m "feat(lineos): add Trust Concierge Studio shell"</code></pre>
+<hr>
+<h3>Task 5: Controller แบบ real-time, Mock LIFF ที่ปลอดภัย และ responsive interaction</h3>
+<p><strong>ไฟล์:</strong> สร้าง <code>line-flex-studio.mjs</code>, <code>tests/line-flex-studio-state.test.mjs</code>; แก้ <code>line-flex-json.mjs</code>, HTML/CSS และ regression tests ที่เกี่ยวข้อง</p>
+<p><strong>Interfaces:</strong> <code>createInitialStudioState</code>, <code>reduceStudioState</code>, <code>deriveStudioView</code>, <code>bindStudio</code>; controller ใช้ pure state และ DOM API ที่ปลอดภัย</p>
+<ul>
+<li>[ ] <strong>Step 1: เขียน failing state tests</strong> ตรวจ state เริ่มต้น, immutable field update, preset/language isolation, active block และ invalid draft ที่ต้องปิด Copy/Download/Run Journey</li>
+<li>[ ] <strong>Step 2: รัน RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-flex-studio-state.test.mjs</code></pre>
+<ul>
+<li>[ ] <strong>Step 3: สร้าง pure reducer/derived view</strong> ตาม code listing ฉบับ EN ทุก field change ต้องล้าง transaction/receipt; derived view สร้าง message, formatted JSON, byte count, findings และ export/journey gates จาก error จริง</li>
+<li>[ ] <strong>Step 4: เชื่อม risk-aware action</strong> ให้ <code>actionFor</code> เรียก <code>selectActionMode</code>; high-risk draft ที่ขอ postback ต้อง export URI ไป demo LIFF แต่ validator ยังต้องแจ้ง <code>MON-ACT-001</code></li>
+<li>[ ] <strong>Step 5: Bind DOM อย่างปลอดภัย</strong></li>
+</ul>
+<p>ต้อง render 5 presets/4 blocks/labelled fields/phone/JSON/findings, ใช้ <code>createElement</code>, <code>replaceChildren</code>, <code>textContent</code> เท่านั้น, update preview/JSON ทุก input โดยไม่สร้าง field control ใหม่จน focus หลุด, disable output เมื่อมี error, copy พร้อม failure message, download Blob แล้ว revoke URL, reset พร้อม confirmation, ใช้ ARIA state และสลับ copy ไทย/อังกฤษทั้งหมด โค้ด controller มาตรฐานและ field map อยู่ใน Task 5 ฉบับ EN</p>
+<ul>
+<li>[ ] <strong>Step 6: สร้าง Mock LIFF และ receipt dialogs</strong></li>
+</ul>
+<p>Run Journey ต้องสร้าง transaction จาก draft ปัจจุบัน แสดง tenant/recipient/project/revision/action/consequence/mode/expiry พร้อม <code>PRIVATE REVIEW — DEMO</code> ยืนยันได้จากปุ่ม explicit เท่านั้น ตรวจ current draft และ expiry ซ้ำแบบ fail closed แล้วสร้าง/แสดง receipt + digest พร้อม <code>DEMO — NOT A PRODUCTION SIGNATURE</code> ห้ามใช้ localStorage และคืน focus ให้ปุ่มต้นทาง</p>
+<ul>
+<li>[ ] <strong>Step 7: เพิ่ม mobile pane tabs และ error recovery</strong></li>
+</ul>
+<p>ที่ ≤720 px ใช้ Editor/Preview/JSON &amp; Validation tablist โดย pane ทุกตัวอยู่ใน DOM, visibility คุมด้วย <code>hidden</code>, ARIA state ถูกต้อง; ที่กว้างกว่านั้นแสดงทุก pane First blocking error ต้องมี Fix button ที่เปิด block และ focus field ที่ถูกต้อง</p>
+<ul>
+<li>[ ] <strong>Step 8: รัน focused/full tests</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/line-flex-studio-state.test.mjs tests/line-flex-actions-receipt.test.mjs
+npm.cmd --prefix LineOS run test</code></pre>
+<ul>
+<li>[ ] <strong>Step 9: เปิด local server และ smoke check</strong></li>
+</ul>
+<pre><code class="language-powershell">python -m http.server 4177 --directory LineOS</code></pre>
+<p>ตรวจ <code>http://localhost:4177/line-flex-studio.html</code>: approval preset ภาษาไทย, revision เปลี่ยน preview/JSON, alt text ว่างปิด output/journey, preset/language ไม่รั่วค่า, journey แสดง exact review/receipt และ network มีเฉพาะ localhost จากนั้นหยุด server</p>
+<ul>
+<li>[ ] <strong>Step 10: Commit Task 5</strong></li>
+</ul>
+<pre><code class="language-powershell">git add -- LineOS/line-flex-studio.mjs LineOS/line-flex-json.mjs LineOS/line-flex-studio.html LineOS/line-flex-studio.css LineOS/tests/line-flex-studio-state.test.mjs LineOS/tests/line-flex-actions-receipt.test.mjs
+git commit -m "feat(lineos): make Flex Studio interactive"</code></pre>
+<hr>
+<h3>Task 6: รายงาน Deep Research สองภาษาระดับคณะกรรมการ</h3>
+<p><strong>ไฟล์:</strong> สร้าง <code>tests/docs-contract.test.mjs</code>, รายงาน <code>.en.md/.th.md</code> และ generate <code>.en.html/.th.html</code></p>
+<p><strong>Interfaces:</strong> ใช้ approved design, หลักฐานจาก Git roots ทั้งสอง และ Perplexity Deep Research 3 tracks; technical claim ใช้ primary source และ local claim ต้องบอก Git root/ไฟล์</p>
+<ul>
+<li>[ ] <strong>Step 1: เขียน failing docs contract</strong> ตรวจว่ามีทั้ง 4 editions, HTML standalone/lang ถูกต้อง, คง <code>NO-GO for broader customer messaging</code>, ระบุ Daph เป็น pilot tenant หนึ่งราย และมี evidence labels <code>Official constraint</code>, <code>Verified local fact</code>, <code>Inference</code>, <code>Proposal</code>, <code>Unknown</code> พร้อม LINE, RFC 9700, NIST 800-207 และ WCAG 2.2 sources</li>
+<li>[ ] <strong>Step 2: รัน RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/docs-contract.test.mjs</code></pre>
+<ul>
+<li>[ ] <strong>Step 3: เขียนรายงานอังกฤษ และ Step 4: เขียนรายงานไทยที่ตรงกัน</strong></li>
+</ul>
+<p>ทั้งสองฉบับต้องมี 20 ส่วน:</p>
+<ol>
+<li>Board decision: broader customer messaging เป็น NO-GO; อนุมัติเฉพาะ local prototype แบบมีเงื่อนไข</li>
+<li>วิธีวิจัย: Perplexity 3 tracks, local inspection, official verification, evidence labels</li>
+<li>Current state สอง Git roots พร้อม dirty/non-production caveats</li>
+<li>LINE Human Surface: OA 1:1, personal push, groups และข้อมูลใดต้องกลับ MONOLITH</li>
+<li>Flex/LIFF: envelope, bubble 30 KB, carousel 50 KB/12 bubbles, alt/media/action limits และ LIFF ผ่าน URI</li>
+<li>Developer Console/delivery lifecycle: channel/provider/LIFF, webhook, redelivery, retry, observability</li>
+<li>Trust Kernel: tenant, principal, resource, revision, grants, delegation, risk, assurance และ PERMIT/DENY/STEP_UP/QUARANTINE</li>
+<li>Gap ledger P0–P3</li>
+<li>Threat model ครบ cross-tenant, forged/replay, forwarding, stale revision, unknown group actor, wrong audience, duplicate/unknown send, audit tamper, notification abuse</li>
+<li>Human factors/ethical retention: quiet hours, fatigue, accessibility, recovery, portability, ห้าม dark patterns</li>
+<li>Interior-design lifecycle ตั้งแต่ lead ถึง warranty/referral</li>
+<li>Product/configuration matrix: base/wall/tall-larder/vanity/wardrobe/media/office/custom และมิติเป็น sourced parameters ไม่ใช่มาตรฐานเดียว</li>
+<li>Materials/hardware/toolchain: provenance, appliances, CAD/BIM/CAM/CNC, survey, QA, installation evidence</li>
+<li>Role scorecard ครบผู้บริหาร ฝ่ายขาย นักออกแบบ ถอดราคา จัดซื้อ โรงงาน QA ขนส่ง ติดตั้ง การเงิน partner ลูกค้า และลูกค้าของลูกค้า</li>
+<li>Capability matrix: local evidence, gap, owner, dependency, risk, measurable outcome</li>
+<li>KPI hypotheses โดยห้ามกล่าวเป็น baseline ที่พิสูจน์แล้ว</li>
+<li>Roadmap: P0 Trust → bounded Daph pilot → 5 governed journeys → Tenant-2 shadow → controlled scale</li>
+<li>Board go/no-go scorecard</li>
+<li>Evidence ledger พร้อม URL/publisher/date/classification/claim/caveat</li>
+<li>Limitations: ไม่มี deployment/real-machine/legal/universal-dimension/production-signature proof</li>
+</ol>
+<p>ข้อสรุปต้องยืนยันว่า MONOLITH เป็น multi-tenant revision-controlled project/product operating system, LINE เป็น replaceable Human Surface, Daph เป็น pilot tenant หนึ่งราย และ broader messaging ยัง NO-GO จน Trust P0 ทุก gate ผ่านด้วยหลักฐานใหม่</p>
+<ul>
+<li>[ ] <strong>Step 5: Render HTML</strong></li>
+</ul>
+<pre><code class="language-powershell">python tools\render_docs.py "LineOS\docs\research\2026-08-01-monolith-line-human-surface-deep-research.en.md" "LineOS\docs\research\2026-08-01-monolith-line-human-surface-deep-research.th.md"</code></pre>
+<ul>
+<li>[ ] <strong>Step 6: ตรวจ contract และ claim lint</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/docs-contract.test.mjs
+python tools\lint_claims.py "LineOS\docs\research\2026-08-01-monolith-line-human-surface-deep-research.en.md" "LineOS\docs\research\2026-08-01-monolith-line-human-surface-deep-research.th.md"</code></pre>
+<ul>
+<li>[ ] <strong>Step 7: Commit Task 6</strong></li>
+</ul>
+<pre><code class="language-powershell">git add -- LineOS/tests/docs-contract.test.mjs LineOS/docs/research/2026-08-01-monolith-line-human-surface-deep-research.en.md LineOS/docs/research/2026-08-01-monolith-line-human-surface-deep-research.th.md LineOS/docs/research/2026-08-01-monolith-line-human-surface-deep-research.en.html LineOS/docs/research/2026-08-01-monolith-line-human-surface-deep-research.th.html
+git commit -m "docs(lineos): add LINE Human Surface deep research"</code></pre>
+<hr>
+<h3>Task 7: คู่มือผู้ใช้ ติดตั้ง Action/LIFF และ performance สองภาษา</h3>
+<p><strong>ไฟล์:</strong> สร้าง Markdown 8 ไฟล์, HTML 8 ไฟล์ใน <code>LineOS/docs/guides/</code>; แก้ docs contract</p>
+<ul>
+<li>[ ] <strong>Step 1: เพิ่ม contract ก่อนสร้างคู่มือ</strong> สำหรับ 4 stems ใน File map ทุก stem ต้องมี <code>.en.md/.th.md/.en.html/.th.html</code> Installation guide ต้องมี <code>Flex Message Simulator</code>, <code>Messaging API</code>, <code>Use webhook</code>, <code>Webhook redelivery</code>, <code>LIFF</code>, <code>state</code>, <code>nonce</code>, <code>no production token</code> และประโยค <code>Flex JSON is not installed in Developer Console</code></li>
+<li>[ ] <strong>Step 2: รัน RED</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/docs-contract.test.mjs</code></pre>
+<ul>
+<li>[ ] <strong>Step 3: คู่มือ Flex Studio</strong> ครบ purpose/safety, quick start, console map, 5 presets, Header/Hero/Body/Footer, widths/wrapping, JSON gates, severity/source, Mock LIFF, demo receipt, keyboard, clear state, troubleshooting และยืนยันว่าไม่มี message/business-state change</li>
+<li>[ ] <strong>Step 4: คู่มือติดตั้ง Developer Console</strong> ตามลำดับที่ถูกต้อง:</li>
+</ul>
+<ol>
+<li>Business ID + LINE OA;</li>
+<li>เปิด Messaging API ใน OA Manager;</li>
+<li>เลือก provider และใช้ provider เดียวกันเมื่อ user ID ต้อง align ระหว่าง Messaging API กับ LINE Login/LIFF;</li>
+<li>ยืนยัน channel ID;</li>
+<li>เก็บ channel secret/token เป็น production secrets;</li>
+<li>ตั้ง HTTPS webhook, Verify, ตอบ empty-event ด้วย HTTP 200, เปิด Use webhook, Webhook redelivery, error statistics;</li>
+<li>สร้าง LINE Login channel;</li>
+<li>เพิ่ม LIFF app จาก LIFF tab;</li>
+<li>ตั้งชื่อ/Compact-Tall-Full/HTTPS endpoint ไม่มี fragment/least scopes;</li>
+<li>ใช้ <code>openid</code>, <code>profile</code>, <code>chat_message.write</code> เท่าที่จำเป็น;</li>
+<li>แยก LIFF ID/URL ตาม environment;</li>
+<li>ตรวจ server-side state/nonce, exact redirect URI, expiry, one-time consumption ก่อน bind identity;</li>
+<li>ปุ่ม Flex ใช้ URI เปิด LIFF เพราะ LIFF ไม่ใช่ Flex action type แยก;</li>
+<li>วาง JSON ใน official Flex Message Simulator เพื่อ prototype ไม่ใช่ “ติดตั้ง JSON” ใน Developer Console;</li>
+<li>ทดสอบ real LINE clients/fallbacks;</li>
+<li>ปิด live customer delivery จน Trust P0 ผ่าน;</li>
+<li>มี rollback ที่หยุด webhook/entry point/workers แต่รักษา audit/evidence</li>
+</ol>
+<p>ใช้ภาพ official UI เฉพาะที่จับจากหน้าจอปัจจุบันจริง ระบุวันที่ และปิดบัง identifier/secret ห้ามใช้ภาพ console จำลอง</p>
+<ul>
+<li>[ ] <strong>Step 5: คู่มือ Action vs LIFF</strong></li>
+</ul>
+<div class="tablewrap"><table><thead><tr><th>ความต้องการ</th><th>Action</th></tr></thead><tbody>
+<tr><td>ข้อความสนทนาที่เห็นในแชต</td><td>Message</td></tr>
+<tr><td>ตัวเลือก low-risk/reversible และ server reauthorize</td><td>Postback พร้อม opaque intent ID</td></tr>
+<tr><td>เว็บ/tel/LINE scheme แบบ read-only</td><td>URI</td></tr>
+<tr><td>Form, identity, sensitive detail, comparison, explicit confirmation</td><td>URI เปิด LIFF</td></tr>
+<tr><td>Money/access/release/policy/scope/hard-to-reverse</td><td>LIFF + MONOLITH step-up</td></tr>
+</tbody></table></div>
+<p>ต้องมีตัวอย่างครบ 5 presets, duplicate/replay behavior, อธิบายว่า webhook signature พิสูจน์ transport ไม่ใช่ authorization และห้ามใส่ tenant/amount/role ใน postback, ใช้ free-text เป็น order truth, one-tap approval, bearer token ใน URL หรือถือ group membership เป็น permission</p>
+<ul>
+<li>[ ] <strong>Step 6: Performance/rendering checklist</strong> ครบ bubble 30 KB, carousel 50 KB/12 bubbles, alt 1,500, HTTPS JPEG/PNG 1024×1024/10 MB, MONOLITH soft budget 24 KB, no base64/remote font/third-party runtime, local vs export hero, 320/360/390, ไทย/อังกฤษ/emoji/ชื่อยาว/large font, cover safe area, text outside image, shallow layout/wrap/no fixed height, CTA clarity, keyboard/focus/contrast/semantics/reduced motion, real-device matrix, future CDN guidance และ failure handling สำหรับ image/API 4xx/429/5xx/duplicate/unknown-after-send</li>
+<li>[ ] <strong>Step 7: Render 8 HTML files</strong></li>
+</ul>
+<pre><code class="language-powershell">$guideFiles = Get-ChildItem -LiteralPath "LineOS\docs\guides" -Filter "*.md" -File | Select-Object -ExpandProperty FullName
+python tools\render_docs.py $guideFiles</code></pre>
+<ul>
+<li>[ ] <strong>Step 8: ตรวจ docs/claims</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test -- tests/docs-contract.test.mjs
+python tools\lint_claims.py LineOS\docs\guides</code></pre>
+<ul>
+<li>[ ] <strong>Step 9: Commit Task 7</strong></li>
+</ul>
+<pre><code class="language-powershell">git add -- LineOS/tests/docs-contract.test.mjs LineOS/docs/guides
+git commit -m "docs(lineos): add Flex and LIFF operating guides"</code></pre>
+<hr>
+<h3>Task 8: ความสอดคล้องข้ามเอกสาร, standalone HTML และ claim verification</h3>
+<p><strong>ไฟล์:</strong> แก้ <code>tests/docs-contract.test.mjs</code>; regenerate Markdown companions ใต้ <code>LineOS/docs/</code></p>
+<ul>
+<li>[ ] <strong>Step 1: เพิ่ม integrity tests</strong> ตรวจคำค้าง <code>TBD/TODO/FIXME/implement later/fill in details</code>, Unicode replacement character, HTML doctype/viewport/lang, คู่ TH/EN และห้ามสรุปว่า source presence หรือ test presence เท่ากับ production readiness</li>
+<li>[ ] <strong>Step 2: พิสูจน์ missing-companion RED และ restore แบบ fail-safe</strong></li>
+</ul>
+<pre><code class="language-powershell">$source = "LineOS\docs\guides\line-developer-console-installation.en.html"
+$held = "LineOS\docs\guides\line-developer-console-installation.en.html.hold"
+Move-Item -LiteralPath $source -Destination $held
+try {
+  npm.cmd --prefix LineOS run test -- tests/docs-contract.test.mjs
+  if ($LASTEXITCODE -eq 0) { throw "Expected the missing-companion contract to fail" }
+}
+finally {
+  Move-Item -LiteralPath $held -Destination $source
+}
+npm.cmd --prefix LineOS run test -- tests/docs-contract.test.mjs
+if ($LASTEXITCODE -ne 0) { throw "Document contract did not recover after restoration" }</code></pre>
+<ul>
+<li>[ ] <strong>Step 3: Regenerate HTML ทั้งหมด</strong></li>
+</ul>
+<pre><code class="language-powershell">$docFiles = Get-ChildItem -LiteralPath "LineOS\docs" -Recurse -Filter "*.md" -File | Select-Object -ExpandProperty FullName
+python tools\render_docs.py $docFiles</code></pre>
+<ul>
+<li>[ ] <strong>Step 4: ตรวจเอกสารทั้งหมด</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test:contracts
+python tools\lint_claims.py LineOS\docs
+git diff --check -- LineOS</code></pre>
+<p>คาดหวัง: contracts PASS, claim lint exit 0, diff check ไม่มี output</p>
+<ul>
+<li>[ ] <strong>Step 5: Commit Task 8</strong></li>
+</ul>
+<pre><code class="language-powershell">git add -- LineOS/tests/docs-contract.test.mjs LineOS/docs
+git commit -m "test(lineos): enforce bilingual document contracts"</code></pre>
+<hr>
+<h3>Task 9: Browser evidence, final verification และ implementation report สองภาษา</h3>
+<p><strong>ไฟล์:</strong> สร้าง <code>desktop-1440.png</code>, <code>mobile-390.png</code>, <code>verification-summary.json</code>, implementation report <code>.en.md/.th.md/.en.html/.th.html</code>; แก้ docs contract</p>
+<ul>
+<li>[ ] <strong>Step 1: เพิ่ม report contract</strong> บังคับ 4 editions และหัวข้อ scope, commits, automated tests, browser checks, network evidence, acceptance gates, residual risk, NO-GO และ next decision</li>
+<li>[ ] <strong>Step 2: รัน RED</strong></li>
+<li>[ ] <strong>Step 3: รัน automated suite พร้อม output สดที่ไม่ถูกตัด</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test</code></pre>
+<p>คาดหวัง: ทุก suite PASS, 0 failures; output ที่ถูกตัดไม่ถือเป็น PASS evidence</p>
+<ul>
+<li>[ ] <strong>Step 4: เปิด static server</strong></li>
+</ul>
+<pre><code class="language-powershell">python -m http.server 4177 --directory LineOS</code></pre>
+<p>ใช้ <code>http://localhost:4177/line-flex-studio.html</code> ไม่ใช้ file URL</p>
+<ul>
+<li>[ ] <strong>Step 5: ตรวจ 5 journeys ทั้งไทย/อังกฤษ</strong></li>
+</ul>
+<p>ทุก preset ต้องเลือก → ตรวจ local hero/tenant/audience/action → แก้อย่างน้อยหนึ่ง field ใน Header/Hero/Body/Footer → ตรวจ preview/JSON/validation → ทำ error และแก้ → copy/download → run journey → ตรวจ exact-action review → confirm/receipt → สลับภาษาและตรวจไม่รั่วค่า สำหรับ design approval ให้เปลี่ยน revision หลังเปิด Mock LIFF แล้วต้อง fail closed</p>
+<ul>
+<li>[ ] <strong>Step 6: ตรวจ responsive/accessibility/network</strong> ที่ 1440, 1024, 768, 390, 360, 320; keyboard-only, focus, dialog focus return, reduced motion, Thai/English long text, emoji, hero-load failure fallback, ค่า horizontal page overflow ต้องเท่ากับ 0 และ request log ต้องมีเฉพาะ localhost จับภาพ <code>desktop-1440.png</code> กับ <code>mobile-390.png</code> ตอน approval preset valid ก่อน confirm</li>
+<li>[ ] <strong>Step 7: สร้าง machine-readable evidence จากค่าที่ตรวจจริงเท่านั้น</strong></li>
+</ul>
+<pre><code class="language-powershell">Get-Date -AsUTC -Format "o"
+git rev-parse HEAD
+git branch --show-current
+node --version</code></pre>
+<p><code>verification-summary.json</code> ต้องมี schemaVersion 1, UTC time, parent commit 40 ตัว, branch, Node/browser version, served URL, test command/exitCode/pass count/failures, presets 5, languages <code>["th","en"]</code>, widths <code>[1440,1024,768,390,360,320]</code>, externalRequests 0, acceptanceGates 10 รายการที่ status PASS พร้อม evidence จริง, <code>liveLineMessageSent:false</code>, <code>productionSignatureCreated:false</code>, <code>broaderCustomerMessagingDecision:"NO-GO_PENDING_TRUST_P0"</code> Contract ต้อง reject hash/browser/test count/gate/evidence ที่ไม่สมบูรณ์</p>
+<ul>
+<li>[ ] <strong>Step 8: เขียน implementation reports ที่ตรงกัน</strong> ระบุ parent/nested commits, dirty-tree caveat, files in scope, test counts, browser matrix/screenshots, external requests, gate evidence, สิ่งที่ไม่ได้ทดสอบ, residual risks, NO-GO จน Trust P0 ผ่าน และ next decision ระหว่างเก็บ standalone prototype หรือเริ่ม sandbox-integration design cycle ใหม่</li>
+<li>[ ] <strong>Step 9: Render และตรวจทั้งหมดซ้ำ</strong></li>
+</ul>
+<pre><code class="language-powershell">python tools\render_docs.py "LineOS\docs\reports\2026-08-01-line-flex-studio-implementation-report.en.md" "LineOS\docs\reports\2026-08-01-line-flex-studio-implementation-report.th.md"
+npm.cmd --prefix LineOS run test
+python tools\lint_claims.py LineOS\docs
+git diff --check -- LineOS</code></pre>
+<ul>
+<li>[ ] <strong>Step 10: หยุดเฉพาะ server ที่ตรวจแล้วและ commit</strong></li>
+</ul>
+<pre><code class="language-powershell">git add -- LineOS/artifacts/line-flex-studio LineOS/docs/reports LineOS/tests/docs-contract.test.mjs
+git commit -m "docs(lineos): record Flex Studio verification evidence"</code></pre>
+<ul>
+<li>[ ] <strong>Step 11: Final post-commit gate</strong></li>
+</ul>
+<pre><code class="language-powershell">npm.cmd --prefix LineOS run test
+git status --short --branch
+git log -10 --oneline --decorate</code></pre>
+<p>คาดหวัง: tests PASS พร้อม summary ครบ, status รักษางานเดิมนอก scope และเห็น Task commits ล่าสุด ห้ามเรียก repository ว่า clean ถ้า status จริงไม่ clean</p>
+<hr>
+<h2>Checklist ตรวจแผนก่อนดำเนินงาน</h2>
+<ul>
+<li>[ ] ทุก requirement ใน approved design map ไปอย่างน้อยหนึ่ง Task</li>
+<li>[ ] ทุกไฟล์อยู่ใต้ <code>LineOS/</code></li>
+<li>[ ] ไม่มี Task แก้ nested product repository</li>
+<li>[ ] ทุก production module มี failing test ก่อน implementation</li>
+<li>[ ] บังคับคู่ Thai/English Markdown/HTML</li>
+<li>[ ] Flex action vs LIFF ถูกทดสอบ ไม่ใช่เพียงเขียนคู่มือ</li>
+<li>[ ] ถ้อยคำ receipt ไม่ทำให้เข้าใจว่าเป็น production signature</li>
+<li>[ ] ไม่มี external network หรือ live-send path</li>
+<li>[ ] Browser evidence ครบ 5 presets, 2 ภาษา, 6 widths</li>
+<li>[ ] Final report คง Trust P0 NO-GO</li>
+</ul>
+<h2>การส่งต่อเพื่อดำเนินงาน</h2>
+<p>แผนเสร็จสมบูรณ์ มีสองทางเลือก:</p>
+<ol>
+<li><strong>Subagent-Driven</strong> — มอบแต่ละ Task ให้ agent ใหม่และมี review gate ระหว่าง Task ใช้ได้เมื่อผู้ใช้อนุญาต subagents โดยชัดแจ้งเท่านั้น</li>
+<li><strong>Inline Execution</strong> — ดำเนินแผนใน session ปัจจุบันด้วย superpowers:executing-plans และ checkpoints ที่ชัดเจน</li>
+</ol>
+<p>ห้ามเริ่ม implementation จนกว่าผู้ใช้จะเลือกวิธีดำเนินงาน</p>
+</main></body>
+</html>

@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>Flex Action vs LIFF Decision Guide</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1>Flex Action vs LIFF Decision Guide</h1>
+<ul>
+<li>Status: approved decision contract for MONOLITH LINE Human Surface</li>
+<li>Edition: English</li>
+<li>Official platform behavior checked 2026-08-02</li>
+</ul>
+<h2>1. Decision principle</h2>
+<p>Choose an action by consequence, not by which button looks simplest. LINE is the Human Surface; MONOLITH remains the authority for tenant, identity, permission, resource, revision, workflow and audit.</p>
+<p>A Flex button supports LINE action objects. LIFF is opened through a Flex <strong>URI action</strong>; LIFF is not a separate Flex action type. A URI opening LIFF provides a private review surface, but the server must still authenticate, authorize, bind the exact transaction and recheck current state.</p>
+<p>No action payload is permission. No production token belongs in action data or a URL.</p>
+<h2>2. Exact approved matrix</h2>
+<div class="tablewrap"><table><thead><tr><th>Need</th><th>Action</th></tr></thead><tbody>
+<tr><td>Visible conversational text</td><td>Message</td></tr>
+<tr><td>Low-risk reversible choice, reauthorized server-side</td><td>Postback with opaque intent ID</td></tr>
+<tr><td>Read-only web/tel/LINE scheme</td><td>URI</td></tr>
+<tr><td>Form, identity, sensitive detail, comparison or explicit confirmation</td><td>URI opening LIFF</td></tr>
+<tr><td>Money, access, release, policy, scope or hard-to-reverse change</td><td>LIFF plus MONOLITH step-up</td></tr>
+</tbody></table></div>
+<p>Apply the highest-consequence row that could result from the control. If a button mixes acknowledgement and approval, split the journey so the card acknowledges first and the authenticated work surface authorizes separately.</p>
+<h2>3. What each action actually does</h2>
+<h3>Message</h3>
+<p>A Message action sends its configured text into the chat as a message from the user. Use it only when visible conversational text is itself the intended outcome—for example, “Please contact me.” Free text is not a structured order, approval, identity binding or workflow mutation.</p>
+<h3>Postback</h3>
+<p>A Postback action sends a postback event to the webhook with the configured <code>data</code>. Use a short opaque intent ID that resolves to a server-side record. On receipt, verify webhook signature, map the actor, resolve tenant/resource from authoritative context, reauthorize, enforce expiry and idempotency, then perform only the low-risk reversible operation declared by policy.</p>
+<h3>URI</h3>
+<p>A URI action opens <code>http</code>, <code>https</code>, <code>line</code> or <code>tel</code> destinations supported by LINE. Use it for read-only pages, phone calls and approved LINE schemes. Treat every query value as untrusted. A read-only destination must not mutate state on GET.</p>
+<h3>URI opening LIFF</h3>
+<p>Use a URI action whose destination is the environment-approved LIFF URL. LIFF provides a private surface for forms, sensitive details, comparisons and explicit confirmation; login is only the first identity step and never business authorization.</p>
+<p>Supported identity sequence: run <code>liff.init()</code>; use <code>liff.login()</code> in the documented external/in-app-browser case; send the <strong>raw <code>liff.getIDToken()</code> ID token or access token</strong> to the server; then <strong>verify using LINE's documented server flow</strong> before mapping the verified subject to a stored principal. <strong>Direct LINE Login authorization requests inside the LIFF browser are not guaranteed</strong>; preserve LINE's <code>liff.login()</code> path instead of constructing an authorization request inside LIFF.</p>
+<p>Keep identity, routing and transaction values separate:</p>
+<div class="tablewrap"><table><thead><tr><th>Concept</th><th>Meaning and required handling</th></tr></thead><tbody>
+<tr><td>MONOLITH transaction reference</td><td>A server-created, server-stored, high-entropy opaque reference with CSRF/session binding; bound to tenant, principal/audience, resource, revision, action, expiry and exact return target; one-time consumed atomically. It is not an ID-token nonce.</td></tr>
+<tr><td>LINE-managed liff.state</td><td>Additional LIFF URL information carried by LINE; untrusted routing input; not OAuth state, not permission and not the MONOLITH transaction reference.</td></tr>
+<tr><td>OAuth state</td><td>CSRF correlation for a separate supported authorization flow; created/stored by that flow; not liff.state and not business permission.</td></tr>
+<tr><td>OIDC nonce</td><td>ID-token replay/correlation input; compare only when a separate supported authorization flow lets MONOLITH supply it and LINE returns the ID-token claim.</td></tr>
+</tbody></table></div>
+<h3>LIFF plus MONOLITH step-up</h3>
+<p>For money, access, release, policy, scope or a hard-to-reverse change, LIFF must call the MONOLITH authorization path. Re-read authoritative data, explain consequence, require appropriate step-up/two-person control, atomically consume a one-time command and return a durable Signed Receipt. A successful LIFF login alone does not approve the action.</p>
+<h2>4. Preset decisions</h2>
+<div class="tablewrap"><table><thead><tr><th>Preset</th><th>Primary control</th><th>Why</th><th>Server-side result</th></tr></thead><tbody>
+<tr><td><code>design-approval</code></td><td>URI opening LIFF, then MONOLITH step-up</td><td>The exact design revision affects release and downstream work</td><td>Load authoritative revision; verify signer scope and freshness; one-time approve/reject; durable receipt.</td></tr>
+<tr><td><code>quote-order</code></td><td>URI opening LIFF, then MONOLITH step-up</td><td>Price, scope, tax/terms and order intent must be compared and confirmed</td><td>Reprice/reload quote; verify customer/project and current terms; create structured order intent once.</td></tr>
+<tr><td><code>sla-escalation</code></td><td>Postback with opaque intent ID for acknowledgement; URI for “Open work item”</td><td>Acknowledgement is low-risk, while monetary approval is consequential</td><td>Record acknowledgement idempotently; route approval to authenticated work item with permission/limit check.</td></tr>
+<tr><td><code>site-update</code></td><td>Read-only URI</td><td>The customer views an evidence set already curated for its audience</td><td>Resolve a short-lived audience-scoped view; log access if policy requires; no workflow mutation on open.</td></tr>
+<tr><td><code>issue-evidence</code></td><td>Postback with opaque intent ID</td><td>Acknowledgement is reversible; promote/reject needs actor/project verification</td><td>Mark “review requested” once; keep evidence quarantined until authorized human review.</td></tr>
+</tbody></table></div>
+<p>Secondary buttons must not create a hidden alternative approval route. Use one dominant CTA and a clearly lower-consequence fallback.</p>
+<h2>5. Duplicate, replay and retry behavior</h2>
+<p>LINE webhook redelivery and network/client retries can produce duplicate events, and redelivery order can differ from occurrence order. Design every route for at-least-once observations:</p>
+<ol>
+<li>Verify <code>x-line-signature</code> over the exact raw body before parsing.</li>
+<li>Deduplicate inbound webhooks with <code>webhookEventId</code>; retain the first processing result.</li>
+<li>Resolve opaque intent ID to a server record bound to tenant, actor/audience, resource, revision, action, expiry and permitted use count.</li>
+<li>Reject expired, already-consumed, mismatched or stale intents. A replay returns the prior safe result or an explicit rejection; it never repeats the business command.</li>
+<li>Use an atomic idempotency/command key around the business mutation and its audit record.</li>
+<li>Distinguish duplicate delivery from <code>unknown-after-send</code>. For an ambiguous outbound result, preserve request/retry identifiers and acceptance state, reconcile outcome and never blind resend.</li>
+</ol>
+<p>Do not use the LINE reply token as the only business idempotency key. Do not assume event order is authoritative workflow order.</p>
+<h2>6. Transport proof is not authorization</h2>
+<p>A valid webhook signature proves that the received raw body was signed with the channel secret and was not altered in transit. It establishes transport authenticity/integrity. It does <strong>not</strong> prove that:</p>
+<ul>
+<li>the LINE user is bound to the intended MONOLITH principal;</li>
+<li>the actor belongs to the tenant or may act on the resource;</li>
+<li>the action is allowed by role, limit, policy or separation of duties;</li>
+<li>the referenced revision is current;</li>
+<li>a group participant is known or authorized;</li>
+<li>the command has not expired or already executed.</li>
+</ul>
+<p>Therefore signature verification is the first ingress gate, followed by identity binding, tenant/resource resolution, policy authorization, freshness, idempotency and audit.</p>
+<h2>7. Data contracts</h2>
+<h3>Safe postback shape</h3>
+<pre><code class="language-json">{
+  "type": "postback",
+  "label": "Acknowledge SLA",
+  "data": "intent=it_7mF2kQp9"
+}</code></pre>
+<p>The opaque value has no standalone meaning. The server record—not <code>data</code>—contains tenant, resource, revision, allowed action, risk, expiry and one-time status.</p>
+<h3>Safe LIFF URI shape</h3>
+<pre><code class="language-json">{
+  "type": "uri",
+  "label": "Review and confirm",
+  "uri": "https://liff.line.me/{environment-liff-id}"
+}</code></pre>
+<p>Create the MONOLITH transaction reference server-side after entry and bind it to the authenticated session plus exact return target. Avoid readable or reusable business authority in the URI. <code>liff.state</code> and forwarded URL values can propose routing only; the server reloads tenant/resource/revision/action and authorization before one-time consumption.</p>
+<h2>8. Prohibited anti-patterns</h2>
+<div class="tablewrap"><table><thead><tr><th>Anti-pattern</th><th>Why it fails</th><th>Required replacement</th></tr></thead><tbody>
+<tr><td>tenant/amount/role in postback data</td><td>User-controlled/forwardable payload becomes apparent authority and leaks context</td><td>Opaque intent ID; authoritative server lookup and reauthorization</td></tr>
+<tr><td>free-text order truth</td><td>Text is ambiguous, editable in process and lacks schema/revision binding</td><td>Structured order form in LIFF plus authoritative quote reload</td></tr>
+<tr><td>one-tap approval</td><td>No exact-value review, freshness check, step-up or consequence acknowledgement</td><td>LIFF review plus MONOLITH step-up and one-time command</td></tr>
+<tr><td>bearer tokens in URLs</td><td>URLs leak through logs, history, referrers, screenshots and forwarding</td><td>Server session, secure cookie/token exchange and opaque one-time reference</td></tr>
+<tr><td>group membership as permission</td><td>Group actor may be unbound, membership changes and everyone sees the message</td><td>Bind principal explicitly; resolve tenant/resource authorization server-side</td></tr>
+</tbody></table></div>
+<p>Also prohibited: state-changing GET, reusable command ID, trusting LIFF-decoded client profile, auto-promoting group evidence, hidden secondary approval CTA and treating message acceptance as human receipt.</p>
+<h2>9. Review checklist</h2>
+<ul>
+<li>[ ] The business need maps to exactly one row of the approved matrix.</li>
+<li>[ ] Consequential actions use URI opening LIFF plus MONOLITH step-up.</li>
+<li>[ ] Postback contains only an opaque, expiring intent ID.</li>
+<li>[ ] Message action is conversational text only.</li>
+<li>[ ] Read-only URI does not mutate on GET and contains no secret.</li>
+<li>[ ] Webhook signature is verified before parse, then authorization occurs separately.</li>
+<li>[ ] Tenant, principal, resource, revision and policy come from authoritative server state.</li>
+<li>[ ] Duplicate/replay/expiry/stale/forwarded-link tests fail safely.</li>
+<li>[ ] One-time command and audit are atomic.</li>
+<li>[ ] <code>unknown-after-send</code> is reconciled without blind resend.</li>
+<li>[ ] Live delivery remains closed until Trust P0 passes.</li>
+<li>[ ] LIFF uses <code>liff.init()</code> / <code>liff.login()</code> and raw-token server verification; decoded client profile is not identity proof.</li>
+<li>[ ] MONOLITH transaction reference, LINE-managed <code>liff.state</code>, OAuth state and OIDC nonce remain separate.</li>
+</ul>
+<h2>Official sources</h2>
+<p>Retrieved 2026-08-02:</p>
+<ul>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/actions/" target="_blank" rel="noopener">Messaging API action objects</a></li>
+<li><a href="https://developers.line.biz/en/reference/messaging-api/nojs/" target="_blank" rel="noopener">Messaging API reference: Message, Postback and URI actions</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/receiving-messages/" target="_blank" rel="noopener">Receive messages and webhook redelivery</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/verify-webhook-signature/" target="_blank" rel="noopener">Verify webhook signature</a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/registering-liff-apps/" target="_blank" rel="noopener">Adding a LIFF app and scopes</a></li>
+<li><a href="https://developers.line.biz/en/reference/liff/" target="_blank" rel="noopener">LIFF API reference: initialization and login</a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/developing-liff-apps/" target="_blank" rel="noopener">Developing a LIFF app</a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/opening-liff-app/" target="_blank" rel="noopener">Opening a LIFF app and <code>liff.state</code></a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/using-user-profile/" target="_blank" rel="noopener">Using profile information in LIFF safely</a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/development-guidelines/" target="_blank" rel="noopener">LIFF development guidelines</a></li>
+<li><a href="https://developers.line.biz/en/reference/line-login/" target="_blank" rel="noopener">LINE Login API: token and nonce verification</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/retrying-api-request/" target="_blank" rel="noopener">Retrying a Messaging API request</a></li>
+</ul>
+</main></body>
+</html>

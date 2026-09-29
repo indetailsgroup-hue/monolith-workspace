@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCP Layer — Implementation Plan | Monolith</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #1f2d5a;
+    --navy-dark: #0d1a3a;
+    --gold: #c9a84c;
+    --green: #2d7a4f;
+    --green-light: #e6f4ed;
+    --red: #b91c1c;
+    --red-light: #fef2f2;
+    --orange: #d97706;
+    --orange-light: #fffbeb;
+    --blue-light: #eff6ff;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-400: #9ca3af;
+    --gray-600: #4b5563;
+    --gray-800: #1f2937;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Sarabun', sans-serif;
+    background: #f0f2f5;
+    color: var(--gray-800);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .page { max-width: 1100px; margin: 0 auto; padding: 32px 24px 60px; }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+    border-radius: 16px;
+    padding: 36px 40px;
+    color: white;
+    margin-bottom: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    right: -40px; top: -40px;
+    width: 220px; height: 220px;
+    border-radius: 50%;
+    background: rgba(201,168,76,0.1);
+  }
+  .header-label { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: var(--gold); text-transform: uppercase; margin-bottom: 8px; }
+  .header h1 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+  .header-sub { font-size: 15px; color: rgba(255,255,255,0.75); margin-bottom: 20px; }
+  .header-pills { display: flex; gap: 10px; flex-wrap: wrap; }
+  .header-pill { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; padding: 4px 14px; font-size: 12px; font-weight: 600; }
+  .header-pill.gold { background: rgba(201,168,76,0.2); border-color: var(--gold); color: var(--gold); }
+
+  /* SECTION */
+  .section { background: white; border-radius: 12px; padding: 28px 32px; margin-bottom: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .section-title {
+    font-size: 18px; font-weight: 800; color: var(--navy);
+    margin-bottom: 20px; display: flex; align-items: center; gap: 10px;
+    padding-bottom: 12px; border-bottom: 2px solid var(--gray-100);
+  }
+  .section-title::before { content: attr(data-icon); font-size: 20px; }
+
+  /* ARCHITECTURE FLOW */
+  .arch-flow { display: flex; align-items: stretch; gap: 0; margin-bottom: 24px; flex-wrap: wrap; }
+  .arch-node {
+    flex: 1; min-width: 140px; background: var(--gray-50); border: 2px solid var(--gray-200);
+    border-radius: 10px; padding: 14px 16px; text-align: center; position: relative;
+  }
+  .arch-node.navy { background: var(--navy); border-color: var(--navy); color: white; }
+  .arch-node.gold { background: rgba(201,168,76,0.1); border-color: var(--gold); }
+  .arch-node.green { background: var(--green-light); border-color: var(--green); }
+  .arch-node.red { background: var(--red-light); border-color: var(--red); }
+  .arch-node-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; opacity: 0.6; margin-bottom: 4px; }
+  .arch-node-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .arch-node-desc { font-size: 11px; opacity: 0.75; }
+  .arch-arrow { display: flex; align-items: center; padding: 0 4px; color: var(--gold); font-size: 18px; font-weight: 900; }
+  .trust-boundary {
+    width: 100%; background: var(--red-light); border: 2px dashed var(--red);
+    border-radius: 10px; padding: 12px 16px; margin-top: 16px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .trust-boundary .tb-icon { font-size: 18px; }
+  .trust-boundary-text { font-size: 13px; font-weight: 600; color: var(--red); }
+
+  /* TASK LIST */
+  .phase-group { margin-bottom: 24px; }
+  .phase-header {
+    display: flex; align-items: center; gap: 12px;
+    background: linear-gradient(135deg, var(--navy) 0%, #2a3f7a 100%);
+    color: white; border-radius: 10px; padding: 12px 18px; margin-bottom: 12px; cursor: pointer;
+  }
+  .phase-num { background: var(--gold); color: var(--navy); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; flex-shrink: 0; }
+  .phase-title { font-size: 15px; font-weight: 700; flex: 1; }
+  .phase-badge { font-size: 11px; background: rgba(255,255,255,0.15); border-radius: 12px; padding: 2px 10px; }
+  .phase-badge.done { background: rgba(45,122,79,0.3); color: #86efac; }
+  .phase-badge.partial { background: rgba(201,168,76,0.25); color: var(--gold); }
+  .task-list { list-style: none; padding-left: 8px; }
+  .task-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 12px; border-left: 3px solid var(--gray-200);
+    margin-bottom: 6px; background: var(--gray-50); border-radius: 0 8px 8px 0;
+    transition: all 0.2s;
+  }
+  .task-item.done { border-left-color: var(--green); background: var(--green-light); }
+  .task-item.pending { border-left-color: var(--orange); background: var(--orange-light); }
+  .task-check { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+  .task-check.done { background: var(--green); color: white; }
+  .task-check.pending { background: var(--orange); color: white; }
+  .task-content { flex: 1; }
+  .task-id { font-size: 11px; font-weight: 700; color: var(--gray-400); font-family: 'JetBrains Mono', monospace; }
+  .task-name { font-size: 13px; font-weight: 600; color: var(--gray-800); margin-bottom: 2px; }
+  .task-detail { font-size: 12px; color: var(--gray-600); line-height: 1.5; }
+  .task-reqs { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .req-badge { font-size: 10px; background: var(--blue-light); color: var(--navy); border-radius: 10px; padding: 1px 8px; font-weight: 600; }
+
+  /* PDPA CHECKLIST */
+  .pdpa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .pdpa-card { background: var(--gray-50); border-radius: 10px; padding: 16px; border: 1px solid var(--gray-200); }
+  .pdpa-card.critical { border-color: var(--red); background: var(--red-light); }
+  .pdpa-card.important { border-color: var(--orange); background: var(--orange-light); }
+  .pdpa-card-title { font-size: 13px; font-weight: 700; margin-bottom: 10px; color: var(--gray-800); display: flex; align-items: center; gap: 6px; }
+  .check-item { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; font-size: 12.5px; }
+  .check-box { width: 16px; height: 16px; border: 2px solid var(--gray-400); border-radius: 3px; flex-shrink: 0; margin-top: 1px; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+  .check-box.checked { background: var(--green); border-color: var(--green); color: white; }
+  .check-box.critical { border-color: var(--red); }
+  .boundary-diagram {
+    background: var(--navy-dark); border-radius: 12px; padding: 20px; color: white;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  }
+  .bd-block { text-align: center; }
+  .bd-label { font-size: 10px; color: var(--gold); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+  .bd-box { background: rgba(255,255,255,0.1); border-radius: 8px; padding: 10px 14px; font-size: 12px; font-weight: 600; }
+  .bd-arrow { color: var(--gold); font-size: 20px; font-weight: 900; flex-shrink: 0; }
+  .bd-boundary { width: 2px; background: var(--red); position: relative; height: 50px; flex-shrink: 0; }
+  .bd-boundary::before { content: 'PDPA BOUNDARY'; position: absolute; top: -18px; left: -30px; font-size: 9px; font-weight: 700; color: #fca5a5; white-space: nowrap; letter-spacing: 1px; }
+
+  /* CODE SCAFFOLD */
+  .code-tabs { display: flex; gap: 4px; margin-bottom: 0; flex-wrap: wrap; }
+  .code-tab {
+    padding: 8px 16px; background: var(--gray-100); border-radius: 8px 8px 0 0;
+    font-size: 12px; font-weight: 600; color: var(--gray-600); cursor: pointer;
+    font-family: 'JetBrains Mono', monospace; border: 1px solid var(--gray-200); border-bottom: none;
+    transition: all 0.2s;
+  }
+  .code-tab.active { background: #1a1b2e; color: #e2e8f0; border-color: #1a1b2e; }
+  .code-block {
+    background: #1a1b2e; border-radius: 0 10px 10px 10px; padding: 20px 22px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.7;
+    color: #e2e8f0; overflow-x: auto; white-space: pre; tab-size: 2;
+    display: none; border: 1px solid #2d2f4a;
+  }
+  .code-block.active { display: block; }
+  .c-comment { color: #64748b; }
+  .c-keyword { color: #93c5fd; }
+  .c-string { color: #86efac; }
+  .c-type { color: #fbbf24; }
+  .c-func { color: #a5f3fc; }
+  .c-var { color: #e2e8f0; }
+  .c-num { color: #f9a8d4; }
+
+  /* DB SCHEMA TABLE */
+  .schema-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 16px; }
+  .schema-table th {
+    background: var(--navy); color: white; padding: 10px 14px; text-align: left;
+    font-weight: 700; font-size: 11px; letter-spacing: 0.5px;
+  }
+  .schema-table th:first-child { border-radius: 8px 0 0 0; }
+  .schema-table th:last-child { border-radius: 0 8px 0 0; }
+  .schema-table td { padding: 9px 14px; border-bottom: 1px solid var(--gray-100); vertical-align: top; }
+  .schema-table tr:nth-child(even) td { background: var(--gray-50); }
+  .schema-table tr:hover td { background: var(--blue-light); }
+  .col-name { font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--navy); font-size: 12px; }
+  .col-type { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #7c3aed; background: #f5f3ff; padding: 1px 6px; border-radius: 4px; }
+  .col-pk { font-size: 10px; background: var(--gold); color: var(--navy); border-radius: 4px; padding: 1px 6px; font-weight: 700; }
+  .col-fk { font-size: 10px; background: var(--blue-light); color: var(--navy); border-radius: 4px; padding: 1px 6px; font-weight: 700; }
+  .col-note { font-size: 11.5px; color: var(--gray-600); }
+
+  /* PROPERTY TABLE */
+  .prop-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .prop-table th { background: var(--navy); color: white; padding: 9px 14px; text-align: left; font-weight: 700; font-size: 11px; }
+  .prop-table td { padding: 8px 14px; border-bottom: 1px solid var(--gray-100); vertical-align: top; }
+  .prop-table tr:nth-child(even) td { background: var(--gray-50); }
+  .prop-pass { background: var(--green); color: white; border-radius: 10px; padding: 1px 8px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+  .prop-todo { background: var(--orange); color: white; border-radius: 10px; padding: 1px 8px; font-size: 10px; font-weight: 700; }
+
+  /* DEPLOYMENT STATUS */
+  .dep-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .dep-card { background: var(--gray-50); border-radius: 10px; padding: 14px; border: 1px solid var(--gray-200); text-align: center; }
+  .dep-card.done { background: var(--green-light); border-color: var(--green); }
+  .dep-card.partial { background: var(--orange-light); border-color: var(--orange); }
+  .dep-icon { font-size: 24px; margin-bottom: 6px; }
+  .dep-title { font-size: 12px; font-weight: 700; color: var(--gray-800); margin-bottom: 4px; }
+  .dep-status { font-size: 11px; font-weight: 600; }
+  .dep-card.done .dep-status { color: var(--green); }
+  .dep-card.partial .dep-status { color: var(--orange); }
+
+  .info-banner {
+    background: var(--blue-light); border: 1px solid #93c5fd; border-radius: 10px;
+    padding: 14px 18px; margin-bottom: 20px; display: flex; gap: 12px; align-items: flex-start;
+  }
+  .info-banner .ib-icon { font-size: 18px; flex-shrink: 0; }
+  .info-banner .ib-text { font-size: 13px; line-height: 1.6; color: var(--navy); }
+  .warn-banner {
+    background: var(--orange-light); border: 1px solid #fbbf24; border-radius: 10px;
+    padding: 14px 18px; margin-bottom: 20px; display: flex; gap: 12px; align-items: flex-start;
+  }
+  .warn-banner .wb-text { font-size: 13px; font-weight: 600; color: #92400e; }
+
+  .footer {
+    text-align: center; font-size: 12px; color: var(--gray-400); padding: 24px 0 0;
+    border-top: 1px solid var(--gray-200); margin-top: 32px;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-label">MONOLITH AI PROGRAMME — MCP LAYER</div>
+    <h1>Implementation Plan: MCP Layer (Layer 2)</h1>
+    <div class="header-sub">Expose Monolith capabilities as MCP Tools — Human-in-the-loop · PDPA Boundary · Reuse-not-Fork</div>
+    <div class="header-pills">
+      <div class="header-pill">📋 19 Tasks</div>
+      <div class="header-pill">🔒 PDPA Checklist 12 ข้อ</div>
+      <div class="header-pill">⌨️ TypeScript Scaffold</div>
+      <div class="header-pill gold">📦 Deno Edge Functions + Supabase RPC</div>
+      <div class="header-pill">🏗️ determined-williams/ self-contained</div>
+    </div>
+  </div>
+
+  <!-- ARCHITECTURE -->
+  <div class="section">
+    <div class="section-title" data-icon="🏛️">Architecture Overview</div>
+
+    <div class="info-banner">
+      <div class="ib-icon">💡</div>
+      <div class="ib-text">
+        <strong>หลักการสำคัญ: Reuse-not-Fork</strong> — MCP Layer ห่อหุ้ม (wrap) primitive เดิมของ Monolith เท่านั้น ได้แก่ C12 auth (`line-oa-commerce`), Workflow_Copilot (`monolith-workflow-copilot`), D2 Autonomy Ladder, `rpc_record_approval_decision` และ Knowledge_Export query path
+        <br>ไม่สร้าง auth / approval / audit ใหม่แม้แต่อย่างเดียว
+      </div>
+    </div>
+
+    <div class="arch-flow">
+      <div class="arch-node">
+        <div class="arch-node-label">External</div>
+        <div class="arch-node-title">MCP Client</div>
+        <div class="arch-node-desc">AI Host + External_LLM<br>(Untrusted)</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node navy">
+        <div class="arch-node-label" style="color:rgba(255,255,255,0.5)">Edge Function</div>
+        <div class="arch-node-title">mcp-server</div>
+        <div class="arch-node-desc" style="color:rgba(255,255,255,0.65)">Server Identity<br>auth · authz · schema · redact · rate-limit</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node gold">
+        <div class="arch-node-label">SECURITY DEFINER</div>
+        <div class="arch-node-title">rpc_mcp_*</div>
+        <div class="arch-node-desc">invoke_read · create_pending<br>resolve · expire · rate_limit · audit</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node green">
+        <div class="arch-node-label">Reused Primitives</div>
+        <div class="arch-node-title">C12 + Workflow</div>
+        <div class="arch-node-desc">resolve_actor · D2 Ladder<br>Work_Item · Approval · Knowledge_Export</div>
+      </div>
+    </div>
+
+    <div class="trust-boundary">
+      <div class="tb-icon">🚫</div>
+      <div>
+        <div class="trust-boundary-text">Trust Boundary: ทุก input จาก MCP_Client = Untrusted_Content</div>
+        <div style="font-size:12px;color:var(--red);margin-top:3px;">ไม่ตีความเป็นคำสั่ง · ไม่ยกระดับสิทธิ์ · authz re-derive จาก Principal + C12 เท่านั้น (กัน Confused Deputy — Req 19.3)</div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;">
+      <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:12px;">Tool_Class Governance Model (D2 Autonomy Ladder)</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+        <div style="background:var(--green-light);border:1px solid var(--green);border-radius:10px;padding:14px;">
+          <div style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Read_Tool</div>
+          <div style="font-size:13px;font-weight:700;margin-bottom:4px;">query_knowledge</div>
+          <div style="font-size:12px;color:var(--gray-600);">Auto ได้ภายใต้ D2 guardrail → execute → redact → audit</div>
+          <div style="margin-top:8px;font-size:11px;background:var(--green);color:white;border-radius:6px;padding:3px 8px;display:inline-block;font-weight:700;">✓ ไม่ต้องรอ Human</div>
+        </div>
+        <div style="background:var(--orange-light);border:1px solid var(--orange);border-radius:10px;padding:14px;">
+          <div style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Write_Tool</div>
+          <div style="font-size:13px;font-weight:700;margin-bottom:4px;">create_work_item</div>
+          <div style="font-size:12px;color:var(--gray-600);">Pending_Invocation → Human approve → execute via workflow</div>
+          <div style="margin-top:8px;font-size:11px;background:var(--orange);color:white;border-radius:6px;padding:3px 8px;display:inline-block;font-weight:700;">⏳ ต้องรอ Human Approval</div>
+        </div>
+        <div style="background:var(--red-light);border:1px solid var(--red);border-radius:10px;padding:14px;">
+          <div style="font-size:11px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Approval_Tool</div>
+          <div style="font-size:13px;font-weight:700;margin-bottom:4px;">record_approval_decision</div>
+          <div style="font-size:12px;color:var(--gray-600);">Pending_Invocation → Approver มนุษย์ผ่าน rpc_record_approval_decision</div>
+          <div style="margin-top:8px;font-size:11px;background:var(--red);color:white;border-radius:6px;padding:3px 8px;display:inline-block;font-weight:700;">🔒 Human Approver เท่านั้น</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TASK LIST -->
+  <div class="section">
+    <div class="section-title" data-icon="📋">Task List — 8 Phases</div>
+
+    <div class="dep-grid" style="margin-bottom:24px;">
+      <div class="dep-card done"><div class="dep-icon">🗄️</div><div class="dep-title">Phase 1: Data Layer</div><div class="dep-status">✅ Done (1.1–1.3)</div></div>
+      <div class="dep-card done"><div class="dep-icon">⚙️</div><div class="dep-title">Phase 2: Pure Logic</div><div class="dep-status">✅ Done (2.1–2.8)</div></div>
+      <div class="dep-card done"><div class="dep-icon">🔌</div><div class="dep-title">Phase 3: RPCs</div><div class="dep-status">✅ Done (3.1–3.6)</div></div>
+      <div class="dep-card partial"><div class="dep-icon">🧪</div><div class="dep-title">Phase 1.4 pgTAP</div><div class="dep-status">⏳ OPEN GATE-1</div></div>
+    </div>
+
+    <!-- Phase 1 -->
+    <div class="phase-group">
+      <div class="phase-header">
+        <div class="phase-num">1</div>
+        <div class="phase-title">Scaffold + Data Layer — Supabase Tables, RLS, Audit Immutability</div>
+        <div class="phase-badge done">3/4 Done</div>
+      </div>
+      <ul class="task-list">
+        <li class="task-item done">
+          <div class="task-check done">✓</div>
+          <div class="task-content">
+            <div class="task-id">TASK 1.1</div>
+            <div class="task-name">migration 0001_mcp_init.sql — 6 ตาราง + RLS</div>
+            <div class="task-detail">สร้าง enums (tool_class, invocation_status, scope_kind) + mcp_tool_registry + tool_invocation + pending_invocation + mcp_idempotency_record (PK: idempotency_key+principal, CHECK len 1–255) + mcp_rate_limit_counter (PK atomic) — RLS: SELECT TO authenticated USING is_governance_role() OR has_site_access(site_code)</div>
+            <div class="task-reqs"><span class="req-badge">Req 1.1</span><span class="req-badge">Req 2.5</span><span class="req-badge">Req 14.2</span><span class="req-badge">Req 15.7</span><span class="req-badge">Req 16.1</span><span class="req-badge">Req 17.1</span></div>
+          </div>
+        </li>
+        <li class="task-item done">
+          <div class="task-check done">✓</div>
+          <div class="task-content">
+            <div class="task-id">TASK 1.2</div>
+            <div class="task-name">migration 0002_mcp_audit.sql — mcp_audit_log append-only</div>
+            <div class="task-detail">สร้าง mcp_audit_log + trigger trg_mcp_audit_immutable (raise exception บน UPDATE/DELETE) + REVOKE UPDATE, DELETE FROM authenticated — ไม่มีทาง delete audit record</div>
+            <div class="task-reqs"><span class="req-badge">Req 11.2</span></div>
+          </div>
+        </li>
+        <li class="task-item done">
+          <div class="task-check done">✓</div>
+          <div class="task-content">
+            <div class="task-id">TASK 1.3</div>
+            <div class="task-name">Seed mcp_tool_registry — 3 initial tools</div>
+            <div class="task-detail">INSERT: query_knowledge (Read_Tool, auto), create_work_item (Write_Tool, human_approval), record_approval_decision (Approval_Tool, human_approval) — พร้อม input/output JSON Schema และ default_autonomy_tier</div>
+            <div class="task-reqs"><span class="req-badge">Req 1.1</span><span class="req-badge">Req 1.3</span><span class="req-badge">Req 1.6</span></div>
+          </div>
+        </li>
+        <li class="task-item pending">
+          <div class="task-check pending">⏳</div>
+          <div class="task-content">
+            <div class="task-id">TASK 1.4 [OPEN GATE-1]</div>
+            <div class="task-name">pgTAP DB Tests — RLS, audit immutability, atomic counter</div>
+            <div class="task-detail">ต้องรัน supabase db reset เขียวก่อน: ทดสอบ RLS reuse C12, mcp_audit_log reject UPDATE/DELETE, idempotency_record unique (key+principal), rate_limit_counter atomic upsert — supabase CLI 2.108.0 + Docker พร้อม</div>
+            <div class="task-reqs"><span class="req-badge">Req 11.2</span><span class="req-badge">Req 14.2</span><span class="req-badge">Req 15.7</span><span class="req-badge">Req 17.1</span></div>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Phase 2 -->
+    <div class="phase-group">
+      <div class="phase-header">
+        <div class="phase-num">2</div>
+        <div class="phase-title">Pure Logic Core — src/mcp/ (8 modules)</div>
+        <div class="phase-badge done">✅ All Done</div>
+      </div>
+      <ul class="task-list">
+        <li class="task-item done"><div class="task-check done">✓</div><div class="task-content"><div class="task-id">2.1</div><div class="task-name">authz.ts — Tool_Authorization eval (C12 role + site access)</div><div class="task-detail">Re-derive authz จาก Principal เท่านั้น — has_any_app_role() + has_site_access() + get_active_site_codes() (กัน confused deputy)</div><div class="task-reqs"><span class="req-badge">Req 3.1</span><span class="req-badge">Req 3.2</span><span class="req-badge">Req 3.4</span><span class="req-badge">Req 19.3</span></div></div></li>
+        <li class="task-item done"><div class="task-check done">✓</div><div class="task-content"><div class="task-id">2.2</div><div class="task-name">autonomy.ts — D2 Autonomy_Tier classifier</div><div class="task-detail">Read=auto, Write/Approval=human_gate; classify-fail → ถือว่าต้อง human approval (fail-safe ไม่ auto-pass)</div><div class="task-reqs"><span class="req-badge">Req 4.1–4.5</span><span class="req-badge">Req 12.3</span></div></div></li>
+        <li class="task-item done"><div class="task-check done">✓</div><div class="task-content"><div class="task-id">2.3</div><div class="task-name">schema.ts — I/O schema validate + round-trip</div><div class="task-detail">validate input/output ตาม Tool JSON Schema; round-trip (serialize↔parse); invalid input → reject ก่อน execute</div><div class="task-reqs"><span class="req-badge">Req 13.1–13.5</span></div></div></li>
+        <li class="task-item done"><div class="task-check done">✓</div><div class="task-content"><div class="task-id">2.4</div><div class="task-name">redaction.ts — Redaction_Policy + Data_Minimization_Boundary</div><div class="task-detail">บังคับ PII redaction ที่ boundary ก่อน output ออก External_LLM; redact-fail → block (fail-safe, ไม่ส่งข้อมูลดิบออก)</div><div class="task-reqs"><span class="req-badge">Req 9.1–9.5</span></div></div></li>
+        <li class="task-item done"><div class="task-check done">✓</div><div class="task-content"><div class="task-id">2.5</div><div class="task-name">ratelimit.ts — Rate_Limit_Policy + Cost_Budget</div><div class="task-detail">atomic นับ per scope (Principal/MCP_Client/Tool_Class); เกิน → reject no-side-effects + Throttling_Event; ไม่มี policy → default fail-safe</div><div class="task-reqs"><span class="req-badge">Req 15.1–15.8</span></div></div></li>
+        <li class="task-item done"><div class="task-check done">✓</div><div class="task-content"><div class="task-id">2.6</div><div class="task-name">idempotency.ts — (key, principal) replay/conflict logic</div><div class="task-detail">ซ้ำ+input เดิม → replay result; ซ้ำ+input ต่าง → reject conflict; double-submit → ≤1 record; key empty/>255 → reject</div><div class="task-reqs"><span class="req-badge">Req 17.2</span><span class="req-badge">Req 17.7–17.9</span></div></div></li>
+        <li class="task-item done"><div class="task-check done">✓</div><div class="task-content"><div class="task-id">2.7</div><div class="task-name">expiry.ts — Invocation_Expiry + decision-wins-race</div><div class="task-detail">compute expiry (default +72h, range 1h–30d); decision ภายใน expiry ชนะแบบ deterministic; expired ≠ approved/rejected</div><div class="task-reqs"><span class="req-badge">Req 16.1</span><span class="req-badge">Req 16.6–16.7</span></div></div></li>
+        <li class="task-item done"><div class="task-check done">✓</div><div class="task-content"><div class="task-id">2.8</div><div class="task-name">untrusted.ts — Untrusted_Content guard + Source_Provenance</div><div class="task-detail">ปฏิบัติ input/external content เป็น Untrusted_Content; แนบ Source_Provenance (record_id, source_version, imported_at); trace ไม่ได้ → mark unverified</div><div class="task-reqs"><span class="req-badge">Req 19.1–19.5</span></div></div></li>
+      </ul>
+    </div>
+
+    <!-- Phase 3 -->
+    <div class="phase-group">
+      <div class="phase-header">
+        <div class="phase-num">3</div>
+        <div class="phase-title">SECURITY DEFINER RPCs — Write Path เดียว</div>
+        <div class="phase-badge done">✅ All Done</div>
+      </div>
+      <ul class="task-list">
+        <li class="task-item done"><div class="task-check done">✓</div><div class="task-content"><div class="task-id">3.1</div><div class="task-name">rpc_mcp_invoke_read — Read_Tool execute + Source_Provenance</div><div class="task-detail">authz → autonomy → execute Knowledge_Export query (read-only) → คืน result + Source_Provenance + low-confidence mark เมื่อ review_status ≠ approved หรือ stale</div><div class="task-reqs"><span class="req-badge">Req 3.1</span><span class="req-badge">Req 6.1–6.5</span><span class="req-badge">Req 19.4–19.5</span></div></div></li>
+        <li class="task-item done"><div class="task-check done">✓</div><div class="task-content"><div class="task-id">3.2</div><div class="task-name">rpc_mcp_create_pending — Write/Approval → Pending_Invocation</div><div class="task-detail">สร้าง Pending_Invocation + Approval_Request (reuse workflow-copilot); NO side effects; idempotent (key, principal); audit</div><div class="task-reqs"><span class="req-badge">Req 5.1</span><span class="req-badge">Req 5.5–5.6</span><span class="req-badge">Req 17.2</span></div></div></li>
+        <li class="task-item done"><div class="task-check done">✓</div><div class="task-content"><div class="task-id">3.3</div><div class="task-name">rpc_mcp_resolve_pending — approved→execute / rejected→cancel</div><div class="task-detail">on approved → execute capability (create Work_Item / record decision ผ่าน rpc_record_approval_decision) → executed; on rejected → rejected ไม่เปลี่ยนสถานะ Monolith</div><div class="task-reqs"><span class="req-badge">Req 5.3–5.4</span><span class="req-badge">Req 7.5</span><span class="req-badge">Req 8.3</span></div></div></li>
+        <li class="task-item done"><div class="task-check done">✓</div><div class="task-content"><div class="task-id">3.4</div><div class="task-name">rpc_mcp_expire_pending — Cleanup, no side effects, decision-wins-race</div><div class="task-detail">sweep พ้น Invocation_Expiry → expired (ไม่ก่อ side effect); decision-wins-race guard; approve ให้ expired → reject "expired"</div><div class="task-reqs"><span class="req-badge">Req 16.2</span><span class="req-badge">Req 16.4–16.7</span></div></div></li>
+        <li class="task-item done"><div class="task-check done">✓</div><div class="task-content"><div class="task-id">3.5</div><div class="task-name">rpc_mcp_check_rate_limit — atomic counter + budget enforcement</div><div class="task-detail">atomic upsert mcp_rate_limit_counter per scope; เกิน → Throttling_Event audit; no side effects</div><div class="task-reqs"><span class="req-badge">Req 15.1–15.7</span></div></div></li>
+        <li class="task-item done"><div class="task-check done">✓</div><div class="task-content"><div class="task-id">3.6</div><div class="task-name">rpc_mcp_audit — Model_Provenance + injection detection (append-only)</div><div class="task-detail">บันทึก Model_Provenance (unknown-fallback, scrub secret/credential); injection detection; append-only, คงรายการเสมอแม้ scrub ล้มเหลว</div><div class="task-reqs"><span class="req-badge">Req 11.1–11.6</span><span class="req-badge">Req 18.1–18.8</span><span class="req-badge">Req 19.6</span></div></div></li>
+      </ul>
+    </div>
+
+    <!-- Phase 5 -->
+    <div class="phase-group">
+      <div class="phase-header">
+        <div class="phase-num">5</div>
+        <div class="phase-title">Edge Functions — MCP Server + Pending Cleanup</div>
+        <div class="phase-badge done">✅ All Done</div>
+      </div>
+      <ul class="task-list">
+        <li class="task-item done"><div class="task-check done">✓</div><div class="task-content"><div class="task-id">5.1</div><div class="task-name">supabase/functions/mcp-server/index.ts</div><div class="task-detail">MCP_Server_Identity presentation → verify Client_Credential → resolve_actor (Principal) → discovery (Tool_Catalog filtered by authz) → invoke pipeline: schema-validate → rate-limit → autonomy classify → (Read: invoke_read / Write+Approval: create_pending) → redact → audit; Untrusted_Content guard ทุก input</div><div class="task-reqs"><span class="req-badge">Req 1.2</span><span class="req-badge">Req 2.1–2.3</span><span class="req-badge">Req 9.1</span><span class="req-badge">Req 13.1</span><span class="req-badge">Req 19.1–19.3</span></div></div></li>
+        <li class="task-item done"><div class="task-check done">✓</div><div class="task-content"><div class="task-id">5.2</div><div class="task-name">supabase/functions/mcp-pending-cleanup/index.ts</div><div class="task-detail">cron ≤ 5 นาที เรียก rpc_mcp_expire_pending — กวาด Pending_Invocation ที่พ้น Invocation_Expiry</div><div class="task-reqs"><span class="req-badge">Req 16.4</span></div></div></li>
+        <li class="task-item done"><div class="task-check done">✓</div><div class="task-content"><div class="task-id">5.3</div><div class="task-name">Approval callback wire — Workflow Approval_Decision → rpc_mcp_resolve_pending</div><div class="task-detail">เมื่อ workflow บันทึก Approval_Decision ของ Pending_Invocation → เรียก rpc_mcp_resolve_pending (reuse rpc_record_approval_decision) → async result กลับ client</div><div class="task-reqs"><span class="req-badge">Req 5.2–5.3</span><span class="req-badge">Req 8.1</span></div></div></li>
+      </ul>
+    </div>
+
+    <!-- Phase 6 -->
+    <div class="phase-group">
+      <div class="phase-header">
+        <div class="phase-num">6</div>
+        <div class="phase-title">PDPA Consent + Cross-Border Control</div>
+        <div class="phase-badge done">✅ Done</div>
+      </div>
+      <ul class="task-list">
+        <li class="task-item done"><div class="task-check done">✓</div><div class="task-content"><div class="task-id">6.1</div><div class="task-name">src/mcp/pdpa.ts — Consent_Record check + Cross_Border_Transfer classification</div><div class="task-detail">ตรวจ Consent_Record (reuse แหล่งเดิม); จัดประเภท Cross_Border_Transfer; ขาด consent / cross-border ไม่มีมาตรการ → ระงับ fail-safe; OQ-MCP-1: ไม่ทราบ location → treat as cross-border (fail-safe)</div><div class="task-reqs"><span class="req-badge">Req 10.1–10.5</span></div></div></li>
+      </ul>
+    </div>
+
+    <!-- Phase 7 -->
+    <div class="phase-group">
+      <div class="phase-header">
+        <div class="phase-num">7</div>
+        <div class="phase-title">Property-Based Tests (Correctness Properties 1–19)</div>
+        <div class="phase-badge done">✅ All Done (Vitest + fast-check)</div>
+      </div>
+      <ul class="task-list">
+        <li class="task-item done"><div class="task-check done">✓</div><div class="task-content"><div class="task-id">7.1–7.19</div><div class="task-name">Property Tests ครบ 19 ข้อ — tag // Feature: monolith-mcp-layer, Property N</div><div class="task-detail">catalog.test.ts (P1) · mcp-server/index.test.ts (P2) · authz.test.ts (P3) · autonomy.test.ts (P4) · governance-properties.test.ts (P5,12,14) · untrusted.test.ts (P6,18,19) · rpc-e2e Wave 2 (P7,8) · redaction.test.ts (P9) · pdpa.test.ts (P10) · DB audit trigger (P11) · schema.test.ts (P13) · ratelimit.test.ts (P15) · expiry.test.ts (P16) · idempotency.test.ts (P17)</div></div></li>
+      </ul>
+    </div>
+
+  </div>
+
+  <!-- PDPA CHECKLIST -->
+  <div class="section">
+    <div class="section-title" data-icon="🔒">PDPA Data Minimization Boundary — Checklist ก่อน Production</div>
+
+    <div class="boundary-diagram">
+      <div class="bd-block"><div class="bd-label">Monolith DB</div><div class="bd-box">PII (ชื่อ/โทร/ที่อยู่/LINE ID)</div></div>
+      <div class="bd-arrow">→</div>
+      <div class="bd-block"><div class="bd-label">SECURITY DEFINER RPC</div><div class="bd-box">query result (raw)</div></div>
+      <div class="bd-arrow">→</div>
+      <div class="bd-block"><div class="bd-label" style="color:#fca5a5">▌ PDPA BOUNDARY ▌</div><div class="bd-box" style="background:rgba(239,68,68,0.2);border:1px solid #fca5a5;">redaction.ts + pdpa.ts</div></div>
+      <div class="bd-arrow">→</div>
+      <div class="bd-block"><div class="bd-label">MCP Server Output</div><div class="bd-box">Redacted / Minimized</div></div>
+      <div class="bd-arrow">→</div>
+      <div class="bd-block"><div class="bd-label">External_LLM</div><div class="bd-box" style="background:rgba(239,68,68,0.15);">ไม่มี PII ดิบ</div></div>
+    </div>
+
+    <div style="height:20px;"></div>
+
+    <div class="pdpa-grid">
+      <div class="pdpa-card critical">
+        <div class="pdpa-card-title">🚨 Critical — ต้อง implement ก่อน Deploy ทุกกรณี</div>
+        <div class="check-item"><div class="check-box critical">□</div><span><strong>Redaction_Policy config:</strong> ระบุ PII fields ที่ต้อง redact: ชื่อลูกค้า, เบอร์โทร, ที่อยู่, LINE ID, อีเมล — บน config ไม่ hardcode</span></div>
+        <div class="check-item"><div class="check-box critical">□</div><span><strong>Redact fail-safe:</strong> ถ้า redaction ล้มเหลว → block output ทั้งหมด ไม่ส่ง partial PII ออก External_LLM</span></div>
+        <div class="check-item"><div class="check-box critical">□</div><span><strong>Consent_Record check:</strong> ก่อน output PII ใดๆ ตรวจ Consent_Record ที่ครอบคลุม purpose นั้น — ขาด consent → ระงับ fail-safe</span></div>
+        <div class="check-item"><div class="check-box critical">□</div><span><strong>Cross-Border default:</strong> ไม่ทราบ External_LLM location → treat as cross-border (OQ-MCP-1) — ระงับถ้าไม่มีมาตรการคุ้มครอง</span></div>
+      </div>
+      <div class="pdpa-card important">
+        <div class="pdpa-card-title">⚠️ Important — ต้อง verify ก่อน Go-Live</div>
+        <div class="check-item"><div class="check-box">□</div><span><strong>mcp_audit_log ไม่มี PII:</strong> ตรวจ audit log ว่าไม่มีชื่อ/โทร/ที่อยู่ — secret และ credential ต้อง scrub ก่อนบันทึก</span></div>
+        <div class="check-item"><div class="check-box">□</div><span><strong>Model_Provenance scrub:</strong> ตรวจว่า Client_Credential, API key, token ไม่ถูก log ใน model_provenance field</span></div>
+        <div class="check-item"><div class="check-box">□</div><span><strong>Audit append-only:</strong> ทดสอบว่า UPDATE/DELETE บน mcp_audit_log raise exception (trigger trg_mcp_audit_immutable)</span></div>
+        <div class="check-item"><div class="check-box">□</div><span><strong>REVOKE บน audit table:</strong> ยืนยัน REVOKE UPDATE, DELETE FROM authenticated บน mcp_audit_log</span></div>
+      </div>
+      <div class="pdpa-card">
+        <div class="pdpa-card-title">✅ Structural — ตรวจสอบจาก Code Review</div>
+        <div class="check-item"><div class="check-box">□</div><span><strong>No client write path:</strong> ไม่มี INSERT/UPDATE/DELETE ตรงจาก client — ทุก mutation ผ่าน SECURITY DEFINER RPC เท่านั้น</span></div>
+        <div class="check-item"><div class="check-box">□</div><span><strong>resolve_actor() ทุก RPC:</strong> ตรวจว่า rpc_mcp_* ทุกตัวเรียก resolve_actor() และ re-check C12 role — ไม่เชื่อ actor id จาก client</span></div>
+        <div class="check-item"><div class="check-box">□</div><span><strong>Reuse-not-fork smoke test:</strong> ไม่มี approval model / auth model / audit model ใหม่ขนาน C12 หรือ workflow-copilot</span></div>
+      </div>
+      <div class="pdpa-card">
+        <div class="pdpa-card-title">📋 Governance — ตรวจก่อน BAU Operations</div>
+        <div class="check-item"><div class="check-box">□</div><span><strong>D2 Autonomy Ladder wire:</strong> autonomy.ts import D2 จาก line-oa-commerce ไม่ duplicate ladder</span></div>
+        <div class="check-item"><div class="check-box">□</div><span><strong>Injection-detection audit:</strong> Untrusted_Content ที่ตรวจพบคำสั่งฝัง → บันทึก event_type='injection_detected' ใน audit log</span></div>
+        <div class="check-item"><div class="check-box">□</div><span><strong>Knowledge reviewStatus:</strong> query_knowledge คืน low_confidence_warning เมื่อ reviewStatus ≠ 'approved' (daph-second-brain ปัจจุบัน = 'draft')</span></div>
+      </div>
+    </div>
+
+    <div class="warn-banner">
+      <div style="font-size:18px;flex-shrink:0;">⚠️</div>
+      <div class="wb-text">Knowledge Export ปัจจุบัน (<code>_knowledge-export.json</code>) มี reviewStatus = <strong>"draft"</strong> — tool query_knowledge จะส่งกลับ <code>low_confidence_warning: true</code> ทุกครั้ง จนกว่า TAG จะ approve เป็น "approved" ตาม daph-obsidian-second-brain spec</div>
+    </div>
+  </div>
+
+  <!-- TYPESCRIPT SCAFFOLD -->
+  <div class="section">
+    <div class="section-title" data-icon="⌨️">TypeScript Code Scaffold</div>
+
+    <div class="code-tabs">
+      <div class="code-tab active" onclick="showTab('mcp-server')">mcp-server/index.ts</div>
+      <div class="code-tab" onclick="showTab('rpc-invoke')">rpc_mcp_invoke_read</div>
+      <div class="code-tab" onclick="showTab('redaction')">redaction.ts</div>
+      <div class="code-tab" onclick="showTab('autonomy')">autonomy.ts</div>
+      <div class="code-tab" onclick="showTab('pdpa')">pdpa.ts</div>
+    </div>
+
+    <div class="code-block active" id="tab-mcp-server"><span class="c-comment">// supabase/functions/mcp-server/index.ts
+// MCP Layer Edge Function — Deno/TypeScript
+// Requirement refs: Req 1.2, 2.1-2.6, 9.1, 13.1, 19.1-19.3</span>
+<span class="c-keyword">import</span> { serve } <span class="c-keyword">from</span> <span class="c-string">"https://deno.land/std@0.168.0/http/server.ts"</span>
+<span class="c-keyword">import</span> { createClient } <span class="c-keyword">from</span> <span class="c-string">"https://esm.sh/@supabase/supabase-js@2"</span>
+<span class="c-keyword">import</span> { validateToolInput } <span class="c-keyword">from</span> <span class="c-string">"../src/mcp/schema.ts"</span>
+<span class="c-keyword">import</span> { classifyAutonomy } <span class="c-keyword">from</span> <span class="c-string">"../src/mcp/autonomy.ts"</span>
+<span class="c-keyword">import</span> { redactOutput } <span class="c-keyword">from</span> <span class="c-string">"../src/mcp/redaction.ts"</span>
+<span class="c-keyword">import</span> { checkPDPA } <span class="c-keyword">from</span> <span class="c-string">"../src/mcp/pdpa.ts"</span>
+<span class="c-keyword">import</span> { guardUntrustedContent } <span class="c-keyword">from</span> <span class="c-string">"../src/mcp/untrusted.ts"</span>
+
+<span class="c-comment">// MCP Server Identity (Req 2.1) — presented to every MCP_Client</span>
+<span class="c-keyword">const</span> <span class="c-var">MCP_SERVER_IDENTITY</span> = {
+  name: <span class="c-string">"monolith-mcp-server"</span>,
+  version: <span class="c-string">"1.0.0"</span>,
+  vendor: <span class="c-string">"DAPH Decor — Monolith Platform"</span>,
+  protocol: <span class="c-string">"2025-11"</span>,    <span class="c-comment">// MCP spec Nov 2025</span>
+  capabilities: { tools: {}, resources: {} }
+}
+
+serve(<span class="c-keyword">async</span> (req) => {
+  <span class="c-keyword">const</span> supabase = createClient(
+    Deno.env.get(<span class="c-string">"SUPABASE_URL"</span>)!,
+    Deno.env.get(<span class="c-string">"SUPABASE_SERVICE_ROLE_KEY"</span>)!
+  )
+
+  <span class="c-comment">// Step 1: Verify Client_Credential → bind Principal (Req 2.2, 2.5)</span>
+  <span class="c-keyword">const</span> authHeader = req.headers.get(<span class="c-string">"Authorization"</span>)
+  <span class="c-keyword">if</span> (!authHeader) <span class="c-keyword">return</span> errorResponse(<span class="c-string">"unauthorized"</span>, <span class="c-num">401</span>)
+
+  <span class="c-keyword">const</span> { data: { user }, error: authErr } = <span class="c-keyword">await</span> supabase.auth.getUser(
+    authHeader.replace(<span class="c-string">"Bearer "</span>, <span class="c-string">""</span>)
+  )
+  <span class="c-keyword">if</span> (authErr || !user) <span class="c-keyword">return</span> errorResponse(<span class="c-string">"invalid_credential"</span>, <span class="c-num">401</span>)
+
+  <span class="c-keyword">const</span> body = <span class="c-keyword">await</span> req.json()
+
+  <span class="c-comment">// Step 2: Guard Untrusted_Content (Req 19.1) — ก่อนประมวลผลใดๆ</span>
+  <span class="c-keyword">const</span> guardResult = guardUntrustedContent(body)
+  <span class="c-keyword">if</span> (guardResult.injectionDetected) {
+    <span class="c-keyword">await</span> supabase.rpc(<span class="c-string">'rpc_mcp_audit'</span>, {
+      event_type: <span class="c-string">'injection_detected'</span>,
+      principal: user.email, detail: guardResult.summary
+    })
+    <span class="c-keyword">return</span> errorResponse(<span class="c-string">"untrusted_content_blocked"</span>, <span class="c-num">400</span>)
+  }
+
+  <span class="c-keyword">switch</span> (body.method) {
+    <span class="c-keyword">case</span> <span class="c-string">"initialize"</span>:
+      <span class="c-keyword">return</span> jsonResponse({ serverInfo: MCP_SERVER_IDENTITY, protocolVersion: <span class="c-string">"2025-11"</span> })
+
+    <span class="c-keyword">case</span> <span class="c-string">"tools/list"</span>:
+      <span class="c-keyword">return</span> <span class="c-keyword">await</span> handleToolsList(supabase, user.email)
+
+    <span class="c-keyword">case</span> <span class="c-string">"tools/call"</span>:
+      <span class="c-keyword">return</span> <span class="c-keyword">await</span> handleToolCall(supabase, user.email, body.params)
+
+    <span class="c-keyword">default</span>:
+      <span class="c-keyword">return</span> errorResponse(<span class="c-string">"method_not_found"</span>, <span class="c-num">404</span>)
+  }
+})
+
+<span class="c-keyword">async function</span> <span class="c-func">handleToolsList</span>(supabase: <span class="c-type">any</span>, principal: <span class="c-type">string</span>) {
+  <span class="c-comment">// Tool_Catalog filtered by authz (Req 1.2, 1.5) — only tools principal can invoke</span>
+  <span class="c-keyword">const</span> { data } = <span class="c-keyword">await</span> supabase.rpc(<span class="c-string">'rpc_mcp_list_authorized_tools'</span>, { p_principal: principal })
+  <span class="c-keyword">return</span> jsonResponse({ tools: data ?? [] })
+}
+
+<span class="c-keyword">async function</span> <span class="c-func">handleToolCall</span>(supabase: <span class="c-type">any</span>, principal: <span class="c-type">string</span>, params: <span class="c-type">any</span>) {
+  <span class="c-keyword">const</span> { name: toolName, arguments: toolInput, _meta } = params
+
+  <span class="c-comment">// 1. Schema validate input (Req 13.1)</span>
+  <span class="c-keyword">const</span> schemaErr = validateToolInput(toolName, toolInput)
+  <span class="c-keyword">if</span> (schemaErr) <span class="c-keyword">return</span> errorResponse(schemaErr, <span class="c-num">400</span>)
+
+  <span class="c-comment">// 2. Rate limit check (Req 15)</span>
+  <span class="c-keyword">const</span> { error: rateErr } = <span class="c-keyword">await</span> supabase.rpc(<span class="c-string">'rpc_mcp_check_rate_limit'</span>, {
+    p_scope_keys: [principal, toolName], p_est_cost: estimateCost(toolInput)
+  })
+  <span class="c-keyword">if</span> (rateErr) <span class="c-keyword">return</span> errorResponse(<span class="c-string">"rate_limit_exceeded"</span>, <span class="c-num">429</span>)
+
+  <span class="c-comment">// 3. Classify Autonomy_Tier — fail-safe: unknown → human_approval (Req 4, 12.3)</span>
+  <span class="c-keyword">const</span> tier = classifyAutonomy(toolName) ?? <span class="c-string">"human_approval"</span>
+
+  <span class="c-keyword">if</span> (tier === <span class="c-string">"auto"</span>) {
+    <span class="c-comment">// Read_Tool path — direct execute + PDPA check + redact (Req 9, 10)</span>
+    <span class="c-keyword">const</span> { data, error } = <span class="c-keyword">await</span> supabase.rpc(<span class="c-string">'rpc_mcp_invoke_read'</span>, {
+      p_tool_name: toolName, p_input: toolInput,
+      p_idempotency_key: _meta?.idempotencyKey, p_principal: principal
+    })
+    <span class="c-keyword">if</span> (error) <span class="c-keyword">return</span> errorResponse(error.message, <span class="c-num">500</span>)
+
+    <span class="c-keyword">const</span> pdpaOk = <span class="c-keyword">await</span> checkPDPA(data, principal)
+    <span class="c-keyword">if</span> (!pdpaOk.allowed) <span class="c-keyword">return</span> errorResponse(<span class="c-string">"pdpa_consent_required"</span>, <span class="c-num">403</span>)
+
+    <span class="c-comment">// Redact at Data_Minimization_Boundary — fail-safe: exception → block (Req 9.3)</span>
+    <span class="c-keyword">const</span> redacted = redactOutput(data)   <span class="c-comment">// throws if redact fails</span>
+    <span class="c-keyword">return</span> jsonResponse({ content: [{ type: <span class="c-string">"text"</span>, text: JSON.stringify(redacted) }] })
+  }
+
+  <span class="c-comment">// Write/Approval_Tool path — Pending_Invocation (Human-in-the-loop) (Req 5)</span>
+  <span class="c-keyword">const</span> modelProvenance = extractModelProvenance(_meta)   <span class="c-comment">// Req 18 — untrusted, scrub secrets</span>
+  <span class="c-keyword">const</span> { data: pending } = <span class="c-keyword">await</span> supabase.rpc(<span class="c-string">'rpc_mcp_create_pending'</span>, {
+    p_tool_name: toolName, p_tool_class: getToolClass(toolName),
+    p_input: toolInput, p_principal: principal,
+    p_model_provenance: modelProvenance,
+    p_idempotency_key: _meta?.idempotencyKey
+  })
+  <span class="c-keyword">return</span> jsonResponse({
+    content: [{ type: <span class="c-string">"text"</span>, text: <span class="c-string">`pending:${pending.id} — awaiting human approval`</span> }],
+    _meta: { pendingId: pending.id, status: <span class="c-string">"pending"</span> }
+  })
+}</div>
+
+    <div class="code-block" id="tab-rpc-invoke"><span class="c-comment">-- rpc_mcp_invoke_read.sql (SECURITY DEFINER)
+-- Req 3.1, 6.1-6.5, 19.4-19.5</span>
+
+<span class="c-keyword">CREATE OR REPLACE FUNCTION</span> <span class="c-func">rpc_mcp_invoke_read</span>(
+  p_tool_name  <span class="c-type">text</span>,
+  p_input      <span class="c-type">jsonb</span>,
+  p_principal  <span class="c-type">text</span>,
+  p_idempotency_key <span class="c-type">text DEFAULT NULL</span>
+) <span class="c-keyword">RETURNS jsonb</span>
+<span class="c-type">LANGUAGE plpgsql SECURITY DEFINER</span>
+<span class="c-keyword">AS</span> $$
+<span class="c-keyword">DECLARE</span>
+  v_actor        <span class="c-type">text</span>;
+  v_tool         <span class="c-type">mcp_tool_registry%ROWTYPE</span>;
+  v_knowledge    <span class="c-type">jsonb</span>;
+  v_provenance   <span class="c-type">jsonb</span>;
+  v_result       <span class="c-type">jsonb</span>;
+  v_low_conf     <span class="c-type">boolean DEFAULT false</span>;
+<span class="c-keyword">BEGIN</span>
+  <span class="c-comment">-- 1. Resolve actor (不 trust p_principal — re-derive) (Req 2.5)</span>
+  v_actor := public.resolve_actor();
+
+  <span class="c-comment">-- 2. Authz check via C12 (Req 3.1, 3.2)</span>
+  <span class="c-keyword">IF NOT</span> public.has_any_app_role(v_actor, ARRAY[<span class="c-string">'agent'</span>, <span class="c-string">'manager'</span>, <span class="c-string">'admin'</span>]) <span class="c-keyword">THEN</span>
+    <span class="c-keyword">RAISE EXCEPTION</span> <span class="c-string">'insufficient_permission: tool=% principal=%'</span>, p_tool_name, v_actor;
+  <span class="c-keyword">END IF</span>;
+
+  <span class="c-comment">-- 3. Load Tool definition (Req 1.1)</span>
+  <span class="c-keyword">SELECT</span> * <span class="c-keyword">INTO</span> v_tool <span class="c-keyword">FROM</span> mcp_tool_registry
+  <span class="c-keyword">WHERE</span> tool_name = p_tool_name AND tool_class = <span class="c-string">'Read_Tool'</span>;
+  <span class="c-keyword">IF NOT FOUND THEN</span>
+    <span class="c-keyword">RAISE EXCEPTION</span> <span class="c-string">'tool_not_found or not_read_tool: %'</span>, p_tool_name;
+  <span class="c-keyword">END IF</span>;
+
+  <span class="c-comment">-- 4. Execute Knowledge_Export query (read-only) (Req 6.1-6.3)</span>
+  <span class="c-comment">-- Wraps daph-second-brain query path from monolith-workflow-copilot</span>
+  v_knowledge := public.query_knowledge_export(p_input-><span class="c-string">'query'</span>);
+
+  <span class="c-comment">-- 5. Source_Provenance (Req 6.4, 19.4)</span>
+  v_provenance := jsonb_build_object(
+    <span class="c-string">'source_version'</span>,  v_knowledge-><span class="c-string">'knowledgeFreshness'</span>->><span class="c-string">'sourceVersion'</span>,
+    <span class="c-string">'imported_at'</span>,     v_knowledge-><span class="c-string">'knowledgeFreshness'</span>->><span class="c-string">'importedAt'</span>,
+    <span class="c-string">'record_ref'</span>,      p_input->><span class="c-string">'record_id'</span>
+  );
+
+  <span class="c-comment">-- 6. Low-confidence mark if reviewStatus != 'approved' (Req 6.5)</span>
+  v_low_conf := (v_knowledge-><span class="c-string">'knowledgeFreshness'</span>->><span class="c-string">'reviewStatus'</span>) != <span class="c-string">'approved'</span>;
+
+  <span class="c-comment">-- 7. Build result (Req 19.5 — unverified mark if no provenance)</span>
+  v_result := jsonb_build_object(
+    <span class="c-string">'data'</span>,           v_knowledge,
+    <span class="c-string">'source_provenance'</span>, v_provenance,
+    <span class="c-string">'low_confidence_warning'</span>, v_low_conf
+  );
+
+  <span class="c-comment">-- 8. Append-only audit (Req 11.1)</span>
+  PERFORM rpc_mcp_audit(
+    p_event_type => <span class="c-string">'invocation'</span>, p_tool_name => p_tool_name,
+    p_tool_class => <span class="c-string">'Read_Tool'</span>,  p_principal => v_actor,
+    p_result => <span class="c-string">'executed'</span>
+  );
+
+  <span class="c-keyword">RETURN</span> v_result;
+<span class="c-keyword">END</span>;
+$$;</div>
+
+    <div class="code-block" id="tab-redaction"><span class="c-comment">// src/mcp/redaction.ts
+// PDPA Data_Minimization_Boundary — Req 9.1-9.5
+// FAIL-SAFE: any redaction error → throw (blocks output)</span>
+
+<span class="c-keyword">import</span> { getRedactionPolicy } <span class="c-keyword">from</span> <span class="c-string">"./config.ts"</span>
+
+<span class="c-comment">// PII fields that must NEVER reach External_LLM in raw form</span>
+<span class="c-keyword">const</span> <span class="c-var">DEFAULT_PII_FIELDS</span> = [
+  <span class="c-string">"customer_name"</span>, <span class="c-string">"phone"</span>, <span class="c-string">"mobile"</span>, <span class="c-string">"address"</span>,
+  <span class="c-string">"line_id"</span>, <span class="c-string">"email"</span>, <span class="c-string">"id_card"</span>, <span class="c-string">"tax_id"</span>
+]
+
+<span class="c-keyword">export function</span> <span class="c-func">redactOutput</span>(data: <span class="c-type">unknown</span>): <span class="c-type">unknown</span> {
+  <span class="c-keyword">const</span> policy = getRedactionPolicy()  <span class="c-comment">// load from Supabase config (Req 9.5)</span>
+  <span class="c-keyword">const</span> fieldsToRedact = policy.piiFields ?? DEFAULT_PII_FIELDS
+
+  <span class="c-keyword">try</span> {
+    <span class="c-keyword">return</span> deepRedact(data, fieldsToRedact)
+  } <span class="c-keyword">catch</span> (err) {
+    <span class="c-comment">// FAIL-SAFE (Req 9.3): redact fails → throw, do NOT return partial data</span>
+    <span class="c-keyword">throw new</span> Error(<span class="c-string">`redaction_failed: ${err.message} — output blocked`</span>)
+  }
+}
+
+<span class="c-keyword">function</span> <span class="c-func">deepRedact</span>(obj: <span class="c-type">unknown</span>, fields: <span class="c-type">string[]</span>): <span class="c-type">unknown</span> {
+  <span class="c-keyword">if</span> (Array.isArray(obj)) <span class="c-keyword">return</span> obj.map(item => deepRedact(item, fields))
+  <span class="c-keyword">if</span> (obj !== <span class="c-keyword">null</span> && <span class="c-keyword">typeof</span> obj === <span class="c-string">"object"</span>) {
+    <span class="c-keyword">const</span> result: <span class="c-type">Record&lt;string, unknown&gt;</span> = {}
+    <span class="c-keyword">for</span> (<span class="c-keyword">const</span> [key, val] <span class="c-keyword">of</span> Object.entries(obj <span class="c-keyword">as</span> <span class="c-type">object</span>)) {
+      <span class="c-keyword">if</span> (fields.includes(key.toLowerCase())) {
+        result[key] = <span class="c-string">"[REDACTED]"</span>     <span class="c-comment">// replace PII with marker</span>
+      } <span class="c-keyword">else</span> {
+        result[key] = deepRedact(val, fields)  <span class="c-comment">// recurse</span>
+      }
+    }
+    <span class="c-keyword">return</span> result
+  }
+  <span class="c-keyword">return</span> obj   <span class="c-comment">// primitives pass through</span>
+}
+
+<span class="c-comment">// Property-based test (Req 9, Property 9):
+// For any data containing PII fields → output must not contain raw PII
+// fast-check: fc.record({ customer_name: fc.string(), ... }) → redactOutput
+// → output[customer_name] === "[REDACTED]" (always)</span></div>
+
+    <div class="code-block" id="tab-autonomy"><span class="c-comment">// src/mcp/autonomy.ts
+// D2 Autonomy Ladder — import from line-oa-commerce (Reuse-not-fork Req 14)
+// Req 4.1-4.5, 12.3</span>
+
+<span class="c-keyword">import</span> { D2_AUTONOMY_LADDER } <span class="c-keyword">from</span> <span class="c-string">"../../line-oa-commerce/src/d2/autonomy-ladder.ts"</span>
+
+<span class="c-keyword">export type</span> <span class="c-type">AutonomyTier</span> = <span class="c-string">"auto"</span> | <span class="c-string">"human_approval"</span>
+<span class="c-keyword">export type</span> <span class="c-type">ToolClass</span> = <span class="c-string">"Read_Tool"</span> | <span class="c-string">"Write_Tool"</span> | <span class="c-string">"Approval_Tool"</span>
+
+<span class="c-comment">// Tool_Class → Autonomy_Tier mapping (Req 4.1-4.3)</span>
+<span class="c-keyword">const</span> <span class="c-var">CLASS_TO_TIER</span>: Record&lt;<span class="c-type">ToolClass</span>, <span class="c-type">AutonomyTier</span>&gt; = {
+  <span class="c-string">"Read_Tool"</span>:     <span class="c-string">"auto"</span>,          <span class="c-comment">// auto under guardrail</span>
+  <span class="c-string">"Write_Tool"</span>:    <span class="c-string">"human_approval"</span>,  <span class="c-comment">// always human gate</span>
+  <span class="c-string">"Approval_Tool"</span>: <span class="c-string">"human_approval"</span>,  <span class="c-comment">// always human gate</span>
+}
+
+<span class="c-keyword">export function</span> <span class="c-func">classifyAutonomy</span>(toolName: <span class="c-type">string</span>): <span class="c-type">AutonomyTier</span> {
+  <span class="c-keyword">const</span> toolClass = lookupToolClass(toolName)
+
+  <span class="c-comment">// FAIL-SAFE (Req 12.3): classify fails → treat as human_approval (never auto)</span>
+  <span class="c-keyword">if</span> (!toolClass) <span class="c-keyword">return</span> <span class="c-string">"human_approval"</span>
+
+  <span class="c-comment">// Check D2 Ladder context (reuse from line-oa-commerce)</span>
+  <span class="c-keyword">const</span> ladderOverride = D2_AUTONOMY_LADDER.getOverride(toolName)
+  <span class="c-keyword">if</span> (ladderOverride) <span class="c-keyword">return</span> ladderOverride <span class="c-keyword">as</span> <span class="c-type">AutonomyTier</span>
+
+  <span class="c-keyword">return</span> CLASS_TO_TIER[toolClass]
+}
+
+<span class="c-keyword">function</span> <span class="c-func">lookupToolClass</span>(toolName: <span class="c-type">string</span>): <span class="c-type">ToolClass</span> | <span class="c-keyword">null</span> {
+  <span class="c-comment">// Lookup from mcp_tool_registry (runtime) or static map</span>
+  <span class="c-keyword">const</span> staticMap: Record&lt;<span class="c-type">string</span>, <span class="c-type">ToolClass</span>&gt; = {
+    <span class="c-string">"query_knowledge"</span>:           <span class="c-string">"Read_Tool"</span>,
+    <span class="c-string">"create_work_item"</span>:          <span class="c-string">"Write_Tool"</span>,
+    <span class="c-string">"record_approval_decision"</span>:  <span class="c-string">"Approval_Tool"</span>,
+  }
+  <span class="c-keyword">return</span> staticMap[toolName] ?? <span class="c-keyword">null</span>
+}</div>
+
+    <div class="code-block" id="tab-pdpa"><span class="c-comment">// src/mcp/pdpa.ts
+// PDPA Consent + Cross-Border Transfer Control — Req 10.1-10.5
+// OQ-MCP-1: unknown External_LLM location → treat as cross-border (fail-safe)</span>
+
+<span class="c-keyword">export interface</span> <span class="c-type">PDPACheckResult</span> {
+  allowed: <span class="c-type">boolean</span>
+  reason?: <span class="c-type">string</span>
+  crossBorder: <span class="c-type">boolean</span>
+}
+
+<span class="c-keyword">export async function</span> <span class="c-func">checkPDPA</span>(
+  data: <span class="c-type">unknown</span>,
+  principal: <span class="c-type">string</span>,
+  clientMeta?: { llmLocation?: <span class="c-type">string</span> }
+): <span class="c-keyword">Promise</span>&lt;<span class="c-type">PDPACheckResult</span>&gt; {
+
+  <span class="c-comment">// 1. Check if output contains PII (Req 10.1)</span>
+  <span class="c-keyword">const</span> hasPII = containsPII(data)
+  <span class="c-keyword">if</span> (!hasPII) <span class="c-keyword">return</span> { allowed: <span class="c-keyword">true</span>, crossBorder: <span class="c-keyword">false</span> }
+
+  <span class="c-comment">// 2. Check Consent_Record (reuse platform source) (Req 10.2)</span>
+  <span class="c-keyword">const</span> consent = <span class="c-keyword">await</span> getConsentRecord(principal)
+  <span class="c-keyword">if</span> (!consent?.covers(<span class="c-string">"ai_processing"</span>)) {
+    <span class="c-keyword">return</span> { allowed: <span class="c-keyword">false</span>, reason: <span class="c-string">"no_consent_for_ai_processing"</span>, crossBorder: <span class="c-keyword">false</span> }
+  }
+
+  <span class="c-comment">// 3. Cross-Border Transfer classification (Req 10.3, OQ-MCP-1)</span>
+  <span class="c-comment">// FAIL-SAFE: llmLocation not provided → treat as cross-border</span>
+  <span class="c-keyword">const</span> isCrossBorder = !clientMeta?.llmLocation ||
+    !isThailandJurisdiction(clientMeta.llmLocation)
+
+  <span class="c-keyword">if</span> (isCrossBorder) {
+    <span class="c-comment">// Check cross-border protective measures (Req 10.4)</span>
+    <span class="c-keyword">const</span> measures = <span class="c-keyword">await</span> getCrossBorderMeasures()
+    <span class="c-keyword">if</span> (!measures?.adequate) {
+      <span class="c-comment">// FAIL-SAFE: suspend output (Req 10.5)</span>
+      <span class="c-keyword">return</span> { allowed: <span class="c-keyword">false</span>, reason: <span class="c-string">"cross_border_no_adequate_measures"</span>, crossBorder: <span class="c-keyword">true</span> }
+    }
+  }
+
+  <span class="c-keyword">return</span> { allowed: <span class="c-keyword">true</span>, crossBorder: isCrossBorder }
+}
+
+<span class="c-keyword">function</span> <span class="c-func">isThailandJurisdiction</span>(location: <span class="c-type">string</span>): <span class="c-type">boolean</span> {
+  <span class="c-keyword">return</span> [<span class="c-string">"TH"</span>, <span class="c-string">"Thailand"</span>, <span class="c-string">"ap-southeast-1"</span>].includes(location)
+}</div>
+
+  </div>
+
+  <!-- DB SCHEMA -->
+  <div class="section">
+    <div class="section-title" data-icon="🗄️">Database Schema — MCP Tables (Supabase PostgreSQL)</div>
+
+    <div style="margin-bottom:20px;">
+      <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;">mcp_tool_registry — Tool Catalog</div>
+      <table class="schema-table">
+        <thead><tr><th>Column</th><th>Type</th><th>Flag</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="col-name">tool_name</span></td><td><span class="col-type">text</span></td><td><span class="col-pk">PK</span></td><td class="col-note">ชื่อ tool เช่น query_knowledge, create_work_item</td></tr>
+          <tr><td><span class="col-name">tool_class</span></td><td><span class="col-type">text</span></td><td></td><td class="col-note">CHECK IN ('Read_Tool','Write_Tool','Approval_Tool')</td></tr>
+          <tr><td><span class="col-name">input_schema</span></td><td><span class="col-type">jsonb</span></td><td></td><td class="col-note">JSON Schema สำหรับ validate input</td></tr>
+          <tr><td><span class="col-name">output_schema</span></td><td><span class="col-type">jsonb</span></td><td></td><td class="col-note">JSON Schema สำหรับ validate output</td></tr>
+          <tr><td><span class="col-name">requires_approval</span></td><td><span class="col-type">boolean</span></td><td></td><td class="col-note">true สำหรับ Write_Tool และ Approval_Tool (Req 1.6)</td></tr>
+          <tr><td><span class="col-name">default_autonomy_tier</span></td><td><span class="col-type">text</span></td><td></td><td class="col-note">'auto' | 'human_approval'</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="margin-bottom:20px;">
+      <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;">tool_invocation — All Tool Calls</div>
+      <table class="schema-table">
+        <thead><tr><th>Column</th><th>Type</th><th>Flag</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><span class="col-name">id</span></td><td><span class="col-type">uuid</span></td><td><span class="col-pk">PK</span></td><td class="col-note">DEFAULT gen_random_uuid()</td></tr>
+          <tr><td><span class="col-name">tool_name</span></td><td><span class="col-type">text</span></td><td><span class="col-fk">FK</span></td><td class="col-note">REFERENCES mcp_tool_registry(tool_name)</td></tr>
+          <tr><td><span class="col-name">principal</span></td><td><span class="col-type">text</span></td><td></td><td class="col-note">resolve_actor() — email-based, ไม่เชื่อจาก client (Req 2.5)</td></tr>
+          <tr><td><span class="col-name">status</span></td><td><span class="col-type">text</span></td><td></td><td class="col-note">CHECK IN ('executed','pending','rejected','expired','throttled','error')</td></tr>
+          <tr><td><span class="col-name">model_provenance</span></td><td><span class="col-type">jsonb</span></td><td></td><td class="col-note">DEFAULT '{"model":"unknown","provider":"unknown"}' (Req 18)</td></tr>
+          <tr><td><span class="col-name">idempotency_key</span></td><td><span class="col-type">text</span></td><td></td><td class="col-note">NULL หรือ 1–255 chars (Req 17.7)</td></tr>
+          <tr><td><span class="col-name">autonomy_tier</span></td><td><span class="col-type">text</span></td><td></td><td class="col-note">tier ที่ใช้ตัดสิน: auto | human_approval</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;">pending_invocation</div>
+        <table class="schema-table">
+          <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><span class="col-name">id</span></td><td><span class="col-type">uuid</span></td><td><span class="col-pk">PK</span></td></tr>
+            <tr><td><span class="col-name">tool_invocation_id</span></td><td><span class="col-type">uuid</span></td><td><span class="col-fk">FK</span> → tool_invocation</td></tr>
+            <tr><td><span class="col-name">approval_request_id</span></td><td><span class="col-type">uuid</span></td><td><span class="col-fk">FK</span> → workflow Approval_Request</td></tr>
+            <tr><td><span class="col-name">status</span></td><td><span class="col-type">text</span></td><td>pending|executed|rejected|expired</td></tr>
+            <tr><td><span class="col-name">invocation_expiry</span></td><td><span class="col-type">timestamptz</span></td><td>default +72h, range 1h–30d (Req 16.1)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;">mcp_audit_log (append-only)</div>
+        <table class="schema-table">
+          <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><span class="col-name">id</span></td><td><span class="col-type">uuid</span></td><td><span class="col-pk">PK</span></td></tr>
+            <tr><td><span class="col-name">event_type</span></td><td><span class="col-type">text</span></td><td>invocation|approval|throttling|expiry|redaction|injection_detected</td></tr>
+            <tr><td><span class="col-name">principal</span></td><td><span class="col-type">text</span></td><td>NOT NULL — resolve_actor()</td></tr>
+            <tr><td><span class="col-name">model_provenance</span></td><td><span class="col-type">jsonb</span></td><td>scrubbed — no secrets/PII</td></tr>
+            <tr><td><span class="col-name">at</span></td><td><span class="col-type">timestamptz</span></td><td>DEFAULT timezone('utc',now())</td></tr>
+          </tbody>
+        </table>
+        <div style="font-size:11px;color:var(--red);font-weight:600;margin-top:8px;">⚠️ trg_mcp_audit_immutable — RAISE EXCEPTION บน UPDATE/DELETE + REVOKE UPDATE, DELETE</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CORRECTNESS PROPERTIES -->
+  <div class="section">
+    <div class="section-title" data-icon="🧪">Correctness Properties (1–19) — Test Coverage</div>
+    <table class="prop-table">
+      <thead>
+        <tr><th>#</th><th>Property</th><th>Test File</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr><td style="font-weight:700;color:var(--navy);">P1</td><td>Tool_Catalog กรองตามสิทธิ์</td><td style="font-family:monospace;font-size:11px;">catalog.test.ts</td><td><span class="prop-pass">✓ PASS</span></td></tr>
+        <tr><td style="font-weight:700;color:var(--navy);">P2</td><td>Server identity + client auth ผูก Principal</td><td style="font-family:monospace;font-size:11px;">mcp-server/index.test.ts</td><td><span class="prop-pass">✓ PASS</span></td></tr>
+        <tr><td style="font-weight:700;color:var(--navy);">P3</td><td>Per-tool authorization (C12 + site access)</td><td style="font-family:monospace;font-size:11px;">authz.test.ts</td><td><span class="prop-pass">✓ PASS</span></td></tr>
+        <tr><td style="font-weight:700;color:var(--navy);">P4</td><td>Autonomy enforcement ต่อ Tool_Class</td><td style="font-family:monospace;font-size:11px;">autonomy.test.ts</td><td><span class="prop-pass">✓ PASS</span></td></tr>
+        <tr><td style="font-weight:700;color:var(--navy);">P5</td><td>Human-in-the-loop — ไม่มี side effect ก่อนอนุมัติ</td><td style="font-family:monospace;font-size:11px;">governance-properties.test.ts</td><td><span class="prop-pass">✓ PASS</span></td></tr>
+        <tr><td style="font-weight:700;color:var(--navy);">P6</td><td>Knowledge read-only + provenance + low-confidence</td><td style="font-family:monospace;font-size:11px;">untrusted.test.ts</td><td><span class="prop-pass">✓ PASS</span></td></tr>
+        <tr><td style="font-weight:700;color:var(--navy);">P7</td><td>Work_Item creation ผ่าน gate + reject ขั้นไม่รู้จัก</td><td style="font-family:monospace;font-size:11px;">DB e2e Wave 2</td><td><span class="prop-pass">✓ PASS</span></td></tr>
+        <tr><td style="font-weight:700;color:var(--navy);">P8</td><td>Approval recording ผ่าน resolve_actor + idempotent</td><td style="font-family:monospace;font-size:11px;">idempotency.test.ts</td><td><span class="prop-pass">✓ PASS</span></td></tr>
+        <tr><td style="font-weight:700;color:var(--navy);">P9</td><td>PII redaction fail-safe ที่ boundary</td><td style="font-family:monospace;font-size:11px;">redaction.test.ts</td><td><span class="prop-pass">✓ PASS</span></td></tr>
+        <tr><td style="font-weight:700;color:var(--navy);">P10</td><td>PDPA consent + cross-border fail-safe</td><td style="font-family:monospace;font-size:11px;">pdpa.test.ts</td><td><span class="prop-pass">✓ PASS</span></td></tr>
+        <tr><td style="font-weight:700;color:var(--navy);">P11</td><td>Audit completeness (append-only, redacted)</td><td style="font-family:monospace;font-size:11px;">DB audit trigger Wave 0</td><td><span class="prop-pass">✓ PASS</span></td></tr>
+        <tr><td style="font-weight:700;color:var(--navy);">P12</td><td>Fail-safe เมื่อ governance ไม่พร้อม</td><td style="font-family:monospace;font-size:11px;">governance-properties.test.ts</td><td><span class="prop-pass">✓ PASS</span></td></tr>
+        <tr><td style="font-weight:700;color:var(--navy);">P13</td><td>I/O schema validation + round-trip</td><td style="font-family:monospace;font-size:11px;">schema.test.ts</td><td><span class="prop-pass">✓ PASS</span></td></tr>
+        <tr><td style="font-weight:700;color:var(--navy);">P14</td><td>Reuse-not-fork (structural smoke)</td><td style="font-family:monospace;font-size:11px;">governance-properties.test.ts</td><td><span class="prop-pass">✓ PASS</span></td></tr>
+        <tr><td style="font-weight:700;color:var(--navy);">P15</td><td>Rate-limit + cost atomic (no overshoot)</td><td style="font-family:monospace;font-size:11px;">ratelimit.test.ts</td><td><span class="prop-pass">✓ PASS</span></td></tr>
+        <tr><td style="font-weight:700;color:var(--navy);">P16</td><td>Pending expiry + cleanup (decision-wins-race)</td><td style="font-family:monospace;font-size:11px;">expiry.test.ts</td><td><span class="prop-pass">✓ PASS</span></td></tr>
+        <tr><td style="font-weight:700;color:var(--navy);">P17</td><td>Write_Tool idempotency (conflict-reject)</td><td style="font-family:monospace;font-size:11px;">idempotency.test.ts</td><td><span class="prop-pass">✓ PASS</span></td></tr>
+        <tr><td style="font-weight:700;color:var(--navy);">P18</td><td>Model provenance (unknown-fallback, untrusted)</td><td style="font-family:monospace;font-size:11px;">untrusted.test.ts</td><td><span class="prop-pass">✓ PASS</span></td></tr>
+        <tr><td style="font-weight:700;color:var(--navy);">P19</td><td>Prompt-injection / tool-poisoning defense</td><td style="font-family:monospace;font-size:11px;">untrusted.test.ts + authz.test.ts</td><td><span class="prop-pass">✓ PASS</span></td></tr>
+        <tr><td style="font-weight:700;color:var(--orange);">1.4</td><td>pgTAP — DB-level RLS + audit + atomic counter</td><td style="font-family:monospace;font-size:11px;">pgTAP harness [OPEN GATE-1]</td><td><span class="prop-todo">⏳ OPEN</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="footer">
+    <strong>MONOLITH Programme</strong> — MCP Layer Implementation Plan | อ้างอิง: monolith-mcp-layer_requirements.md + monolith-mcp-layer_design.md + monolith-mcp-layer_tasks.md | MCP Protocol Nov 2025
+  </div>
+
+</div>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'))
+  document.querySelectorAll('.code-block').forEach(b => b.classList.remove('active'))
+  document.getElementById('tab-' + id).classList.add('active')
+  event.target.classList.add('active')
+}
+</script>
+
+</body>
+</html>

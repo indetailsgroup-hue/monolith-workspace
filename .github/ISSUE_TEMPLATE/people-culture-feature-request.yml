@@ -1,0 +1,158 @@
+name: "✨ People & Culture — Feature Request"
+description: Propose a new feature or improvement for the PeopleDirectory, CultureDashboard, SuperEmployeeProgressCard, or PsSurveyForm components.
+title: "[P&C Feature] <short description>"
+labels:
+  - "enhancement"
+  - "people-culture"
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## People & Culture Module — Feature Request
+        Fill in all required sections. For **bugs** use the Bug Report template instead.
+        For **security changes** (RLS, tenant isolation, anonymous_feedback policy) open a Security Advisory.
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected Component
+      description: Which component(s) does this feature touch?
+      multiple: true
+      options:
+        - "PeopleDirectory"
+        - "CultureDashboard"
+        - "SuperEmployeeProgressCard"
+        - "PsSurveyForm"
+        - "peopleStore (Zustand)"
+        - "cultureStore (Zustand)"
+        - "People & Culture schema / migrations"
+        - "RLS policies"
+        - "Storybook stories"
+        - "CI / Chromatic"
+        - "New component (describe below)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How urgently is this needed relative to current work?
+      options:
+        - "P0 — Blocker (production issue / compliance)"
+        - "P1 — High (needed in next release cycle)"
+        - "P2 — Medium (important, can be scheduled)"
+        - "P3 — Low (nice-to-have / future consideration)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: feature_area
+    attributes:
+      label: Feature Area
+      description: Which functional area does this feature belong to?
+      options:
+        - "Employee directory / search / filter"
+        - "SuperEmployee stage progression"
+        - "Skill management"
+        - "PS (People Score) survey / analytics"
+        - "Anonymous feedback"
+        - "RBAC / role visibility"
+        - "Multi-tenant isolation"
+        - "Performance / pagination"
+        - "Accessibility / i18n / Thai localisation"
+        - "Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve? Who is affected?
+      placeholder: |
+        As a factory floor ADMIN, I cannot currently filter employees by multiple skills simultaneously.
+        This means I have to manually cross-reference two separate filtered lists to find employees
+        who have both Python and CNC skills, which takes significant time during shift planning.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the feature you'd like to see implemented.
+      placeholder: |
+        Add multi-select support to the skill chip filter in PeopleDirectory so that
+        clicking multiple skill chips applies an AND filter (show employees who have ALL selected skills).
+        The filter state should be reflected in `EmployeeFilters.skills: string[]` in peopleStore.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance Criteria
+      description: List the conditions that must be true for this feature to be considered complete.
+      placeholder: |
+        - [ ] PeopleDirectory renders employees matching ALL selected skill chips
+        - [ ] Selecting 0 chips shows all employees (current behaviour preserved)
+        - [ ] `EmployeeFilters.skills` is an array in peopleStore
+        - [ ] New Storybook story `SkillFilter_MultiSelect` added to PeopleDirectory.stories.tsx
+        - [ ] Vitest test added in PeopleDirectory.test.tsx covering multi-skill filter logic
+        - [ ] Chromatic visual baseline updated for new story
+    validations:
+      required: true
+
+  - type: dropdown
+    id: rbac_impact
+    attributes:
+      label: RBAC / Tenant Impact
+      description: Does this feature change what roles can see or do?
+      options:
+        - "No RBAC change — existing role permissions unchanged"
+        - "VIEWER — extends or restricts VIEWER access"
+        - "ADMIN — extends or restricts ADMIN access"
+        - "OWNER — extends or restricts OWNER access"
+        - "New RLS policy or migration required"
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: What other approaches did you consider and why did you reject them?
+      placeholder: "Considered a server-side filter via `loadEmployees(orgId, filters)` but client-side filtering avoids a round-trip for a small employee list (<500)."
+
+  - type: textarea
+    id: test_plan
+    attributes:
+      label: Test Plan
+      description: |
+        Which test files will need new or updated tests?
+        Known test files: `PeopleDirectory.test.tsx` (47), `CultureDashboard.test.tsx` (19),
+        `SuperEmployeeProgressCard.test.tsx` (34), `PsSurveyForm.test.tsx` (30), `validateStageProgression.test.ts` (36).
+      placeholder: |
+        - New test in PeopleDirectory.test.tsx: "multi-skill filter returns employees matching all skills"
+        - Update peopleStore test to cover `setFilters({ skills: ['Python','CNC'] })`
+
+  - type: input
+    id: related_issues
+    attributes:
+      label: Related Issues / PRs
+      placeholder: "Closes #42, relates to #38"
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      options:
+        - label: "I searched existing issues and this is not a duplicate"
+          required: true
+        - label: "This is NOT a bug (use Bug Report template) or security issue (use Security Advisory)"
+          required: true
+        - label: "I have described acceptance criteria clearly enough to write tests from"
+          required: true

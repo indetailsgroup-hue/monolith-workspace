@@ -29,6 +29,12 @@ import {
 import { ActivityTimeline } from "../components/activity/ActivityTimeline";
 import { CncGeneratePanel, GcodePreviewPanel } from "../components/cnc";
 import type { GcodeBundle } from "../../cnc/post/types";
+import { ExportOptionsDialog } from "../../components/ui/ExportOptionsDialog";
+import { buildCutListXlsx } from "../../core/export/monolith/builders/buildCutListXlsx";
+import { NestingSheetReport } from "../components/nesting/NestingSheetReport";
+import { DxfPreviewPanel } from "../components/nesting/DxfPreviewPanel";
+import { exportNestingPdf } from "../components/nesting/exportNestingPdf";
+import { exportCurvedDxfBatch } from "../components/nesting/exportCurvedDxfBatch";
 
 export interface JobDetailProps {
   jobId: string;
@@ -65,6 +71,21 @@ export function JobDetail({ jobId, onBack }: JobDetailProps): React.ReactElement
 
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [exportConfig, setExportConfig] = useState<ExportRequest | null>(null);
+
+  // ExportOptionsDialog overlay state
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+
+  // Feature 2: XLSX cut-list download state
+  const [xlsxDownloading, setXlsxDownloading] = useState(false);
+
+  // Feature 3: Nesting sheet report visibility
+  const [nestingReportOpen, setNestingReportOpen] = useState(false);
+
+  // PDF export state
+  const [pdfExporting, setPdfExporting] = useState(false);
+
+  // Feature 4: DXF batch export state
+  const [dxfBatchExporting, setDxfBatchExporting] = useState(false);
 
   // D2.2: CNC G-code generation state
   const [gcodeBundle, setGcodeBundle] = useState<GcodeBundle | null>(null);
@@ -144,6 +165,27 @@ export function JobDetail({ jobId, onBack }: JobDetailProps): React.ReactElement
       window.open(exportResult.downloadUrl, "_blank");
     }
   }, [exportResult]);
+
+  // Feature 2: XLSX cut-list download
+  const handleXlsxDownload = useCallback(async () => {
+    const cutList = verifiedPacketEntry?.packet?.cutList;
+    if (!cutList) return;
+    setXlsxDownloading(true);
+    try {
+      const buffer = await buildCutListXlsx({ cutList, jobId });
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `cutlist_${jobId}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setXlsxDownloading(false);
+    }
+  }, [verifiedPacketEntry, jobId]);
 
   if (selectedJobLoading || !selectedJob) {
     return <LoadingState />;
@@ -242,6 +284,34 @@ export function JobDetail({ jobId, onBack }: JobDetailProps): React.ReactElement
             onConfigChange={setExportConfig}
             gatedExportState={gatedExportState}
             onGatedExport={handleGatedExport}
+            onOpenExportDialog={() => setExportDialogOpen(true)}
+            packet={verifiedPacketEntry?.packet}
+            xlsxDownloading={xlsxDownloading}
+            onXlsxDownload={handleXlsxDownload}
+            nestingReportOpen={nestingReportOpen}
+            onToggleNestingReport={() => setNestingReportOpen((v) => !v)}
+            pdfExporting={pdfExporting}
+            onPdfExport={async () => {
+              setPdfExporting(true);
+              try {
+                const container = document.getElementById("nesting-report-container");
+                if (container) {
+                  await exportNestingPdf(container, jobId);
+                }
+              } finally {
+                setPdfExporting(false);
+              }
+            }}
+            dxfBatchExporting={dxfBatchExporting}
+            onDxfBatchExport={async () => {
+              setDxfBatchExporting(true);
+              try {
+                const sheets = verifiedPacketEntry?.packet?.nestingSheets ?? [];
+                await exportCurvedDxfBatch(sheets, jobId);
+              } finally {
+                setDxfBatchExporting(false);
+              }
+            }}
           />
         )}
 
@@ -271,6 +341,19 @@ export function JobDetail({ jobId, onBack }: JobDetailProps): React.ReactElement
         bundle={gcodeBundle}
         visible={showGcodePreview}
         onClose={() => setShowGcodePreview(false)}
+      />
+
+      {/* Export Options Dialog (Phase 6.2) — verifyResult + jobStatus from store */}
+      <ExportOptionsDialog
+        open={exportDialogOpen}
+        jobId={jobId}
+        verifyResult={verifyResult}
+        jobStatus={selectedJob.status}
+        onClose={() => setExportDialogOpen(false)}
+        onExportSuccess={() => {
+          setExportDialogOpen(false);
+          loadJobDetailData(jobId);
+        }}
       />
     </div>
   );
@@ -572,6 +655,26 @@ interface ExportTabProps {
   onConfigChange: (config: ExportRequest) => void;
   gatedExportState: import("../components/export").ExportCacheEntry;
   onGatedExport: () => void;
+  /** Opens the ExportOptionsDialog overlay (Phase 6.2) */
+  onOpenExportDialog: () => void;
+  /** Verified FactoryPacket — provides cutList for XLSX export (Feature 2) */
+  packet?: import("../packet/types").FactoryPacket | null;
+  /** XLSX download in-progress flag */
+  xlsxDownloading: boolean;
+  /** Trigger XLSX cut-list download */
+  onXlsxDownload: () => void;
+  /** Whether the nesting sheet report panel is visible */
+  nestingReportOpen: boolean;
+  /** Toggle nesting sheet report panel */
+  onToggleNestingReport: () => void;
+  /** PDF export in-progress flag */
+  pdfExporting: boolean;
+  /** Trigger PDF nesting export */
+  onPdfExport: () => void;
+  /** DXF batch export in-progress flag */
+  dxfBatchExporting: boolean;
+  /** Trigger DXF batch zip export */
+  onDxfBatchExport: () => void;
 }
 
 function ExportTab({
@@ -597,6 +700,16 @@ function ExportTab({
   onConfigChange,
   gatedExportState,
   onGatedExport,
+  onOpenExportDialog,
+  packet,
+  xlsxDownloading,
+  onXlsxDownload,
+  nestingReportOpen,
+  onToggleNestingReport,
+  pdfExporting,
+  onPdfExport,
+  dxfBatchExporting,
+  onDxfBatchExport,
 }: ExportTabProps): React.ReactElement {
   // Use gated export mode
   const useGatedExport = true;
@@ -612,6 +725,35 @@ function ExportTab({
           margin: "0 auto",
         }}
       >
+        {/* Export Options Dialog trigger */}
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <button
+            onClick={onOpenExportDialog}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "8px 16px",
+              backgroundColor: "transparent",
+              border: "1px solid #8b5cf6",
+              borderRadius: 8,
+              color: "#8b5cf6",
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#8b5cf620";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "transparent";
+            }}
+          >
+            ⚙️ Export Options
+          </button>
+        </div>
+
         {/* Export Lock Banner */}
         <ExportLockBanner
           verifyResult={verifyResult}
@@ -698,6 +840,115 @@ function ExportTab({
               : undefined
           }
         />
+
+        {/* Feature 2: XLSX Cut-List Download */}
+        {packet?.cutList && (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button
+              onClick={() => void onXlsxDownload()}
+              disabled={xlsxDownloading}
+              data-testid="xlsx-download-button"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 16px",
+                backgroundColor: xlsxDownloading ? "#1e293b" : "#0d9488",
+                border: "1px solid #0f766e",
+                borderRadius: 8,
+                color: xlsxDownloading ? "#94a3b8" : "#fff",
+                fontSize: 13,
+                fontWeight: 500,
+                cursor: xlsxDownloading ? "not-allowed" : "pointer",
+                transition: "all 0.15s ease",
+              }}
+            >
+              {xlsxDownloading ? "⟳ Generating…" : "⬇ Download Cut List (.xlsx)"}
+            </button>
+
+            {/* Feature 3: Nesting Sheet Report toggle */}
+            <button
+              onClick={onToggleNestingReport}
+              data-testid="nesting-report-toggle"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 16px",
+                backgroundColor: nestingReportOpen ? "#0d9488" : "transparent",
+                border: "1px solid #0d9488",
+                borderRadius: 8,
+                color: nestingReportOpen ? "#fff" : "#0d9488",
+                fontSize: 13,
+                fontWeight: 500,
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+              }}
+            >
+              ⬚ Nesting Report
+            </button>
+          </div>
+        )}
+
+        {/* Feature 3: Nesting Sheet Report panel */}
+        {nestingReportOpen && (
+          <div
+            style={{
+              border: "1px solid #1e293b",
+              borderRadius: 12,
+              padding: 16,
+              backgroundColor: "#0f172a",
+            }}
+          >
+            <NestingSheetReport
+              sheets={packet?.nestingSheets ?? []}
+              jobId={jobId}
+            />
+            {/* DXF Preview Panel */}
+            {(packet?.nestingSheets?.length ?? 0) > 0 && (
+              <div style={{ marginTop: 12, padding: 12, borderRadius: 8, border: '1px solid #1e293b', background: '#020617' }}>
+                <DxfPreviewPanel sheets={packet?.nestingSheets ?? []} jobId={jobId} />
+              </div>
+            )}
+
+            {/* PDF Export + DXF Batch buttons */}
+            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+              <button
+                data-testid="btn-pdf-nesting"
+                disabled={pdfExporting || !(packet?.nestingSheets?.length)}
+                onClick={onPdfExport}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 6,
+                  border: "1px solid #7c3aed",
+                  background: pdfExporting ? "#4c1d95" : "transparent",
+                  color: "#a78bfa",
+                  cursor: pdfExporting ? "wait" : "pointer",
+                  fontSize: 13,
+                }}
+              >
+                {pdfExporting ? "Exporting PDF…" : "📄 Export PDF"}
+              </button>
+
+              <button
+                data-testid="btn-dxf-batch"
+                disabled={dxfBatchExporting || !(packet?.nestingSheets?.length)}
+                onClick={onDxfBatchExport}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 6,
+                  border: "1px solid #059669",
+                  background: dxfBatchExporting ? "#064e3b" : "transparent",
+                  color: "#6ee7b7",
+                  cursor: dxfBatchExporting ? "wait" : "pointer",
+                  fontSize: 13,
+                }}
+              >
+                {dxfBatchExporting ? "Zipping DXF…" : "📐 DXF Batch (ZIP)"}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

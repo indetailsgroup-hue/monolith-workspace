@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MONOLITH Platform Architecture — Core vs Client Spec</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#1f2d5a; --gold:#c9a84c; --green:#2d7a4f;
+  --platform:#1565c0; --platform-light:#e3f2fd; --platform-border:#90caf9;
+  --client:#6a1b9a; --client-light:#f3e5f5; --client-border:#ce93d8;
+  --shared:#2e7d32; --shared-light:#e8f5e9; --shared-border:#a5d6a7;
+  --bg:#f7f8fc; --white:#fff; --text:#1a1a2e;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.65;}
+header{background:linear-gradient(135deg,var(--navy) 0%,#2d3e7a 100%);color:#fff;padding:28px 32px 24px;}
+header h1{font-size:26px;font-weight:700;letter-spacing:.5px;}
+header p{margin-top:6px;font-size:14px;opacity:.85;}
+.badge-row{margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;}
+.badge{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;}
+.badge-platform{background:var(--platform-light);color:var(--platform);border:1px solid var(--platform-border);}
+.badge-client{background:var(--client-light);color:var(--client);border:1px solid var(--client-border);}
+.badge-shared{background:var(--shared-light);color:var(--shared);border:1px solid var(--shared-border);}
+
+.tabs{display:flex;gap:2px;padding:0 24px;background:var(--navy);overflow-x:auto;}
+.tab-btn{padding:10px 18px;background:transparent;border:none;color:rgba(255,255,255,.6);cursor:pointer;font-family:'Sarabun',sans-serif;font-size:13px;white-space:nowrap;border-bottom:3px solid transparent;transition:all .2s;}
+.tab-btn:hover{color:#fff;}
+.tab-btn.active{color:#fff;border-bottom-color:var(--gold);font-weight:600;}
+.tab-content{display:none;padding:24px;max-width:1200px;margin:0 auto;}
+.tab-content.active{display:block;}
+
+.card{background:var(--white);border-radius:10px;padding:22px 24px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+.card-title{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.section-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--gold);margin:20px 0 10px;border-bottom:2px solid var(--gold);padding-bottom:4px;}
+
+/* Platform / Client color boxes */
+.p-box{background:var(--platform-light);border-left:4px solid var(--platform);border-radius:6px;padding:14px 18px;margin-bottom:12px;}
+.p-box .box-title{font-weight:700;color:var(--platform);margin-bottom:6px;font-size:14px;}
+.c-box{background:var(--client-light);border-left:4px solid var(--client);border-radius:6px;padding:14px 18px;margin-bottom:12px;}
+.c-box .box-title{font-weight:700;color:var(--client);margin-bottom:6px;font-size:14px;}
+.s-box{background:var(--shared-light);border-left:4px solid var(--shared);border-radius:6px;padding:14px 18px;margin-bottom:12px;}
+.s-box .box-title{font-weight:700;color:var(--shared);margin-bottom:6px;font-size:14px;}
+
+/* Architecture diagram */
+.arch-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0;}
+.arch-layer{border-radius:8px;padding:16px;text-align:center;}
+.arch-layer.platform{background:var(--platform-light);border:2px solid var(--platform-border);}
+.arch-layer.client{background:var(--client-light);border:2px solid var(--client-border);}
+.arch-layer h3{font-size:13px;font-weight:700;margin-bottom:10px;}
+.arch-layer.platform h3{color:var(--platform);}
+.arch-layer.client h3{color:var(--client);}
+.arch-chip{display:inline-block;padding:4px 10px;border-radius:14px;font-size:11px;margin:3px 2px;font-weight:600;}
+.arch-chip.p{background:var(--platform);color:#fff;}
+.arch-chip.c{background:var(--client);color:#fff;}
+.arch-chip.s{background:var(--shared);color:#fff;}
+
+.arch-full-row{border-radius:8px;padding:14px 18px;margin:10px 0;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.arch-full-row.platform{background:var(--platform-light);border:2px solid var(--platform-border);}
+.arch-full-row.client{background:var(--client-light);border:2px solid var(--client-border);}
+.arch-full-row h4{font-size:13px;font-weight:700;min-width:180px;}
+.arch-full-row.platform h4{color:var(--platform);}
+.arch-full-row.client h4{color:var(--client);}
+
+/* Table styles */
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;}
+th{background:var(--navy);color:#fff;padding:10px 12px;text-align:left;font-weight:600;}
+td{padding:9px 12px;border-bottom:1px solid #e8eaf0;vertical-align:top;}
+tr:hover td{background:#f5f7ff;}
+.tag{display:inline-block;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;}
+.tag-p{background:var(--platform-light);color:var(--platform);}
+.tag-c{background:var(--client-light);color:var(--client);}
+.tag-s{background:var(--shared-light);color:var(--shared);}
+
+/* Component cards */
+.comp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin:12px 0;}
+.comp-card{border-radius:8px;padding:16px;}
+.comp-card.platform{background:var(--platform-light);border:1.5px solid var(--platform-border);}
+.comp-card h4{font-size:13px;font-weight:700;margin-bottom:8px;}
+.comp-card.platform h4{color:var(--platform);}
+.comp-card ul{list-style:none;padding:0;}
+.comp-card ul li{font-size:12px;padding:3px 0;display:flex;align-items:flex-start;gap:6px;color:#444;}
+.comp-card ul li::before{content:"›";color:var(--platform);font-weight:700;flex-shrink:0;}
+
+/* Onboarding steps */
+.steps-list{list-style:none;padding:0;}
+.steps-list li{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid #eee;}
+.steps-list li:last-child{border-bottom:none;}
+.step-num{width:32px;height:32px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;}
+.step-content{flex:1;}
+.step-content strong{display:block;margin-bottom:4px;font-size:14px;}
+.step-content p{font-size:13px;color:#555;}
+
+/* Boundary table highlight */
+.boundary-platform{background:#e3f2fd!important;}
+.boundary-client{background:#f3e5f5!important;}
+
+code{background:#f1f3f5;padding:2px 6px;border-radius:4px;font-size:12px;font-family:monospace;}
+.code-block{background:#1e1e2e;border-radius:8px;padding:18px;margin:12px 0;overflow-x:auto;}
+.code-block pre{color:#cdd6f4;font-family:monospace;font-size:12px;line-height:1.7;white-space:pre;}
+.k{color:#89b4fa;} .s{color:#a6e3a1;} .c{color:#6c7086;font-style:italic;} .n{color:#cba6f7;} .v{color:#fab387;}
+
+/* Info note */
+.note{background:#fff8e1;border-left:4px solid var(--gold);border-radius:6px;padding:12px 16px;margin:12px 0;font-size:13px;}
+
+/* Legend */
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin:0 0 16px;}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;}
+.legend-dot{width:12px;height:12px;border-radius:50%;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏗️ MONOLITH Platform Architecture</h1>
+  <p>แยก spec ระหว่าง Platform-level (MONOLITH Core) กับ Client-level (Daph Instance) อย่างชัดเจน</p>
+  <div class="badge-row">
+    <span class="badge badge-platform">🔷 MONOLITH Core — Platform-level</span>
+    <span class="badge badge-client">🔶 Daph — Client Instance</span>
+    <span class="badge badge-shared">🟢 Shared / Configurable</span>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('overview',this)">🏗️ Platform Overview</button>
+  <button class="tab-btn" onclick="switchTab('components',this)">⚙️ Core Components</button>
+  <button class="tab-btn" onclick="switchTab('boundary',this)">📐 Platform vs Client Boundary</button>
+  <button class="tab-btn" onclick="switchTab('daph',this)">🏠 Daph Instance</button>
+  <button class="tab-btn" onclick="switchTab('swift',this)">🚚 Swift Logistics</button>
+  <button class="tab-btn" onclick="switchTab('onboarding',this)">🚀 Client Onboarding</button>
+  <button class="tab-btn" onclick="switchTab('config',this)">🔧 Client Config Schema</button>
+  <button class="tab-btn" onclick="switchTab('mcp',this)">📡 MCP Event Catalog</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 01: PLATFORM OVERVIEW
+══════════════════════════════════════════════════════════ -->
+<div id="tab-overview" class="tab-content active">
+
+  <div class="card">
+    <div class="card-title">🏗️ MONOLITH Platform — Multi-Tenant Architecture</div>
+    <div class="note">
+      <strong>MONOLITH</strong> คือ AI Agent Platform สำหรับธุรกิจ B2C ที่ต้องการ workflow automation ผ่าน LINE OA
+      โดย <strong>Daph</strong> เป็น Client ลำดับแรกที่ deploy บน platform นี้
+      (ธุรกิจ: ของตกแต่งบ้าน / เฟอร์นิเจอร์ custom / งานติดตั้ง)
+    </div>
+
+    <div class="section-title">Architecture Stack (4 Layers)</div>
+
+    <div class="arch-full-row platform" style="margin-bottom:8px;">
+      <h4>🔷 Layer 4 — Client Application Layer</h4>
+      <span class="arch-chip c">Client Config</span>
+      <span class="arch-chip c">Business Rules</span>
+      <span class="arch-chip c">Domain KB</span>
+      <span class="arch-chip c">Agent Prompts</span>
+      <span class="arch-chip c">LINE OA Channel</span>
+      <span class="arch-chip c">PFMEA Data</span>
+    </div>
+    <div style="text-align:center;font-size:20px;color:#aaa;margin:2px 0;">↕</div>
+
+    <div class="arch-full-row platform" style="margin-bottom:8px;">
+      <h4>🔷 Layer 3 — MONOLITH Agent Runtime</h4>
+      <span class="arch-chip p">Agent Orchestrator</span>
+      <span class="arch-chip p">Tool Registry</span>
+      <span class="arch-chip p">Prompt Engine</span>
+      <span class="arch-chip p">KB Query Engine</span>
+      <span class="arch-chip p">Approval Workflow</span>
+    </div>
+    <div style="text-align:center;font-size:20px;color:#aaa;margin:2px 0;">↕</div>
+
+    <div class="arch-full-row platform" style="margin-bottom:8px;">
+      <h4>🔷 Layer 2 — Integration & Automation Layer</h4>
+      <span class="arch-chip p">MCP Event Bus</span>
+      <span class="arch-chip p">LINE Messaging API</span>
+      <span class="arch-chip p">LIFF Framework</span>
+      <span class="arch-chip p">Flex Builder</span>
+      <span class="arch-chip p">Rich Menu Engine</span>
+      <span class="arch-chip p">PWA Field SDK</span>
+    </div>
+    <div style="text-align:center;font-size:20px;color:#aaa;margin:2px 0;">↕</div>
+
+    <div class="arch-full-row platform">
+      <h4>🔷 Layer 1 — Infrastructure</h4>
+      <span class="arch-chip s">Supabase (DB + Realtime)</span>
+      <span class="arch-chip s">LINE Developer Platform</span>
+      <span class="arch-chip s">Cloud Storage (Files/Photos)</span>
+      <span class="arch-chip s">LLM API (OpenAI / Anthropic)</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔷 MONOLITH Platform — สิ่งที่ Platform จัดให้ทุก Client</div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--platform);"></div>Platform-owned (ทุก client ใช้ร่วมกัน)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--client);"></div>Client-owned (แต่ละ client config เอง)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--shared);"></div>Configurable per client</div>
+    </div>
+
+    <div class="arch-grid">
+      <div class="arch-layer platform">
+        <h3>🔷 MONOLITH Core Services</h3>
+        <span class="arch-chip p">Agent Framework</span>
+        <span class="arch-chip p">MCP Layer</span>
+        <span class="arch-chip p">LINE Integration</span>
+        <span class="arch-chip p">Automation Engine</span>
+        <span class="arch-chip p">PFMEA Engine</span>
+        <span class="arch-chip p">KB Schema Engine</span>
+        <span class="arch-chip p">PWA Field App SDK</span>
+        <span class="arch-chip p">Eval Framework</span>
+      </div>
+      <div class="arch-layer client">
+        <h3>🔶 Client Configuration (per-client)</h3>
+        <span class="arch-chip c">Business Domain</span>
+        <span class="arch-chip c">Agent Personas</span>
+        <span class="arch-chip c">Domain KB Content</span>
+        <span class="arch-chip c">PFMEA Rows</span>
+        <span class="arch-chip c">Customer Journey</span>
+        <span class="arch-chip c">LINE OA Channel</span>
+        <span class="arch-chip c">Pricing Rules</span>
+        <span class="arch-chip c">Escalation Thresholds</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📊 Platform Metrics (Multi-Client Target)</div>
+    <table>
+      <tr><th>Metric</th><th>Platform Target</th><th>ความหมาย</th></tr>
+      <tr><td>Clients Supported</td><td>≥ 10 clients per instance</td><td>Multi-tenant isolation per client</td></tr>
+      <tr><td>Agent Onboarding Time</td><td>&lt; 3 วัน per client</td><td>Config-driven, no code change</td></tr>
+      <tr><td>MCP Event Throughput</td><td>≥ 1,000 events/hour</td><td>Per platform instance</td></tr>
+      <tr><td>LINE Message Latency</td><td>&lt; 2 วินาที</td><td>Webhook → push notification</td></tr>
+      <tr><td>LIFF Load Time</td><td>&lt; 1.5 วินาที</td><td>Status + Approval pages</td></tr>
+      <tr><td>Field App Offline Sync</td><td>100% data retention</td><td>LocalStorage + SW cache</td></tr>
+      <tr><td>KB Query Accuracy</td><td>≥ 90%</td><td>Correct answer rate from domain KB</td></tr>
+      <tr><td>Platform Uptime</td><td>99.5%</td><td>SLA across all clients</td></tr>
+    </table>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 02: CORE COMPONENTS
+══════════════════════════════════════════════════════════ -->
+<div id="tab-components" class="tab-content">
+
+  <div class="card">
+    <div class="card-title">⚙️ MONOLITH Core Platform Components (6 Components)</div>
+    <p style="font-size:13px;color:#555;margin-bottom:16px;">
+      แต่ละ component เป็น Platform-level — Client เพียง <em>configure</em> ผ่าน client config JSON ไม่ต้องแก้ไข code
+    </p>
+
+    <div class="section-title">1. Agent Framework</div>
+    <div class="p-box">
+      <div class="box-title">🔷 Platform-owned: Base Agent Architecture</div>
+      <ul style="list-style:none;padding:0;">
+        <li style="padding:4px 0;font-size:13px;">› <strong>BaseAgent</strong> class — role, tools[], systemPrompt template, escalation policy</li>
+        <li style="padding:4px 0;font-size:13px;">› <strong>Tool Registry</strong> — standard tools: <code>send_line_message</code>, <code>update_project_status</code>, <code>query_kb</code>, <code>trigger_mcp_event</code>, <code>notify_pm</code>, <code>escalate_halt</code></li>
+        <li style="padding:4px 0;font-size:13px;">› <strong>Prompt Engine</strong> — Jinja2 template rendering; injects client context at runtime</li>
+        <li style="padding:4px 0;font-size:13px;">› <strong>Memory Layer</strong> — conversation context window (configurable turns)</li>
+        <li style="padding:4px 0;font-size:13px;">› <strong>LLM Adapter</strong> — supports OpenAI GPT-4o, Anthropic Claude 3.5; switchable per client</li>
+      </ul>
+    </div>
+    <div class="c-box">
+      <div class="box-title">🔶 Client configures: Agent Personas</div>
+      <ul style="list-style:none;padding:0;">
+        <li style="padding:3px 0;font-size:13px;">› Agent names, roles, business domain context</li>
+        <li style="padding:3px 0;font-size:13px;">› Domain-specific system prompt additions (ข้อมูลสินค้า, ราคา, เงื่อนไข)</li>
+        <li style="padding:3px 0;font-size:13px;">› KPI thresholds (response time, accuracy targets)</li>
+        <li style="padding:3px 0;font-size:13px;">› Enabled/disabled tools per agent</li>
+        <li style="padding:3px 0;font-size:13px;">› Escalation recipients (PM phone, email)</li>
+      </ul>
+    </div>
+
+    <div class="section-title">2. MCP Event Layer</div>
+    <div class="p-box">
+      <div class="box-title">🔷 Platform-owned: Event Bus Infrastructure</div>
+      <ul style="list-style:none;padding:0;">
+        <li style="padding:4px 0;font-size:13px;">› 12 standard MCP events: <code>new_inquiry</code>, <code>brief_received</code>, <code>approval_request</code>, <code>project_created</code>, <code>first_response_4h</code>, <code>qc_checkpoint</code>, <code>halt_alert</code>, <code>bom_received</code>, <code>stock_alert</code>, <code>job_scheduled</code>, <code>job_complete</code>, <code>status_update</code></li>
+        <li style="padding:4px 0;font-size:13px;">› Webhook handler <code>/webhook/line</code> — signature verify, event routing</li>
+        <li style="padding:4px 0;font-size:13px;">› Event schema validation (JSON Schema)</li>
+        <li style="padding:4px 0;font-size:13px;">› Retry / dead-letter queue</li>
+      </ul>
+    </div>
+    <div class="c-box">
+      <div class="box-title">🔶 Client configures: Event Handlers</div>
+      <ul style="list-style:none;padding:0;">
+        <li style="padding:3px 0;font-size:13px;">› Custom event payload fields (client-specific metadata)</li>
+        <li style="padding:3px 0;font-size:13px;">› Event → Agent routing rules</li>
+        <li style="padding:3px 0;font-size:13px;">› Webhook URL (client's server endpoint)</li>
+      </ul>
+    </div>
+
+    <div class="section-title">3. LINE Integration Engine</div>
+    <div class="p-box">
+      <div class="box-title">🔷 Platform-owned: LINE Messaging + LIFF Framework</div>
+      <ul style="list-style:none;padding:0;">
+        <li style="padding:4px 0;font-size:13px;">› <code>flex_builder.py</code> — 7 Flex Message templates (Welcome/Acknowledgment/Approval Request/QC Alert/Job Scheduled/Job Complete/Status Update)</li>
+        <li style="padding:4px 0;font-size:13px;">› Rich Menu Engine — stage-based switching (5 variants: DEFAULT/PROJECT/APPROVAL/INSTALL/COMPLETE)</li>
+        <li style="padding:4px 0;font-size:13px;">› LIFF Framework — <code>liff-status.ts</code> + <code>liff-approval.ts</code> (TypeScript base apps)</li>
+        <li style="padding:4px 0;font-size:13px;">› Keyword Auto-reply Engine — 6 rule templates</li>
+        <li style="padding:4px 0;font-size:13px;">› <code>notify_customer()</code> + <code>broadcast_to_customers()</code> SDK functions</li>
+        <li style="padding:4px 0;font-size:13px;">› LINE Notify DEPRECATED (March 2025) — Messaging API only</li>
+      </ul>
+    </div>
+    <div class="c-box">
+      <div class="box-title">🔶 Client configures: LINE OA Channel</div>
+      <ul style="list-style:none;padding:0;">
+        <li style="padding:3px 0;font-size:13px;">› <code>LINE_CHANNEL_ACCESS_TOKEN</code>, <code>LINE_CHANNEL_SECRET</code></li>
+        <li style="padding:3px 0;font-size:13px;">› 5 LIFF App IDs (<code>LIFF_ID_STATUS</code> / <code>SCHEDULE</code> / <code>GALLERY</code> / <code>APPROVAL</code> / <code>REVIEW</code>)</li>
+        <li style="padding:3px 0;font-size:13px;">› Rich Menu image assets (brand-specific design)</li>
+        <li style="padding:3px 0;font-size:13px;">› Flex Message color scheme + logo</li>
+        <li style="padding:3px 0;font-size:13px;">› Keyword replies (brand voice, language)</li>
+      </ul>
+    </div>
+
+    <div class="section-title">4. Knowledge Base Engine</div>
+    <div class="p-box">
+      <div class="box-title">🔷 Platform-owned: KB Schema + Approval Workflow</div>
+      <ul style="list-style:none;padding:0;">
+        <li style="padding:4px 0;font-size:13px;">› KB Schema v1.0.0 — <code>schemaVersion</code>, <code>pfmeaRiskRows</code>, <code>raciMap</code>, <code>agentDefinitions</code>, <code>mcpEventSchema</code></li>
+        <li style="padding:4px 0;font-size:13px;">› 4-stage approval workflow: Draft → Review → Approved → Deployed</li>
+        <li style="padding:4px 0;font-size:13px;">› KB Query Engine — semantic search over domain content</li>
+        <li style="padding:4px 0;font-size:13px;">› Import/Export API (JSON format)</li>
+        <li style="padding:4px 0;font-size:13px;">› Version control + diff tracking</li>
+      </ul>
+    </div>
+    <div class="c-box">
+      <div class="box-title">🔶 Client configures: Domain Content</div>
+      <ul style="list-style:none;padding:0;">
+        <li style="padding:3px 0;font-size:13px;">› Product catalog, pricing, materials, specifications</li>
+        <li style="padding:3px 0;font-size:13px;">› Business-specific PFMEA rows (failure modes unique to client's process)</li>
+        <li style="padding:3px 0;font-size:13px;">› RACI map (client's team structure)</li>
+        <li style="padding:3px 0;font-size:13px;">› FAQ content, policy documents</li>
+      </ul>
+    </div>
+
+    <div class="section-title">5. PFMEA Engine</div>
+    <div class="p-box">
+      <div class="box-title">🔷 Platform-owned: PFMEA Methodology Framework</div>
+      <ul style="list-style:none;padding:0;">
+        <li style="padding:4px 0;font-size:13px;">› Risk Row Schema — 15 fields: <code>id</code>, <code>processStep</code>, <code>potentialFailureMode</code>, <code>potentialEffectsOfFailure</code>, <code>severity</code>, <code>potentialCauses</code>, <code>occurrenceRating</code>, <code>currentControls</code>, <code>detectabilityRating</code>, <code>rpn</code>, <code>recommendedActions</code>, <code>responsibleParty</code>, <code>targetCompletionDate</code>, <code>actionsTaken</code>, <code>requiresHumanReview</code></li>
+        <li style="padding:4px 0;font-size:13px;">› Severity scale 1–9 (universal); Critical threshold: Sev ≥ 8</li>
+        <li style="padding:4px 0;font-size:13px;">› RPN calculation (Severity × Occurrence × Detectability)</li>
+        <li style="padding:4px 0;font-size:13px;">› PFMEA Live Dashboard (filter/sort/status tracker)</li>
+        <li style="padding:4px 0;font-size:13px;">› Test Case runner (TC-PFMEA format)</li>
+      </ul>
+    </div>
+    <div class="c-box">
+      <div class="box-title">🔶 Client configures: PFMEA Content</div>
+      <ul style="list-style:none;padding:0;">
+        <li style="padding:3px 0;font-size:13px;">› All pfmeaRiskRows (client's specific failure modes)</li>
+        <li style="padding:3px 0;font-size:13px;">› Process steps mapping to agents</li>
+        <li style="padding:3px 0;font-size:13px;">› Critical test cases (TC-{CLIENT}-NN format)</li>
+        <li style="padding:3px 0;font-size:13px;">› Control owners (ชื่อคน / ทีม)</li>
+      </ul>
+    </div>
+
+    <div class="section-title">6. PWA Field App SDK</div>
+    <div class="p-box">
+      <div class="box-title">🔷 Platform-owned: Field App Framework</div>
+      <ul style="list-style:none;padding:0;">
+        <li style="padding:4px 0;font-size:13px;">› 5-screen PWA base: GPS Check-In / Defect Capture / Site Checklist / Customer Sign-off / Job Summary</li>
+        <li style="padding:4px 0;font-size:13px;">› Geolocation API (±50m accuracy check)</li>
+        <li style="padding:4px 0;font-size:13px;">› Canvas Signature Pad</li>
+        <li style="padding:4px 0;font-size:13px;">› Photo upload (base64) + preview (×3)</li>
+        <li style="padding:4px 0;font-size:13px;">› Service Worker (Blob URL) — offline caching</li>
+        <li style="padding:4px 0;font-size:13px;">› MCP event push on job_scheduled / job_complete</li>
+        <li style="padding:4px 0;font-size:13px;">› LocalStorage for offline data persistence</li>
+      </ul>
+    </div>
+    <div class="c-box">
+      <div class="box-title">🔶 Client configures: Checklist + Branding</div>
+      <ul style="list-style:none;padding:0;">
+        <li style="padding:3px 0;font-size:13px;">› Checklist items (12 items per client's process)</li>
+        <li style="padding:3px 0;font-size:13px;">› MCP server endpoint URL</li>
+        <li style="padding:3px 0;font-size:13px;">› Accent color, logo</li>
+        <li style="padding:3px 0;font-size:13px;">› PFMEA severity labels (ภาษาไทย / English)</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 03: PLATFORM vs CLIENT BOUNDARY
+══════════════════════════════════════════════════════════ -->
+<div id="tab-boundary" class="tab-content">
+
+  <div class="card">
+    <div class="card-title">📐 Platform vs Client Boundary — Full Reference Table</div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--platform);"></div>MONOLITH Platform (core code, ทุก client ใช้ร่วมกัน)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--client);"></div>Client Config (แต่ละ client กำหนดเอง)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--shared);"></div>Configurable (framework มาจาก platform; content มาจาก client)</div>
+    </div>
+
+    <table>
+      <tr>
+        <th>Component / Asset</th>
+        <th>สถานะ</th>
+        <th>MONOLITH Core จัดให้</th>
+        <th>Client กำหนดเอง</th>
+        <th>ตัวอย่าง: Daph</th>
+      </tr>
+
+      <tr class="boundary-platform">
+        <td><strong>Agent Framework</strong></td>
+        <td><span class="tag tag-p">Platform</span></td>
+        <td>BaseAgent class, Tool Registry, Prompt Engine, LLM Adapter</td>
+        <td>—</td>
+        <td>ใช้ BaseAgent สำหรับทุก agent</td>
+      </tr>
+      <tr class="boundary-client">
+        <td><strong>Agent Definitions</strong></td>
+        <td><span class="tag tag-c">Client</span></td>
+        <td>Agent schema template</td>
+        <td>role, name, systemPrompt content, tools enabled, KPI thresholds</td>
+        <td>Sale/Designer/Factory/Install/PM/Procurement Agent (6 agents)</td>
+      </tr>
+      <tr class="boundary-platform">
+        <td><strong>MCP Event Schema</strong></td>
+        <td><span class="tag tag-p">Platform</span></td>
+        <td>12 event types + payload schema + webhook handler</td>
+        <td>—</td>
+        <td>ใช้ standard 12 events</td>
+      </tr>
+      <tr class="boundary-client">
+        <td><strong>MCP Event Routing</strong></td>
+        <td><span class="tag tag-c">Client</span></td>
+        <td>Routing engine</td>
+        <td>event → agent mapping, custom payload fields</td>
+        <td>job_complete → Install Agent + PM Agent</td>
+      </tr>
+      <tr class="boundary-platform">
+        <td><strong>LINE Messaging API</strong></td>
+        <td><span class="tag tag-p">Platform</span></td>
+        <td>SDK wrapper, multicast, push, reply functions</td>
+        <td>—</td>
+        <td>notify_customer() / broadcast_to_customers()</td>
+      </tr>
+      <tr class="boundary-client">
+        <td><strong>LINE OA Channel</strong></td>
+        <td><span class="tag tag-c">Client</span></td>
+        <td>Channel setup guide</td>
+        <td>ACCESS_TOKEN, SECRET, channel name, official account</td>
+        <td>Daph LINE OA (@daph_decor)</td>
+      </tr>
+      <tr style="background:#f3f0fd;">
+        <td><strong>flex_builder.py</strong></td>
+        <td><span class="tag tag-s">Shared</span></td>
+        <td>7 Flex Message template functions</td>
+        <td>Colors, logo URL, CTA text, brand voice</td>
+        <td>navy/gold theme + Daph logo</td>
+      </tr>
+      <tr style="background:#f3f0fd;">
+        <td><strong>Rich Menu Engine</strong></td>
+        <td><span class="tag tag-s">Shared</span></td>
+        <td>5-variant switching logic + switch_rich_menu()</td>
+        <td>Menu images, cell labels, LIFF URLs</td>
+        <td>ดูสถานะงาน/นัดหมาย/ติดต่อ Sale ฯลฯ</td>
+      </tr>
+      <tr class="boundary-platform">
+        <td><strong>LIFF Framework</strong></td>
+        <td><span class="tag tag-p">Platform</span></td>
+        <td>liff-status.ts + liff-approval.ts base code</td>
+        <td>—</td>
+        <td>ใช้ base code + config LIFF App IDs</td>
+      </tr>
+      <tr class="boundary-client">
+        <td><strong>LIFF App IDs</strong></td>
+        <td><span class="tag tag-c">Client</span></td>
+        <td>—</td>
+        <td>LIFF_ID_STATUS / SCHEDULE / GALLERY / APPROVAL / REVIEW</td>
+        <td>5 LIFF Apps ใน LINE Developer Console ของ Daph</td>
+      </tr>
+      <tr class="boundary-platform">
+        <td><strong>KB Schema Engine</strong></td>
+        <td><span class="tag tag-p">Platform</span></td>
+        <td>Schema v1.0.0, approval workflow, query engine, versioning</td>
+        <td>—</td>
+        <td>_knowledge-export.json follows platform schema</td>
+      </tr>
+      <tr class="boundary-client">
+        <td><strong>KB Content</strong></td>
+        <td><span class="tag tag-c">Client</span></td>
+        <td>—</td>
+        <td>Product catalog, materials, pricing, FAQ, policies</td>
+        <td>ของตกแต่งบ้าน, เฟอร์นิเจอร์ HPL/Laminate, ราคา</td>
+      </tr>
+      <tr class="boundary-platform">
+        <td><strong>PFMEA Methodology</strong></td>
+        <td><span class="tag tag-p">Platform</span></td>
+        <td>Risk schema (15 fields), Sev 1–9 scale, RPN calc, dashboard framework</td>
+        <td>—</td>
+        <td>Dashboard framework ใช้ platform code</td>
+      </tr>
+      <tr class="boundary-client">
+        <td><strong>pfmeaRiskRows</strong></td>
+        <td><span class="tag tag-c">Client</span></td>
+        <td>—</td>
+        <td>All rows — failure modes specific to client's industry/process</td>
+        <td>122 rows: Sale(6)/Designer(44)/Factory(50)/Install(22)</td>
+      </tr>
+      <tr class="boundary-platform">
+        <td><strong>PWA Field App SDK</strong></td>
+        <td><span class="tag tag-p">Platform</span></td>
+        <td>5-screen framework, GPS/Signature/Photo/SW/LocalStorage</td>
+        <td>—</td>
+        <td>Framework base code</td>
+      </tr>
+      <tr class="boundary-client">
+        <td><strong>Field App Config</strong></td>
+        <td><span class="tag tag-c">Client</span></td>
+        <td>—</td>
+        <td>Checklist items, MCP endpoint, accent color, logo</td>
+        <td>12 checklist items (Pre/During/Post-Install); purple #5b4fcf</td>
+      </tr>
+      <tr style="background:#f3f0fd;">
+        <td><strong>Evaluation Framework</strong></td>
+        <td><span class="tag tag-s">Shared</span></td>
+        <td>4-level rubric, scorecard, PFMEA test case runner</td>
+        <td>Test case IDs + expected values</td>
+        <td>TC-INSTALL-02 + TC-INSTALL-05 (Critical score=4)</td>
+      </tr>
+      <tr class="boundary-client">
+        <td><strong>Customer Journey</strong></td>
+        <td><span class="tag tag-c">Client</span></td>
+        <td>Journey template (10 stages)</td>
+        <td>Stage names, events, Flex content, business rules</td>
+        <td>Add LINE OA → สนใจสินค้า → ออกแบบ → ติดตั้ง → Complete</td>
+      </tr>
+      <tr class="boundary-client">
+        <td><strong>Supabase Tables</strong></td>
+        <td><span class="tag tag-c">Client</span></td>
+        <td>Schema templates (projects, design_approvals)</td>
+        <td>Client DB instance, RLS policies, data</td>
+        <td>Daph's Supabase project (projects + design_approvals)</td>
+      </tr>
+      <tr class="boundary-platform">
+        <td><strong>Infrastructure</strong></td>
+        <td><span class="tag tag-p">Platform</span></td>
+        <td>Deployment guide, Docker config, CI/CD templates</td>
+        <td>—</td>
+        <td>Shared infrastructure</td>
+      </tr>
+    </table>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 04: DAPH INSTANCE
+══════════════════════════════════════════════════════════ -->
+<div id="tab-daph" class="tab-content">
+
+  <div class="card">
+    <div class="card-title">🏠 Daph — Client Instance Profile</div>
+    <div class="c-box" style="margin-bottom:16px;">
+      <div class="box-title">🔶 Daph คือ Client ลำดับแรกบน MONOLITH Platform</div>
+      <p style="font-size:13px;margin-top:4px;">
+        ธุรกิจ: <strong>ของตกแต่งบ้าน / เฟอร์นิเจอร์ custom / งาน Interior decoration</strong><br>
+        ช่องทางหลัก: <strong>LINE OA</strong> (ลูกค้าสื่อสารผ่าน LINE ตั้งแต่ inquiry จนถึง installation complete)<br>
+        ขนาด: SME — ทีมออกแบบ, ทีมผลิต, ทีมติดตั้ง, Sale, PM, Procurement
+      </p>
+    </div>
+
+    <div class="section-title">Daph Agent Configuration (6 Agents)</div>
+    <table>
+      <tr><th>Agent</th><th>Role (Daph-specific)</th><th>Key Tools</th><th>Critical KPI</th></tr>
+      <tr>
+        <td><strong>Sale Agent</strong></td>
+        <td>รับ inquiry ผ่าน LINE, ส่ง quotation, follow-up ลูกค้า</td>
+        <td>send_line_message, create_project, send_quotation</td>
+        <td>First Response &lt;4h, Conversion ≥30%</td>
+      </tr>
+      <tr>
+        <td><strong>Designer Agent</strong></td>
+        <td>วัดพื้นที่, สร้าง 3D design, ส่งขออนุมัติแบบ</td>
+        <td>upload_design, request_approval, send_flex_approval</td>
+        <td>Design Delivery ≤48h, Approval Rate ≥80%</td>
+      </tr>
+      <tr>
+        <td><strong>Factory Agent</strong></td>
+        <td>รับ BOM, แจ้งสถานะผลิต, QC checkpoint</td>
+        <td>update_production_status, qc_checkpoint, stock_alert</td>
+        <td>On-time Production ≥95%, QC Pass ≥99%</td>
+      </tr>
+      <tr>
+        <td><strong>Install Agent</strong></td>
+        <td>นัดติดตั้ง, GPS check-in, capture defect, sign-off</td>
+        <td>capture_defect, update_installation_status, trigger_qc_inspection</td>
+        <td>Site Accuracy ≤2mm, Sign-off 100%</td>
+      </tr>
+      <tr>
+        <td><strong>PM Agent</strong></td>
+        <td>ดู dashboard โปรเจค, ประสาน team, escalate halt</td>
+        <td>get_project_status, escalate_halt, update_project</td>
+        <td>Halt Resolution &lt;2h, Dashboard Accuracy 100%</td>
+      </tr>
+      <tr>
+        <td><strong>Procurement Agent</strong></td>
+        <td>สั่งซื้อ materials, track delivery, stock alert</td>
+        <td>create_purchase_order, track_delivery, stock_alert</td>
+        <td>On-time Procurement ≥98%, Stock-out 0%</td>
+      </tr>
+    </table>
+
+    <div class="section-title">Daph PFMEA Data</div>
+    <div class="arch-grid">
+      <div class="arch-layer client">
+        <h3>🔶 122 pfmeaRiskRows (Daph-specific)</h3>
+        <span class="arch-chip c">Sale: 6 rows</span>
+        <span class="arch-chip c">Designer: 44 rows</span>
+        <span class="arch-chip c">Factory: 50 rows</span>
+        <span class="arch-chip c">Install: 22 rows</span>
+        <br><br>
+        <span class="arch-chip c">Sev9 Critical: 6</span>
+        <span class="arch-chip c">Sev8 High: 53</span>
+        <span class="arch-chip c">Requires Review: 105</span>
+      </div>
+      <div class="arch-layer client">
+        <h3>🔶 Daph Critical Test Cases</h3>
+        <p style="font-size:12px;text-align:left;margin-top:8px;">
+          <strong>TC-INSTALL-02</strong>: Sev-9 defect not captured → score=4 CRITICAL<br><br>
+          <strong>TC-INSTALL-05</strong>: Dimension mismatch at install → score=4 CRITICAL<br><br>
+          ทั้งคู่ต้อง score=4 เสมอ (PFMEA constraint)
+        </p>
+      </div>
+    </div>
+
+    <div class="section-title">Daph Customer Journey (10 Stages)</div>
+    <table>
+      <tr><th>#</th><th>Stage</th><th>MCP Event</th><th>Agent</th><th>LINE Action</th></tr>
+      <tr><td>1</td><td>Add LINE OA</td><td>new_inquiry</td><td>Sale</td><td>Welcome Flex Message</td></tr>
+      <tr><td>2</td><td>สนใจสินค้า / สอบถาม</td><td>brief_received</td><td>Sale</td><td>Acknowledgment Flex</td></tr>
+      <tr><td>3</td><td>รับใบเสนอราคา</td><td>project_created</td><td>Sale</td><td>Quotation Flex + PDF</td></tr>
+      <tr><td>4</td><td>อนุมัติ / ปฏิเสธ</td><td>approval_request</td><td>Designer</td><td>Approval Request Flex + LIFF</td></tr>
+      <tr><td>5</td><td>ชำระเงิน</td><td>first_response_4h</td><td>PM</td><td>Payment Confirmation</td></tr>
+      <tr><td>6</td><td>ออกแบบ 3D</td><td>approval_request</td><td>Designer</td><td>Design Ready + LIFF Approval</td></tr>
+      <tr><td>7</td><td>ผลิต</td><td>bom_received + qc_checkpoint</td><td>Factory</td><td>Production Status Updates</td></tr>
+      <tr><td>8</td><td>นัดติดตั้ง</td><td>job_scheduled</td><td>Install</td><td>Job Scheduled Flex</td></tr>
+      <tr><td>9</td><td>ติดตั้ง</td><td>status_update + halt_alert</td><td>Install</td><td>PWA Field App → LIFF Status</td></tr>
+      <tr><td>10</td><td>Installation Complete</td><td>job_complete</td><td>Install</td><td>Job Complete Flex + Review LIFF</td></tr>
+    </table>
+
+    <div class="section-title">Daph LINE OA Configuration</div>
+    <div class="code-block"><pre><span class="c"># Daph Client Config — .env</span>
+<span class="c"># LINE Channel (Daph-owned)</span>
+LINE_CHANNEL_ACCESS_TOKEN=<span class="s">"&lt;daph_channel_access_token&gt;"</span>
+LINE_CHANNEL_SECRET=<span class="s">"&lt;daph_channel_secret&gt;"</span>
+
+<span class="c"># LIFF App IDs (5 apps registered by Daph)</span>
+LIFF_ID_STATUS=<span class="s">"1234567890-xxxxxxxx"</span>
+LIFF_ID_SCHEDULE=<span class="s">"1234567890-yyyyyyyy"</span>
+LIFF_ID_GALLERY=<span class="s">"1234567890-zzzzzzzz"</span>
+LIFF_ID_APPROVAL=<span class="s">"1234567890-aaaaaaaa"</span>
+LIFF_ID_REVIEW=<span class="s">"1234567890-bbbbbbbb"</span>
+
+<span class="c"># Rich Menu IDs (Daph-specific images)</span>
+RM_DEFAULT_ID=<span class="s">"richmenu-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"</span>
+RM_PROJECT_ID=<span class="s">"richmenu-yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"</span>
+RM_APPROVAL_ID=<span class="s">"richmenu-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"</span>
+RM_INSTALL_ID=<span class="s">"richmenu-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"</span>
+RM_COMPLETE_ID=<span class="s">"richmenu-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"</span>
+
+<span class="c"># Supabase (Daph's own project)</span>
+SUPABASE_URL=<span class="s">"https://&lt;daph-project&gt;.supabase.co"</span>
+SUPABASE_ANON_KEY=<span class="s">"&lt;daph_anon_key&gt;"</span>
+
+<span class="c"># MCP Server</span>
+MCP_WEBHOOK_URL=<span class="s">"https://api.monolith.app/clients/daph/webhook/line"</span>
+CLIENT_ID=<span class="s">"daph"</span></pre></div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 04B: SWIFT LOGISTICS INSTANCE
+══════════════════════════════════════════════════════════ -->
+<div id="tab-swift" class="tab-content">
+
+  <div class="card">
+    <div class="card-title">🚚 Swift Logistics — Client Instance Profile</div>
+    <div class="c-box" style="margin-bottom:16px;border-left:4px solid #e65c00;">
+      <div class="box-title" style="color:#e65c00;">🔶 Swift Logistics คือ Client ลำดับที่ 2 บน MONOLITH Platform (Pilot)</div>
+      <p style="font-size:13px;margin-top:4px;">
+        ธุรกิจ: <strong>Logistics &amp; Delivery — ขนส่ง / จัดส่งพัสดุ / ระบบ POD</strong><br>
+        ช่องทางหลัก: <strong>LINE OA</strong> (ลูกค้าแจ้ง pickup request) + <strong>PWA Driver App</strong> (คนขับรับงาน/อัปเดต)<br>
+        ขนาด: SME — ทีม Dispatch, ทีมขนส่ง, ทีม Warehouse, Customer Service, QC<br>
+        Status: <strong style="color:#e65c00;">Pilot</strong> — เริ่ม 2025-Q1, Go-Live เป้าหมาย 2025-Q2
+      </p>
+    </div>
+
+    <div class="section-title">Swift Agent Configuration (5 Agents)</div>
+    <table>
+      <tr><th>Agent</th><th>Role (Swift-specific)</th><th>Key Tools</th><th>Critical KPI</th></tr>
+      <tr>
+        <td><strong>Dispatch Agent</strong></td>
+        <td>รับ pickup request, จัดคิวงาน, assign driver, ส่ง Flex Message แจ้งลูกค้า</td>
+        <td>create_job, assign_driver, send_dispatch_flex, update_job_status</td>
+        <td>Dispatch SLA &lt;15min, Assign Rate 100%</td>
+      </tr>
+      <tr>
+        <td><strong>CS Agent</strong></td>
+        <td>ตอบสอบถามลูกค้าผ่าน LINE, ติดตามสถานะพัสดุ, รับ complaint</td>
+        <td>get_parcel_status, send_tracking_flex, escalate_complaint, send_line_message</td>
+        <td>First Response &lt;2h, Resolution &lt;24h</td>
+      </tr>
+      <tr>
+        <td><strong>Driver Agent</strong></td>
+        <td>รับงานผ่าน PWA, GPS check-in pickup/delivery, capture POD</td>
+        <td>accept_job, gps_checkin, capture_pod, update_delivery_status, report_damage</td>
+        <td>On-time Delivery ≥95%, POD Capture 100%</td>
+      </tr>
+      <tr>
+        <td><strong>Warehouse Agent</strong></td>
+        <td>รับพัสดุ, สแกน barcode, จัดเก็บ, เตรียมของส่ง</td>
+        <td>scan_barcode, update_stock, prepare_shipment, report_discrepancy</td>
+        <td>Scan Accuracy ≥99.5%, Discrepancy 0%</td>
+      </tr>
+      <tr>
+        <td><strong>QC Agent</strong></td>
+        <td>ตรวจสอบสภาพพัสดุ, บันทึก damage, ออก claim</td>
+        <td>inspect_parcel, record_damage, issue_claim, trigger_investigation</td>
+        <td>Damage Detection Rate ≥99%, Claim SLA &lt;48h</td>
+      </tr>
+    </table>
+
+    <div class="section-title">Swift PFMEA Data (Pilot — In Configuration)</div>
+    <div class="arch-grid">
+      <div class="arch-layer client" style="border-color:#e65c00;">
+        <h3 style="color:#e65c00;">🔶 Logistics Failure Modes</h3>
+        <span class="arch-chip c" style="background:#fff3ec;color:#e65c00;border-color:#ffd1b0;">Package Damage (Sev-9)</span>
+        <span class="arch-chip c" style="background:#fff3ec;color:#e65c00;border-color:#ffd1b0;">Wrong Delivery (Sev-8)</span>
+        <span class="arch-chip c" style="background:#fff3ec;color:#e65c00;border-color:#ffd1b0;">Delivery Delay (Sev-7)</span>
+        <span class="arch-chip c" style="background:#fff3ec;color:#e65c00;border-color:#ffd1b0;">Lost Parcel (Sev-9)</span>
+        <br><br>
+        <span class="arch-chip" style="background:#f5f5f5;color:#888;">PFMEA Rows: In config (Pilot)</span>
+        <span class="arch-chip" style="background:#f5f5f5;color:#888;">Critical TCs: TBD</span>
+      </div>
+      <div class="arch-layer client" style="border-color:#e65c00;">
+        <h3 style="color:#e65c00;">🔶 Swift Critical Processes</h3>
+        <p style="font-size:12px;text-align:left;margin-top:8px;">
+          <strong>Pickup → Dispatch:</strong> SLA &lt;15 min จากรับ request<br><br>
+          <strong>Delivery → POD:</strong> Driver ต้อง capture POD ทุกครั้ง 100%<br><br>
+          <strong>Damage Report:</strong> ต้อง trigger QC Agent ทันที (real-time)<br><br>
+          <strong>Lost Parcel:</strong> Escalate to CS + Manager within 1h
+        </p>
+      </div>
+    </div>
+
+    <div class="section-title">Swift Customer Journey (7 Stages)</div>
+    <table>
+      <tr><th>#</th><th>Stage</th><th>MCP Event</th><th>Agent</th><th>LINE / App Action</th></tr>
+      <tr><td>1</td><td>ลูกค้าแจ้ง Pickup Request ผ่าน LINE OA</td><td>new_inquiry</td><td>CS Agent</td><td>Pickup Confirmed Flex</td></tr>
+      <tr><td>2</td><td>Dispatch จัดคิวงาน + Assign Driver</td><td>job_scheduled</td><td>Dispatch Agent</td><td>Driver Assigned Flex</td></tr>
+      <tr><td>3</td><td>Driver รับของ (GPS check-in Pickup)</td><td>status_update</td><td>Driver Agent</td><td>PWA Driver App — Pickup Confirm</td></tr>
+      <tr><td>4</td><td>ขนส่งพัสดุ (In Transit)</td><td>status_update</td><td>Driver Agent</td><td>Tracking Flex — ลูกค้าอัปเดต</td></tr>
+      <tr><td>5</td><td>จัดส่งถึงปลายทาง</td><td>status_update</td><td>Driver Agent</td><td>Out for Delivery Flex</td></tr>
+      <tr><td>6</td><td>Delivery + POD Capture</td><td>job_complete</td><td>Driver Agent</td><td>PWA — Sign / Photo POD</td></tr>
+      <tr><td>7</td><td>ลูกค้า Review การจัดส่ง</td><td>status_update</td><td>CS Agent</td><td>Review LIFF (Rating + Comment)</td></tr>
+    </table>
+
+    <div class="section-title">Swift LINE OA Configuration</div>
+    <div class="code-block"><pre><span class="c"># Swift Client Config — .env</span>
+<span class="c"># LINE Channel (Swift-owned)</span>
+LINE_CHANNEL_ACCESS_TOKEN=<span class="s">"&lt;swift_channel_access_token&gt;"</span>
+LINE_CHANNEL_SECRET=<span class="s">"&lt;swift_channel_secret&gt;"</span>
+
+<span class="c"># LIFF App IDs (Swift — 3 apps)</span>
+LIFF_ID_TRACKING=<span class="s">"9876543210-xxxxxxxx"</span>
+LIFF_ID_POD=<span class="s">"9876543210-yyyyyyyy"</span>
+LIFF_ID_REVIEW=<span class="s">"9876543210-zzzzzzzz"</span>
+
+<span class="c"># Rich Menu IDs (Swift-specific)</span>
+RM_DEFAULT_ID=<span class="s">"richmenu-swift-xxxxxxxxxxxxxxxxxxxxxxxxxxxx"</span>
+RM_TRACKING_ID=<span class="s">"richmenu-swift-yyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"</span>
+
+<span class="c"># Supabase (Swift's own project)</span>
+SUPABASE_URL=<span class="s">"https://&lt;swift-project&gt;.supabase.co"</span>
+SUPABASE_ANON_KEY=<span class="s">"&lt;swift_anon_key&gt;"</span>
+
+<span class="c"># MCP Server</span>
+MCP_WEBHOOK_URL=<span class="s">"https://api.monolith.app/clients/swift/webhook/line"</span>
+CLIENT_ID=<span class="s">"swift"</span>
+
+<span class="c"># PWA Driver App</span>
+PWA_ACCENT_COLOR=<span class="s">"#e65c00"</span>
+PWA_APP_NAME=<span class="s">"Swift Driver"</span></pre></div>
+
+    <div class="section-title">ความแตกต่างระหว่าง Daph (Interior) vs Swift (Logistics) บน MONOLITH</div>
+    <table>
+      <tr><th>Feature</th><th>🏠 Daph Decor</th><th>🚚 Swift Logistics</th></tr>
+      <tr><td>Domain</td><td>Interior Decoration</td><td>Logistics &amp; Delivery</td></tr>
+      <tr><td>Status</td><td style="color:#2d7a4f;font-weight:600;">Active</td><td style="color:#e65c00;font-weight:600;">Pilot</td></tr>
+      <tr><td>Agents</td><td>6 (Sale/Designer/Factory/Install/PM/Procurement)</td><td>5 (Dispatch/CS/Driver/Warehouse/QC)</td></tr>
+      <tr><td>Customer Journey</td><td>10 stages — inquiry → install complete</td><td>7 stages — pickup → review</td></tr>
+      <tr><td>Field App Focus</td><td>Installation checklist + defect capture</td><td>POD capture + GPS tracking</td></tr>
+      <tr><td>PFMEA Rows</td><td>122 rows (fully configured)</td><td>In configuration (Pilot)</td></tr>
+      <tr><td>MCP Events Active</td><td>12/12</td><td>8/12</td></tr>
+      <tr><td>LIFF Apps</td><td>5 (status/schedule/gallery/approval/review)</td><td>3 (tracking/pod/review)</td></tr>
+      <tr><td>Accent Color</td><td style="color:#5b4fcf;">■ #5b4fcf (Purple — Install)</td><td style="color:#e65c00;">■ #e65c00 (Orange — Driver)</td></tr>
+      <tr><td>Platform Code Change</td><td colspan="2" style="text-align:center;">❌ ไม่ต้องแก้ไข platform code — config-driven onboarding</td></tr>
+    </table>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 05: CLIENT ONBOARDING
+══════════════════════════════════════════════════════════ -->
+<div id="tab-onboarding" class="tab-content">
+
+  <div class="card">
+    <div class="card-title">🚀 MONOLITH Client Onboarding Process</div>
+    <p style="font-size:13px;color:#555;margin-bottom:16px;">
+      ขั้นตอนการ onboard client ใหม่เข้า MONOLITH Platform — ใช้เวลา <strong>&lt; 3 วัน</strong> (config-driven, no platform code changes)
+    </p>
+
+    <ul class="steps-list">
+      <li>
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <strong>Business Domain Analysis</strong>
+          <p>สัมภาษณ์ client: ธุรกิจคืออะไร, workflow หลักคืออะไร, team structure, customer touchpoints (LINE? Web? App?)</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <strong>Agent Configuration</strong>
+          <p>กำหนด agents ที่ client ต้องการ (เลือกจาก Agent Framework), เขียน domain-specific system prompt additions, กำหนด KPI thresholds, เปิด/ปิด tools ที่ใช้</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <strong>Knowledge Base Setup</strong>
+          <p>รวบรวม domain content: product catalog, pricing, FAQ, policies → import เข้า KB Schema v1.0.0 → approve via 4-stage workflow</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <strong>PFMEA Risk Analysis</strong>
+          <p>workshop กับ client เพื่อระบุ process steps + failure modes ของธุรกิจ → สร้าง pfmeaRiskRows → classify Sev/Occurrence/Detectability → identify critical rows (Sev ≥ 8)</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">5</div>
+        <div class="step-content">
+          <strong>LINE OA Setup</strong>
+          <p>client สร้าง LINE Official Account + Provider → ลงทะเบียน 5 LIFF Apps → ออกแบบ Rich Menu images (brand-specific) → กำหนด keyword auto-replies → ส่ง credentials ให้ MONOLITH</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">6</div>
+        <div class="step-content">
+          <strong>Supabase Provisioning</strong>
+          <p>สร้าง Supabase project สำหรับ client → apply schema templates (<code>projects</code> + <code>design_approvals</code> tables) → กำหนด RLS policies → ส่ง anon key ให้ MONOLITH config</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">7</div>
+        <div class="step-content">
+          <strong>Client Config JSON Deploy</strong>
+          <p>สร้าง <code>client_{id}.json</code> ใน MONOLITH config store → deploy ผ่าน CI/CD → platform auto-registers client routing</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">8</div>
+        <div class="step-content">
+          <strong>Field App Configuration (ถ้า client มีทีม field)</strong>
+          <p>customize checklist items + MCP endpoint + branding → build PWA → deploy เป็น hosted URL หรือ Android APK</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">9</div>
+        <div class="step-content">
+          <strong>UAT — Evaluation Metrics</strong>
+          <p>รัน PFMEA test cases (TC-{CLIENT}-NN format) → ตรวจ agent response quality (4-level rubric) → Gate-1 scorecard ผ่าน → sign off</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">10</div>
+        <div class="step-content">
+          <strong>Go-Live</strong>
+          <p>switch LINE Webhook to production → activate Rich Menu → เปิด LIFF apps → brief ทีม client เรื่อง workflow → monitor MCP event logs 24h แรก</p>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📋 Client Readiness Checklist</div>
+    <table>
+      <tr><th>หมวด</th><th>สิ่งที่ Client ต้องเตรียม</th><th>Owner</th></tr>
+      <tr><td>LINE</td><td>LINE Official Account (Verified แนะนำ), Provider สร้างแล้ว</td><td>Client</td></tr>
+      <tr><td>LINE</td><td>5 LIFF Apps registered (Status/Schedule/Gallery/Approval/Review)</td><td>Client + MONOLITH</td></tr>
+      <tr><td>LINE</td><td>Rich Menu images (6 cells × 5 variants = 30 images หรือ CSS-based)</td><td>Client Designer</td></tr>
+      <tr><td>Database</td><td>Supabase project (free tier OK สำหรับ pilot)</td><td>Client + MONOLITH</td></tr>
+      <tr><td>Content</td><td>Product catalog / materials list / pricing (Thai/English)</td><td>Client</td></tr>
+      <tr><td>PFMEA</td><td>Process map (ระบุ steps ทั้งหมดในการทำงาน)</td><td>Client + MONOLITH</td></tr>
+      <tr><td>Team</td><td>Designated agents (คนรับผิดชอบแต่ละ agent role)</td><td>Client</td></tr>
+      <tr><td>Field</td><td>Android device สำหรับ PWA Field App (ถ้า install team มี)</td><td>Client</td></tr>
+    </table>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 06: CLIENT CONFIG SCHEMA
+══════════════════════════════════════════════════════════ -->
+<div id="tab-config" class="tab-content">
+
+  <div class="card">
+    <div class="card-title">🔧 Client Configuration Schema — <code>client_{id}.json</code></div>
+    <p style="font-size:13px;color:#555;margin-bottom:12px;">
+      JSON config ที่ MONOLITH Platform อ่านเพื่อ initialize client instance —
+      platform code ไม่เปลี่ยน, เฉพาะ config เปลี่ยน
+    </p>
+
+    <div class="code-block"><pre><span class="c">// client_daph.json — Daph Client Instance Config</span>
+{
+  <span class="s">"client_id"</span>:      <span class="s">"daph"</span>,
+  <span class="s">"client_name"</span>:    <span class="s">"Daph Decor"</span>,
+  <span class="s">"domain"</span>:         <span class="s">"interior_decoration"</span>,
+  <span class="s">"language"</span>:       <span class="s">"th"</span>,
+  <span class="s">"timezone"</span>:       <span class="s">"Asia/Bangkok"</span>,
+
+  <span class="c">// LINE Channel credentials (client-specific)</span>
+  <span class="s">"line"</span>: {
+    <span class="s">"channel_access_token"</span>: <span class="s">"${LINE_CHANNEL_ACCESS_TOKEN}"</span>,
+    <span class="s">"channel_secret"</span>:       <span class="s">"${LINE_CHANNEL_SECRET}"</span>,
+    <span class="s">"liff_ids"</span>: {
+      <span class="s">"status"</span>:   <span class="s">"${LIFF_ID_STATUS}"</span>,
+      <span class="s">"schedule"</span>: <span class="s">"${LIFF_ID_SCHEDULE}"</span>,
+      <span class="s">"gallery"</span>:  <span class="s">"${LIFF_ID_GALLERY}"</span>,
+      <span class="s">"approval"</span>: <span class="s">"${LIFF_ID_APPROVAL}"</span>,
+      <span class="s">"review"</span>:   <span class="s">"${LIFF_ID_REVIEW}"</span>
+    },
+    <span class="s">"rich_menu_ids"</span>: {
+      <span class="s">"default"</span>:  <span class="s">"${RM_DEFAULT_ID}"</span>,
+      <span class="s">"project"</span>:  <span class="s">"${RM_PROJECT_ID}"</span>,
+      <span class="s">"approval"</span>: <span class="s">"${RM_APPROVAL_ID}"</span>,
+      <span class="s">"install"</span>:  <span class="s">"${RM_INSTALL_ID}"</span>,
+      <span class="s">"complete"</span>: <span class="s">"${RM_COMPLETE_ID}"</span>
+    }
+  },
+
+  <span class="c">// Supabase (client's own DB)</span>
+  <span class="s">"supabase"</span>: {
+    <span class="s">"url"</span>:      <span class="s">"${SUPABASE_URL}"</span>,
+    <span class="s">"anon_key"</span>: <span class="s">"${SUPABASE_ANON_KEY}"</span>
+  },
+
+  <span class="c">// Agents (client configures personas on top of BaseAgent)</span>
+  <span class="s">"agents"</span>: [
+    {
+      <span class="s">"id"</span>:   <span class="s">"sale_agent"</span>,
+      <span class="s">"name"</span>: <span class="s">"Sale Agent"</span>,
+      <span class="s">"llm"</span>:  <span class="s">"gpt-4o"</span>,
+      <span class="s">"tools_enabled"</span>: [<span class="s">"send_line_message"</span>,<span class="s">"create_project"</span>,<span class="s">"query_kb"</span>,<span class="s">"trigger_mcp_event"</span>],
+      <span class="s">"kpi"</span>: { <span class="s">"first_response_h"</span>: 4, <span class="s">"conversion_pct"</span>: 30 },
+      <span class="s">"system_prompt_addition"</span>: <span class="s">"คุณเป็น Sale Agent ของ Daph ร้านของตกแต่งบ้านและเฟอร์นิเจอร์ custom..."</span>
+    },
+    {
+      <span class="s">"id"</span>:   <span class="s">"install_agent"</span>,
+      <span class="s">"name"</span>: <span class="s">"Install Agent"</span>,
+      <span class="s">"llm"</span>:  <span class="s">"gpt-4o"</span>,
+      <span class="s">"tools_enabled"</span>: [<span class="s">"capture_defect"</span>,<span class="s">"update_installation_status"</span>,<span class="s">"notify_pm"</span>,<span class="s">"trigger_qc_inspection"</span>,<span class="s">"escalate_halt"</span>],
+      <span class="s">"halt_conditions"</span>: { <span class="s">"pfmea_severity_threshold"</span>: 9 },
+      <span class="s">"kpi"</span>: { <span class="s">"accuracy_mm"</span>: 2, <span class="s">"sign_off_pct"</span>: 100 },
+      <span class="s">"system_prompt_addition"</span>: <span class="s">"คุณเป็น Install Agent ของ Daph ดูแลการติดตั้งเฟอร์นิเจอร์และของตกแต่งบ้าน..."</span>
+    }
+    <span class="c">// ... Designer, Factory, PM, Procurement agents</span>
+  ],
+
+  <span class="c">// PFMEA config (client's industry-specific)</span>
+  <span class="s">"pfmea"</span>: {
+    <span class="s">"kb_file"</span>:              <span class="s">"_knowledge-export.json"</span>,
+    <span class="s">"critical_sev_threshold"</span>: 8,
+    <span class="s">"critical_test_cases"</span>:  [<span class="s">"TC-INSTALL-02"</span>, <span class="s">"TC-INSTALL-05"</span>],
+    <span class="s">"agent_step_mapping"</span>: {
+      <span class="s">"Sale"</span>:                <span class="s">"sale_agent"</span>,
+      <span class="s">"Area Measurement"</span>:   <span class="s">"designer_agent"</span>,
+      <span class="s">"Designer"</span>:           <span class="s">"designer_agent"</span>,
+      <span class="s">"3D_Presentation"</span>:    <span class="s">"designer_agent"</span>,
+      <span class="s">"3D_Rendering_Final"</span>: <span class="s">"designer_agent"</span>,
+      <span class="s">"Production Planning"</span>:<span class="s">"factory_agent"</span>,
+      <span class="s">"Laminate HPL"</span>:       <span class="s">"factory_agent"</span>,
+      <span class="s">"Cutting"</span>:            <span class="s">"factory_agent"</span>,
+      <span class="s">"Edging"</span>:             <span class="s">"factory_agent"</span>,
+      <span class="s">"CNC"</span>:                <span class="s">"factory_agent"</span>,
+      <span class="s">"Assembly"</span>:           <span class="s">"factory_agent"</span>,
+      <span class="s">"Packing"</span>:            <span class="s">"factory_agent"</span>
+    }
+  },
+
+  <span class="c">// Field App (Daph install team)</span>
+  <span class="s">"field_app"</span>: {
+    <span class="s">"accent_color"</span>:   <span class="s">"#5b4fcf"</span>,
+    <span class="s">"mcp_endpoint"</span>:   <span class="s">"https://api.monolith.app/clients/daph/mcp"</span>,
+    <span class="s">"checklist_items"</span>: [
+      <span class="s">"ตรวจสอบ site plan และ drawing"</span>,
+      <span class="s">"วัดพื้นที่จริงเทียบ drawing ±2mm"</span>,
+      <span class="s">"ตรวจสอบ material ครบตาม BOM"</span>,
+      <span class="s">"เช็ค wall / floor condition ก่อนติดตั้ง"</span>,
+      <span class="s">"ติดตั้งตาม sequence ใน work order"</span>,
+      <span class="s">"ตรวจ level และ plumb ทุก component"</span>,
+      <span class="s">"ตรวจ joint และ gap ≤1mm"</span>,
+      <span class="s">"ทดสอบบานพับ/ลิ้นชัก/อุปกรณ์ hardware"</span>,
+      <span class="s">"ทำความสะอาด site หลังติดตั้ง"</span>,
+      <span class="s">"ถ่ายรูป before/after ทุก area"</span>,
+      <span class="s">"รับ signature ลูกค้า"</span>,
+      <span class="s">"ส่ง job_complete event ผ่าน MCP"</span>
+    ]
+  },
+
+  <span class="c">// Branding</span>
+  <span class="s">"branding"</span>: {
+    <span class="s">"primary_color"</span>:  <span class="s">"#1f2d5a"</span>,
+    <span class="s">"accent_color"</span>:   <span class="s">"#c9a84c"</span>,
+    <span class="s">"font_family"</span>:    <span class="s">"Sarabun"</span>,
+    <span class="s">"logo_url"</span>:       <span class="s">"https://cdn.daph.co.th/logo.png"</span>
+  }
+}
+</pre></div>
+  </div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 07: MCP EVENT CATALOG
+══════════════════════════════════════════════════════════ -->
+<div id="tab-mcp" class="tab-content">
+
+  <div class="card">
+    <div class="card-title">📡 MCP Event Bus — ภาพรวม</div>
+    <p style="font-size:13px;color:#555;margin-bottom:18px;line-height:1.7;">
+      MONOLITH Event Bus ส่ง events ระหว่าง agents ผ่าน MCP (Model Context Protocol) ทุก event มี
+      <strong>payload schema มาตรฐาน</strong> และ routing rules ที่ configure ต่อ client ผ่าน
+      <code>agents[].mcp_events</code> ใน client config JSON
+    </p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;">
+      <div style="background:#f0f4ff;border:1px solid #c0cef8;border-radius:8px;padding:14px 20px;text-align:center;min-width:120px;">
+        <div style="font-size:28px;font-weight:800;color:#1f2d5a;">12</div>
+        <div style="font-size:11px;color:#666;font-weight:600;text-transform:uppercase;">Event Types</div>
+      </div>
+      <div style="background:#fff8ec;border:1px solid #f0d890;border-radius:8px;padding:14px 20px;text-align:center;min-width:120px;">
+        <div style="font-size:28px;font-weight:800;color:#c9a84c;">2</div>
+        <div style="font-size:11px;color:#666;font-weight:600;text-transform:uppercase;">Client Instances</div>
+      </div>
+      <div style="background:#edf7f0;border:1px solid #a8d8b2;border-radius:8px;padding:14px 20px;text-align:center;min-width:120px;">
+        <div style="font-size:28px;font-weight:800;color:#2d7a4f;">11</div>
+        <div style="font-size:11px;color:#666;font-weight:600;text-transform:uppercase;">Agent Subscribers</div>
+      </div>
+      <div style="background:#fef2ec;border:1px solid #f5c8a0;border-radius:8px;padding:14px 20px;text-align:center;min-width:120px;">
+        <div style="font-size:28px;font-weight:800;color:#e65c00;">≥1,000</div>
+        <div style="font-size:11px;color:#666;font-weight:600;text-transform:uppercase;">Events/Hour (Target)</div>
+      </div>
+    </div>
+    <div class="section-title" style="margin-top:20px;">Event Priority Levels</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <span class="badge" style="background:#fde8e8;color:#c0392b;border:1px solid #f5a5a5;">🔴 CRITICAL — รอ human action ทันที</span>
+      <span class="badge" style="background:#fff3cd;color:#856404;border:1px solid #ffc107;">🟡 HIGH — ส่ง push notification ภายใน 5 นาที</span>
+      <span class="badge" style="background:#d4edda;color:#155724;border:1px solid #a8d8b2;">🟢 NORMAL — process ตาม queue</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📋 12 Standard Events — Payload Schema &amp; Routing</div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th style="min-width:160px;">Event Name</th>
+            <th>คำอธิบาย</th>
+            <th style="min-width:220px;">Payload Fields (required)</th>
+            <th style="min-width:140px;">Emitter (generic)</th>
+            <th style="min-width:180px;">Subscriber (generic)</th>
+            <th style="width:80px;text-align:center;">Priority</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code style="font-size:12px;font-weight:700;color:#1f2d5a;">new_inquiry</code></td>
+            <td>ลูกค้าส่ง inquiry ใหม่ผ่าน LINE OA</td>
+            <td style="font-size:11px;"><code>client_id, channel_id, user_id, message_text, timestamp, source</code></td>
+            <td>LINE Webhook</td>
+            <td>ทุก client — first-responder agent</td>
+            <td style="text-align:center;"><span style="color:#2d7a4f;font-weight:700;">🟢</span></td>
+          </tr>
+          <tr>
+            <td><code style="font-size:12px;font-weight:700;color:#1f2d5a;">brief_received</code></td>
+            <td>ได้รับ brief จากลูกค้าครบถ้วนแล้ว</td>
+            <td style="font-size:11px;"><code>client_id, session_id, user_id, brief_data{}, confirmed_at</code></td>
+            <td>Sale / CS Agent</td>
+            <td>Designer / Dispatch Agent</td>
+            <td style="text-align:center;"><span style="color:#856404;font-weight:700;">🟡</span></td>
+          </tr>
+          <tr>
+            <td><code style="font-size:12px;font-weight:700;color:#1f2d5a;">approval_request</code></td>
+            <td>ส่ง LIFF approval ให้ลูกค้าอนุมัติ</td>
+            <td style="font-size:11px;"><code>client_id, request_id, type, requestor_agent, liff_url, expires_at, items[]</code></td>
+            <td>Any Agent</td>
+            <td>PM / CS Agent + Human</td>
+            <td style="text-align:center;"><span style="color:#856404;font-weight:700;">🟡</span></td>
+          </tr>
+          <tr>
+            <td><code style="font-size:12px;font-weight:700;color:#1f2d5a;">project_created</code></td>
+            <td>สร้าง project record ใน Supabase สำเร็จ</td>
+            <td style="font-size:11px;"><code>client_id, project_id, project_type, assigned_agents[], timeline{start, end}, created_by</code></td>
+            <td>PM Agent</td>
+            <td>All operational agents</td>
+            <td style="text-align:center;"><span style="color:#2d7a4f;font-weight:700;">🟢</span></td>
+          </tr>
+          <tr>
+            <td><code style="font-size:12px;font-weight:700;color:#1f2d5a;">first_response_4h</code></td>
+            <td>ตรวจสอบ SLA first response ภายใน 4 ชั่วโมง</td>
+            <td style="font-size:11px;"><code>client_id, session_id, user_id, inquiry_at, response_at, responded, elapsed_min</code></td>
+            <td>SLA Monitor (Platform)</td>
+            <td>PM Agent + Escalation</td>
+            <td style="text-align:center;"><span style="color:#856404;font-weight:700;">🟡</span></td>
+          </tr>
+          <tr>
+            <td><code style="font-size:12px;font-weight:700;color:#1f2d5a;">qc_checkpoint</code></td>
+            <td>ผ่าน QC checkpoint ในกระบวนการ</td>
+            <td style="font-size:11px;"><code>client_id, job_id, checkpoint_id, inspector_agent, result, defects[], photos[], timestamp</code></td>
+            <td>Factory / Warehouse / Driver Agent</td>
+            <td>QC / PM Agent</td>
+            <td style="text-align:center;"><span style="color:#856404;font-weight:700;">🟡</span></td>
+          </tr>
+          <tr>
+            <td><code style="font-size:12px;font-weight:700;color:#1f2d5a;">halt_alert</code></td>
+            <td>งานหยุดฉุกเฉิน ต้องการ human intervention</td>
+            <td style="font-size:11px;"><code>client_id, job_id, agent_id, reason, severity(1-5), affected_steps[], escalate_to, timestamp</code></td>
+            <td>Any Agent</td>
+            <td>PM / CS Agent + Human (CRITICAL)</td>
+            <td style="text-align:center;"><span style="color:#c0392b;font-weight:700;">🔴</span></td>
+          </tr>
+          <tr>
+            <td><code style="font-size:12px;font-weight:700;color:#1f2d5a;">bom_received</code></td>
+            <td>ได้รับ Bill of Materials จาก supplier/factory</td>
+            <td style="font-size:11px;"><code>client_id, project_id, bom_id, items[{sku, qty, unit, price}], total_cost, currency, supplier_id</code></td>
+            <td>Factory / Supplier System</td>
+            <td>Procurement / Warehouse Agent</td>
+            <td style="text-align:center;"><span style="color:#2d7a4f;font-weight:700;">🟢</span></td>
+          </tr>
+          <tr>
+            <td><code style="font-size:12px;font-weight:700;color:#1f2d5a;">stock_alert</code></td>
+            <td>stock ต่ำกว่า threshold หรือขาดแคลน</td>
+            <td style="font-size:11px;"><code>client_id, sku, current_qty, threshold_qty, warehouse_id, alert_level(low/out), affected_jobs[]</code></td>
+            <td>Procurement / Warehouse Agent</td>
+            <td>Factory / Dispatch / PM Agent</td>
+            <td style="text-align:center;"><span style="color:#856404;font-weight:700;">🟡</span></td>
+          </tr>
+          <tr>
+            <td><code style="font-size:12px;font-weight:700;color:#1f2d5a;">job_scheduled</code></td>
+            <td>นัดหมาย job กับช่าง/คนขับรถเรียบร้อยแล้ว</td>
+            <td style="font-size:11px;"><code>client_id, job_id, assignee_id, assignee_type, scheduled_at, location{lat,lng,address}, customer_notified</code></td>
+            <td>PM / Dispatch Agent</td>
+            <td>Install / Driver Agent</td>
+            <td style="text-align:center;"><span style="color:#2d7a4f;font-weight:700;">🟢</span></td>
+          </tr>
+          <tr>
+            <td><code style="font-size:12px;font-weight:700;color:#1f2d5a;">job_complete</code></td>
+            <td>งานเสร็จสิ้น — sign-off / POD ครบ</td>
+            <td style="font-size:11px;"><code>client_id, job_id, completed_by, completed_at, signoff_url, photos[], rating, notes</code></td>
+            <td>Install / Driver Agent</td>
+            <td>PM / CS / Warehouse Agent</td>
+            <td style="text-align:center;"><span style="color:#2d7a4f;font-weight:700;">🟢</span></td>
+          </tr>
+          <tr>
+            <td><code style="font-size:12px;font-weight:700;color:#1f2d5a;">status_update</code></td>
+            <td>ส่ง status update ให้ลูกค้าผ่าน LINE push</td>
+            <td style="font-size:11px;"><code>client_id, user_id, message_type(flex/text), payload{}, trigger_agent, delivery_channel</code></td>
+            <td>Any Agent</td>
+            <td>LINE Messaging API (Customer)</td>
+            <td style="text-align:center;"><span style="color:#2d7a4f;font-weight:700;">🟢</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🏠 Daph Instance — Event Routing Rules</div>
+    <p style="font-size:12px;color:#666;margin-bottom:14px;">Domain: interior_design | Agents: Sale, Designer, Factory, Install, PM, Procurement</p>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Event</th>
+            <th>Emitter Agent</th>
+            <th>Subscriber Agent(s)</th>
+            <th>Action ที่ trigger</th>
+            <th>LINE Push?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code>new_inquiry</code></td><td>LINE Webhook</td><td>Sale Agent</td><td>ตอบ greeting + ถาม brief</td><td>ไม่ (reply)</td></tr>
+          <tr><td><code>brief_received</code></td><td>Sale Agent</td><td>Designer Agent</td><td>สร้าง project draft + เริ่มออกแบบ</td><td>✅ PM notification</td></tr>
+          <tr><td><code>approval_request</code></td><td>Designer / Install Agent</td><td>PM Agent + ลูกค้า</td><td>ส่ง LIFF approval link</td><td>✅ ลูกค้า</td></tr>
+          <tr><td><code>project_created</code></td><td>PM Agent</td><td>Factory, Designer, Install Agent</td><td>assign tasks ต่อ agent</td><td>✅ ลูกค้า (project ID)</td></tr>
+          <tr><td><code>first_response_4h</code></td><td>SLA Monitor</td><td>PM Agent</td><td>escalate ถ้า no response</td><td>✅ ถ้า SLA breach</td></tr>
+          <tr><td><code>qc_checkpoint</code></td><td>Factory / Install Agent</td><td>PM Agent</td><td>บันทึก QC log + รอ approval</td><td>✅ PM</td></tr>
+          <tr><td><code>halt_alert</code></td><td>Any Agent</td><td>PM Agent + Human</td><td>freeze workflow + notify supervisor</td><td>✅ CRITICAL</td></tr>
+          <tr><td><code>bom_received</code></td><td>Factory Agent</td><td>Procurement Agent</td><td>เปิด PO + ตรวจ stock</td><td>ไม่</td></tr>
+          <tr><td><code>stock_alert</code></td><td>Procurement Agent</td><td>Factory, PM Agent</td><td>สั่งซื้อเพิ่ม / ปรับ timeline</td><td>✅ PM</td></tr>
+          <tr><td><code>job_scheduled</code></td><td>PM Agent</td><td>Install Agent</td><td>ส่ง job brief ให้ช่าง</td><td>✅ ลูกค้า (นัดหมาย)</td></tr>
+          <tr><td><code>job_complete</code></td><td>Install Agent</td><td>PM, Procurement Agent</td><td>ปิด project + คืน stock</td><td>✅ ลูกค้า (สรุปงาน)</td></tr>
+          <tr><td><code>status_update</code></td><td>Any Agent</td><td>LINE Messaging API</td><td>ส่ง Flex Message ให้ลูกค้า</td><td>✅ เสมอ</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🚚 Swift Logistics — Event Routing Rules</div>
+    <p style="font-size:12px;color:#666;margin-bottom:14px;">Domain: logistics_delivery | Agents: Dispatch, CS, Driver, Warehouse, QC</p>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Event</th>
+            <th>Emitter Agent</th>
+            <th>Subscriber Agent(s)</th>
+            <th>Action ที่ trigger</th>
+            <th>LINE Push?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code>new_inquiry</code></td><td>LINE Webhook</td><td>CS Agent</td><td>รับ pickup request + ตอบ tracking ID</td><td>ไม่ (reply)</td></tr>
+          <tr><td><code>brief_received</code></td><td>CS Agent</td><td>Dispatch Agent</td><td>จัดรถ + assign driver</td><td>✅ Driver notification</td></tr>
+          <tr><td><code>approval_request</code></td><td>Warehouse / QC Agent</td><td>CS Agent + ลูกค้า</td><td>ส่ง LIFF POD review link</td><td>✅ ลูกค้า</td></tr>
+          <tr><td><code>project_created</code></td><td>Dispatch Agent</td><td>Driver, Warehouse Agent</td><td>สร้าง shipment record + route</td><td>✅ ลูกค้า (tracking no)</td></tr>
+          <tr><td><code>first_response_4h</code></td><td>SLA Monitor</td><td>CS Agent</td><td>escalate ถ้า pickup ไม่ได้รับ assign ใน 4h</td><td>✅ ถ้า SLA breach</td></tr>
+          <tr><td><code>qc_checkpoint</code></td><td>Warehouse / Driver Agent</td><td>QC Agent</td><td>บันทึก damage check + รูปภาพ</td><td>✅ QC Manager</td></tr>
+          <tr><td><code>halt_alert</code></td><td>Any Agent</td><td>CS Agent + Human</td><td>freeze delivery + notify ops</td><td>✅ CRITICAL</td></tr>
+          <tr><td><code>bom_received</code></td><td>—</td><td>Warehouse Agent</td><td>รับ manifest สินค้าเข้าคลัง</td><td>ไม่</td></tr>
+          <tr><td><code>stock_alert</code></td><td>Warehouse Agent</td><td>Dispatch Agent</td><td>ปรับ route / หา alternative driver</td><td>✅ Dispatch</td></tr>
+          <tr><td><code>job_scheduled</code></td><td>Dispatch Agent</td><td>Driver Agent</td><td>ส่ง job card ให้คนขับ (PWA)</td><td>✅ Driver + ลูกค้า</td></tr>
+          <tr><td><code>job_complete</code></td><td>Driver Agent</td><td>CS, Warehouse Agent</td><td>ปิด shipment + อัพเดต POD</td><td>✅ ลูกค้า (delivered)</td></tr>
+          <tr><td><code>status_update</code></td><td>Any Agent</td><td>LINE Messaging API</td><td>ส่ง Flex Message tracking update</td><td>✅ เสมอ</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔧 Payload Schema — ตัวอย่าง JSON ต่อ Event</div>
+    <div class="section-title">new_inquiry</div>
+    <pre style="background:#f4f6fa;border:1px solid #dde3f0;border-radius:6px;padding:14px;font-size:11px;overflow-x:auto;line-height:1.6;">{
+  "event":      "new_inquiry",
+  "client_id":  "daph",
+  "channel_id": "UXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  "user_id":    "Uabc123",
+  "message_text": "สนใจสั่งชั้นวางหนังสือ built-in ครับ",
+  "timestamp":  "2025-09-01T10:15:00+07:00",
+  "source":     "line_webhook"
+}</pre>
+    <div class="section-title">job_scheduled</div>
+    <pre style="background:#f4f6fa;border:1px solid #dde3f0;border-radius:6px;padding:14px;font-size:11px;overflow-x:auto;line-height:1.6;">{
+  "event":        "job_scheduled",
+  "client_id":    "swift",
+  "job_id":       "JOB-2025-09-001",
+  "assignee_id":  "DRV-007",
+  "assignee_type":"driver",
+  "scheduled_at": "2025-09-02T08:00:00+07:00",
+  "location": {
+    "lat": 13.7563,
+    "lng": 100.5018,
+    "address": "123/45 ถ.สุขุมวิท แขวงคลองเตย กรุงเทพฯ"
+  },
+  "customer_notified": true
+}</pre>
+    <div class="section-title">halt_alert</div>
+    <pre style="background:#fff5f5;border:1px solid #f5a5a5;border-radius:6px;padding:14px;font-size:11px;overflow-x:auto;line-height:1.6;">{
+  "event":           "halt_alert",
+  "client_id":       "daph",
+  "job_id":          "PRJ-2025-042",
+  "agent_id":        "install_agent",
+  "reason":          "พบรอยร้าวที่ผนังโครงสร้าง ไม่สามารถเจาะได้",
+  "severity":        5,
+  "affected_steps":  ["wall_drill", "bracket_install"],
+  "escalate_to":     "pm_agent",
+  "timestamp":       "2025-09-01T14:22:00+07:00"
+}</pre>
+  </div>
+
+</div>
+
+
+<script>
+function switchTab(id, btn){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>

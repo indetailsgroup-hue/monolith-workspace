@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>Checklist ประสิทธิภาพและ Rendering ของ Flex Message</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1>Checklist ประสิทธิภาพและ Rendering ของ Flex Message</h1>
+<ul>
+<li>สถานะ: release checklist สำหรับ v1 standalone authoring scope</li>
+<li>ฉบับ: ภาษาไทย</li>
+<li>ตรวจข้อจำกัด LINE ทางการเมื่อ 2026-08-02</li>
+</ul>
+<h2>1. Release rule</h2>
+<p>ใช้ checklist นี้กับทุก preset, language และการเปลี่ยนเนื้อหาสำคัญ Studio preview เป็นภาพประมาณในเครื่อง มีเพียง exported HTTPS assets, official simulator และ LINE clients จริงที่ใช้ delivery rendering path การผ่านด้านภาพไม่สามารถยกเว้น validation, security, authorization หรือ Trust P0</p>
+<p>v1 Studio สร้าง <strong>one bubble only</strong> ไม่ได้อนุมัติ carousel composition หรือ live delivery</p>
+<p>Failure matrix ที่ต้องตรวจครอบคลุม unavailable image, LINE API 4xx/429/5xx, duplicate delivery และ <code>unknown-after-send</code></p>
+<h2>2. Payload ceilings และ budget</h2>
+<div class="tablewrap"><table><thead><tr><th>รายการ</th><th>LINE ceiling</th><th>MONOLITH release rule</th></tr></thead><tbody>
+<tr><td>Flex bubble definition</td><td>JSON <strong>30 KB</strong></td><td>เป้าหมายไม่เกิน <strong>24 KB</strong>; เกิน 24 KB warning และเกิน 30 KB block</td></tr>
+<tr><td>Flex carousel definition</td><td>JSON <strong>50 KB</strong></td><td>นอก v1 authoring scope; ต้อง design review</td></tr>
+<tr><td>Carousel bubbles</td><td>สูงสุด <strong>12</strong></td><td>v1 Studio authors one bubble only</td></tr>
+<tr><td>Flex <code>altText</code></td><td><strong>1,500</strong> ตัวอักษร</td><td>ต้องมี ความหมายถูกทั้ง TH/EN และทดสอบใน notification/chat list</td></tr>
+</tbody></table></div>
+<p>วัด UTF-8 bytes ของ <code>contents</code> object ที่จะส่งจริง ห้ามถือว่า character count เท่ากับ byte count โดยเฉพาะภาษาไทยและ emoji ต้องมี margin ต่ำกว่า hard ceiling เพราะ copy/URL เปลี่ยนแล้ว payload โตได้</p>
+<ul>
+<li>[ ] Bubble ≤ 24 KB soft budget</li>
+<li>[ ] กรณี 24–30 KB มีเหตุผล owner และ reduction plan</li>
+<li>[ ] Block export เมื่อเกิน 30 KB</li>
+<li>[ ] <code>altText</code> ถูกต้องและ ≤ 1,500 ตัวอักษร</li>
+<li>[ ] ไม่มี component/style/nesting ที่ไม่จำเป็น</li>
+</ul>
+<h2>3. Image acceptance</h2>
+<p>Flex image component ต้องใช้ <strong>HTTPS</strong> URL และ <strong>JPEG หรือ PNG</strong> ที่รองรับ ขีดรับทางการคือ <strong>1024×1024</strong> pixels และ <strong>10 MB</strong> ต่อภาพ LINE แนะนำให้ภาพแต่ละไฟล์ไม่เกิน 1 MB เพื่อลด display delay ตัวเลขขีดรับไม่ใช่ performance target</p>
+<ul>
+<li>[ ] HTTPS/TLS ที่รองรับ และ redirect chain ยังเป็น HTTPS</li>
+<li>[ ] MIME/content เป็น JPEG/PNG ไม่ใช่ HTML error page</li>
+<li>[ ] Dimensions ไม่เกิน 1024×1024</li>
+<li>[ ] ไฟล์ไม่เกิน 10 MB และ production target เล็กกว่ามาก (ปกติ ≤ 1 MB)</li>
+<li>[ ] URL encode ตามข้อกำหนด อยู่ได้นานพอกับ message และไม่มี token/secret</li>
+<li>[ ] ตรวจ cache policy และ content replacement</li>
+<li>[ ] ภาพเสียแล้ว essential meaning/CTA ยังเข้าใจได้</li>
+</ul>
+<p>Standalone bundle ใช้ <strong>no base64</strong>, ไม่มี remote fonts และไม่มี third-party runtime ต้องรักษาขอบเขตนี้: base64 ทำ payload โต, remote fonts เพิ่ม availability/privacy/rendering drift และ third-party runtime ทำให้ local safety artifact พึ่ง external code</p>
+<h2>4. Local preview กับ exported URL</h2>
+<p>Hero preview ใน Studio ใช้ bundled local SVG จาก <code>LineOS/assets/line-flex-studio/</code> ส่วน generated JSON ใช้ Hero <strong>Export HTTPS URL</strong> ภาพในเครื่องถูกไม่ได้พิสูจน์ว่า exported URL มีอยู่ ส่ง bytes ถูก หรือเปิดจาก LINE ได้</p>
+<ul>
+<li>[ ] ตรวจ generated <code>hero.url</code> โดยตรง ห้ามอนุมานจาก local preview</li>
+<li>[ ] เปิด HTTPS asset จาก environment นอกเครื่องพัฒนา</li>
+<li>[ ] ตรวจ status, content type, dimensions, file size, certificate, redirect</li>
+<li>[ ] วาง payload ใน Flex Message Simulator</li>
+<li>[ ] ทดสอบ asset ผ่าน LINE clients จริงและ poor network</li>
+</ul>
+<h2>5. Width, language และ font matrix</h2>
+<p>ตรวจที่ <strong>320</strong>, <strong>360</strong>, <strong>390</strong> CSS-pixel viewport widths ทุกความกว้างต้องครบ:</p>
+<div class="tablewrap"><table><thead><tr><th>Case</th><th>Pass condition</th></tr></thead><tbody>
+<tr><td>Thai</td><td>Wrap เป็นธรรมชาติ สระ/วรรณยุกต์ไม่ถูกตัด และ facts ยังจับคู่ labels</td></tr>
+<tr><td>English</td><td>คำ/ชื่อยาว wrap ไม่ overflow และ CTA ยังเห็น</td></tr>
+<tr><td>Emoji/symbols</td><td>Emoji, currency, percent, en dash, bullet ไม่มี replacement box</td></tr>
+<tr><td>Long name</td><td>Project/customer/requester wrap โดยไม่บัง revision/deadline</td></tr>
+<tr><td>Large font</td><td>Device large-font ไม่ overlap, crop หรือซ่อน action meaning</td></tr>
+</tbody></table></div>
+<p>ห้ามบังคับ copy ให้ตรง screenshot เดียว LINE ระบุว่า OS, LINE version, resolution, language และ font ทำให้ Flex render ต่างกันได้</p>
+<h2>6. Hero crop และ safe visual area</h2>
+<ul>
+<li>[ ] ทดสอบ <code>cover</code> cropping ทุก width และ source ทั้ง tall/wide</li>
+<li>[ ] วาง focal subject ใน safe visual area กลางภาพและเผื่อขอบมากพอ</li>
+<li>[ ] ห้าม bake revision, price, deadline, approval consequence หรือ essential text ในภาพ</li>
+<li>[ ] ใส่ essential text ใน Flex text components และ <code>altText</code></li>
+<li>[ ] ตรวจ crop ของหน้า/วัสดุ/สินค้า โลโก้ และ contrast</li>
+<li>[ ] ภาพ unavailable แล้วการ์ดยังเข้าใจได้</li>
+</ul>
+<p><code>cover</code> อาจตัดขอบ source image ตามการออกแบบ Approval truth ต้องอยู่นอกภาพ</p>
+<h2>7. Layout resilience</h2>
+<ul>
+<li>[ ] Layout ตื้นและลบ container ตกแต่งที่ไม่จำเป็น</li>
+<li>[ ] Important text ตั้ง wrap และรองรับบรรทัดเพิ่ม</li>
+<li>[ ] fixed-height prohibition สำหรับ text-bearing container เพราะข้อความแปลหรือขยายอาจถูก clip</li>
+<li>[ ] ห้ามจัด facts ด้วย spaces หรือ hard-coded line breaks</li>
+<li>[ ] spacing/labels กระชับและ touch target เพียงพอ</li>
+<li>[ ] ทดสอบ optional text หายและข้อความยาวสุด</li>
+<li>[ ] ตรวจ fallback ของ feature ที่ขึ้นกับ LINE version</li>
+</ul>
+<h2>8. Primary CTA clarity</h2>
+<ul>
+<li>[ ] มี primary CTA เด่นหนึ่งรายการ</li>
+<li>[ ] Label บอกสิ่งที่จะเปิด/เกิด เช่น “ตรวจและยืนยัน” ไม่ใช่ “OK”</li>
+<li>[ ] Trust note บอกว่า consequential state เปลี่ยนหลัง private confirmation เท่านั้น</li>
+<li>[ ] Secondary route consequence ต่ำกว่าและ bypass review ไม่ได้</li>
+<li>[ ] Action ตรง approved Message/Postback/URI/LIFF matrix</li>
+<li>[ ] High-risk action เปิด LIFF และใช้ MONOLITH step-up</li>
+</ul>
+<h2>9. Accessibility และ motion</h2>
+<ul>
+<li>[ ] Studio/review journey ใช้ keyboard ได้ทั้งหมด</li>
+<li>[ ] Tab order ตาม reading order, focus มองเห็นและกลับ trigger หลัง dialog</li>
+<li>[ ] Header/Hero/Body/Footer และ mobile pane tabs รองรับ arrows, Home, End</li>
+<li>[ ] Contrast เพียงพอใน normal/disabled/warning/error</li>
+<li>[ ] Control มี semantic labels และ validation เชื่อม rule กับ field</li>
+<li>[ ] ไม่สื่อความหมายด้วยสี ภาพ หรือ animation อย่างเดียว</li>
+<li>[ ] <code>altText</code> สื่อ actionable summary</li>
+<li>[ ] เคารพ reduced-motion; หลีกเลี่ยง essential animation</li>
+<li>[ ] ตรวจ screen-reader order และ large font บนอุปกรณ์จริง</li>
+</ul>
+<h2>10. Real-device matrix</h2>
+<p>ใช้ test accounts ที่องค์กรควบคุมและบันทึก date, OS, device class, current installed LINE version แบบเจาะจงให้ครบ iOS, Android และ desktop คำว่า “latest” ที่ไม่มี version/date ไม่ใช่ evidence</p>
+<div class="tablewrap"><table><thead><tr><th>Client</th><th>Minimum cases</th></tr></thead><tbody>
+<tr><td>iOS LINE</td><td>320/390-class, normal/large font, TH/EN, image available/unavailable, LIFF open/cancel/confirm</td></tr>
+<tr><td>Android LINE</td><td>360/390-class, normal/large font, TH/EN, image available/unavailable, LIFF open/cancel/confirm</td></tr>
+<tr><td>Desktop LINE (Windows/macOS ตามที่รองรับ)</td><td>Window narrow/wide, URI fallback, keyboard, unsupported-feature fallback</td></tr>
+<tr><td>External browser จาก LIFF</td><td>Login, exact redirect, cancel, stale/expired transaction, support fallback</td></tr>
+</tbody></table></div>
+<p>ทดสอบซ้ำเมื่อ Flex เปลี่ยนสาระ, image/CDN เปลี่ยน, LIFF SDK/platform เปลี่ยน และ LINE client update ที่มีนัยสำคัญ</p>
+<h2>11. Media delivery</h2>
+<p><strong>Future production guidance</strong> — ไม่ใช่หลักฐานว่า deploy CDN แล้ว:</p>
+<ul>
+<li>ใช้ approved first-party media host/CDN แบบ HTTPS มี monitoring และ owner ชัด</li>
+<li>Publish immutable/content-addressed/versioned asset URL ป้องกัน approved message เปลี่ยนเงียบ ๆ</li>
+<li>หลีกเลี่ยง signed URL ที่หมดอายุก่อน message lifecycle; ห้าม embed bearer credential</li>
+<li>Optimize JPEG/PNG dimensions/quality ก่อน upload; ห้ามพึ่ง transformation ตอน view โดยไม่มี pinned contract</li>
+<li>ตั้ง content type, cache headers, safe redirects ให้ถูก</li>
+<li>Monitor origin/CDN errors/latency และมี accessible text fallback</li>
+<li>กำหนด takedown, privacy, retention, incident procedure</li>
+</ul>
+<p>Production host, SLA, region และ retention ยังเป็น architecture decisions ต้อง revalidate ตอน release</p>
+<h2>12. Failure และ recovery checks</h2>
+<h3>Unavailable image</h3>
+<ul>
+<li>[ ] จำลอง DNS failure, 404/403, slow response และ wrong MIME</li>
+<li>[ ] Essential text/CTA อยู่นอกภาพ</li>
+<li>[ ] Operator replace/version asset ได้โดยไม่ rewrite historical evidence</li>
+</ul>
+<h3>LINE API <code>4xx</code></h3>
+<ul>
+<li>[ ] ถือ validation/auth/recipient error เป็น terminal จน classify; ห้าม blind retry</li>
+<li>[ ] เก็บ non-secret request ID, payload hash, error body, environment สำหรับ audit</li>
+<li>[ ] Quarantine invalid payload และคืน owner</li>
+</ul>
+<h3>LINE API <code>429</code></h3>
+<ul>
+<li>[ ] ทำตาม platform rate constraints และ controlled backoff/queue policy</li>
+<li>[ ] ห้ามหลาย worker ทวี retry</li>
+<li>[ ] Monitor queue age, tenant fairness, SLA impact</li>
+</ul>
+<h3>LINE API <code>5xx</code> หรือ timeout</h3>
+<ul>
+<li>[ ] ใช้ LINE retry-key semantics เฉพาะ endpoint ที่รองรับ และคง retry key เดิมสำหรับ request เดิม</li>
+<li>[ ] จำกัด retry ด้วย backoff และ circuit/incident threshold</li>
+<li>[ ] ห้ามถือ API acceptance เป็น human receipt</li>
+</ul>
+<h3>Duplicate delivery</h3>
+<ul>
+<li>[ ] Deduplicate inbound ด้วย <code>webhookEventId</code> และ business command ด้วย stable idempotency key</li>
+<li>[ ] Replayed action คืน stored safe result และไม่ repeat state transition</li>
+</ul>
+<h3><code>unknown-after-send</code></h3>
+<ul>
+<li>[ ] Persist request ID, retry key, payload hash, target reference, acceptance state ก่อนส่ง</li>
+<li>[ ] Mark ambiguous outcome หยุด blind resend แล้ว reconcile ด้วย platform evidence/operator review</li>
+<li>[ ] Escalate ambiguity ที่ยังไม่จบและรักษา queue/audit trail</li>
+</ul>
+<h2>13. Release evidence record</h2>
+<div class="tablewrap"><table><thead><tr><th>Evidence</th><th>Required value</th></tr></thead><tbody>
+<tr><td>Payload</td><td>Preset/revision, JSON hash, UTF-8 bytes, alt-text length</td></tr>
+<tr><td>Visual</td><td>320/360/390 captures สำหรับ TH/EN, large font, image failure</td></tr>
+<tr><td>Official simulation</td><td>Flex Message Simulator date/result</td></tr>
+<tr><td>Devices</td><td>OS, device, LINE version, environment, tester</td></tr>
+<tr><td>Accessibility</td><td>Keyboard/focus/contrast/labels/reduced-motion</td></tr>
+<tr><td>Failure</td><td>Image, <code>4xx</code>, <code>429</code>, <code>5xx</code>, timeout, duplicate, replay, unknown-after-send</td></tr>
+<tr><td>Authorization</td><td>Action decision, Trust P0, step-up evidence</td></tr>
+<tr><td>Rollback</td><td>Owner, disable path, worker stop, reconciliation drill</td></tr>
+</tbody></table></div>
+<p>หาก hard limit แตก, essential text ซ่อนในภาพ, primary CTA ไม่ชัด, ขาด real-device evidence, accessibility fail หรือ consequential-action gate ยังไม่จบ ผลคือ NO-GO</p>
+<h2>แหล่งข้อมูลทางการ</h2>
+<p>Retrieved 2026-08-02:</p>
+<ul>
+<li><a href="https://developers.line.biz/en/reference/messaging-api/nojs/" target="_blank" rel="noopener">Messaging API reference: Flex/carousel/alt text/image</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/using-flex-messages/" target="_blank" rel="noopener">Send Flex Messages และ rendering variability</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/using-flex-message-simulator/" target="_blank" rel="noopener">Flex Message Simulator image requirements</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/flex-message-layout/" target="_blank" rel="noopener">Flex Message layout</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/receiving-messages/" target="_blank" rel="noopener">Receive messages และ webhook duplicates</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/retrying-api-request/" target="_blank" rel="noopener">Retrying a Messaging API request</a></li>
+<li><a href="https://developers.line.biz/en/reference/messaging-api/nojs/#status-codes" target="_blank" rel="noopener">Messaging API status codes</a></li>
+</ul>
+</main></body>
+</html>

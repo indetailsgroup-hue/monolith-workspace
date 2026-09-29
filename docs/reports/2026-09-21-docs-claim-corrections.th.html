@@ -1,0 +1,157 @@
+<!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>แก้บริบทเอกสารที่ claim-guardrails ตรวจพบ</title><style>body{max-width:1100px;margin:32px auto;padding:0 24px;font:17px/1.7 system-ui}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccd5df;padding:8px;text-align:left}</style><body><h1>แก้บริบทเอกสารที่ claim-guardrails ตรวจพบ</h1>
+<p>ขอบเขต: งานต่อ PR121 เทียบ1c5a8b9c2 แก้6บทและสร้างsite dataใหม่ ทั้ง23findingsเป็นเงื่อนไข input ตัวอย่าง ชื่อกรณีทดสอบ หรือสถานการณ์สมมติ ข้อความเหล่านี้ไม่ได้พิสูจน์สถานะการมีอยู่ของ implementation ทั้ง repository คงไฟล์linter, allowlist และCIเหมือนเดิมทุกbyte</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Source at 1c5a8b9c2</th>
+<th>Identifier</th>
+<th>Classification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c5a8b9c24a9a529035d90551ca8f4f399046095/docs/chapters/chapter-12.md#L49">chapter12:49</a></td>
+<td><code>MCP_TOKEN</code></td>
+<td>เงื่อนไข API/input</td>
+</tr>
+<tr>
+<td>2</td>
+<td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c5a8b9c24a9a529035d90551ca8f4f399046095/docs/chapters/chapter-12.md#L55">chapter12:55</a></td>
+<td><code>401 Unauthorized</code></td>
+<td>เงื่อนไข API/input</td>
+</tr>
+<tr>
+<td>3</td>
+<td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c5a8b9c24a9a529035d90551ca8f4f399046095/docs/chapters/chapter-12.md#L675">chapter12:675</a></td>
+<td><code>jobId</code></td>
+<td>เงื่อนไข API/input</td>
+</tr>
+<tr>
+<td>4</td>
+<td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c5a8b9c24a9a529035d90551ca8f4f399046095/docs/chapters/chapter-12.md#L676">chapter12:676</a></td>
+<td><code>500</code></td>
+<td>เงื่อนไข API/input</td>
+</tr>
+<tr>
+<td>5</td>
+<td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c5a8b9c24a9a529035d90551ca8f4f399046095/docs/chapters/chapter-12.md#L1585">chapter12:1585</a></td>
+<td><code>JOB_NOT_FOUND</code></td>
+<td>เงื่อนไข API/input</td>
+</tr>
+<tr>
+<td>6</td>
+<td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c5a8b9c24a9a529035d90551ca8f4f399046095/docs/chapters/chapter-12.md#L1586">chapter12:1586</a></td>
+<td><code>PANEL_NOT_FOUND</code></td>
+<td>เงื่อนไข API/input</td>
+</tr>
+<tr>
+<td>7</td>
+<td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c5a8b9c24a9a529035d90551ca8f4f399046095/docs/chapters/chapter-26.md#L223">chapter26:223</a></td>
+<td><code>requiredConsentScopes</code></td>
+<td>เงื่อนไข consent policy</td>
+</tr>
+<tr>
+<td>8</td>
+<td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c5a8b9c24a9a529035d90551ca8f4f399046095/docs/chapters/chapter-26.md#L224">chapter26:224</a></td>
+<td><code>consentRecords</code></td>
+<td>เงื่อนไข consent policy</td>
+</tr>
+<tr>
+<td>9</td>
+<td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c5a8b9c24a9a529035d90551ca8f4f399046095/docs/chapters/chapter-26.md#L229">chapter26:229</a></td>
+<td><code>deniedBy: "pdpa:missing_consent"</code></td>
+<td>เงื่อนไข consent policy</td>
+</tr>
+<tr>
+<td>10</td>
+<td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c5a8b9c24a9a529035d90551ca8f4f399046095/docs/chapters/chapter-30.md#L65">chapter30:65</a></td>
+<td><code>missing_in_physical</code></td>
+<td>ตัวอย่างโค้ด</td>
+</tr>
+<tr>
+<td>11</td>
+<td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c5a8b9c24a9a529035d90551ca8f4f399046095/docs/chapters/chapter-30.md#L66">chapter30:66</a></td>
+<td><code>missing_in_shadow</code></td>
+<td>ตัวอย่างโค้ด</td>
+</tr>
+<tr>
+<td>12</td>
+<td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c5a8b9c24a9a529035d90551ca8f4f399046095/docs/chapters/chapter-30.md#L70">chapter30:70</a></td>
+<td><code>inSync</code></td>
+<td>ตัวอย่างโค้ด</td>
+</tr>
+<tr>
+<td>13</td>
+<td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c5a8b9c24a9a529035d90551ca8f4f399046095/docs/chapters/chapter-31.md#L32">chapter31:32</a></td>
+<td><code>governance/pdpa.test.ts</code></td>
+<td>ชื่อกรณีทดสอบ</td>
+</tr>
+<tr>
+<td>14</td>
+<td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c5a8b9c24a9a529035d90551ca8f4f399046095/docs/chapters/chapter-31.md#L107">chapter31:107</a></td>
+<td><code>canInvoke</code></td>
+<td>ชื่อกรณีทดสอบ</td>
+</tr>
+<tr>
+<td>15</td>
+<td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c5a8b9c24a9a529035d90551ca8f4f399046095/docs/chapters/chapter-35.md#L224">chapter35:224</a></td>
+<td><code>absence</code></td>
+<td>เงื่อนไข trigger alert</td>
+</tr>
+<tr>
+<td>16</td>
+<td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c5a8b9c24a9a529035d90551ca8f4f399046095/docs/chapters/chapter-38.md#L60">chapter38:60</a></td>
+<td><code>manage_customer_feedback</code></td>
+<td>สถานการณ์สมมติ persona</td>
+</tr>
+<tr>
+<td>17</td>
+<td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c5a8b9c24a9a529035d90551ca8f4f399046095/docs/chapters/chapter-38.md#L92">chapter38:92</a></td>
+<td><code>get_inventory_report</code></td>
+<td>สถานการณ์สมมติ persona</td>
+</tr>
+<tr>
+<td>18</td>
+<td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c5a8b9c24a9a529035d90551ca8f4f399046095/docs/chapters/chapter-38.md#L121">chapter38:121</a></td>
+<td><code>create_dashboard</code></td>
+<td>สถานการณ์สมมติ persona</td>
+</tr>
+<tr>
+<td>19</td>
+<td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c5a8b9c24a9a529035d90551ca8f4f399046095/docs/chapters/chapter-38.md#L124">chapter38:124</a></td>
+<td><code>manage_consent</code></td>
+<td>สถานการณ์สมมติ persona</td>
+</tr>
+<tr>
+<td>20</td>
+<td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c5a8b9c24a9a529035d90551ca8f4f399046095/docs/chapters/chapter-38.md#L154">chapter38:154</a></td>
+<td><code>manage_customer_feedback</code></td>
+<td>สถานการณ์สมมติ persona</td>
+</tr>
+<tr>
+<td>21</td>
+<td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c5a8b9c24a9a529035d90551ca8f4f399046095/docs/chapters/chapter-38.md#L187">chapter38:187</a></td>
+<td><code>create_digital_shadow</code></td>
+<td>สถานการณ์สมมติ persona</td>
+</tr>
+<tr>
+<td>22</td>
+<td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c5a8b9c24a9a529035d90551ca8f4f399046095/docs/chapters/chapter-38.md#L189">chapter38:189</a></td>
+<td><code>optimize_schedule</code></td>
+<td>สถานการณ์สมมติ persona</td>
+</tr>
+<tr>
+<td>23</td>
+<td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/1c5a8b9c24a9a529035d90551ca8f4f399046095/docs/chapters/chapter-38.md#L190">chapter38:190</a></td>
+<td><code>manage_installation</code></td>
+<td>สถานการณ์สมมติ persona</td>
+</tr>
+</tbody>
+</table>
+<p>คงความหมายเงื่อนไขที่ละเว้นการตั้งค่า error codes ชื่อinput และผลตัดสินconsentเดิม ไม่กำหนดหรือรับรองพฤติกรรมเมื่อส่งarrayว่าง บท30เปลี่ยนตัวคั่นตัวอย่างเดิมเป็นMarkdown fence บท31จัดชื่อกรณีทดสอบเป็นinline code บท38ระบุสถานการณ์ก่อน/หลังเป็นสมมติ พฤติกรรมเป็นข้อเสนอ และตัวเลขเป็นเป้าหมายที่ต้องวัด การแก้ครั้งนี้เป็นeditorial clarification ไม่ใช่การทดสอบruntime</p>
+<p>ผลตรวจ: documentation regression23/23; guardrail regression227รายการ สำเร็จ222และskip5จากสำเนาที่ตรวจbyteแล้ว; negative-claimและcertification CLIทั้งcorpus exit0 รอบแรกในworktreeล้มเหลว15testsเพราะabsolute pathของfixtureอยู่ใต้.codexซึ่งเป็นexcluded ancestor เมื่อคัดลอกtracked filesเดิม120ไฟล์ไปโฟลเดอร์ทดสอบที่ไม่อยู่ใต้ancestorนี้ 15กรณีดังกล่าวผ่าน ปัญหาขึ้นกับpathยังเป็นข้อจำกัดแยกต่างหาก</p>
+<p>ตรวจแยกparent governance HEADaa1b30e5กับnested product HEAD9c4bee67แล้ว (status694และ83รายการตามลำดับ) แก้เฉพาะworktreeงานซ่อม ผลlocalไม่ได้รับรองdeploymentหรือความพร้อมผลิตภัณฑ์</p>
+<p>ข้อยกเว้นhookเดิมใช้เฉพาะ1c5a8b9c2 commitต่อไปต้องผ่านhookปกติ และต้องตรวจGitHub Actionsที่headใหม่ก่อนสรุปว่าPR CIผ่าน</p>
+<p><a href="https://github.com/indetailsgroup-hue/monolith-workspace/pull/121">PR #121</a></p></body></html>

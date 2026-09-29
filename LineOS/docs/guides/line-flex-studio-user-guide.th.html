@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>MONOLITH LINE Flex Studio — คู่มือผู้ใช้งาน</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1>MONOLITH LINE Flex Studio — คู่มือผู้ใช้งาน</h1>
+<ul>
+<li>สถานะ: คู่มือ prototype แบบ standalone ที่อนุมัติแล้ว</li>
+<li>ฉบับ: ภาษาไทย</li>
+<li>ตรวจเทียบกับ Studio ใน repository และเอกสารทางการของ LINE เมื่อ 2026-08-02</li>
+</ul>
+<h2>1. วัตถุประสงค์และขอบเขตความปลอดภัย</h2>
+<p>LINE Flex Studio เป็นเครื่องมือ local สำหรับสร้างและตรวจ Flex Message แบบหนึ่ง bubble ผู้ใช้เลือก preset ที่กำกับไว้ แก้ Header, Hero, Body และ Footer ดูตัวอย่างแบบ responsive ตรวจ JSON และซ้อมการตรวจ action แบบเจาะจงผ่าน Mock LIFF ได้</p>
+<p>Studio ไม่ใช่ตัวส่ง Messaging API, LIFF production, ฐานข้อมูลหลัก, กลไกอนุญาต หรือบริการลงลายเซ็น มีเพียงตัวอ้างอิง tenant และผู้รับแบบ demo ห้ามใส่ข้อมูลส่วนบุคคลลูกค้า channel secret, channel access token, bearer token หรือความลับ production ใด ๆ Revision, permission, workflow และ audit ที่มีอำนาจต้องอยู่ใน MONOLITH</p>
+<blockquote><p>ข้อสรุปของ standalone: no message was sent และ no business state changed ส่วน “Verification Receipt — Demo” ไม่ใช่ลายเซ็น production</p></blockquote>
+<h2>2. เริ่มใช้งานด้วย local static server</h2>
+<p>จาก root ของ parent repository ให้เปิด local static server:</p>
+<pre><code class="language-powershell">python -m http.server 4177 --directory LineOS</code></pre>
+<p>เปิด <code>http://localhost:4177/line-flex-studio.html</code> คง terminal ไว้ระหว่างใช้งานและหยุด server เมื่อเสร็จ ใช้ prototype นี้ผ่าน localhost เท่านั้น ห้ามเติม production token หรือ secret ในคำสั่ง URL, JSON หรือ browser storage</p>
+<h2>3. แผนที่ Studio Console</h2>
+<div class="tablewrap"><table><thead><tr><th>พื้นที่</th><th>หน้าที่</th><th>สิ่งที่ผู้ใช้ต้องตรวจ</th></tr></thead><tbody>
+<tr><td>App header</td><td>แสดง <code>Daph Studio · Secured by MONOLITH</code> และสลับ TH/EN</td><td>ยืนยัน demo tenant และภาษาก่อนแก้ไข</td></tr>
+<tr><td>Editor</td><td>เลือก 5 presets และแก้ Header, Hero, Body, Footer</td><td>ตรวจ audience, revision, requester, deadline และผลกระทบ</td></tr>
+<tr><td>LINE Preview</td><td>แสดงภาพประมาณการในเครื่องและเปิด Mock LIFF</td><td>ใช้ช่วยออกแบบ ไม่ใช่หลักฐาน official client</td></tr>
+<tr><td>JSON Preview</td><td>อัปเดต JSON และขนาด bubble แบบ UTF-8 ทันที</td><td>ตรวจ payload และ validation ก่อนคัดลอก/ดาวน์โหลด</td></tr>
+<tr><td>Validation</td><td>แสดง severity, rule ID, source classification และลิงก์อ้างอิง</td><td>แก้ทุก <code>error</code>; พิจารณาทุก <code>warning</code> และ <code>guidance</code></td></tr>
+</tbody></table></div>
+<p>บนจอแคบ Editor, Preview และ JSON &amp; Validation จะกลายเป็นแท็บที่ควบคุมด้วยคีย์บอร์ด</p>
+<h2>4. เลือกหนึ่งในห้า presets</h2>
+<p>เลือก preset ให้ตรงกับ business intent ห้ามเปลี่ยนข้อความจนความหมายเปลี่ยนแต่คง action intent เดิมไว้</p>
+<div class="tablewrap"><table><thead><tr><th>Preset ID</th><th>ใช้เมื่อ</th><th>ขอบเขต action เริ่มต้น</th></tr></thead><tbody>
+<tr><td><code>design-approval</code></td><td>แบบ revision ที่ระบุพร้อมให้ตรวจ</td><td>ความเสี่ยงสูง: URI เปิด LIFF เพื่อตรวจ revision และยืนยันอย่างชัดเจน</td></tr>
+<tr><td><code>quote-order</code></td><td>ตรวจใบเสนอราคา ขอบเขต และ order intent</td><td>ความเสี่ยงสูง: ใช้ LIFF; ข้อความแชตไม่ใช่ order truth</td></tr>
+<tr><td><code>sla-escalation</code></td><td>แจ้งพนักงานให้รับทราบ SLA</td><td>Postback ความเสี่ยงต่ำรับทราบเท่านั้น การอนุมัติเงินต้องเปิด work item</td></tr>
+<tr><td><code>site-update</code></td><td>ส่งความคืบหน้าหน้างานที่คัดแล้วให้ลูกค้า</td><td>URI แบบอ่านอย่างเดียว รูปกลุ่มทีมไม่กลายเป็นหลักฐานลูกค้าโดยอัตโนมัติ</td></tr>
+<tr><td><code>issue-evidence</code></td><td>รับทราบหลักฐานหน้างานที่ถูก quarantine</td><td>Postback ความเสี่ยงต่ำ มนุษย์ตรวจ actor/project ก่อน promote หรือ reject</td></tr>
+</tbody></table></div>
+<p>เมื่อเปลี่ยน preset หรือภาษา ระบบสร้าง draft ใหม่และทำให้ demo transaction/receipt ในหน้าเดิมใช้ต่อไม่ได้</p>
+<h2>5. แก้ Header, Hero, Body และ Footer</h2>
+<p>ใช้แท็บ block ตามลำดับ:</p>
+<ol>
+<li><strong>Header:</strong> แก้ eyebrow, title, status และ <code>altText</code> ให้ข้อความสำรองสื่อสารได้ด้วยตัวเอง LINE กำหนดให้ <code>altText</code> จำเป็นและไม่เกิน 1,500 ตัวอักษร</li>
+<li><strong>Hero:</strong> ระบุ HTTPS URL สำหรับ export, aspect ratio และ aspect mode ตัวอย่างในเครื่องใช้ SVG ที่ bundle ไว้ แต่ JSON ที่ export ใช้ HTTPS URL ภาพ production ต้องเผยแพร่แยกภายใต้ media control ที่อนุมัติ</li>
+<li><strong>Body:</strong> ตรวจ project, revision, requester, amount/scope, deadline, summary และ trust note ห้ามสื่อว่าข้อความแชตเป็น business state ที่มีอำนาจ</li>
+<li><strong>Footer:</strong> ทำ primary CTA ให้เด่นเพียงหนึ่งรายการ ใช้ secondary CTA เท่าที่จำเป็น และตรวจ requested action type intent ความเสี่ยงสูงห้ามใช้ Message หรือ Postback เป็นการอนุญาตขั้นสุดท้าย</li>
+</ol>
+<p>ทุก input อัปเดต preview, JSON, byte count และ findings จาก in-memory draft เดียวกัน</p>
+<h2>6. ความกว้าง Preview และการตัดบรรทัดสองภาษา</h2>
+<p>ใช้ responsive mode ของ browser ตรวจหน้าและการ์ดที่ <strong>320</strong>, <strong>360</strong> และ <strong>390</strong> CSS pixels phone frame ของ v1 ยืดหยุ่นได้จนถึง 360 px; ความกว้างทั้งสามเป็น test conditions ไม่ใช่ official LINE client emulator สามตัว</p>
+<p>ทุกความกว้างต้องตรวจ:</p>
+<ul>
+<li>ฉบับภาษาไทยและอังกฤษ</li>
+<li>ชื่อโครงการและชื่อบุคคลที่ยาว</li>
+<li>การตัดบรรทัดภาษาไทยซึ่งอาจไม่มีช่องว่าง</li>
+<li>การ wrap ภาษาอังกฤษ ตัวเลข สกุลเงิน และ emoji</li>
+<li>การตั้งค่า system font ขนาดใหญ่</li>
+<li>การ crop ภาพแบบ cover และการมองเห็น CTA</li>
+</ul>
+<p>official LINE clients อาจ render Flex เดียวกันต่างกันตาม OS, LINE version, resolution, language และ font จึงต้องทดสอบบน client จริงก่อน controlled delivery</p>
+<h2>7. คัดลอกและดาวน์โหลด JSON</h2>
+<p>แผง JSON คือ Flex payload ที่สร้างอยู่ในขณะนั้น ตัวชี้วัด byte วัด bubble definition:</p>
+<ul>
+<li>ไม่เกิน 24 KB: อยู่ใน MONOLITH soft budget</li>
+<li>เกิน 24 KB ถึง 30 KB: เขต warning ควรลดความซับซ้อนก่อน release</li>
+<li>เกิน 30 KB: เป็น LINE hard-limit <code>error</code> และ block export</li>
+</ul>
+<p>ระบบปิด <code>Copy JSON</code>, <code>Download JSON</code> และ <code>Run Journey</code> เมื่อพบ blocking <code>error</code> เพื่อ block draft ที่ทราบว่า invalid/unsafe จาก handoff ส่วน warning และ guidance ยังแสดงเพื่อการพิจารณา หลังคัดลอกหรือดาวน์โหลด ให้ถือไฟล์เป็น untrusted input ของ controlled integration; authority ในการส่งต้องมาจาก integration ที่ผ่านการควบคุม</p>
+<p>Action URI และ Hero export URL ของ v1 ใช้ <code>example.com</code> demo placeholders Controlled server integration ต้อง resolve LIFF/media URL ที่อนุมัติและแยกตาม environment ห้ามส่ง standalone export ให้ลูกค้าโดยตรง</p>
+<h2>8. อ่านผล Validation</h2>
+<div class="tablewrap"><table><thead><tr><th>Severity</th><th>ความหมาย</th><th>การตอบสนองที่ต้องทำ</th></tr></thead><tbody>
+<tr><td><code>error</code></td><td>ขัดข้อบังคับ LINE หรือขอบเขตความปลอดภัย MONOLITH</td><td>แก้ก่อน export หรือ Mock LIFF ปุ่ม Fix จะพาไปยัง field</td></tr>
+<tr><td><code>warning</code></td><td>เกิน budget ด้าน usability/safety หรือจำเป็นต้องตัดสินใจโดยเจตนา</td><td>บันทึกเหตุผลและโดยปกติควรแก้ก่อน release</td></tr>
+<tr><td><code>guidance</code></td><td>เตือนเรื่อง preview substitute หรือ production control ในอนาคต</td><td>ยืนยัน owner และ evidence ของ downstream production</td></tr>
+</tbody></table></div>
+<p>Source classifications:</p>
+<ul>
+<li><code>official_constraint</code> ลิงก์ไปเอกสาร LINE Developers ปัจจุบัน</li>
+<li><code>monolith_best_practice</code> ลิงก์ไป approved MONOLITH design specification</li>
+</ul>
+<p>ลิงก์ source รองรับกติกา แต่ไม่รับรอง draft ปัจจุบันหรือ production deployment</p>
+<h2>9. ซ้อม Mock LIFF แบบ exact-action review</h2>
+<ol>
+<li>แก้ blocking errors ทั้งหมด</li>
+<li>เลือก <code>design-approval</code> โดยไม่เชื่อม LIFF จริง; ขั้นตอน standalone นี้จบด้วย <strong>Verification Receipt — Demo</strong></li>
+<li>เลือก <strong>Run Journey</strong></li>
+<li>ใน <strong>PRIVATE REVIEW — DEMO</strong> ให้เทียบ tenant, recipient, project, revision, canonical action, consequence, action mode และ expiry กับการ์ด</li>
+<li>หากค่าใดผิดให้ Cancel หากตรงทั้งหมดให้เลือก <strong>Confirm demo intent</strong> หนึ่งครั้ง</li>
+<li>หาก bound field เปลี่ยน รายการหมดอายุ มี tampering หรือ transaction ไม่ตรงกัน ระบบจะ fail closed และต้องเริ่ม review ใหม่</li>
+</ol>
+<p>บริการจริงเริ่มด้วย <code>liff.init()</code> และใช้ <code>liff.login()</code> เมื่อ documented external/in-app-browser path ต้อง login จากนั้นส่ง <strong>raw <code>liff.getIDToken()</code> ID token or access token</strong> ไป server ผ่าน HTTPS แล้ว <strong>verify using LINE's documented server flow</strong> ก่อน map verified LINE subject กับ stored MONOLITH principal ข้อจำกัดสำคัญคือ <strong>Direct LINE Login authorization requests inside the LIFF browser are not guaranteed</strong> จึงต้องใช้ supported LIFF login path แทนการสร้าง direct authorization request ภายใน LIFF</p>
+<p>แยก identity, routing, authorization correlation และ business transaction authority ดังนี้:</p>
+<div class="tablewrap"><table><thead><tr><th>Concept</th><th>Meaning and required handling</th></tr></thead><tbody>
+<tr><td>MONOLITH transaction reference</td><td>opaque reference แบบ server-created, server-stored, high-entropy พร้อม CSRF/session binding; bind tenant, principal/audience, resource, revision, action, expiry และ exact return target; one-time consumed แบบ atomic และไม่ใช่ ID-token nonce</td></tr>
+<tr><td>LINE-managed liff.state</td><td>ข้อมูลเพิ่มเติมของ LIFF URL ที่ LINE ส่งต่อ เป็น untrusted routing input; not OAuth state, not permission และ not the MONOLITH transaction reference ให้ประมวลผล routing หลัง <code>liff.init()</code> resolve แล้วเท่านั้น</td></tr>
+<tr><td>OAuth state</td><td>CSRF correlation สำหรับ separate supported authorization flow; flow นั้นสร้างและเก็บเอง; not liff.state และไม่ใช่ business permission</td></tr>
+<tr><td>OIDC nonce</td><td>ID-token replay/correlation input; compare only when a separate supported authorization flow lets MONOLITH supply it และ LINE คืน ID-token claim</td></tr>
+</tbody></table></div>
+<p>หลัง verify identity แล้ว server ต้องโหลด authoritative revision และ permission ใหม่ bind exact-action review กับ MONOLITH transaction reference ใช้ MONOLITH step-up สำหรับ consequential action consume reference พร้อม command result แบบ atomic และเขียน immutable audit evidence ส่วน forwarded URL และ <code>liff.state</code> เสนอ routing ได้เท่านั้น ไม่ให้ permission และไม่เลือก authoritative tenant/resource/revision/action values</p>
+<h2>10. ตีความ Verification Receipt — Demo</h2>
+<p>Receipt แบบ demo ผูก generated transaction ID กับ demo tenant, recipient, revision, canonical action, outcome และเวลา confirmation แล้วแสดง local digest พร้อมแถบ <code>DEMO — NOT A PRODUCTION SIGNATURE</code></p>
+<p>Receipt นี้พิสูจน์เพียงว่า browser demo ปัจจุบันเดินผ่าน exact-value path ในเครื่อง ไม่ใช่ LINE delivery receipt, human identity proof, legal signature, MONOLITH audit record หรือ authorization decision ส่วน Signed Receipt จริงต้องใช้ Trust Kernel, authoritative server records, approved signer/key management, one-time transaction consumption และ durable audit</p>
+<h2>11. ใช้งานด้วยคีย์บอร์ด</h2>
+<ul>
+<li>ใช้ <code>Tab</code> และ <code>Shift+Tab</code> ไปยัง control; กด <code>Enter</code> หรือ <code>Space</code> เพื่อใช้ปุ่ม</li>
+<li>บนแท็บ Header/Hero/Body/Footer ใช้ <code>ArrowLeft</code>, <code>ArrowRight</code>, <code>Home</code>, <code>End</code></li>
+<li>บนแท็บ Editor/Preview/JSON ในจอแคบ ใช้ปุ่มเดียวกัน</li>
+<li>ใช้ skip link เพื่อข้ามไปพื้นที่ทำงาน</li>
+<li>native dialog จะกัก focus ระหว่างเปิด ใช้ Cancel หรือ <code>Escape</code> ออกจาก review แล้ว focus กลับ Run Journey</li>
+<li>ไม่ใช้ CTA ใน preview โดยตรง เพราะตั้งใจถอดออกจากลำดับ focus; Run Journey คือ controlled demo trigger</li>
+</ul>
+<h2>12. ล้าง demo state</h2>
+<ul>
+<li>เลือก <strong>Reset</strong> เพื่อคืน current preset ระบบถามยืนยันเมื่อ draft ต่างจาก baseline เท่านั้น</li>
+<li>เปลี่ยน preset หรือ TH/EN เพื่อ rebuild draft และล้าง in-page transaction/receipt</li>
+<li>Reload หน้าเพื่อล้าง current-page memory; v1 Studio ไม่เก็บ draft แบบ persistence</li>
+<li>ลบไฟล์ JSON ที่ดาวน์โหลดเมื่อเลิกใช้ตามกติกา document retention ขององค์กร</li>
+</ul>
+<h2>13. แก้ปัญหา</h2>
+<div class="tablewrap"><table><thead><tr><th>อาการ</th><th>ตรวจอะไร</th><th>การตอบสนองที่ปลอดภัย</th></tr></thead><tbody>
+<tr><td>Preview ว่าง</td><td>static server ทำงานหรือไม่ และเปิดผ่าน localhost แทน raw file หรือไม่</td><td>Reload จาก localhost; เปิด browser console เฉพาะ development environment</td></tr>
+<tr><td>Hero เสีย</td><td>local preview กับ exported URL เป็นคนละค่า ตรวจ <code>LineOS/assets/line-flex-studio/</code> และ Hero HTTPS URL</td><td>Restore preset; production ในอนาคตต้อง publish HTTPS JPEG/PNG ที่ถูกต้องแล้วทดสอบใหม่</td></tr>
+<tr><td>Invalid URL</td><td>Hero export URL ต้องเริ่ม HTTPS และอยู่ในขีดจำกัด URL</td><td>แก้ Hero field ห้ามใช้ <code>data:</code>, base64 หรือ URL ที่มี secret</td></tr>
+<tr><td>Payload เกิน budget</td><td>byte status warning เมื่อเกิน 24 KB และ error เมื่อเกิน 30 KB</td><td>ลดข้อความ/โครงสร้างตกแต่งแล้วทดสอบใหม่ ห้าม bypass block</td></tr>
+<tr><td>Clipboard denial</td><td>browser policy หรือ permission ปฏิเสธ clipboard</td><td>เลือก JSON ที่เห็นและ copy เอง หรือ Download JSON หลัง validation ห้ามลด browser security</td></tr>
+<tr><td>Journey ไม่เปิด</td><td>มี blocking validation หรือขาด Web Crypto/dialog APIs</td><td>แก้ error หรือใช้ browser ปัจจุบัน อาการนี้ไม่ใช่หลักฐานว่า LIFF จริงเสีย</td></tr>
+</tbody></table></div>
+<h2>14. ข้อสรุปหลังตรวจ</h2>
+<p>หลังซ้อมสำเร็จ ให้บันทึก preset, language, ความกว้างที่ตรวจ, การจัดการ findings และ demo receipt digest ไว้ใน review note ข้อสรุปที่ถูกต้องยังคงเป็น: <strong>no message was sent และ no business state changed</strong> ห้ามเปิด live customer delivery จน MONOLITH Trust P0 gates ผ่านด้วย fresh evidence</p>
+<h2>แหล่งข้อมูลทางการ</h2>
+<p>Retrieved 2026-08-02:</p>
+<ul>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/using-flex-messages/" target="_blank" rel="noopener">Send Flex Messages และความต่างของ rendering</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/using-flex-message-simulator/" target="_blank" rel="noopener">Flex Message Simulator tutorial</a></li>
+<li><a href="https://developers.line.biz/en/reference/messaging-api/nojs/" target="_blank" rel="noopener">Messaging API reference</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/actions/" target="_blank" rel="noopener">Messaging API actions</a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/registering-liff-apps/" target="_blank" rel="noopener">Adding a LIFF app</a></li>
+<li><a href="https://developers.line.biz/en/reference/liff/" target="_blank" rel="noopener">LIFF API reference: initialization และ login</a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/developing-liff-apps/" target="_blank" rel="noopener">Developing a LIFF app</a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/opening-liff-app/" target="_blank" rel="noopener">Opening a LIFF app และ <code>liff.state</code></a></li>
+<li><a href="https://developers.line.biz/en/reference/line-login/" target="_blank" rel="noopener">LINE Login API reference: server token verification</a></li>
+</ul>
+</main></body>
+</html>

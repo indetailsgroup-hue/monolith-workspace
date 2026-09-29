@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>MONOLITH LINE Flex Studio Design</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1>MONOLITH LINE Flex Studio Design</h1>
+<ul>
+<li><strong>Edition:</strong> English</li>
+<li><strong>Date:</strong> 1 August 2026</li>
+<li><strong>Status:</strong> Interactive design approved; written-spec review pending</li>
+<li><strong>Delivery location:</strong> parent governance/bootstrap repository, under <strong>LineOS/</strong></li>
+<li><strong>Product repository:</strong> separate nested repository <strong>determined-williams/</strong>; no product-runtime change is authorized by this design</li>
+<li><strong>Chosen approach:</strong> Production-shaped Standalone Studio</li>
+<li><strong>Primary journey:</strong> Design ready for approval → private LIFF-style review → explicit confirmation → Verification Receipt — Demo</li>
+</ul>
+<h2>1. Executive decision</h2>
+<p>MONOLITH will demonstrate LINE as a Human Surface through a standalone, browser-based Flex Message authoring and decision simulator. The simulator will be useful for executive review, customer-experience design, training, JSON inspection, and future implementation planning without connecting to LINE, Supabase, production credentials, or live customer delivery.</p>
+<p>The design has two simultaneous goals:</p>
+<ol>
+<li>create a warm, premium, high-conversion experience that customers and staff understand immediately; and</li>
+<li>make the trust boundary visible: a Flex tap is not business approval, LINE is not the system of record, and consequential actions require identity-bound review through LIFF and the MONOLITH Trust Kernel in production.</li>
+</ol>
+<p>Broader customer messaging remains <strong>NO-GO</strong> until the existing Trust Foundation P0 gates have complete, fresh evidence.</p>
+<h2>2. Repository and evidence baseline</h2>
+<p>MONOLITH is a two-root system.</p>
+<div class="tablewrap"><table><thead><tr><th>Root</th><th>Verified role for this design</th><th>Consequence</th></tr></thead><tbody>
+<tr><td>Parent <strong>C:\Users\thai3\determined-williams (2)</strong></td><td>Governance/bootstrap, research, existing LineOS HTML mock-ups and visual artifacts</td><td>The new standalone prototype and project-facing documents belong under <strong>LineOS/</strong>.</td></tr>
+<tr><td>Nested <strong>C:\Users\thai3\determined-williams (2)\determined-williams</strong></td><td>Active product source with LINE webhook, outbound sender, Flex template support, migrations, tests, workflow and approved Trust Foundation design</td><td>Existing implementation is evidence and a future integration target. It is not modified by this design and does not prove deployment or production readiness.</td></tr>
+</tbody></table></div>
+<p>This baseline follows <strong>CONTEXT.md</strong> and the mandatory 21 July 2026 repository-scope correction. Both Git roots were inspected separately. Both contained pre-existing changes; those changes remain outside scope.</p>
+<p>The <strong>LineOS/</strong> inventory includes role-based HTML mock-ups, multiple archived variants, a LINE OA/LIFF masterclass, a Coohom research artifact, a Flex block diagram, and North Star approval-flow diagrams. It does not currently contain a working real-time Flex editor, generated JSON validator, Mock LIFF journey, or receipt simulator.</p>
+<p>The nested product includes:</p>
+<ul>
+<li>a template composition model and Flex-capable outbound sender;</li>
+<li>LINE OA webhook, identity, order, group, customer-document and approval migrations;</li>
+<li>LINE OA commerce test suites;</li>
+<li>an approved Trust Foundation design and six-wave program plan.</li>
+</ul>
+<p>Source presence is not deployment evidence. This design therefore uses the nested source as a production-shaped reference, not as a live dependency.</p>
+<h2>3. Research basis and evidence labels</h2>
+<p>Three Perplexity Deep Research tracks were completed on 1 August 2026:</p>
+<ol>
+<li>LINE Messaging API, Flex Message, LIFF, Developer Console, performance and security;</li>
+<li>Trust Kernel, tenant isolation, step-up, inbox/outbox reliability, audit, privacy and human factors;</li>
+<li>interior-design-to-installation product completeness, roles, cabinet/millwork variability, tools, service design and ethical adoption.</li>
+</ol>
+<p>The implementation report must separate:</p>
+<ul>
+<li><strong>Official constraint:</strong> stated by LINE, a standard, a regulator, or another primary authority;</li>
+<li><strong>Verified local fact:</strong> observed in one named Git root and file;</li>
+<li><strong>Research evidence:</strong> peer-reviewed or authoritative published evidence;</li>
+<li><strong>Inference:</strong> a conclusion derived from facts;</li>
+<li><strong>MONOLITH best practice:</strong> a proposed operating rule;</li>
+<li><strong>Unknown:</strong> not established by current evidence.</li>
+</ul>
+<p>No vendor maximum, regional cabinet dimension, or research recommendation becomes canonical product truth without provenance and tenant/project configuration.</p>
+<h2>4. Approved owner decisions</h2>
+<div class="tablewrap"><table><thead><tr><th>Decision</th><th>Approved outcome</th></tr></thead><tbody>
+<tr><td>Primary story</td><td>Design ready for approval → review revision → confirm → receive evidence receipt</td></tr>
+<tr><td>Visual direction</td><td>Trust Concierge: warm, premium and credible</td></tr>
+<tr><td>Customer-facing brand hierarchy</td><td>Tenant-first with a subtle <strong>Secured by MONOLITH</strong> trust mark</td></tr>
+<tr><td>Internal platform hierarchy</td><td>MONOLITH-first with explicit tenant context</td></tr>
+<tr><td>Simulator layout</td><td>Studio Console: editor, phone preview and JSON/validation visible together</td></tr>
+<tr><td>Delivery boundary</td><td>Standalone browser demo; no live LINE or Supabase integration</td></tr>
+<tr><td>Presets</td><td>Five: design approval, quote/order, SLA escalation, curated site update, issue/evidence</td></tr>
+<tr><td>Receipt integrity</td><td><strong>Verification Receipt — Demo</strong> with digest; no false production-signature claim</td></tr>
+<tr><td>Implementation approach</td><td>Production-shaped standalone modules, not a story-only showroom and not a sandbox integration</td></tr>
+<tr><td>Language</td><td>Thai and English user interface and documents</td></tr>
+</tbody></table></div>
+<h2>5. Objectives</h2>
+<p>The first implementation must:</p>
+<ol>
+<li>let a user edit Header, Hero, Body and Footer content;</li>
+<li>update a LINE-like phone preview, generated JSON and validation results in real time;</li>
+<li>make five approved presets available without sharing mutable state between them;</li>
+<li>teach the correct boundary between Flex actions, LIFF review and MONOLITH business authority;</li>
+<li>simulate an exact-action approval journey and create a clearly labelled demo receipt;</li>
+<li>expose errors, warnings and guidance with bilingual remediation;</li>
+<li>provide copy, download and reset functions without a network dependency;</li>
+<li>work at desktop, tablet and mobile widths;</li>
+<li>support keyboard navigation and readable Thai/English text;</li>
+<li>provide board-grade bilingual research, installation and decision documentation.</li>
+</ol>
+<h2>6. Non-goals</h2>
+<p>The first implementation will not:</p>
+<ul>
+<li>send a real LINE message;</li>
+<li>create or modify a LINE Official Account, provider, channel or LIFF app;</li>
+<li>use a channel access token, channel secret, service-role key or production credential;</li>
+<li>call Supabase, LINE APIs, a CDN, analytics or any external endpoint;</li>
+<li>authenticate a real LINE user;</li>
+<li>cryptographically sign a production receipt with a governed private key;</li>
+<li>claim full Messaging API conformance merely because the local validator passes;</li>
+<li>replace the official LINE Flex Message Simulator or real-device testing;</li>
+<li>edit raw JSON directly;</li>
+<li>make LINE the system of record, authorization service or internal chat product;</li>
+<li>define one universal cabinet-size standard;</li>
+<li>modify the nested active product repository.</li>
+</ul>
+<h2>7. Architecture and safety boundary</h2>
+<h3>7.1 Browser-only authoring path</h3>
+<p>The authoring path is:</p>
+<p><strong>Preset Gallery / Block Editor → canonical FlexDraft → Phone Preview + JSON Builder + Validator</strong></p>
+<p>All three outputs read from one immutable draft snapshot. No output maintains independent business state. Changing tenant, recipient, revision, action or expiry updates every derived surface.</p>
+<h3>7.2 Simulated consequential-action path</h3>
+<p>The approval path is:</p>
+<p><strong>Flex URI action → demo action router → Mock LIFF review → explicit confirmation → Verification Receipt — Demo</strong></p>
+<p>The demo action router binds:</p>
+<ul>
+<li>tenant identity;</li>
+<li>audience and recipient;</li>
+<li>project/resource reference;</li>
+<li>revision;</li>
+<li>canonical action;</li>
+<li>payload digest input;</li>
+<li>created time and expiry;</li>
+<li>correlation identifier.</li>
+</ul>
+<p>The Mock LIFF screen shows the exact consequence and refuses confirmation if required bound values are missing, expired, or inconsistent. The simulator then creates a deterministic evidence receipt. This is a teaching and review mechanism, not a production authorization ceremony.</p>
+<h3>7.3 Future production boundary</h3>
+<p>The documented but disconnected future path is:</p>
+<p><strong>Unified ingress → tenant/resource/principal resolution → Trust Kernel decision → domain command → decision audit + business state + atomic outbox → LINE delivery worker</strong></p>
+<p>The production Trust Kernel returns <strong>PERMIT</strong>, <strong>DENY</strong>, <strong>STEP_UP</strong>, or <strong>QUARANTINE</strong>. The standalone simulator never pretends to execute that path.</p>
+<h3>7.4 Non-bypass invariants</h3>
+<ol>
+<li>A Flex tap never equals business approval.</li>
+<li>A high-risk action always opens LIFF-style review in the simulator and requires Trust Kernel step-up in production.</li>
+<li>Tenant identity is explicit in draft, intent and receipt even when the visible customer-facing brand is tenant-first.</li>
+<li>Quarantined group evidence cannot change workflow state.</li>
+<li>Generated JSON contains no secret, bearer token, raw personal-data master or authoritative business state.</li>
+<li>Price, dimensions, revision and status shown in presets are demo data until read from MONOLITH in a future authorized integration.</li>
+</ol>
+<h2>8. User experience architecture</h2>
+<h3>8.1 Desktop Studio Console</h3>
+<p>The desktop layout has three persistent areas:</p>
+<ol>
+<li><strong>Left:</strong> tenant/language context, preset gallery, block selector and block field controls;</li>
+<li><strong>Center:</strong> LINE-like phone preview and Run Journey control;</li>
+<li><strong>Right:</strong> generated JSON, copy/download controls and validation summary.</li>
+</ol>
+<p>The header exposes MONOLITH platform identity, current tenant, language and help. Customer-facing previews use tenant-first branding.</p>
+<h3>8.2 Tablet and mobile</h3>
+<p>At narrower widths, the three areas become tabs:</p>
+<ul>
+<li>Editor;</li>
+<li>Preview;</li>
+<li>JSON &amp; Validation.</li>
+</ul>
+<p>Tab changes preserve the same FlexDraft. No information or validation state is discarded. The primary action remains reachable by keyboard and does not depend on hover.</p>
+<h3>8.3 Trust Concierge visual system</h3>
+<p>The visual system uses:</p>
+<ul>
+<li>warm neutrals for project imagery and hospitality;</li>
+<li>MONOLITH green for trust, primary action and verified state;</li>
+<li>restrained gold for deadlines or attention;</li>
+<li>generous spacing, rounded surfaces and plain-language labels;</li>
+<li>one visually dominant CTA;</li>
+<li>explicit revision, sender, expiry and private-link cues;</li>
+<li>tenant logo/name as the customer-facing lead;</li>
+<li>subtle <strong>Secured by MONOLITH</strong> trust mark.</li>
+</ul>
+<p>Motion is optional, brief and disabled by reduced-motion preference. Approval messages do not use celebratory animation before confirmation.</p>
+<h2>9. Canonical draft and derived records</h2>
+<h3>9.1 FlexDraft</h3>
+<div class="tablewrap"><table><thead><tr><th>Group</th><th>Required fields</th></tr></thead><tbody>
+<tr><td>Context</td><td>draft version, preset ID, tenant ID/name, audience, language, demo status</td></tr>
+<tr><td>Header</td><td>eyebrow, title, tenant mark, status label</td></tr>
+<tr><td>Hero</td><td>local preview asset ID, exported HTTPS URL placeholder, aspect ratio, aspect mode, accessible description</td></tr>
+<tr><td>Body</td><td>project, resource, revision, requester, amount/scope, deadline, summary and trust note</td></tr>
+<tr><td>Footer</td><td>primary label, secondary label when permitted, action intents</td></tr>
+<tr><td>Intent</td><td>canonical action, risk tier, target mode, target reference, expiry</td></tr>
+<tr><td>Evidence</td><td>correlation ID, created time, recipient reference and digest input</td></tr>
+</tbody></table></div>
+<p>The draft model contains domain-neutral fields sufficient for the five presets. It does not become a generic workflow engine.</p>
+<h3>9.2 Generated Flex JSON</h3>
+<p>The JSON Builder produces a LINE Flex message envelope with required alternative text and one bubble containing Header, Hero, Body and Footer in canonical order.</p>
+<p>The first version supports one bubble. Carousel authoring, video, rich text spans, raw JSON import and arbitrary component nesting remain out of scope. The validator may teach carousel/video constraints but the editor does not create them.</p>
+<h3>9.3 Demo transaction</h3>
+<p>The demo transaction is generated when Run Journey is selected. It contains the exact intent and a snapshot digest input. Changing a bound value invalidates the prior transaction and receipt.</p>
+<h3>9.4 Verification Receipt — Demo</h3>
+<p>The receipt shows:</p>
+<ul>
+<li>an unmistakable <strong>DEMO — NOT A PRODUCTION SIGNATURE</strong> label;</li>
+<li>tenant and customer-facing provider;</li>
+<li>recipient reference;</li>
+<li>project/resource and revision;</li>
+<li>canonical action and outcome;</li>
+<li>created and confirmed timestamps;</li>
+<li>correlation identifier;</li>
+<li>SHA-256 integrity digest of canonical demo fields;</li>
+<li>statement that production signing and audit require the MONOLITH Trust Kernel.</li>
+</ul>
+<p>The digest demonstrates change detection. It is not described as non-repudiation, legal signature, immutable archive or production attestation.</p>
+<h2>10. Five preset contracts</h2>
+<div class="tablewrap"><table><thead><tr><th>Preset</th><th>LINE surface</th><th>Flex responsibility</th><th>Mock LIFF / MONOLITH responsibility</th><th>Prohibited shortcut</th></tr></thead><tbody>
+<tr><td>Design Approval</td><td>OA 1:1 or personal push</td><td>Summarize revision, consequence, sender and deadline; URI opens review</td><td>Bind recipient/tenant/revision/expiry; explicit confirmation; receipt</td><td>One-tap postback approval</td></tr>
+<tr><td>Quote / Structured Order</td><td>OA 1:1</td><td>Summarize price and terms; URI opens review; optional message action requests human contact</td><td>Select options, confirm order party and delivery details, create structured intent</td><td>Treating free text as an order</td></tr>
+<tr><td>SLA Escalation</td><td>Personal push</td><td>Postback may acknowledge low-risk receipt; URI opens authoritative work item</td><td>Show owner, SLA clock, delegation and exact action; step-up high-risk decisions</td><td>Treating acknowledgement as approval or workflow transition</td></tr>
+<tr><td>Curated Site Update</td><td>Customer group</td><td>Show human-curated progress; optional URI opens curated gallery</td><td>Enforce audience policy and approved evidence set</td><td>Automatically forwarding internal photos</td></tr>
+<tr><td>Issue / Evidence</td><td>Internal group</td><td>Postback may acknowledge receipt; URI opens review queue</td><td>Store provenance; unknown actor evidence enters quarantine; human promotes or rejects</td><td>Letting quarantined evidence change business state</td></tr>
+</tbody></table></div>
+<h2>11. Flex action versus LIFF decision rule</h2>
+<div class="tablewrap"><table><thead><tr><th>Condition</th><th>Selected action</th></tr></thead><tbody>
+<tr><td>The intended result is visible conversational text</td><td>Message action</td></tr>
+<tr><td>The choice is low-risk, reversible and fully reauthorized server-side</td><td>Postback action with an opaque intent reference</td></tr>
+<tr><td>The destination is read-only content, a normal website or telephone link</td><td>URI action</td></tr>
+<tr><td>The task needs identity, sensitive details, form input, comparison, accessibility, confirmation or policy explanation</td><td>URI action opening LIFF</td></tr>
+<tr><td>The action changes money, access, scope, revision, release, policy or other difficult-to-reverse state</td><td>LIFF plus production Trust Kernel step-up</td></tr>
+</tbody></table></div>
+<p>LIFF is not a separate Messaging API action type. A Flex button opens LIFF through a URI action. Postback data never carries an authoritative tenant, role, amount or approval truth; production MONOLITH must resolve and reauthorize current state.</p>
+<h2>12. Validation contract</h2>
+<h3>12.1 Rule metadata</h3>
+<p>Every validation rule contains:</p>
+<ul>
+<li>stable rule ID;</li>
+<li>severity;</li>
+<li>affected block and field;</li>
+<li>Thai and English title, explanation and remediation;</li>
+<li>classification as official constraint or MONOLITH best practice;</li>
+<li>primary source URL where applicable;</li>
+<li>last-verified date;</li>
+<li>optional client/version note.</li>
+</ul>
+<h3>12.2 Severity behavior</h3>
+<div class="tablewrap"><table><thead><tr><th>Severity</th><th>Meaning</th><th>UI behavior</th></tr></thead><tbody>
+<tr><td>Error</td><td>Generated message cannot meet the supported subset or a required safety field is absent</td><td>Highlight field/block; preserve input; disable JSON export and Run Journey</td></tr>
+<tr><td>Warning</td><td>Message may render poorly, exceed a MONOLITH soft budget, confuse intent or use an unsafe action pattern</td><td>Allow export with visible warning count; provide exact remediation</td></tr>
+<tr><td>Guidance</td><td>Education, official-simulator step, real-device check or production-boundary reminder</td><td>Non-blocking, source-linked explanation</td></tr>
+</tbody></table></div>
+<h3>12.3 Supported official constraints</h3>
+<p>The initial registry covers at least:</p>
+<ul>
+<li>required Flex message type, alternative text and contents;</li>
+<li>one bubble with blocks in Header → Hero → Body → Footer order;</li>
+<li>alternative-text maximum of 1,500 characters;</li>
+<li>one-bubble definition size ceiling of 30 KB;</li>
+<li>HTTPS image URL, supported format and declared aspect behavior;</li>
+<li>image URL maximum 2,000 characters, image maximum 1024×1024 pixels and 10 MB as acceptance ceilings;</li>
+<li>button action and button-label requirements;</li>
+<li>Postback and Message data/text limits of 300 characters;</li>
+<li>URI limit of 1,000 characters;</li>
+<li>known feature/version notes where relevant.</li>
+</ul>
+<p>Official acceptance ceilings are not performance targets.</p>
+<h3>12.4 MONOLITH best-practice warnings</h3>
+<p>The initial best-practice registry covers:</p>
+<ul>
+<li>more than one dominant CTA;</li>
+<li>high-risk postback;</li>
+<li>transaction-critical facts only in an image;</li>
+<li>fixed-height text containers;</li>
+<li>excessive copy, likely Thai/English wrapping and unbounded names;</li>
+<li>low contrast or missing textual equivalents;</li>
+<li>unknown image ratio/cropping risk;</li>
+<li>external URL host not approved for a future production allowlist;</li>
+<li>missing deadline, revision, sender, audience or consequence;</li>
+<li>unlabelled demo/prod boundary.</li>
+</ul>
+<h2>13. Performance and rendering contract</h2>
+<ol>
+<li>The prototype ships with local visual assets and makes no external request.</li>
+<li>User-entered HTTPS image URLs appear in JSON but are not fetched in the first version; preview uses a local placeholder and identifies the exported URL separately.</li>
+<li>Base64 images are never embedded in generated Flex JSON.</li>
+<li>Generated bubble JSON is measured in UTF-8 bytes and compared with the official 30 KB ceiling.</li>
+<li>The UI warns before the ceiling using a MONOLITH soft budget of 24 KB.</li>
+<li>Preview widths include 320, 360 and 390 pixels, plus desktop canvas scaling.</li>
+<li>Tests include Thai, English, long names, emoji, currency, dates and explicit line wrapping.</li>
+<li>Layouts remain shallow and avoid pixel-perfect assumptions across LINE clients.</li>
+<li>Image and video official maxima are documented as ceilings; the guide recommends substantially smaller optimized media.</li>
+<li>The simulator remains usable without an image.</li>
+<li>Reduced-motion preference removes non-essential animation.</li>
+<li>The standalone application contains no analytics, remote fonts or third-party runtime library.</li>
+</ol>
+<h2>14. Error and state handling</h2>
+<ul>
+<li>Invalid fields never delete or reset unrelated user input.</li>
+<li>Validation focuses the exact field and block.</li>
+<li>Preset switching creates a fresh draft snapshot; it never mutates the source preset.</li>
+<li>Reset requires confirmation only when the draft differs from its preset.</li>
+<li>Copy and download report explicit success or failure.</li>
+<li>Run Journey is disabled while blocking errors exist.</li>
+<li>Expired or inconsistent demo transactions fail closed and explain which bound value changed.</li>
+<li>A broken or absent hero uses a local fallback without layout collapse.</li>
+<li>Receipt generation never displays a production-success claim.</li>
+<li>The application survives refresh through optional local draft storage, but approval correctness never depends on storage. Clear Draft removes local demo data.</li>
+</ul>
+<h2>15. Accessibility and ethical adoption</h2>
+<p>The prototype targets WCAG 2.2 AA practices appropriate to a standalone demonstration:</p>
+<ul>
+<li>semantic headings, labels, buttons, tables and dialogs;</li>
+<li>complete keyboard operation and visible focus;</li>
+<li>no color-only state;</li>
+<li>readable contrast and scalable text;</li>
+<li>bilingual alternative text and validation;</li>
+<li>reduced motion;</li>
+<li>error summary and field-level association;</li>
+<li>plain-language consequence before confirmation.</li>
+</ul>
+<p>The service-design guidance prohibits coercive retention, false urgency, preselected consent, hidden refusal, notification spam and success animation before business confirmation. Retention should come from reduced rework, faster decisions, transparency, quiet hours, consent, portability, human support and excellent service recovery.</p>
+<h2>16. Documentation design</h2>
+<p>Project-facing documents will be produced in English and Thai, each as Markdown and standalone HTML.</p>
+<div class="tablewrap"><table><thead><tr><th>Deliverable</th><th>Required coverage</th></tr></thead><tbody>
+<tr><td>Executive Deep Research Report</td><td>Three LINE tracks, P0–P3 gaps, threat model, product/domain matrix, role scorecard, ethical adoption, roadmap, KPI hypotheses and board go/no-go</td></tr>
+<tr><td>Flex Studio User Guide</td><td>Presets, editing, preview, validation, copy/download, Mock LIFF and receipt</td></tr>
+<tr><td>Developer Console Installation Guide</td><td>OA/provider/channel/LIFF setup, endpoint/scopes/webhook configuration, validation, test and rollback steps</td></tr>
+<tr><td>Flex Action vs LIFF Guide</td><td>Decision matrix, examples, risk tier and anti-patterns</td></tr>
+<tr><td>Performance and Rendering Checklist</td><td>Payload, media, layout, Thai/English, device/version, accessibility and failure testing</td></tr>
+<tr><td>Design and Implementation Records</td><td>This approved spec, implementation plan, verification report and residual-risk statement</td></tr>
+</tbody></table></div>
+<p>The installation guide must identify the observed LINE console/document date because interfaces and terminology can change. It will use official LINE sources for technical instructions.</p>
+<h2>17. Planned file boundary</h2>
+<p>The implementation plan may create files only under <strong>LineOS/</strong> unless a later owner decision expands scope.</p>
+<div class="tablewrap"><table><thead><tr><th>Planned file</th><th>Responsibility</th></tr></thead><tbody>
+<tr><td><strong>LineOS/line-flex-studio.html</strong></td><td>Semantic application shell and dialogs</td></tr>
+<tr><td><strong>LineOS/line-flex-studio.css</strong></td><td>Trust Concierge tokens, layout, responsive and print styles</td></tr>
+<tr><td><strong>LineOS/line-flex-studio.mjs</strong></td><td>UI controller and event wiring</td></tr>
+<tr><td><strong>LineOS/line-flex-model.mjs</strong></td><td>Draft creation, immutable updates and canonicalization</td></tr>
+<tr><td><strong>LineOS/line-flex-presets.mjs</strong></td><td>Five immutable bilingual preset definitions</td></tr>
+<tr><td><strong>LineOS/line-flex-json.mjs</strong></td><td>Supported-subset Flex JSON generation and byte measurement</td></tr>
+<tr><td><strong>LineOS/line-flex-validator.mjs</strong></td><td>Source-labelled validation registry and evaluation</td></tr>
+<tr><td><strong>LineOS/line-flex-actions.mjs</strong></td><td>Action-risk selection and demo transaction binding</td></tr>
+<tr><td><strong>LineOS/line-flex-receipt.mjs</strong></td><td>Canonical receipt input and SHA-256 digest</td></tr>
+<tr><td><strong>LineOS/assets/line-flex-studio/</strong></td><td>Local demo visuals and icons</td></tr>
+<tr><td><strong>LineOS/tests/*.test.mjs</strong></td><td>Node built-in unit tests</td></tr>
+<tr><td><strong>LineOS/docs/</strong></td><td>Bilingual research, guides, design, plan and reports</td></tr>
+</tbody></table></div>
+<p>No file in the nested product repository is part of this implementation cycle.</p>
+<h2>18. Verification strategy</h2>
+<h3>18.1 Test-first core behavior</h3>
+<p>Automated tests will be written before production module behavior for:</p>
+<ul>
+<li>immutable preset/draft isolation;</li>
+<li>deterministic JSON;</li>
+<li>required field and byte-limit validation;</li>
+<li>official-constraint versus best-practice classification;</li>
+<li>action selection by intent and risk;</li>
+<li>high-risk postback rejection;</li>
+<li>transaction expiry and bound-value invalidation;</li>
+<li>deterministic receipt digest;</li>
+<li>digest change when tenant, recipient, revision or action changes;</li>
+<li>secret-shaped value rejection where applicable.</li>
+</ul>
+<h3>18.2 Browser verification</h3>
+<p>Browser checks cover:</p>
+<ul>
+<li>all five presets;</li>
+<li>every editable field and block;</li>
+<li>real-time preview/JSON/validation update;</li>
+<li>copy/download/reset;</li>
+<li>Mock LIFF review and explicit confirmation;</li>
+<li>expired and changed-revision failures;</li>
+<li>receipt label and digest;</li>
+<li>keyboard-only navigation;</li>
+<li>1440, 1024, 768, 390, 360 and 320 pixel layouts;</li>
+<li>Thai/English long text, broken hero and reduced motion;</li>
+<li>absence of external network requests.</li>
+</ul>
+<h3>18.3 Documentation verification</h3>
+<p>Checks confirm:</p>
+<ul>
+<li>English/Thai Markdown and HTML pairs exist;</li>
+<li>HTML begins with a doctype, declares the correct language and opens standalone;</li>
+<li>headings, tables, links and code samples render;</li>
+<li>no placeholder, contradictory status, broken internal link or unsupported production claim remains;</li>
+<li>each official technical claim has a primary source.</li>
+</ul>
+<h2>19. Acceptance gates</h2>
+<ol>
+<li>All five presets create deterministic JSON without shared mutable state.</li>
+<li>Editing every block updates preview, JSON and validation immediately.</li>
+<li>High-risk actions always open Mock LIFF; postback is limited to low-risk acknowledgement patterns.</li>
+<li>An invalid draft cannot export or run a journey and receives bilingual field-level remediation.</li>
+<li>A receipt digest changes when tenant, recipient, revision, action or canonical payload changes.</li>
+<li>The application makes no external request and contains no secret or live-send path.</li>
+<li>Keyboard and responsive checks pass at the declared widths.</li>
+<li>Thai/English wrapping, long text, missing media and payload warnings are verified.</li>
+<li>Installation and action guidance separates official LINE constraints from MONOLITH best practices.</li>
+<li>The executive report states <strong>NO-GO</strong> for broader customer messaging until every Trust P0 release gate passes.</li>
+</ol>
+<h2>20. Production expansion gates</h2>
+<p>The prototype does not change the approved Trust Foundation stop rule. Before broader customer messaging or a second live tenant, MONOLITH must prove:</p>
+<ol>
+<li>unambiguous tenant mapping for active LINE/project records;</li>
+<li>unified signature-verified ingress and safe processing leases;</li>
+<li>OAuth/OIDC state and nonce verification;</li>
+<li>action-bound, expiring, one-time step-up;</li>
+<li>group actor authorization and unknown-actor quarantine;</li>
+<li>atomic business state, decision audit and delivery intent;</li>
+<li>outbox concurrency, stable retry, duplicate and unknown-after-send recovery;</li>
+<li>cross-tenant denial, revocation, expiry and non-transitive delegation;</li>
+<li>tamper-evident audit, retention, purge and secret/PII controls;</li>
+<li>second-tenant shadow proof with live delivery blocked;</li>
+<li>backup/restore, monitoring, operator reconciliation and rollback rehearsal;</li>
+<li>no unresolved Critical or High finding in the Trust Foundation scope.</li>
+</ol>
+<h2>21. Primary references</h2>
+<ul>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/flex-message-elements/" target="_blank" rel="noopener">LINE Flex Message elements</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/using-flex-messages/" target="_blank" rel="noopener">Using Flex Messages</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/flex-message-layout/" target="_blank" rel="noopener">Flex Message layout</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/actions/" target="_blank" rel="noopener">Messaging API actions</a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/registering-liff-apps/" target="_blank" rel="noopener">Registering LIFF apps</a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/development-guidelines/" target="_blank" rel="noopener">LIFF development guidelines</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/verify-webhook-signature/" target="_blank" rel="noopener">Verify webhook signature</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/retrying-api-request/" target="_blank" rel="noopener">Retrying API requests</a></li>
+<li><a href="https://openid.net/specs/openid-connect-core-1_0.html" target="_blank" rel="noopener">OpenID Connect Core</a></li>
+<li><a href="https://www.rfc-editor.org/rfc/rfc9700.html" target="_blank" rel="noopener">OAuth 2.0 Security Best Current Practice, RFC 9700</a></li>
+<li><a href="https://csrc.nist.gov/pubs/sp/800/207/final" target="_blank" rel="noopener">NIST SP 800-207 Zero Trust Architecture</a></li>
+<li><a href="https://www.w3.org/TR/WCAG22/" target="_blank" rel="noopener">WCAG 2.2</a></li>
+<li><a href="https://www.mdes.go.th/uploads/tinymce/source/%E0%B8%AA%E0%B8%84%E0%B8%AA/Personal%20Data%20Protection%20Act%202019.pdf" target="_blank" rel="noopener">Thailand Personal Data Protection Act</a></li>
+<li>Local <strong>CONTEXT.md</strong></li>
+<li>Local repository-scope correction dated 21 July 2026</li>
+<li>Nested <strong>docs/superpowers/specs/2026-07-26-line-trust-foundation-design.en.md</strong></li>
+<li>Nested <strong>docs/superpowers/plans/2026-07-26-line-trust-foundation-program.en.md</strong></li>
+</ul>
+<h2>22. Completion definition for the design cycle</h2>
+<p>The design cycle is complete when:</p>
+<ul>
+<li>English and Thai written specs and standalone HTML companions exist;</li>
+<li>the files pass placeholder, consistency, scope and ambiguity review;</li>
+<li>the user approves the written spec;</li>
+<li>a separate bilingual implementation plan is written through the approved planning workflow.</li>
+</ul>
+<p>Implementation has not started merely because this design is approved.</p>
+</main></body>
+</html>

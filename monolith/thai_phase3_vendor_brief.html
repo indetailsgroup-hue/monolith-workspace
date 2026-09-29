@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>S55 Phase 3 RFP & Vendor Selection Framework — MONOLITH/DAPH</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Sarabun', sans-serif;
+    background: #f4f6fa;
+    color: #1a1a2e;
+    font-size: 11.5px;
+    line-height: 1.55;
+  }
+  /* A4 page */
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 12mm auto;
+    background: #fff;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.13);
+    padding: 0;
+    overflow: hidden;
+  }
+  /* Header bar */
+  .header {
+    background: linear-gradient(135deg, #1f2d5a 0%, #2a3f7e 100%);
+    padding: 18px 28px 14px;
+    position: relative;
+  }
+  .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .header-title { color: #fff; font-size: 17px; font-weight: 700; line-height: 1.25; }
+  .header-sub { color: #c9a84c; font-size: 11.5px; font-weight: 600; margin-top: 3px; }
+  .header-meta { color: rgba(255,255,255,0.75); font-size: 10px; text-align: right; line-height: 1.6; }
+  .header-badge {
+    display: inline-block; background: #c9a84c; color: #1f2d5a;
+    font-size: 9.5px; font-weight: 700; padding: 2px 10px;
+    border-radius: 12px; margin-top: 6px; letter-spacing: 0.5px;
+  }
+  /* Divider */
+  .divider { height: 4px; background: linear-gradient(90deg, #c9a84c 0%, #e8c97a 40%, #2d7a4f 100%); }
+
+  /* Body content */
+  .body { padding: 14px 28px 10px; }
+
+  /* Section title */
+  .sec-title {
+    font-size: 11px; font-weight: 700; color: #fff;
+    background: #1f2d5a; padding: 4px 12px;
+    border-radius: 3px; margin-bottom: 8px;
+    letter-spacing: 0.3px; text-transform: uppercase;
+  }
+  .sec-title.gold { background: #c9a84c; color: #1f2d5a; }
+  .sec-title.green { background: #2d7a4f; }
+
+  /* RFP Cards row */
+  .rfp-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .rfp-card {
+    flex: 1; border: 1.5px solid #1f2d5a; border-radius: 6px;
+    overflow: hidden;
+  }
+  .rfp-card-hdr {
+    background: #1f2d5a; color: #fff;
+    padding: 5px 10px; font-size: 10px; font-weight: 700;
+  }
+  .rfp-card-hdr .rfp-code { color: #c9a84c; font-size: 10.5px; display: block; }
+  .rfp-card-body { padding: 7px 10px; }
+  .rfp-card-row { display: flex; justify-content: space-between; margin-bottom: 3px; font-size: 10px; }
+  .rfp-card-row .lbl { color: #666; font-weight: 600; }
+  .rfp-card-row .val { color: #1f2d5a; font-weight: 700; text-align: right; }
+  .rfp-gaps {
+    background: #f0f4ff; border-radius: 3px;
+    padding: 3px 6px; font-size: 9.5px;
+    color: #2a3f7e; margin-top: 4px; font-weight: 600;
+  }
+
+  /* Two-column layout */
+  .two-col { display: flex; gap: 12px; margin-bottom: 12px; }
+  .col-left { flex: 1.15; }
+  .col-right { flex: 0.85; }
+
+  /* Scoring matrix */
+  .scoring-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .score-card {
+    border-radius: 5px; padding: 8px 10px; text-align: center;
+  }
+  .score-card.blue  { background: #1f2d5a; color: #fff; }
+  .score-card.gold  { background: #c9a84c; color: #1f2d5a; }
+  .score-card.green { background: #2d7a4f; color: #fff; }
+  .score-card.teal  { background: #2a6f8f; color: #fff; }
+  .score-pct { font-size: 22px; font-weight: 700; line-height: 1; }
+  .score-label { font-size: 9.5px; font-weight: 600; margin-top: 2px; }
+  .score-detail { font-size: 9px; margin-top: 2px; opacity: 0.85; }
+  .total-bar {
+    background: #f0f4ff; border: 1px solid #c9a84c;
+    border-radius: 4px; padding: 4px 10px;
+    font-size: 10px; text-align: center; margin-top: 6px;
+    color: #1f2d5a; font-weight: 600;
+  }
+
+  /* SLA table */
+  table.sla-tbl { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 10px; }
+  table.sla-tbl thead tr { background: #1f2d5a; color: #fff; }
+  table.sla-tbl thead th { padding: 5px 7px; text-align: left; font-weight: 600; font-size: 9.5px; }
+  table.sla-tbl tbody tr:nth-child(even) { background: #f5f7fc; }
+  table.sla-tbl tbody td { padding: 4px 7px; border-bottom: 1px solid #e8ecf5; }
+  table.sla-tbl td.gap-code { font-weight: 700; color: #1f2d5a; white-space: nowrap; }
+  table.sla-tbl td.sla-pass { color: #2d7a4f; font-weight: 700; }
+  .ws-badge {
+    display: inline-block; font-size: 8.5px; font-weight: 700;
+    padding: 1px 6px; border-radius: 10px; margin-left: 3px; vertical-align: middle;
+  }
+  .ws-a { background: #dce8ff; color: #1f2d5a; }
+  .ws-b { background: #dcf0e5; color: #1a5c35; }
+  .ws-c { background: #fff2d8; color: #7a5000; }
+
+  /* Checklist table */
+  table.chk-tbl { width: 100%; border-collapse: collapse; font-size: 9.5px; margin-bottom: 10px; }
+  table.chk-tbl thead tr { background: #1f2d5a; color: #fff; }
+  table.chk-tbl thead th { padding: 4px 7px; text-align: left; font-weight: 600; font-size: 9px; }
+  table.chk-tbl tbody tr:nth-child(even) { background: #f5f7fc; }
+  table.chk-tbl tbody td { padding: 3.5px 7px; border-bottom: 1px solid #e8ecf5; }
+  table.chk-tbl td.chk-id { font-weight: 700; color: #1f2d5a; white-space: nowrap; font-size: 9px; }
+  table.chk-tbl td.gate-cell { color: #2d7a4f; font-weight: 700; white-space: nowrap; }
+
+  /* 5-stage strip */
+  .stage-strip { display: flex; gap: 0; margin-bottom: 12px; }
+  .stage-item {
+    flex: 1; text-align: center; padding: 6px 4px;
+    background: #1f2d5a; color: #fff; font-size: 9px; font-weight: 600;
+    position: relative;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%, 8px 50%);
+    margin-right: -1px;
+  }
+  .stage-item:first-child { clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%); }
+  .stage-item:last-child  { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 8px 50%); }
+  .stage-item.active { background: #c9a84c; color: #1f2d5a; }
+  .stage-num { font-size: 13px; font-weight: 700; display: block; line-height: 1; }
+
+  /* Action box */
+  .action-box {
+    background: linear-gradient(135deg, #1f2d5a 0%, #2a3f7e 100%);
+    border-radius: 6px; padding: 10px 14px;
+    color: #fff; margin-bottom: 10px;
+  }
+  .action-box .action-title { color: #c9a84c; font-size: 11px; font-weight: 700; margin-bottom: 6px; }
+  .action-item {
+    display: flex; gap: 8px; margin-bottom: 5px; font-size: 10px;
+  }
+  .action-bullet { color: #c9a84c; font-weight: 700; flex-shrink: 0; }
+
+  /* Footer */
+  .footer {
+    background: #1f2d5a; color: rgba(255,255,255,0.65);
+    padding: 7px 28px; font-size: 9px;
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 4px;
+  }
+  .footer strong { color: #c9a84c; }
+
+  /* Print */
+  @media print {
+    body { background: #fff; }
+    .page { margin: 0; box-shadow: none; width: 100%; }
+    @page { size: A4; margin: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="header-title">S55 — Phase 3 RFP &amp; Vendor Selection Framework</div>
+        <div class="header-sub">MONOLITH/DAPH Decor AI Agent Programme · กรอบงานการจัดซื้อจัดจ้าง Phase 3</div>
+        <div><span class="header-badge">MONOLITH-S55-P3RFP-001 v1.0 · LOCKED</span></div>
+      </div>
+      <div class="header-meta">
+        เอกสาร: S55 Thai Brief<br/>
+        วันที่: 4 กันยายน 2569<br/>
+        Phase: 3 · ระยะเริ่มต้น<br/>
+        งบประมาณ: <strong style="color:#c9a84c;">THB 7.0M</strong>
+      </div>
+    </div>
+  </div>
+  <div class="divider"></div>
+
+  <div class="body">
+
+    <!-- RFP OVERVIEW CARDS -->
+    <div class="sec-title">ภาพรวม RFP ทั้ง 3 ฉบับ — Phase 3 Workstream A / B / C</div>
+    <div class="rfp-row">
+      <!-- WS-A -->
+      <div class="rfp-card">
+        <div class="rfp-card-hdr">
+          Workstream A — GAP-01/02
+          <span class="rfp-code">RFP-P3-WSA-001</span>
+        </div>
+        <div class="rfp-card-body">
+          <div class="rfp-card-row">
+            <span class="lbl">งบประมาณ</span>
+            <span class="val">THB 2.0M</span>
+          </div>
+          <div class="rfp-card-row">
+            <span class="lbl">GAP ครอบคลุม</span>
+            <span class="val">GAP-01 + GAP-02</span>
+          </div>
+          <div class="rfp-card-row">
+            <span class="lbl">ผู้รับผิดชอบ</span>
+            <span class="val">Signal Agent</span>
+          </div>
+          <div class="rfp-gaps">
+            GAP-01: Biophilic Design Enhancement AI<br/>
+            GAP-02: Design Freeze Gate AI
+          </div>
+        </div>
+      </div>
+      <!-- WS-B -->
+      <div class="rfp-card">
+        <div class="rfp-card-hdr">
+          Workstream B — GAP-03/04
+          <span class="rfp-code">RFP-P3-WSB-001</span>
+        </div>
+        <div class="rfp-card-body">
+          <div class="rfp-card-row">
+            <span class="lbl">งบประมาณ</span>
+            <span class="val">THB 1.7M</span>
+          </div>
+          <div class="rfp-card-row">
+            <span class="lbl">GAP ครอบคลุม</span>
+            <span class="val">GAP-03 + GAP-04</span>
+          </div>
+          <div class="rfp-card-row">
+            <span class="lbl">ผู้รับผิดชอบ</span>
+            <span class="val">Aria Agent</span>
+          </div>
+          <div class="rfp-gaps">
+            GAP-03: Sensory Commissioning Full Automation<br/>
+            GAP-04: Post-Occupancy Evaluation AI
+          </div>
+        </div>
+      </div>
+      <!-- WS-C -->
+      <div class="rfp-card">
+        <div class="rfp-card-hdr">
+          Workstream C — GAP-13/14/15
+          <span class="rfp-code">RFP-P3-WSC-001</span>
+        </div>
+        <div class="rfp-card-body">
+          <div class="rfp-card-row">
+            <span class="lbl">งบประมาณ</span>
+            <span class="val">THB 2.4M</span>
+          </div>
+          <div class="rfp-card-row">
+            <span class="lbl">GAP ครอบคลุม</span>
+            <span class="val">GAP-13 + GAP-14 + GAP-15</span>
+          </div>
+          <div class="rfp-card-row">
+            <span class="lbl">ผู้รับผิดชอบ</span>
+            <span class="val">Core Agent</span>
+          </div>
+          <div class="rfp-gaps">
+            GAP-13: Client Experience Intelligence (28 agents)<br/>
+            GAP-14: ESG Reporting · GAP-15: Drift Monitoring
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TWO COLUMN: Scoring + 5-Stage -->
+    <div class="two-col">
+      <!-- LEFT: Scoring Matrix -->
+      <div class="col-left">
+        <div class="sec-title">เกณฑ์การให้คะแนน — Scoring Matrix</div>
+        <div class="scoring-grid">
+          <div class="score-card blue">
+            <div class="score-pct">40%</div>
+            <div class="score-label">Technical Capability</div>
+            <div class="score-detail">Architecture · AI model performance · integration depth</div>
+          </div>
+          <div class="score-card gold">
+            <div class="score-pct">25%</div>
+            <div class="score-label">Commercial Proposal</div>
+            <div class="score-detail">Total cost · payment terms · value for money</div>
+          </div>
+          <div class="score-card green">
+            <div class="score-pct">20%</div>
+            <div class="score-label">SLA Compliance</div>
+            <div class="score-detail">Historical SLA track record · support structure · escalation</div>
+          </div>
+          <div class="score-card teal">
+            <div class="score-pct">15%</div>
+            <div class="score-label">Integration Readiness</div>
+            <div class="score-detail">DAPH API compatibility · onboarding timeline · team fit</div>
+          </div>
+        </div>
+        <div class="total-bar">คะแนนรวม 100% · ผ่านเกณฑ์ขั้นต่ำ ≥ 70% ในทุกหมวด</div>
+      </div>
+
+      <!-- RIGHT: SLA Targets -->
+      <div class="col-right">
+        <div class="sec-title green">SLA Targets ต่อ GAP</div>
+        <table class="sla-tbl">
+          <thead>
+            <tr>
+              <th>GAP</th>
+              <th>SLA Metric</th>
+              <th>เป้าหมายขั้นต่ำ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="gap-code">GAP-01 <span class="ws-badge ws-a">WS-A</span></td>
+              <td>Accuracy</td>
+              <td class="sla-pass">≥ 90%</td>
+            </tr>
+            <tr>
+              <td class="gap-code">GAP-02 <span class="ws-badge ws-a">WS-A</span></td>
+              <td>Gate Accuracy</td>
+              <td class="sla-pass">≥ 95%</td>
+            </tr>
+            <tr>
+              <td class="gap-code">GAP-03 <span class="ws-badge ws-b">WS-B</span></td>
+              <td>Recall</td>
+              <td class="sla-pass">≥ 92%</td>
+            </tr>
+            <tr>
+              <td class="gap-code">GAP-04 <span class="ws-badge ws-b">WS-B</span></td>
+              <td>Completeness</td>
+              <td class="sla-pass">≥ 95%</td>
+            </tr>
+            <tr>
+              <td class="gap-code">GAP-13 <span class="ws-badge ws-c">WS-C</span></td>
+              <td>NPS Accuracy</td>
+              <td class="sla-pass">≥ 80% (28/28)</td>
+            </tr>
+            <tr>
+              <td class="gap-code">GAP-14 <span class="ws-badge ws-c">WS-C</span></td>
+              <td>ESG Coverage</td>
+              <td class="sla-pass">≥ 80%</td>
+            </tr>
+            <tr>
+              <td class="gap-code">GAP-15 <span class="ws-badge ws-c">WS-C</span></td>
+              <td>Drift Alert</td>
+              <td class="sla-pass">≤ 1 ชั่วโมง</td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="background:#f0f8f4;border-left:3px solid #2d7a4f;padding:5px 8px;font-size:9px;border-radius:0 3px 3px 0;">
+          <strong>หมายเหตุ:</strong> SLA ทั้ง 7 รายการต้องผ่านการทดสอบ Acceptance Test ก่อนเริ่ม Hypercare
+        </div>
+      </div>
+    </div>
+
+    <!-- 5-STAGE PROCESS -->
+    <div class="sec-title gold" style="margin-bottom:8px;">กระบวนการคัดเลือก 5 ขั้นตอน — Vendor Evaluation Process</div>
+    <div class="stage-strip">
+      <div class="stage-item">
+        <span class="stage-num">1</span>
+        RFP<br/>เผยแพร่
+      </div>
+      <div class="stage-item active">
+        <span class="stage-num">2</span>
+        คัดกรอง<br/>ข้อเสนอ
+      </div>
+      <div class="stage-item">
+        <span class="stage-num">3</span>
+        Demo &amp;<br/>Technical
+      </div>
+      <div class="stage-item">
+        <span class="stage-num">4</span>
+        Commercial<br/>Negotiation
+      </div>
+      <div class="stage-item">
+        <span class="stage-num">5</span>
+        SC Award<br/>&amp; Sign
+      </div>
+    </div>
+
+    <!-- P3-VND-CHK TABLE -->
+    <div class="sec-title" style="margin-bottom:8px;">รายการตรวจสอบ P3-VND-CHK-01–10 — Vendor Selection Checklist</div>
+    <table class="chk-tbl">
+      <thead>
+        <tr>
+          <th>CHK ID</th>
+          <th>รายการตรวจสอบ</th>
+          <th>ผู้รับผิดชอบ</th>
+          <th>Gate</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="chk-id">P3-VND-CHK-01</td>
+          <td>SC อนุมัติ RFP ทั้ง 3 ฉบับ (WSA/WSB/WSC)</td>
+          <td>SC Chair</td>
+          <td class="gate-cell">P3-M1 Wk 1</td>
+        </tr>
+        <tr>
+          <td class="chk-id">P3-VND-CHK-02</td>
+          <td>เผยแพร่ RFP ผ่านช่องทางจัดซื้อ (Guardian verify)</td>
+          <td>Guardian + Ledger</td>
+          <td class="gate-cell">P3-M1 Wk 1</td>
+        </tr>
+        <tr>
+          <td class="chk-id">P3-VND-CHK-03</td>
+          <td>ปิดรับข้อเสนอ — WS-A/B/C (ครบ deadline)</td>
+          <td>Ledger</td>
+          <td class="gate-cell">P3-M1 Wk 2</td>
+        </tr>
+        <tr>
+          <td class="chk-id">P3-VND-CHK-04</td>
+          <td>คัดกรองข้อเสนอขั้นต้น (Technical ≥ 60% ผ่าน)</td>
+          <td>Tech Lead + Signal/Aria/Core</td>
+          <td class="gate-cell">P3-M1 Wk 2</td>
+        </tr>
+        <tr>
+          <td class="chk-id">P3-VND-CHK-05</td>
+          <td>Technical Demo &amp; POC — ทดสอบ AI model ต่อ GAP</td>
+          <td>WS Lead per WS</td>
+          <td class="gate-cell">P3-M1 Wk 3</td>
+        </tr>
+        <tr>
+          <td class="chk-id">P3-VND-CHK-06</td>
+          <td>ประเมินคะแนนรวม Scoring Matrix 40/25/20/15</td>
+          <td>Evaluation Panel</td>
+          <td class="gate-cell">P3-M1 Wk 3</td>
+        </tr>
+        <tr>
+          <td class="chk-id">P3-VND-CHK-07</td>
+          <td>Commercial Negotiation — ต่อรองราคา/เงื่อนไข SLA</td>
+          <td>Programme Director</td>
+          <td class="gate-cell">P3-M1 Wk 4</td>
+        </tr>
+        <tr>
+          <td class="chk-id">P3-VND-CHK-08</td>
+          <td>Guardian ตรวจสอบ PDPA และ Data Security ของผู้ชนะ</td>
+          <td>Guardian</td>
+          <td class="gate-cell">P3-M1 Wk 4 ★</td>
+        </tr>
+        <tr>
+          <td class="chk-id">P3-VND-CHK-09</td>
+          <td>SC อนุมัติ Award ผู้ชนะทั้ง 3 Workstream</td>
+          <td>SC Chair</td>
+          <td class="gate-cell">P3-M1 Wk 4 ★</td>
+        </tr>
+        <tr>
+          <td class="chk-id">P3-VND-CHK-10</td>
+          <td>ลงนามสัญญา MSA/NDA — ครบทั้ง 3 vendors (Ledger record)</td>
+          <td>Ledger + Legal</td>
+          <td class="gate-cell">P3-M1 Wk 4 ★</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="font-size:9px;color:#666;margin-bottom:10px;">★ = P3-M1 Final Gate — P3-VND-CHK-08–10 ต้องผ่านทั้งหมดก่อนเริ่ม Vendor Onboarding (S56)</div>
+
+    <!-- SC ACTION BOX -->
+    <div class="action-box">
+      <div class="action-title">SC Action Items — Phase 3 Vendor Selection</div>
+      <div class="action-item">
+        <span class="action-bullet">01</span>
+        <span>อนุมัติ RFP ทั้ง 3 ฉบับ (RFP-P3-WSA/B/C-001) ใน SC Checkpoint P3-M1 Wk 1</span>
+      </div>
+      <div class="action-item">
+        <span class="action-bullet">02</span>
+        <span>รับรอง Evaluation Panel สำหรับ Scoring Matrix 40/25/20/15 — Programme Director เสนอ</span>
+      </div>
+      <div class="action-item">
+        <span class="action-bullet">03</span>
+        <span>อนุมัติ Award ผู้ชนะ WS-A/B/C (P3-VND-CHK-09) — ต้องการ SC approval สำหรับ award &gt; THB 1.0M</span>
+      </div>
+      <div class="action-item">
+        <span class="action-bullet">04</span>
+        <span>ยืนยัน P3-M1 Final Gate — P3-VND-CHK-08–10 ครบ → อนุมัติเริ่ม Onboarding Protocol (S56)</span>
+      </div>
+    </div>
+
+  </div><!-- /body -->
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <span>MONOLITH/DAPH · <strong>S55 Phase 3 RFP &amp; Vendor Selection Framework</strong> · MONOLITH-S55-P3RFP-001 v1.0</span>
+    <span>Thai Brief · Phase 3 Programme · เอกสารลับเฉพาะ SC</span>
+  </div>
+
+</div><!-- /page -->
+</body>
+</html>

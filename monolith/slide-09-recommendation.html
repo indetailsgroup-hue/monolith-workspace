@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+@page { margin: 0; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: Arial, Helvetica, sans-serif; }
+.slide-container {
+    width: 1280px;
+    min-width: 100%;
+    height: 720px;
+    overflow: hidden;
+    background-color: #1f2d5a;
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    border-left: 6px solid #c9a84c;
+    border-right: 6px solid #c9a84c;
+}
+.slide-header {
+    background-color: rgba(0,0,0,0.25);
+    padding: 22px 60px 18px;
+}
+.slide-header h2 { font-size: 40px; font-weight: 800; color: #c9a84c; }
+.slide-header p { font-size: 16px; color: rgba(255,255,255,0.7); margin-top: 4px; }
+.content-area {
+    flex: 1;
+    display: flex;
+    gap: 24px;
+    padding: 22px 60px 0;
+}
+.decision-box {
+    flex: 1;
+    background-color: rgba(255,255,255,0.08);
+    border: 2px solid #c9a84c;
+    border-radius: 12px;
+    padding: 24px 28px;
+}
+.decision-box h3 {
+    font-size: 24px;
+    font-weight: 800;
+    color: #c9a84c;
+    margin-bottom: 18px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.ask-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(201,168,76,0.25);
+}
+.ask-item:last-child { border-bottom: none; margin-bottom: 0; }
+.ask-num {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #c9a84c;
+    color: #1f2d5a;
+    font-size: 18px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.ask-body h4 { font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 5px; }
+.ask-body p { font-size: 15px; color: rgba(255,255,255,0.75); line-height: 1.5; }
+.summary-col {
+    width: 350px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.sum-card {
+    background-color: rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 16px 20px;
+    border-left: 4px solid #c9a84c;
+}
+.sum-card h4 { font-size: 16px; font-weight: 700; color: #c9a84c; margin-bottom: 6px; }
+.sum-card p { font-size: 14px; color: rgba(255,255,255,0.8); line-height: 1.5; }
+.vote-strip {
+    background-color: #c9a84c;
+    padding: 12px 60px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.vote-strip h4 { font-size: 18px; font-weight: 800; color: #1f2d5a; }
+.vote-strip p { font-size: 15px; color: #1f2d5a; font-weight: 600; }
+.slide-footer {
+    padding: 8px 60px;
+    border-top: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.4);
+    font-size: 11px;
+}
+</style>
+</head>
+<body>
+<div class="slide-container">
+    <div class="slide-header">
+        <h2>Recommendation for SC Approval</h2>
+        <p>Three items for resolution · SC Meeting · กันยายน 2569</p>
+    </div>
+    <div class="content-area">
+        <div class="decision-box">
+            <h3>SC Resolution SC-2032-XX — 3 Items for Approval</h3>
+            <div class="ask-item">
+                <div class="ask-num">1</div>
+                <div class="ask-body">
+                    <h4>Endorse Phase 1 Completion</h4>
+                    <p>Formally acknowledge AMD-004 Phase 1 completion: 49 SOP sections, coverage 68%, THB 5.2M delivered, GAP-01/02/03/04/07/08 closed. Receive Phase 1 Completion Certificate.</p>
+                </div>
+            </div>
+            <div class="ask-item">
+                <div class="ask-num">2</div>
+                <div class="ask-body">
+                    <h4>Approve Phase 2 PDD &amp; Budget</h4>
+                    <p>Authorise Phase 2 Programme Definition Document (Section 50) — THB 6.0M budget, Q1–Q4 2033 timeline, GAP-05/06/09/10/11/12 workplan targeting 80% coverage.</p>
+                </div>
+            </div>
+            <div class="ask-item">
+                <div class="ask-num">3</div>
+                <div class="ask-body">
+                    <h4>Nominate Phase 2 Programme Director</h4>
+                    <p>Appoint Phase 2 Programme Director within 4 weeks. Director accountable for P2-M1–P2-M4 milestones, THB 6.0M budget ownership, and quarterly SC reporting.</p>
+                </div>
+            </div>
+        </div>
+        <div class="summary-col">
+            <div class="sum-card">
+                <h4>Phase 1 — Delivered</h4>
+                <p>49 SOP sections · 28 agents active · 6 gaps closed · Coverage 68% · THB 5.2M on budget</p>
+            </div>
+            <div class="sum-card" style="border-left-color:#27ae60;">
+                <h4>Phase 2 — Proposed</h4>
+                <p>6 gaps · Coverage 80% · THB 6.0M · Q1–Q4 2033 · SC-2032-XX</p>
+            </div>
+            <div class="sum-card" style="border-left-color:rgba(255,255,255,0.3);">
+                <h4>Phase 3 — Future</h4>
+                <p>3 gaps (GAP-13/14/15) · Coverage 92% · FY2034+ · SC-2033-XX gate</p>
+            </div>
+        </div>
+    </div>
+    <div class="vote-strip">
+        <h4>Proposed Resolution: SC-2032-XX</h4>
+        <p>Moved · Seconded · Voted</p>
+    </div>
+    <div class="slide-footer"><p>MONOLITH DAPH Decor AI Agent Programme · SC Review 2569 · For SC Resolution · Sections 49–50</p></div>
+</div>
+</body>
+</html>

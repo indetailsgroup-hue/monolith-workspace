@@ -25,30 +25,30 @@ export interface CutListRow {
   partId: string;
 
   /** Cabinet ID this part belongs to */
-  cabinetId: string;
+  cabinetId?: string;
 
   /** Material ID */
   materialId: string;
 
   // ---- Finish Dimensions ----
   /** Finish width (W) in mm */
-  finishW: number;
+  finishW?: number;
 
   /** Finish height (H) in mm */
-  finishH: number;
+  finishH?: number;
 
   // ---- Edge Banding ----
   /** Edge band thickness Left (mm) */
-  edgeL: number;
+  edgeL?: number;
 
   /** Edge band thickness Right (mm) */
-  edgeR: number;
+  edgeR?: number;
 
   /** Edge band thickness Top (mm) */
-  edgeT: number;
+  edgeT?: number;
 
   /** Edge band thickness Bottom (mm) */
-  edgeB: number;
+  edgeB?: number;
 
   // ---- Premill (SPEC-08 v8.2) ----
   /** Premill amount Left (mm) */
@@ -76,9 +76,40 @@ export interface CutListRow {
 
   /** Optional notes */
   note?: string;
+  label?: string;
 
   /** Grain direction */
   grain?: 'HORIZONTAL' | 'VERTICAL' | 'NONE';
+
+  // ---- Curved Panel Fields (optional, present only for ARC / S_CURVE profiles) ----
+
+  /**
+   * Developed (flat) arc length of the curved zone, in mm.
+   * = R × sweepRad for ARC; Σ rₙ×sweepRadₙ for S_CURVE.
+   * When present, the nesting optimizer uses this to compute the flat-blank size.
+   */
+  developedLength?: number;
+
+  /**
+   * Total kerf cuts required to achieve the bend.
+   * Passed through to the cut sheet for CNC programming.
+   */
+  kerfCount?: number;
+
+  /**
+   * Projected depth of the curved zone along the bend axis (mm).
+   * = R × (1 − cos(sweepRad)) for ARC.
+   * Flat blank along curved axis = cutDim + (developedLength − projectedDepth).
+   */
+  projectedDepth?: number;
+
+  /**
+   * Which panel edge carries the primary curve (ARC / S_CURVE only).
+   * TOP/BOTTOM: curved axis is HEIGHT → optimizer adjusts cutH.
+   * LEFT/RIGHT: curved axis is WIDTH  → optimizer adjusts cutW.
+   * Absent for ROUNDED_CORNER (corner curve, no single dominant edge).
+   */
+  curvedEdge?: 'TOP' | 'BOTTOM' | 'LEFT' | 'RIGHT';
 }
 
 // ============================================
@@ -113,6 +144,10 @@ export interface NestingSheet {
     rotation: 0 | 90 | 180 | 270;
     cutW: number;
     cutH: number;
+    /** True when this part is a curved panel (kerf-bent blank) */
+    isCurved?: boolean;
+    /** Number of kerf cuts required to achieve the bend (curved panels only) */
+    kerfCount?: number;
   }>;
 
   /** Utilization percentage */

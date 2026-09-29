@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+*.js.map
+
+# Coverage
+coverage/
+*.lcov
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+pino-debug.log*
+
+# k6 outputs
+tests/load/*.html
+tests/load/summary.json
+
+# Docker volumes
+data/
+
+# Temporary
+tmp/
+.tmp/

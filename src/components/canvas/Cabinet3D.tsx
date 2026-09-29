@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Cabinet3D - Renders parametric cabinet in 3D (Visual Layer)
  * 
  * ARCHITECTURE NOTE (North Star):
@@ -69,6 +69,10 @@ import { HardwareSmartDimensions } from './HardwareSmartDimensions';
 import { useConnectorVisibilityStore } from '../ui/ConnectorList';
 import { useMaterialStore } from '../../core/materials/useMaterialStore';
 import { useObjectUrlTexture } from '../../core/materials/useObjectUrlTexture';
+import { computeCurveProfile } from '../../core/manufacturing/curve/curveProfile';
+import { generateKerfPattern, type KerfPattern } from '../../core/manufacturing/curve/kerfPatternGenerator';
+import type { KerfToolProfile } from '../../core/catalog/KerfBending';
+import { KerfPatternOverlay } from './KerfPatternOverlay';
 
 // ============================================
 // MINIFIX CONFIG MIGRATION - Normalize legacy stored configs
@@ -2103,7 +2107,84 @@ function Panel3DComponent({ panel, baseColor, cabinetDefaultSurface, edgeColor, 
     return new BoxGeometry(sizeX, sizeY, sizeZ);
   }, [sizeX, sizeY, sizeZ]);
 
-  const geometry = csgGeometry ?? boxGeometry;
+  // Phase 5: Arc/curved profile geometry via ExtrudeGeometry
+  const profileGeometry = useMemo(() => {
+    const prof = panel.profile;
+    if (!prof || prof.kind === 'RECT') return null;
+    const W = panel.finishWidth;
+    const H = panel.finishHeight;
+    const t = panel.computed.realThickness;
+    const result = computeCurveProfile(prof, W, H);
+    if (!result.valid || result.kerfZones.length === 0) return null;
+    try {
+      const shape = new THREE.Shape();
+      if (prof.kind === 'ARC') {
+        const R = prof.radius;
+        const theta = (prof.sweepDeg * Math.PI) / 180;
+        const edge = prof.edge;
+        if (edge === 'TOP') {
+          const halfChord = R * Math.sin(theta / 2);
+          const contactY = H - R + R * Math.cos(theta / 2);
+          shape.moveTo(0, 0);
+          shape.lineTo(W, 0);
+          shape.lineTo(W, contactY);
+          shape.lineTo(W / 2 + halfChord, contactY);
+          shape.absarc(W / 2, H - R, R, Math.PI / 2 - theta / 2, Math.PI / 2 + theta / 2, false);
+          shape.lineTo(0, contactY);
+          shape.closePath();
+        } else if (edge === 'BOTTOM') {
+          const halfChord = R * Math.sin(theta / 2);
+          const contactY_bot = R * (1 - Math.cos(theta / 2));
+          shape.moveTo(0, contactY_bot);
+          shape.lineTo(W / 2 - halfChord, contactY_bot);
+          shape.absarc(W / 2, R, R, -Math.PI / 2 - theta / 2, -Math.PI / 2 + theta / 2, false);
+          shape.lineTo(W, contactY_bot);
+          shape.lineTo(W, H);
+          shape.lineTo(0, H);
+          shape.closePath();
+        } else if (edge === 'LEFT') {
+          const halfChordH = R * Math.sin(theta / 2);
+          const contactX = R * (1 - Math.cos(theta / 2));
+          shape.moveTo(contactX, 0);
+          shape.lineTo(W, 0);
+          shape.lineTo(W, H);
+          shape.lineTo(contactX, H);
+          shape.lineTo(contactX, H / 2 + halfChordH);
+          shape.absarc(R, H / 2, R, Math.PI - theta / 2, Math.PI + theta / 2, false);
+          shape.lineTo(contactX, 0);
+          shape.closePath();
+        } else if (edge === 'RIGHT') {
+          const halfChordH = R * Math.sin(theta / 2);
+          const contactX_right = W - R * (1 - Math.cos(theta / 2));
+          shape.moveTo(0, 0);
+          shape.lineTo(contactX_right, 0);
+          shape.lineTo(contactX_right, H / 2 - halfChordH);
+          shape.absarc(W - R, H / 2, R, theta / 2, -theta / 2, true);
+          shape.lineTo(contactX_right, H);
+          shape.lineTo(0, H);
+          shape.closePath();
+        } else {
+          return null;
+        }
+      } else {
+        // ROUNDED_CORNER / S_CURVE — fallback to box for now
+        return null;
+      }
+      const geo = new THREE.ExtrudeGeometry(shape, { depth: t, bevelEnabled: false });
+      geo.translate(-W / 2, -H / 2, -t / 2);
+      const role = panel.role;
+      if (role === 'LEFT_SIDE' || role === 'RIGHT_SIDE' || role === 'DIVIDER') {
+        geo.applyMatrix4(new THREE.Matrix4().set(0,0,1,0, 0,1,0,0, 1,0,0,0, 0,0,0,1));
+      } else if (role === 'TOP' || role === 'BOTTOM' || role === 'SHELF' || role === 'WORKTOP') {
+        geo.applyMatrix4(new THREE.Matrix4().set(1,0,0,0, 0,0,1,0, 0,1,0,0, 0,0,0,1));
+      }
+      return geo;
+    } catch {
+      return null;
+    }
+  }, [panel.profile, panel.finishWidth, panel.finishHeight, panel.computed.realThickness, panel.role]);
+
+  const geometry = profileGeometry ?? csgGeometry ?? boxGeometry;
 
   // When CSG geometry is active, use DoubleSide so drill hole interior walls are visible
   const materialSide = csgGeometry ? DoubleSide : FrontSide;
@@ -2115,6 +2196,22 @@ function Panel3DComponent({ panel, baseColor, cabinetDefaultSurface, edgeColor, 
   const edgesGeometry = useMemo(() => {
     return new EdgesGeometry(boxGeometry);
   }, [boxGeometry]);
+
+  // Phase 5: Kerf cut patterns for curved panels — used by KerfPatternOverlay
+  const kerfPatterns = useMemo<KerfPattern[]>(() => {
+    const prof = panel.profile;
+    if (!prof || prof.kind === 'RECT') return [];
+    const DEFAULT_TOOL: KerfToolProfile = { kind: 'ROUTER', bitDiameter: 3.175 };
+    const result = generateKerfPattern({
+      profile: prof,
+      finishWidth: panel.finishWidth,
+      finishHeight: panel.finishHeight,
+      material: 'MDF',
+      thickness: panel.computed.realThickness,
+      tool: DEFAULT_TOOL,
+    });
+    return result.patterns;
+  }, [panel.profile, panel.finishWidth, panel.finishHeight, panel.computed.realThickness]);
   
   // T016: Create per-panel texture with unique repeat settings
   // FIX: Use new Texture() with shared source instead of clone() which doesn't work reliably in r3f
@@ -2325,6 +2422,9 @@ function Panel3DComponent({ panel, baseColor, cabinetDefaultSurface, edgeColor, 
           <lineBasicMaterial color="#00aaff" />
         </lineSegments>
       )}
+
+      {/* Phase 5: Kerf-cut overlay — orange lines in X-Ray mode */}
+      <KerfPatternOverlay panel={panel} patterns={kerfPatterns} visible={xRayMode} />
 
       {/* Tooltip - hidden in X-Ray/Ghost modes for cleaner view */}
       {effectiveMode === 'NORMAL' && !hideTooltip && (hovered || isSelected) && (

@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Phase 2 Executive Summary — SC Chair Brief — MONOLITH DAPH Decor</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 12mm 13mm 10mm 13mm; }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Sarabun', sans-serif;
+    font-size: 9pt;
+    color: #1a2240;
+    background: #ffffff;
+    line-height: 1.4;
+  }
+
+  /* ── Page header ── */
+  .page-header {
+    border-bottom: 3pt solid #1f2d5a;
+    padding-bottom: 6pt;
+    margin-bottom: 9pt;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .page-header .brand { font-size: 8pt; font-weight: 700; color: #1f2d5a; letter-spacing: .5px; text-transform: uppercase; }
+  .page-header .doc-meta { font-size: 7pt; color: #7a8ab2; text-align: right; }
+
+  /* ── Title block — compact executive ── */
+  .title-block {
+    background: linear-gradient(135deg, #1f2d5a 0%, #2a3f78 100%);
+    color: #fff;
+    padding: 9pt 12pt;
+    border-radius: 4pt;
+    margin-bottom: 8pt;
+    display: flex;
+    align-items: center;
+    gap: 12pt;
+  }
+  .title-left { flex: 1; }
+  .title-block .doc-tag {
+    font-size: 6.5pt; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+    color: #c9a84c; margin-bottom: 3pt;
+  }
+  .title-block h1 { font-size: 13pt; font-weight: 800; line-height: 1.15; margin-bottom: 2pt; }
+  .title-block h1 span { color: #c9a84c; }
+  .title-block .title-sub { font-size: 7.5pt; color: rgba(255,255,255,.6); }
+  .title-right {
+    background: rgba(255,255,255,.06);
+    border: .5pt solid rgba(201,168,76,.3);
+    border-radius: 3pt;
+    padding: 6pt 10pt;
+    text-align: center;
+    min-width: 70pt;
+  }
+  .title-right .big { font-size: 20pt; font-weight: 900; color: #c9a84c; line-height: 1; }
+  .title-right .lbl { font-size: 6.5pt; color: rgba(255,255,255,.55); text-transform: uppercase; letter-spacing: .7px; margin-top: 1pt; }
+
+  /* ── Programme KPI strip ── */
+  .kpi-strip {
+    display: flex; gap: 0; margin-bottom: 9pt;
+    border: .5pt solid #d0d8ea; border-radius: 4pt; overflow: hidden;
+  }
+  .kpi-cell {
+    flex: 1; text-align: center; padding: 5pt 4pt;
+    border-right: .5pt solid #d0d8ea;
+  }
+  .kpi-cell:last-child { border-right: none; }
+  .kpi-cell.gold { background: #1f2d5a; }
+  .kpi-cell.gold .kv { color: #c9a84c; }
+  .kpi-cell.gold .kl { color: rgba(255,255,255,.55); }
+  .kv { font-size: 14pt; font-weight: 900; color: #1f2d5a; line-height: 1; }
+  .kl { font-size: 6.5pt; color: #7a8ab2; text-transform: uppercase; letter-spacing: .6px; margin-top: 1pt; }
+
+  /* ── Three-column section cards ── */
+  .section-grid {
+    display: flex; gap: 7pt; margin-bottom: 8pt;
+  }
+  .sec-card {
+    flex: 1; border: .5pt solid #d0d8ea; border-radius: 4pt;
+    overflow: hidden;
+  }
+  .sec-card-hdr {
+    padding: 5pt 8pt;
+    display: flex; align-items: center; gap: 5pt;
+  }
+  .sec-card-hdr.s51 { background: #1f2d5a; }
+  .sec-card-hdr.s52 { background: #2d5a1f; }
+  .sec-card-hdr.s53 { background: #5a1f2d; }
+  .sec-code { font-size: 8pt; font-weight: 800; color: #c9a84c; }
+  .sec-title { font-size: 7.5pt; font-weight: 700; color: #fff; line-height: 1.2; }
+  .sec-body { padding: 6pt 8pt; background: #fafbfd; }
+  .sec-row { display: flex; gap: 4pt; margin-bottom: 3pt; align-items: baseline; }
+  .sec-label { font-size: 7pt; font-weight: 700; color: #1f2d5a; white-space: nowrap; min-width: 52pt; }
+  .sec-val   { font-size: 7pt; color: #4a5570; line-height: 1.35; }
+  .sec-val strong { color: #1f2d5a; }
+  .metric-row {
+    display: flex; gap: 4pt; margin-top: 5pt; padding-top: 4pt;
+    border-top: .5pt solid #e0e4ee;
+  }
+  .met-pill {
+    flex: 1; text-align: center; background: #f0f3fa;
+    border: .5pt solid #d0d8ea; border-radius: 2pt; padding: 3pt 2pt;
+  }
+  .met-v { font-size: 11pt; font-weight: 900; color: #1f2d5a; line-height: 1; }
+  .met-l { font-size: 6pt; color: #7a8ab2; text-transform: uppercase; margin-top: 1pt; }
+
+  /* ── Timeline strip ── */
+  .timeline-wrap {
+    display: flex; gap: 0; margin-bottom: 8pt; align-items: stretch;
+  }
+  .tl-step {
+    flex: 1; border: .5pt solid #d0d8ea; border-right: none; padding: 5pt 5pt;
+    background: #f8f9fc; text-align: center;
+  }
+  .tl-step:last-child { border-right: .5pt solid #d0d8ea; border-radius: 0 3pt 3pt 0; }
+  .tl-step:first-child { border-radius: 3pt 0 0 3pt; }
+  .tl-step.done  { background: #2d7a4f; }
+  .tl-step.done .tl-phase { color: #c9a84c; }
+  .tl-step.done .tl-q { color: rgba(255,255,255,.55); }
+  .tl-step.done .tl-desc { color: rgba(255,255,255,.7); }
+  .tl-step.active { background: #1f2d5a; }
+  .tl-step.active .tl-phase { color: #c9a84c; }
+  .tl-step.active .tl-q { color: rgba(255,255,255,.55); }
+  .tl-step.active .tl-desc { color: rgba(255,255,255,.75); }
+  .tl-phase { font-size: 8pt; font-weight: 800; line-height: 1; margin-bottom: 2pt; color: #1f2d5a; }
+  .tl-q     { font-size: 6.5pt; color: #7a8ab2; margin-bottom: 2pt; }
+  .tl-desc  { font-size: 6.5pt; color: #4a5570; line-height: 1.3; }
+
+  /* ── Coverage progress ── */
+  .coverage-section {
+    border: .5pt solid #d0d8ea; border-radius: 4pt; padding: 7pt 10pt;
+    margin-bottom: 8pt; background: #fafbfd;
+    display: flex; gap: 12pt; align-items: center;
+  }
+  .cov-label-col { min-width: 90pt; }
+  .cov-title { font-size: 8.5pt; font-weight: 700; color: #1f2d5a; margin-bottom: 2pt; }
+  .cov-sub   { font-size: 7pt; color: #7a8ab2; }
+  .cov-bar-col { flex: 1; }
+  .cov-track {
+    height: 18pt; background: #e8eaf2; border-radius: 3pt; overflow: hidden;
+    position: relative; margin-bottom: 4pt;
+  }
+  .cov-fill {
+    height: 100%; background: linear-gradient(90deg, #1f2d5a 0%, #2e75b6 100%);
+    border-radius: 3pt; display: flex; align-items: center; justify-content: flex-end;
+    padding-right: 6pt;
+  }
+  .cov-fill span { font-size: 9pt; font-weight: 800; color: #fff; }
+  .cov-markers {
+    display: flex; justify-content: space-between;
+    font-size: 6.5pt; color: #7a8ab2;
+  }
+
+  /* ── Next steps ── */
+  .next-wrap {
+    display: flex; gap: 7pt; margin-bottom: 7pt;
+  }
+  .next-card {
+    flex: 1; border: .5pt solid #c9a84c; border-radius: 3pt;
+    padding: 6pt 8pt; background: #fffbf0;
+  }
+  .next-card .nt { font-size: 7.5pt; font-weight: 700; color: #1f2d5a; margin-bottom: 3pt; }
+  .next-card .nd { font-size: 7pt; color: #5a4820; line-height: 1.4; }
+
+  /* ── SC action box ── */
+  .action-box {
+    background: #1f2d5a; color: #fff; border-radius: 4pt;
+    padding: 7pt 10pt; margin-bottom: 7pt;
+    display: flex; align-items: center; gap: 10pt;
+  }
+  .action-box .ab-label { font-size: 7pt; font-weight: 700; color: #c9a84c; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+  .action-box .ab-text  { font-size: 8pt; color: rgba(255,255,255,.85); line-height: 1.4; }
+
+  /* ── Footer ── */
+  .doc-footer {
+    border-top: 1pt solid #d0d8ea; padding-top: 4pt;
+    font-size: 6.5pt; color: #9aa0b8;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+</style>
+</head>
+<body>
+
+<!-- Page Header -->
+<div class="page-header">
+  <div class="brand">MONOLITH · DAPH Decor AI Agent Programme</div>
+  <div class="doc-meta">
+    Phase 2 Executive Summary — SC Chair Brief &nbsp;|&nbsp; 4 September 2026<br>
+    S51 Procurement · S52 Vendor Onboarding · S53 Go-Live Operations
+  </div>
+</div>
+
+<!-- Title Block -->
+<div class="title-block">
+  <div class="title-left">
+    <div class="doc-tag">Phase 2 · S51 + S52 + S53 — Executive Summary for SC Chair</div>
+    <h1>สรุปภาพรวม <span>Phase 2</span> — จาก Procurement สู่ Go-Live</h1>
+    <div class="title-sub">RFP-GAP05-001 · V-CHK-01–12 · GL-CHK-01–10 · BAU Transition 90 วัน · Phase 3 Readiness Gate</div>
+  </div>
+  <div class="title-right">
+    <div class="big">80%</div>
+    <div class="lbl">Coverage Gate<br>Phase 2</div>
+  </div>
+</div>
+
+<!-- KPI Strip -->
+<div class="kpi-strip">
+  <div class="kpi-cell gold">
+    <div class="kv">THB 6.0M</div>
+    <div class="kl">งบประมาณ Phase 2</div>
+  </div>
+  <div class="kpi-cell">
+    <div class="kv">6</div>
+    <div class="kl">GAPs Phase 2</div>
+  </div>
+  <div class="kpi-cell">
+    <div class="kv">5</div>
+    <div class="kl">AIE Integrations</div>
+  </div>
+  <div class="kpi-cell">
+    <div class="kv">12</div>
+    <div class="kl">V-CHK</div>
+  </div>
+  <div class="kpi-cell">
+    <div class="kv">10</div>
+    <div class="kl">GL-CHK</div>
+  </div>
+  <div class="kpi-cell">
+    <div class="kv">90</div>
+    <div class="kl">วัน Hypercare</div>
+  </div>
+  <div class="kpi-cell">
+    <div class="kv">Q2 2033</div>
+    <div class="kl">เป้าหมาย Go-Live</div>
+  </div>
+</div>
+
+<!-- Three Section Cards -->
+<div class="section-grid">
+
+  <!-- S51 Procurement -->
+  <div class="sec-card">
+    <div class="sec-card-hdr s51">
+      <span class="sec-code">S51</span>
+      <span class="sec-title">Phase 2 Procurement &amp; Vendor Selection Framework</span>
+    </div>
+    <div class="sec-body">
+      <div class="sec-row"><span class="sec-label">Reference</span><span class="sec-val">RFP-GAP05-001 v1.0</span></div>
+      <div class="sec-row"><span class="sec-label">ขอบเขต</span><span class="sec-val">GAP-05 AI Creative Engine (AIE-001–005) — 5 ขั้นตอน Selection</span></div>
+      <div class="sec-row"><span class="sec-label">กระบวนการ</span><span class="sec-val">Longlisting → Technical Evaluation → Commercial → SC Approval → Contract</span></div>
+      <div class="sec-row"><span class="sec-label">SLA KPIs</span><span class="sec-val">Availability ≥99.5% (AIE-001); latency p95 ≤200ms; uptime SLA bond THB 50,000/incident</span></div>
+      <div class="sec-row"><span class="sec-label">ตรวจสอบ</span><span class="sec-val">P2-CHK-01–12 ครบก่อนเริ่ม Onboarding</span></div>
+      <div class="metric-row">
+        <div class="met-pill"><div class="met-v">5</div><div class="met-l">Stages</div></div>
+        <div class="met-pill"><div class="met-v">12</div><div class="met-l">P2-CHK</div></div>
+        <div class="met-pill"><div class="met-v">99.5%</div><div class="met-l">Availability SLA</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S52 Vendor Onboarding -->
+  <div class="sec-card">
+    <div class="sec-card-hdr s52">
+      <span class="sec-code">S52</span>
+      <span class="sec-title">Phase 2 Vendor Onboarding &amp; Integration Protocol</span>
+    </div>
+    <div class="sec-body">
+      <div class="sec-row"><span class="sec-label">Reference</span><span class="sec-val">MONOLITH-S52-ONB-001 v1.0</span></div>
+      <div class="sec-row"><span class="sec-label">ขอบเขต</span><span class="sec-val">V-CHK-01–12: Pre-Onboarding → SIT → UAT → Go-Live → Hypercare</span></div>
+      <div class="sec-row"><span class="sec-label">AIE Integration</span><span class="sec-val">AIE-001 ≤200ms · AIE-002 ≤150ms · AIE-003 ≤100ms · AIE-004 ≤300ms · AIE-005 ≤250ms</span></div>
+      <div class="sec-row"><span class="sec-label">Hypercare</span><span class="sec-val">90 วัน: L1 Signal ≤30min · L2 Vendor ≤2h · L3 Prog.Dir ≤4h · L4 SC Chair</span></div>
+      <div class="sec-row"><span class="sec-label">Trigger</span><span class="sec-val">V-CHK-08 → GL-CHK-01 → S53 Go-Live Plan activated</span></div>
+      <div class="metric-row">
+        <div class="met-pill"><div class="met-v">12</div><div class="met-l">V-CHK</div></div>
+        <div class="met-pill"><div class="met-v">5</div><div class="met-l">AIE APIs</div></div>
+        <div class="met-pill"><div class="met-v">4</div><div class="met-l">Escalation Levels</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S53 Go-Live -->
+  <div class="sec-card">
+    <div class="sec-card-hdr s53">
+      <span class="sec-code">S53</span>
+      <span class="sec-title">Phase 2 Go-Live Operations Plan</span>
+    </div>
+    <div class="sec-body">
+      <div class="sec-row"><span class="sec-label">Reference</span><span class="sec-val">MONOLITH-S53-GOLIVE-001 v1.0</span></div>
+      <div class="sec-row"><span class="sec-label">Cutover</span><span class="sec-val">T-5 Freeze → T+0 Window 1 (AIE-001/002) → T+48h Window 2 (AIE-003/004/005) → T+72h Stable</span></div>
+      <div class="sec-row"><span class="sec-label">BAU Transition</span><span class="sec-val">Phase A Day 1–30 Enhanced · Phase B Day 31–60 Standard · Phase C Day 61–90 Pre-BAU · Phase D Day 91+ BAU</span></div>
+      <div class="sec-row"><span class="sec-label">Phase 3 Gate</span><span class="sec-val">GAP-05/06/09/10/11/12 ปิด CLOSED · coverage ≥80% · GL-CHK-09–10 ผ่าน</span></div>
+      <div class="sec-row"><span class="sec-label">SC Action</span><span class="sec-val">GL-CHK-10 — SC อนุมัติ Phase 3 PDD (Day 61–90)</span></div>
+      <div class="metric-row">
+        <div class="met-pill"><div class="met-v">10</div><div class="met-l">GL-CHK</div></div>
+        <div class="met-pill"><div class="met-v">3</div><div class="met-l">Windows</div></div>
+        <div class="met-pill"><div class="met-v">90d</div><div class="met-l">BAU Trans.</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Programme Timeline -->
+<div class="timeline-wrap">
+  <div class="tl-step done">
+    <div class="tl-phase">Phase 1</div>
+    <div class="tl-q">Q3–Q4 2032 · THB 5.2M</div>
+    <div class="tl-desc">GAP-01/02/03/04/07/08 CLOSED · 68% coverage · S38–S50</div>
+  </div>
+  <div class="tl-step active">
+    <div class="tl-phase">S51 Procurement</div>
+    <div class="tl-q">P2-M1 · Q4 2032</div>
+    <div class="tl-desc">RFP-GAP05-001 · 5-stage · P2-CHK-01–12</div>
+  </div>
+  <div class="tl-step active">
+    <div class="tl-phase">S52 Onboarding</div>
+    <div class="tl-q">P2-M2 · Q1 2033</div>
+    <div class="tl-desc">V-CHK-01–12 · AIE-001–005 · 90d Hypercare setup</div>
+  </div>
+  <div class="tl-step active">
+    <div class="tl-phase">S53 Go-Live</div>
+    <div class="tl-q">P2-M3 · Q2 2033</div>
+    <div class="tl-desc">Cutover · BAU 4-phase · GL-CHK-10 → Phase 3 gate</div>
+  </div>
+  <div class="tl-step">
+    <div class="tl-phase">Phase 2 BAU</div>
+    <div class="tl-q">P2-M4 · Q3 2033</div>
+    <div class="tl-desc">80% coverage confirmed · Phase 3 PDD (S54) approved</div>
+  </div>
+  <div class="tl-step">
+    <div class="tl-phase">Phase 3</div>
+    <div class="tl-q">Q3 2033–Q2 2034 · THB 7.0M</div>
+    <div class="tl-desc">GAP-01/02/03/04/13/14/15 · 92% coverage · MONOLITH BAU</div>
+  </div>
+</div>
+
+<!-- Coverage Progress -->
+<div class="coverage-section">
+  <div class="cov-label-col">
+    <div class="cov-title">Coverage Progress</div>
+    <div class="cov-sub">56% → 68% → <strong>80%</strong> → 92%</div>
+  </div>
+  <div class="cov-bar-col">
+    <div class="cov-track">
+      <div class="cov-fill" style="width:86.9%"><span>80% (Phase 2 Gate)</span></div>
+    </div>
+    <div class="cov-markers">
+      <span>56% Baseline</span>
+      <span>68% Phase 1 ✓</span>
+      <span>▲ 80% Phase 2 Gate</span>
+      <span>92% Phase 3 Target</span>
+    </div>
+  </div>
+</div>
+
+<!-- SC Action Required -->
+<div class="action-box">
+  <span class="ab-label">SC Action Required</span>
+  <span class="ab-text">
+    <strong style="color:#c9a84c;">GL-CHK-10 (Day 61–90 หลัง Go-Live):</strong>
+    SC Chair อนุมัติ Phase 3 PDD (MONOLITH-S54-P3PDD-001) — ยืนยัน GAP-05/06/09/10/11/12 CLOSED · coverage ≥80% · Phase 3 budget THB 7.0M (GAP-01/02/03/04/13/14/15) · milestone P3-M1–M4 Q3 2033–Q2 2034
+  </span>
+</div>
+
+<!-- Next Steps -->
+<div class="next-wrap">
+  <div class="next-card">
+    <div class="nt">ขั้นตอนถัดไป — Phase 3 PDD (S54)</div>
+    <div class="nd">MONOLITH-S54-P3PDD-001 v1.0 · 7 GAPs · THB 7.0M · P3-M1 kick-off Q3 2033 · P3-CHK-01–12 checklist · coverage 80% → 92%</div>
+  </div>
+  <div class="next-card">
+    <div class="nt">ขั้นตอนถัดไป — Phase 3 Vendor RFP</div>
+    <div class="nd">GAP-13 CX Intelligence · GAP-14 Sustainable Procurement · GAP-15 Model Governance — RFP ออกเมื่อ GL-CHK-10 อนุมัติ P3-M1</div>
+  </div>
+  <div class="next-card">
+    <div class="nt">ขั้นตอนถัดไป — MONOLITH BAU Target</div>
+    <div class="nd">Phase 3 Go-Live Q2 2034 · coverage 92% · 28 agents fully operational · total programme investment THB 18.2M (Phase 1+2+3)</div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="doc-footer">
+  <span>MONOLITH · DAPH Decor AI Agent Programme · Phase 2 Executive Summary (S51+S52+S53) · สำหรับ SC Chair</span>
+  <span>4 September 2026 · รอ PAT เพื่อ push ไปที่ GitHub</span>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>คู่มือตัดสินใจ Flex Action กับ LIFF</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1>คู่มือตัดสินใจ Flex Action กับ LIFF</h1>
+<ul>
+<li>สถานะ: approved decision contract สำหรับ MONOLITH LINE Human Surface</li>
+<li>ฉบับ: ภาษาไทย</li>
+<li>ตรวจพฤติกรรมแพลตฟอร์มทางการเมื่อ 2026-08-02</li>
+</ul>
+<h2>1. หลักตัดสินใจ</h2>
+<p>เลือก action ตามผลกระทบ ไม่ใช่ตามปุ่มที่ทำง่ายที่สุด LINE เป็น Human Surface; MONOLITH เป็นผู้มีอำนาจสำหรับ tenant, identity, permission, resource, revision, workflow และ audit</p>
+<p>ปุ่ม Flex ใช้ LINE action objects ส่วน LIFF เปิดผ่าน Flex <strong>URI action</strong>; LIFF ไม่ใช่ Flex action type แยก LIFF ให้ private review surface แต่ server ยังต้อง authenticate, authorize, bind exact transaction และตรวจ current state ใหม่</p>
+<p>Action payload ไม่ใช่ permission และ no production token ต้องไม่อยู่ใน action data หรือ URL</p>
+<h2>2. Exact approved matrix</h2>
+<div class="tablewrap"><table><thead><tr><th>Need</th><th>Action</th></tr></thead><tbody>
+<tr><td>Visible conversational text</td><td>Message</td></tr>
+<tr><td>Low-risk reversible choice, reauthorized server-side</td><td>Postback with opaque intent ID</td></tr>
+<tr><td>Read-only web/tel/LINE scheme</td><td>URI</td></tr>
+<tr><td>Form, identity, sensitive detail, comparison or explicit confirmation</td><td>URI opening LIFF</td></tr>
+<tr><td>Money, access, release, policy, scope or hard-to-reverse change</td><td>LIFF plus MONOLITH step-up</td></tr>
+</tbody></table></div>
+<p>ให้เลือกแถวที่มี consequence สูงสุดที่ control อาจทำได้ หากปุ่มรวม acknowledgement และ approval ให้แยก journey: การ์ดรับทราบก่อน แล้ว authenticated work surface ค่อย authorize</p>
+<h2>3. Action แต่ละชนิดทำอะไรจริง</h2>
+<h3>Message</h3>
+<p>Message action ส่ง text ที่กำหนดเข้า chat ในฐานะข้อความจากผู้ใช้ ใช้เมื่อ visible conversational text คือผลลัพธ์ที่ต้องการ เช่น “กรุณาติดต่อกลับ” Free text ไม่ใช่ structured order, approval, identity binding หรือ workflow mutation</p>
+<h3>Postback</h3>
+<p>Postback action ส่ง postback event เข้า webhook พร้อม <code>data</code> ใช้ opaque intent ID สั้น ๆ ที่ resolve ไป server-side record เมื่อรับแล้วตรวจ webhook signature, map actor, resolve tenant/resource จาก authoritative context, reauthorize, enforce expiry/idempotency แล้วทำเฉพาะ operation ความเสี่ยงต่ำและย้อนกลับได้ตาม policy</p>
+<h3>URI</h3>
+<p>URI action เปิด <code>http</code>, <code>https</code>, <code>line</code> หรือ <code>tel</code> ที่ LINE รองรับ ใช้กับ read-only page, โทรศัพท์ และ LINE scheme ที่อนุมัติ ถือ query ทุกค่าเป็น untrusted และ read-only destination ห้าม mutate state ด้วย GET</p>
+<h3>URI opening LIFF</h3>
+<p>ใช้ URI action ปลายทางเป็น environment-approved LIFF URL สำหรับ form, sensitive detail, comparison และ explicit confirmation ส่วน login เป็นเพียง identity step แรกและไม่ใช่ business authorization</p>
+<p>Supported identity sequence: เรียก <code>liff.init()</code>; ใช้ <code>liff.login()</code> ใน external/in-app-browser ตามเอกสาร; ส่ง <strong>raw <code>liff.getIDToken()</code> ID token or access token</strong> ไป server; แล้ว <strong>verify using LINE's documented server flow</strong> ก่อน map verified subject กับ stored principal ข้อกำหนดสำคัญคือ <strong>Direct LINE Login authorization requests inside the LIFF browser are not guaranteed</strong> จึงต้องรักษา <code>liff.login()</code> path ของ LINE แทนสร้าง authorization request ภายใน LIFF</p>
+<p>แยก identity, routing และ transaction values:</p>
+<div class="tablewrap"><table><thead><tr><th>Concept</th><th>Meaning and required handling</th></tr></thead><tbody>
+<tr><td>MONOLITH transaction reference</td><td>opaque reference แบบ server-created, server-stored, high-entropy พร้อม CSRF/session binding; bind tenant, principal/audience, resource, revision, action, expiry และ exact return target; one-time consumed แบบ atomic และไม่ใช่ ID-token nonce</td></tr>
+<tr><td>LINE-managed liff.state</td><td>ข้อมูลเพิ่มเติมของ LIFF URL ที่ LINE ส่งต่อ เป็น untrusted routing input; not OAuth state, not permission และ not the MONOLITH transaction reference</td></tr>
+<tr><td>OAuth state</td><td>CSRF correlation สำหรับ separate supported authorization flow; flow นั้นสร้าง/เก็บเอง; not liff.state และไม่ใช่ business permission</td></tr>
+<tr><td>OIDC nonce</td><td>ID-token replay/correlation input; compare only when a separate supported authorization flow lets MONOLITH supply it และ LINE คืน ID-token claim</td></tr>
+</tbody></table></div>
+<h3>LIFF plus MONOLITH step-up</h3>
+<p>งานด้าน money, access, release, policy, scope หรือเปลี่ยนแล้วย้อนกลับยาก ต้องให้ LIFF เรียก MONOLITH authorization path โหลด authoritative data ใหม่ อธิบาย consequence ทำ step-up/two-person control ตาม policy consume one-time command แบบ atomic แล้วออก durable Signed Receipt การ login LIFF สำเร็จเพียงอย่างเดียวไม่ใช่ approval</p>
+<h2>4. การตัดสินใจสำหรับห้า presets</h2>
+<div class="tablewrap"><table><thead><tr><th>Preset</th><th>Primary control</th><th>เหตุผล</th><th>ผลฝั่ง server</th></tr></thead><tbody>
+<tr><td><code>design-approval</code></td><td>URI opening LIFF แล้ว MONOLITH step-up</td><td>exact design revision กระทบ release และงาน downstream</td><td>โหลด revision จริง ตรวจ signer scope/freshness approve/reject ครั้งเดียวและออก durable receipt</td></tr>
+<tr><td><code>quote-order</code></td><td>URI opening LIFF แล้ว MONOLITH step-up</td><td>ต้องเทียบ price, scope, tax/terms และยืนยัน order intent</td><td>Reprice/reload quote ตรวจ customer/project/current terms แล้วสร้าง structured order intent ครั้งเดียว</td></tr>
+<tr><td><code>sla-escalation</code></td><td>Postback with opaque intent ID เพื่อรับทราบ; URI สำหรับเปิดงาน</td><td>Acknowledgement ความเสี่ยงต่ำ แต่อนุมัติเงินมี consequence</td><td>บันทึกรับทราบแบบ idempotent; ส่ง approval ไป authenticated work item พร้อมตรวจ permission/limit</td></tr>
+<tr><td><code>site-update</code></td><td>Read-only URI</td><td>ลูกค้าดู evidence set ที่ curate ตาม audience แล้ว</td><td>Resolve short-lived audience-scoped view และ log ตาม policy โดยไม่ mutate workflow ตอนเปิด</td></tr>
+<tr><td><code>issue-evidence</code></td><td>Postback with opaque intent ID</td><td>รับทราบย้อนกลับได้ แต่ promote/reject ต้องตรวจ actor/project</td><td>Mark “review requested” ครั้งเดียว และ quarantine evidence จนมนุษย์ที่มีสิทธิ์ตรวจ</td></tr>
+</tbody></table></div>
+<p>Secondary button ห้ามสร้าง hidden alternative approval route ให้มี dominant CTA เดียวและ fallback ที่ consequence ต่ำกว่าอย่างชัดเจน</p>
+<h2>5. Duplicate, replay และ retry</h2>
+<p>LINE webhook redelivery และ network/client retry อาจสร้าง duplicate events และลำดับ redelivery อาจต่างจากลำดับเหตุการณ์ ออกแบบทุก route สำหรับ at-least-once observations:</p>
+<ol>
+<li>Verify <code>x-line-signature</code> บน raw body เดิมก่อน parse</li>
+<li>Deduplicate inbound webhook ด้วย <code>webhookEventId</code> และเก็บ processing result แรก</li>
+<li>Resolve opaque intent ID ไป record ที่ bind tenant, actor/audience, resource, revision, action, expiry และ use count</li>
+<li>Reject intent ที่ expired, consumed, mismatch หรือ stale การ replay ต้องคืน prior safe result หรือ explicit rejection และห้าม execute business command ซ้ำ</li>
+<li>ใช้ atomic idempotency/command key ครอบ business mutation และ audit record</li>
+<li>แยก duplicate delivery จาก <code>unknown-after-send</code> เมื่อ outbound result คลุมเครือ ให้เก็บ request/retry identifiers และ acceptance state, reconcile outcome และ never blind resend</li>
+</ol>
+<p>ห้ามใช้ LINE reply token เป็น business idempotency key เพียงอย่างเดียว และห้ามถือ event order เป็น authoritative workflow order</p>
+<h2>6. Transport proof ไม่ใช่ authorization</h2>
+<p>Valid webhook signature พิสูจน์ว่า raw body ถูก sign ด้วย channel secret และไม่ถูกแก้ระหว่างทาง นี่คือ transport authenticity/integrity แต่ไม่พิสูจน์ว่า:</p>
+<ul>
+<li>LINE user bind กับ MONOLITH principal ที่ตั้งใจ</li>
+<li>actor อยู่ tenant หรือมีสิทธิ์ต่อ resource</li>
+<li>action ผ่าน role, limit, policy หรือ separation of duties</li>
+<li>revision ยัง current</li>
+<li>group participant ถูกระบุตัวและมีสิทธิ์</li>
+<li>command ยังไม่หมดอายุหรือยังไม่เคย execute</li>
+</ul>
+<p>ดังนั้น signature verification เป็น ingress gate แรก แล้วตามด้วย identity binding, tenant/resource resolution, policy authorization, freshness, idempotency และ audit</p>
+<h2>7. Data contracts</h2>
+<h3>Safe postback</h3>
+<pre><code class="language-json">{
+  "type": "postback",
+  "label": "Acknowledge SLA",
+  "data": "intent=it_7mF2kQp9"
+}</code></pre>
+<p>Opaque value ทำหน้าที่เป็นตัวอ้างอิงเท่านั้น ส่วน Server record ที่แยกจาก <code>data</code> เป็นที่เก็บ tenant, resource, revision, allowed action, risk, expiry และ one-time status</p>
+<h3>Safe LIFF URI</h3>
+<pre><code class="language-json">{
+  "type": "uri",
+  "label": "Review and confirm",
+  "uri": "https://liff.line.me/{environment-liff-id}"
+}</code></pre>
+<p>สร้าง MONOLITH transaction reference ฝั่ง server หลังเข้าและ bind กับ authenticated session รวม exact return target หลีกเลี่ยง business authority ที่อ่านหรือ reuse ได้ใน URI ส่วน <code>liff.state</code> และ forwarded URL เสนอ routing ได้เท่านั้น Server ต้อง reload tenant/resource/revision/action และ authorization ก่อน one-time consumption</p>
+<h2>8. Prohibited anti-patterns</h2>
+<div class="tablewrap"><table><thead><tr><th>Anti-pattern</th><th>เหตุผลที่ fail</th><th>วิธีแทน</th></tr></thead><tbody>
+<tr><td>tenant/amount/role in postback data</td><td>Payload ที่ผู้ใช้ส่งต่อ/ควบคุมได้ดูเหมือน authority และ leak context</td><td>Opaque intent ID, authoritative lookup และ reauthorization</td></tr>
+<tr><td>free-text order truth</td><td>Text คลุมเครือ ขาด schema/revision binding</td><td>Structured order form ใน LIFF และ reload authoritative quote</td></tr>
+<tr><td>one-tap approval</td><td>ไม่มี exact-value review, freshness, step-up หรือ consequence acknowledgement</td><td>LIFF review + MONOLITH step-up + one-time command</td></tr>
+<tr><td>bearer tokens in URLs</td><td>URL รั่วผ่าน logs, history, referrers, screenshots และ forwarding</td><td>Server session, secure exchange และ opaque one-time reference</td></tr>
+<tr><td>group membership as permission</td><td>Actor ในกลุ่มอาจไม่ bind, membership เปลี่ยน และทุกคนเห็นข้อความ</td><td>Bind principal และ resolve tenant/resource authorization ฝั่ง server</td></tr>
+</tbody></table></div>
+<p>สิ่งต้องห้ามเพิ่ม: state-changing GET, reusable command ID, เชื่อ LIFF-decoded client profile, auto-promote group evidence, hidden approval CTA และถือ message acceptance เป็น human receipt</p>
+<h2>9. Review checklist</h2>
+<ul>
+<li>[ ] Business need ตรงหนึ่งแถวใน approved matrix</li>
+<li>[ ] Consequential action ใช้ URI opening LIFF plus MONOLITH step-up</li>
+<li>[ ] Postback มีเฉพาะ opaque expiring intent ID</li>
+<li>[ ] Message action ใช้เป็น conversational text เท่านั้น</li>
+<li>[ ] Read-only URI ไม่ mutate บน GET และไม่มี secret</li>
+<li>[ ] ตรวจ webhook signature ก่อน parse แล้วแยก authorization</li>
+<li>[ ] Tenant, principal, resource, revision, policy มาจาก authoritative server state</li>
+<li>[ ] Duplicate/replay/expiry/stale/forwarded-link tests fail safely</li>
+<li>[ ] One-time command และ audit atomic</li>
+<li>[ ] Reconcile <code>unknown-after-send</code> โดยไม่ blind resend</li>
+<li>[ ] Live delivery ปิดจน Trust P0 ผ่าน</li>
+<li>[ ] LIFF ใช้ <code>liff.init()</code> / <code>liff.login()</code> และ raw-token server verification; decoded client profile ไม่ใช่ identity proof</li>
+<li>[ ] MONOLITH transaction reference, LINE-managed <code>liff.state</code>, OAuth state และ OIDC nonce แยกจากกัน</li>
+</ul>
+<h2>แหล่งข้อมูลทางการ</h2>
+<p>Retrieved 2026-08-02:</p>
+<ul>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/actions/" target="_blank" rel="noopener">Messaging API action objects</a></li>
+<li><a href="https://developers.line.biz/en/reference/messaging-api/nojs/" target="_blank" rel="noopener">Messaging API reference: Message, Postback, URI</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/receiving-messages/" target="_blank" rel="noopener">Receive messages และ webhook redelivery</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/verify-webhook-signature/" target="_blank" rel="noopener">Verify webhook signature</a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/registering-liff-apps/" target="_blank" rel="noopener">Adding a LIFF app and scopes</a></li>
+<li><a href="https://developers.line.biz/en/reference/liff/" target="_blank" rel="noopener">LIFF API reference: initialization และ login</a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/developing-liff-apps/" target="_blank" rel="noopener">Developing a LIFF app</a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/opening-liff-app/" target="_blank" rel="noopener">Opening a LIFF app และ <code>liff.state</code></a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/using-user-profile/" target="_blank" rel="noopener">Using profile information in LIFF safely</a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/development-guidelines/" target="_blank" rel="noopener">LIFF development guidelines</a></li>
+<li><a href="https://developers.line.biz/en/reference/line-login/" target="_blank" rel="noopener">LINE Login API: token and nonce</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/retrying-api-request/" target="_blank" rel="noopener">Retrying a Messaging API request</a></li>
+</ul>
+</main></body>
+</html>

@@ -1,0 +1,183 @@
+/**
+ * jobs/JobDetailPrint.css — Print-friendly stylesheet for JobDetailPage
+ *
+ * Used by site supervisors to print job details directly from browser.
+ * Activated via window.print() or the PDF export button.
+ *
+ * Features:
+ * - White background with dark text for readability
+ * - Hidden UI controls (buttons, realtime indicator, navigation)
+ * - Compact timeline layout
+ * - Full-width panel table
+ * - DAPH Decor header and footer
+ * - A4 page sizing
+ *
+ * @version 15.3.0
+ */
+
+@media print {
+  /* === Global Reset === */
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-family: 'Inter', 'Sarabun', system-ui, sans-serif !important;
+    font-size: 11pt !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* === Hide non-printable elements === */
+  [data-testid="transition-actions"],
+  [data-testid="realtime-status"],
+  [data-print="hide"],
+  .no-print,
+  nav,
+  header:not([data-print="show"]),
+  footer:not([data-print="show"]),
+  button:not([data-print="show"]) {
+    display: none !important;
+  }
+
+  /* === Job Detail Container === */
+  [data-testid="job-detail-page"] {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    color: #000 !important;
+  }
+
+  /* === Header === */
+  [data-testid="job-detail-page"] > div:first-child {
+    border-bottom: 2px solid #000 !important;
+    padding-bottom: 12pt !important;
+    margin-bottom: 12pt !important;
+  }
+
+  /* === Print Header (injected by JS) === */
+  .print-header {
+    display: block !important;
+    text-align: center;
+    margin-bottom: 16pt;
+    padding-bottom: 8pt;
+    border-bottom: 1px solid #ccc;
+  }
+
+  .print-header__company {
+    font-size: 14pt;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .print-header__subtitle {
+    font-size: 9pt;
+    color: #666;
+    margin: 2pt 0;
+  }
+
+  .print-header__doc-title {
+    font-size: 12pt;
+    font-weight: 600;
+    margin-top: 8pt;
+    text-transform: uppercase;
+  }
+
+  /* === Status Timeline (print) === */
+  [data-testid="status-timeline"] {
+    display: flex !important;
+    gap: 4pt !important;
+    justify-content: center !important;
+    padding: 8pt 0 !important;
+    border: 1px solid #ddd !important;
+    border-radius: 4pt !important;
+    margin-bottom: 12pt !important;
+  }
+
+  [data-testid^="timeline-dot-"] {
+    width: 14pt !important;
+    height: 14pt !important;
+  }
+
+  /* === Sections === */
+  [data-testid="job-detail-page"] > div[style] {
+    background: #fff !important;
+    border: 1px solid #e5e7eb !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    margin-bottom: 10pt !important;
+    padding: 12pt !important;
+  }
+
+  /* === Panel Table === */
+  [data-testid="panel-list"] table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 9pt !important;
+  }
+
+  [data-testid="panel-list"] th {
+    background: #f3f4f6 !important;
+    color: #000 !important;
+    border: 1px solid #d1d5db !important;
+    padding: 4pt 6pt !important;
+    font-weight: 600 !important;
+  }
+
+  [data-testid="panel-list"] td {
+    border: 1px solid #d1d5db !important;
+    padding: 4pt 6pt !important;
+    color: #000 !important;
+  }
+
+  [data-testid^="panel-row-"]:nth-child(even) {
+    background: #f9fafb !important;
+  }
+
+  /* === Info Grid === */
+  .info-grid-print {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr 1fr !important;
+    gap: 8pt !important;
+  }
+
+  /* === Text Color Overrides === */
+  h1, h2, h3, span, p, td, th, label {
+    color: #000 !important;
+  }
+
+  /* === Badges === */
+  [data-testid="job-detail-page"] span[style*="background"] {
+    border: 1px solid #999 !important;
+    background: transparent !important;
+  }
+
+  /* === Print Footer === */
+  .print-footer {
+    display: block !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 8pt;
+    color: #999;
+    border-top: 1px solid #ddd;
+    padding-top: 4pt;
+  }
+
+  /* === Page Setup === */
+  @page {
+    size: A4 portrait;
+    margin: 15mm 12mm 20mm 12mm;
+  }
+}
+
+/* === Screen: hide print-only elements === */
+@media screen {
+  .print-header,
+  .print-footer,
+  .print-only {
+    display: none !important;
+  }
+}

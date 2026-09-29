@@ -1,0 +1,138 @@
+name: Chromatic PR Comment
+
+on:
+  workflow_run:
+    workflows: ["Chromatic Visual Regression"]
+    types: [completed]
+
+  # Manual trigger for testing — supply a PR number to receive the comment
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to comment on'
+        required: true
+        type: number
+      conclusion:
+        description: 'Simulated conclusion'
+        required: false
+        default: 'success'
+        type: choice
+        options: [success, failure, cancelled]
+      build_url:
+        description: 'Chromatic build URL (optional override)'
+        required: false
+        default: ''
+
+permissions:
+  pull-requests: write
+  checks: read
+
+
+concurrency:
+  group: chromatic-pr-comment-${{ github.event.workflow_run.head_branch || github.ref }}
+  cancel-in-progress: true
+jobs:
+  comment:
+    name: Post Chromatic build link as PR comment
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Post Chromatic build link
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const isManual = context.eventName === 'workflow_dispatch';
+
+            let prNumber, headSha, headBranch, conclusion, runId, runUrl;
+            let buildUrlOverride = '';
+
+            if (isManual) {
+              // ── Manual (workflow_dispatch) path ──────────────────────────────
+              prNumber         = parseInt(context.payload.inputs.pr_number, 10);
+              conclusion       = context.payload.inputs.conclusion || 'success';
+              buildUrlOverride = context.payload.inputs.build_url  || '';
+              runId            = 'manual';
+              runUrl           = '#';
+
+              const { data: pr } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo:  context.repo.repo,
+                pull_number: prNumber,
+              });
+              headSha    = pr.head.sha;
+              headBranch = pr.head.ref;
+
+            } else {
+              // ── Automated (workflow_run) path ─────────────────────────────────
+              const run  = context.payload.workflow_run;
+              headBranch = run.head_branch;
+              headSha    = run.head_sha;
+              conclusion = run.conclusion;
+              runId      = run.id;
+              runUrl     = run.html_url;
+
+              const { data: prs } = await github.rest.pulls.list({
+                owner: context.repo.owner,
+                repo:  context.repo.repo,
+                head:  `${context.repo.owner}:${headBranch}`,
+                state: 'open',
+              });
+
+              if (prs.length === 0) {
+                console.log(`No open PR found for branch: ${headBranch}`);
+                return;
+              }
+              prNumber = prs[0].number;
+            }
+
+            // ── Locate Chromatic check run for build URL ──────────────────────
+            const { data: checkData } = await github.rest.checks.listForRef({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              ref:   headSha,
+            });
+
+            const chromaticCheck = checkData.check_runs.find(
+              (c) => (c.app && c.app.slug === 'chromatic-com') ||
+                     (c.name && c.name.toLowerCase().includes('chromatic'))
+            );
+
+            const buildUrl =
+              buildUrlOverride ||
+              chromaticCheck?.details_url ||
+              `https://www.chromatic.com/builds?appId=6a916bc5171efe1f3f09f56e`;
+
+            const summary    = chromaticCheck?.output?.summary ?? '';
+            const storyMatch = summary.match(/(\d+)\s+stor/i);
+            const storyCount = storyMatch ? storyMatch[1] : '—';
+
+            const statusEmoji = conclusion === 'success' ? '✅' : '❌';
+            const statusText  = conclusion === 'success' ? 'passed' : (conclusion ?? 'unknown');
+
+            const footer = isManual
+              ? '_Triggered manually via workflow\\_dispatch_'
+              : `_Triggered by [workflow run #${runId}](${runUrl})_`;
+
+            const body = [
+              `## ${statusEmoji} Chromatic Visual Regression — ${statusText}`,
+              '',
+              '| Field | Value |',
+              '|---|---|',
+              `| **Build** | [View on Chromatic](${buildUrl}) |`,
+              `| **Branch** | \`${headBranch}\` |`,
+              `| **Commit** | \`${headSha.slice(0, 7)}\` |`,
+              `| **Stories checked** | ${storyCount} |`,
+              '',
+              footer,
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner:        context.repo.owner,
+              repo:         context.repo.repo,
+              issue_number: prNumber,
+              body,
+            });
+
+            console.log(`Comment posted on PR #${prNumber}`);

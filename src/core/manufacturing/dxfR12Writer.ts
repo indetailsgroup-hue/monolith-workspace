@@ -276,6 +276,36 @@ ${formatNum(radius, precision)}
 }
 
 /**
+ * Write an ARC entity (DXF R12).
+ * startAngle / endAngle are in degrees, CCW from +X.
+ */
+function writeArc(
+  cx: number,
+  cy: number,
+  radius: number,
+  startAngleDeg: number,
+  endAngleDeg: number,
+  layer: string,
+  precision: number
+): string {
+  return `0
+ARC
+8
+${layer}
+10
+${formatNum(cx, precision)}
+20
+${formatNum(cy, precision)}
+40
+${formatNum(radius, precision)}
+50
+${formatNum(startAngleDeg, precision)}
+51
+${formatNum(endAngleDeg, precision)}
+`;
+}
+
+/**
  * Write a POLYLINE entity (closed rectangle).
  */
 function writeRectangle(
@@ -363,14 +393,79 @@ ${text}
 // ============================================================================
 
 /**
- * Write outer contour (rectangle).
+ * Write outer contour — rectangle OR arc panel.
+ *
+ * For 'arc' contours the curved edge is emitted as a DXF ARC entity;
+ * the three straight sides are emitted as LINE entities.
+ *
+ * DXF coordinate system: origin = bottom-left corner of bounding box.
+ * The arc centre is derived from curveProfile.ts convention:
+ *   edge=TOP    → centre (W/2, H-R)
+ *   edge=BOTTOM → centre (W/2, R)
+ *   edge=LEFT   → centre (R, H/2)
+ *   edge=RIGHT  → centre (W-R, H/2)
  */
 function writeOuterContour(part: FlatPart, config: DxfWriterConfig): string {
+  const { outer } = part;
+
+  if (outer.type === 'arc') {
+    const { width: W, height: H, edge, radius: R } = outer;
+    const p = config.precision;
+    let dxf = '';
+
+    // Half-angle of the arc chord in radians → start/end angles in degrees
+    const halfSweepRad = (outer.sweepDeg / 2) * (Math.PI / 180);
+
+    if (edge === 'TOP') {
+      // Centre at (W/2, H-R)
+      const cx = W / 2, cy = H - R;
+      // Arc: from angle (90 + halfSweep) to (90 - halfSweep)  [CCW]
+      const startA = 90 + outer.sweepDeg / 2;
+      const endA   = 90 - outer.sweepDeg / 2;
+      dxf += writeArc(cx, cy, R, endA, startA, LAYER_OUTLINE, p);
+      // Three straight sides: bottom, left, right
+      dxf += writeLine(0, 0, W, 0, LAYER_OUTLINE, p);
+      dxf += writeLine(0, 0, 0, H, LAYER_OUTLINE, p);
+      dxf += writeLine(W, 0, W, H, LAYER_OUTLINE, p);
+    } else if (edge === 'BOTTOM') {
+      // Centre at (W/2, R)
+      const cx = W / 2, cy = R;
+      const startA = 270 - outer.sweepDeg / 2;
+      const endA   = 270 + outer.sweepDeg / 2;
+      dxf += writeArc(cx, cy, R, startA, endA, LAYER_OUTLINE, p);
+      dxf += writeLine(0, H, W, H, LAYER_OUTLINE, p);
+      dxf += writeLine(0, 0, 0, H, LAYER_OUTLINE, p);
+      dxf += writeLine(W, 0, W, H, LAYER_OUTLINE, p);
+    } else if (edge === 'LEFT') {
+      // Centre at (R, H/2)
+      const cx = R, cy = H / 2;
+      const startA = 180 - outer.sweepDeg / 2;
+      const endA   = 180 + outer.sweepDeg / 2;
+      dxf += writeArc(cx, cy, R, startA, endA, LAYER_OUTLINE, p);
+      dxf += writeLine(0, H, W, H, LAYER_OUTLINE, p);
+      dxf += writeLine(0, 0, W, 0, LAYER_OUTLINE, p);
+      dxf += writeLine(W, 0, W, H, LAYER_OUTLINE, p);
+    } else {
+      // edge === 'RIGHT': Centre at (W-R, H/2)
+      const cx = W - R, cy = H / 2;
+      const startA = 0 - outer.sweepDeg / 2;
+      const endA   = outer.sweepDeg / 2;
+      dxf += writeArc(cx, cy, R, startA, endA, LAYER_OUTLINE, p);
+      dxf += writeLine(0, H, W, H, LAYER_OUTLINE, p);
+      dxf += writeLine(0, 0, W, 0, LAYER_OUTLINE, p);
+      dxf += writeLine(0, 0, 0, H, LAYER_OUTLINE, p);
+    }
+
+    void halfSweepRad; // suppress unused-var lint
+    return dxf;
+  }
+
+  // Default: rectangle
   return writeRectangle(
     0,
     0,
-    part.outer.width,
-    part.outer.height,
+    outer.width,
+    outer.height,
     LAYER_OUTLINE,
     config.precision
   );

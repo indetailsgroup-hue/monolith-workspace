@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MONOLITH · SOP Package Master Index v3.0</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter','Sarabun',sans-serif;background:#f4f6fa;color:#1f2d5a;min-height:100vh}
+
+    /* ── HEADER ─────────────────────────────────────────────── */
+    .header{background:#1f2d5a;color:#fff;padding:28px 40px 22px}
+    .header-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+    .header h1{font-size:21px;font-weight:700;letter-spacing:.4px;line-height:1.3}
+    .header h1 .gold{color:#c9a227}
+    .header-sub{font-size:11.5px;color:rgba(255,255,255,.58);margin-top:5px}
+    .version-pill{background:#c9a227;color:#fff;font-size:10px;font-weight:700;padding:4px 12px;border-radius:12px;white-space:nowrap;align-self:flex-start;margin-top:2px}
+    .stats-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+    .stat-pill{background:rgba(255,255,255,.11);border-radius:20px;padding:5px 14px;font-size:12px;color:#fff}
+    .stat-pill strong{color:#c9a227}
+
+    /* ── CONTROLS ────────────────────────────────────────────── */
+    .controls{background:#fff;border-bottom:1px solid #e4eaf5;padding:13px 40px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;position:sticky;top:0;z-index:200;box-shadow:0 2px 10px rgba(31,45,90,.07)}
+    .search-box{flex:1;min-width:200px;max-width:340px;position:relative}
+    .search-box input{width:100%;padding:8px 12px 8px 34px;border:1.5px solid #dde4f0;border-radius:8px;font-size:13px;font-family:inherit;color:#1f2d5a;outline:none;transition:border-color .2s}
+    .search-box input:focus{border-color:#1f2d5a}
+    .search-box input::placeholder{color:#aab2c8}
+    .search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#9aa5c4;font-size:13px;pointer-events:none}
+    .type-tabs{display:flex;gap:3px;background:#f2f4fa;border-radius:8px;padding:3px}
+    .type-tab{padding:5px 13px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:#7b87a8;transition:all .18s;font-family:inherit}
+    .type-tab.active{background:#1f2d5a;color:#fff;box-shadow:0 1px 4px rgba(31,45,90,.2)}
+    .cat-select{padding:8px 10px;border:1.5px solid #dde4f0;border-radius:8px;font-size:12.5px;font-family:inherit;color:#1f2d5a;outline:none;cursor:pointer;background:#fff}
+    .cat-select:focus{border-color:#1f2d5a}
+    .result-count{margin-left:auto;font-size:12px;color:#9aa5c4;white-space:nowrap}
+
+    /* ── AGENT CHIPS ─────────────────────────────────────────── */
+    .agent-bar{background:#fff;border-bottom:1px solid #e4eaf5;padding:9px 40px;display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+    .agent-label{font-size:10.5px;font-weight:700;color:#9aa5c4;text-transform:uppercase;letter-spacing:.5px;margin-right:4px;white-space:nowrap}
+    .agent-chip{padding:3px 9px;border-radius:11px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid transparent;transition:all .15s;user-select:none}
+    .chip-live{background:rgba(31,45,90,.07);color:#1f2d5a;border-color:rgba(31,45,90,.14)}
+    .chip-live:hover{background:rgba(31,45,90,.15)}
+    .chip-live.active{background:#1f2d5a;color:#fff;border-color:#1f2d5a}
+    .chip-planned{background:rgba(201,162,39,.11);color:#7a5d0a;border-color:rgba(201,162,39,.22)}
+    .chip-planned:hover{background:rgba(201,162,39,.2)}
+    .chip-planned.active{background:#c9a227;color:#fff;border-color:#c9a227}
+    .chip-divider{width:1px;height:18px;background:#dde4f0;flex-shrink:0;margin:0 2px}
+    .chip-planned-label{font-size:10px;color:#9aa5c4;margin-left:2px}
+    .clear-chip{font-size:11px;color:#aab2c8;cursor:pointer;padding:3px 7px;text-decoration:underline;border-radius:6px}
+    .clear-chip:hover{color:#1f2d5a;background:#f2f4fa}
+
+    /* ── TABLE ───────────────────────────────────────────────── */
+    .table-wrap{padding:22px 40px 40px}
+    table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 14px rgba(31,45,90,.06)}
+    thead{background:#1f2d5a}
+    thead th{padding:11px 14px;text-align:left;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#fff;white-space:nowrap}
+    thead th:first-child{width:38px;text-align:center}
+    tbody tr{border-bottom:1px solid #f0f4fa;transition:background .12s}
+    tbody tr:last-child{border-bottom:none}
+    tbody tr:hover{background:#f7f9fd}
+    tbody tr.hidden{display:none}
+    tbody tr.row-new{background:linear-gradient(to right,rgba(201,162,39,.04),transparent)}
+    td{padding:10px 14px;font-size:12.5px;vertical-align:middle}
+    td:first-child{text-align:center;color:#b0bbd4;font-size:11px;font-weight:600}
+    .fname{font-weight:600;color:#1f2d5a;font-size:11.5px;font-family:'Courier New',monospace;word-break:break-all;line-height:1.5}
+    .fdesc{color:#4a5675;font-size:12px;line-height:1.55}
+    .new-tag{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9.5px;font-weight:700;background:#c9a227;color:#fff;margin-left:5px;vertical-align:middle;letter-spacing:.3px}
+
+    /* ── BADGES ──────────────────────────────────────────────── */
+    .badge{display:inline-block;padding:2px 7px;border-radius:5px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+    .b-docx{background:rgba(31,45,90,.09);color:#1f2d5a}
+    .b-html{background:rgba(201,162,39,.14);color:#7a5d0a}
+    .b-md{background:rgba(39,174,96,.11);color:#1a7040}
+    .b-pptx{background:rgba(209,52,56,.10);color:#8c1a1d}
+    .b-pdf{background:rgba(180,80,0,.10);color:#7a3300}
+    .cat-badge{display:inline-block;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:600;background:#f0f3fb;color:#4a5675;white-space:nowrap}
+    .lang-badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;white-space:nowrap}
+    .lang-en{background:rgba(0,110,200,.09);color:#005595}
+    .lang-th{background:rgba(200,40,40,.09);color:#951a1a}
+    .lang-both{background:rgba(90,40,150,.09);color:#5a1a90}
+
+    /* ── EMPTY STATE ─────────────────────────────────────────── */
+    .empty-state{text-align:center;padding:52px 24px;color:#aab2c8}
+    .empty-state .ei{font-size:34px;margin-bottom:12px}
+    .empty-state p{font-size:13.5px}
+
+    /* ── FOOTER ──────────────────────────────────────────────── */
+    .footer{text-align:center;padding:18px 40px;font-size:11px;color:#aab2c8;border-top:1px solid #e8edf5;background:#fff}
+    .footer strong{color:#1f2d5a}
+
+    @media(max-width:720px){
+      .header,.controls,.agent-bar,.table-wrap{padding-left:14px;padding-right:14px}
+      .header h1{font-size:17px}
+      .controls{flex-direction:column;align-items:stretch}
+      .search-box{max-width:100%}
+      .result-count{margin-left:0}
+      td{padding:8px 10px}
+      .fname{font-size:10.5px}
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── HEADER ──────────────────────────────────────────────────────── -->
+<div class="header">
+  <div class="header-top">
+    <div>
+      <h1>MONOLITH · <span class="gold">DAPH</span> · SOP Package <span class="gold">Master Index</span></h1>
+      <p class="header-sub">Decor AI Agent Programme · v3.0 · AMD-001 · Q1 2027 Annual Governance Review</p>
+    </div>
+    <div class="version-pill">v3.0 · AMD-001</div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-pill"><strong id="hdr-total">154</strong> Files Total</div>
+    <div class="stat-pill"><strong>20</strong> Live Agents</div>
+    <div class="stat-pill"><strong>5</strong> Planned · Phase B/C</div>
+    <div class="stat-pill"><strong>24</strong> SOP Sections</div>
+    <div class="stat-pill"><strong>13</strong> Departments</div>
+    <div class="stat-pill"><strong>AMD-001</strong> Active</div>
+  </div>
+</div>
+
+<!-- ── CONTROLS ─────────────────────────────────────────────────────── -->
+<div class="controls">
+  <div class="search-box">
+    <span class="search-icon">&#128269;</span>
+    <input type="text" id="search-input" placeholder="Search filename or description…" oninput="applyFilters()" />
+  </div>
+  <div class="type-tabs" id="type-tabs">
+    <button class="type-tab active" data-type="all" onclick="setType('all')">All</button>
+    <button class="type-tab" data-type="DOCX" onclick="setType('DOCX')">DOCX</button>
+    <button class="type-tab" data-type="HTML" onclick="setType('HTML')">HTML</button>
+    <button class="type-tab" data-type="MD" onclick="setType('MD')">MD</button>
+  </div>
+  <select class="cat-select" id="cat-select" onchange="applyFilters()">
+    <option value="all">All Categories</option>
+    <option value="SOP Manual">SOP Manual</option>
+    <option value="Project Summary">Project Summary</option>
+    <option value="Planning">Planning</option>
+    <option value="Backup">Backup</option>
+    <option value="Archive">Archive</option>
+    <option value="Training">Training</option>
+    <option value="Dashboard">Dashboard</option>
+    <option value="Executive Summary">Executive Summary</option>
+    <option value="Section Brief">Section Brief</option>
+    <option value="Agent Brief">Agent Brief</option>
+    <option value="Presentation Slide">Presentation Slide</option>
+    <option value="Index &amp; Changelog">Index &amp; Changelog</option>
+  </select>
+  <div class="result-count" id="result-count">47 of 47</div>
+</div>
+
+<!-- ── AGENT FILTER BAR ─────────────────────────────────────────────── -->
+<div class="agent-bar">
+  <span class="agent-label">Filter by Agent:</span>
+  <span class="agent-chip chip-live" data-agent="Kelly" onclick="setAgent('Kelly')">Kelly</span>
+  <span class="agent-chip chip-live" data-agent="Signal" onclick="setAgent('Signal')">Signal</span>
+  <span class="agent-chip chip-live" data-agent="Blaze" onclick="setAgent('Blaze')">Blaze</span>
+  <span class="agent-chip chip-live" data-agent="Atlas" onclick="setAgent('Atlas')">Atlas</span>
+  <span class="agent-chip chip-live" data-agent="Bo" onclick="setAgent('Bo')">Bo</span>
+  <span class="agent-chip chip-live" data-agent="Nova" onclick="setAgent('Nova')">Nova</span>
+  <span class="agent-chip chip-live" data-agent="Aria" onclick="setAgent('Aria')">Aria</span>
+  <span class="agent-chip chip-live" data-agent="Rex" onclick="setAgent('Rex')">Rex</span>
+  <span class="agent-chip chip-live" data-agent="Forge" onclick="setAgent('Forge')">Forge</span>
+  <span class="agent-chip chip-live" data-agent="Leo" onclick="setAgent('Leo')">Leo</span>
+  <span class="agent-chip chip-live" data-agent="Remy" onclick="setAgent('Remy')">Remy</span>
+  <span class="agent-chip chip-live" data-agent="Finn" onclick="setAgent('Finn')">Finn</span>
+  <span class="agent-chip chip-live" data-agent="Hana" onclick="setAgent('Hana')">Hana</span>
+  <span class="agent-chip chip-live" data-agent="Core" onclick="setAgent('Core')">Core</span>
+  <span class="agent-chip chip-live" data-agent="Nexus" onclick="setAgent('Nexus')">Nexus</span>
+  <span class="agent-chip chip-live" data-agent="Compass" onclick="setAgent('Compass')">Compass</span>
+  <span class="agent-chip chip-live" data-agent="Scout" onclick="setAgent('Scout')">Scout</span>
+  <span class="agent-chip chip-live" data-agent="Guardian" onclick="setAgent('Guardian')">Guardian</span>
+  <span class="agent-chip chip-live" data-agent="Talent" onclick="setAgent('Talent')">Talent</span>
+  <span class="agent-chip chip-live" data-agent="Ops" onclick="setAgent('Ops')">Ops</span>
+  <div class="chip-divider"></div>
+  <span class="chip-planned-label">Planned:</span>
+  <span class="agent-chip chip-planned" data-agent="Vega" onclick="setAgent('Vega')">Vega</span>
+  <span class="agent-chip chip-planned" data-agent="Stone" onclick="setAgent('Stone')">Stone</span>
+  <span class="agent-chip chip-planned" data-agent="Ember" onclick="setAgent('Ember')">Ember</span>
+  <span class="agent-chip chip-planned" data-agent="Pulse" onclick="setAgent('Pulse')">Pulse</span>
+  <span class="agent-chip chip-planned" data-agent="Shore" onclick="setAgent('Shore')">Shore</span>
+  <span class="clear-chip" onclick="clearAgent()">&#215; Clear</span>
+</div>
+
+<!-- ── TABLE ────────────────────────────────────────────────────────── -->
+<div class="table-wrap">
+  <table id="file-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Filename</th>
+        <th>Type</th>
+        <th>Category</th>
+        <th>Lang</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody id="table-body"></tbody>
+  </table>
+  <div class="empty-state" id="empty-state" style="display:none">
+    <div class="ei">&#128269;</div>
+    <p>No files match the current filters · ไม่พบไฟล์ที่ตรงกัน</p>
+  </div>
+</div>
+
+<!-- ── FOOTER ───────────────────────────────────────────────────────── -->
+<div class="footer">
+  <strong>MONOLITH · DAPH Decor AI Agent Programme</strong> &nbsp;·&nbsp;
+  SOP Package v3.0 · AMD-003 WS1–WS5 + AMD-004 PDD · Analytics &amp; Governance · Q1 2029–Q2 2033 &nbsp;·&nbsp; 115 files
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────
+const LIVE20=['Kelly','Signal','Blaze','Atlas','Bo','Nova','Aria','Rex','Forge','Leo','Remy','Finn','Hana','Core','Nexus','Compass','Scout','Guardian','Talent','Ops'];
+const V30_5=['Vega','Stone','Ember','Pulse','Shore'];
+const ALL25=[...LIVE20,...V30_5];
+const PHASE_D=['Ledger','Frame','Draft'];
+const ALL28=[...ALL25,...PHASE_D];
+
+const FILES=[
+  {n:1,  name:'SOP_Integrated_Manual_accepted.docx',                         type:'DOCX', cat:'SOP Manual',        lang:'EN',    isNew:false, agents:LIVE20,
+         desc:'Full 23-section SOP manual — all tracked changes accepted, production-ready'},
+  {n:2,  name:'monolith_project_summary_v25_accepted.docx',                  type:'DOCX', cat:'Project Summary',   lang:'EN',    isNew:false, agents:ALL28,
+         desc:'Project summary — S1–S58 CLEAN FINAL (58 sections): AMD-004 PDD (WS-A–E, ฿5.2M, S38), S39–S44 GAP-01/02/03/04/07/08 + GitHub Roadmap, S45–S49 Phase 1 closure (THB 5.2M), S50 Phase 2 PDD (THB 6.0M), S51 P2 Procurement, S52 P2 Vendor Onboarding, S53 P2 Go-Live, S54 Phase 3 PDD (THB 7.0M; P3-M1–M4; 92% coverage target), S55 Phase 3 RFP &amp; Vendor Selection (RFP-P3-WSA/B/C-001; scoring 40/25/20/15; P3-VND-CHK-01–10), S56 Phase 3 Vendor Onboarding (MONOLITH-S56-P3ONB-001; P3-ONB-CHK-01–12; SLA acceptance matrix), S57 Phase 3 Go-Live (MONOLITH-S57-P3GOLIVE-001; P3-GL-CHK-01–10; cutover T-5→T+72h; P3-M4; 92% coverage confirmed; THB 18.2M), S58 BAU Governance Charter (MONOLITH-S58-BAUGOV-001 v1.0; 4 committees SC/PGB/TAG/AOC; 5 KPI review cycles; Programme Closure Certificate MONOLITH-S58-CLOSECERT-001; Post-Programme Audit Plan T+30/60/90d + Annual; activated by P3-GL-CHK-10 + P3-M4; 28/28 agents; THB 18.2M total; +36pp 56%→92%) — Phase 1 COMPLETE · Phase 2 COMPLETE · Phase 3 COMPLETE · BAU GOVERNANCE ACTIVE — 0 tracked changes, 200,150 bytes'},
+  {n:3,  name:'v30_planning_final.docx',                                      type:'DOCX', cat:'Planning',          lang:'EN',    isNew:false, agents:V30_5,
+         desc:'v3.0 scope planning document — clean final, all tracked changes accepted'},
+  {n:4,  name:'v30_planning.docx',                                            type:'DOCX', cat:'Planning',          lang:'EN',    isNew:false, agents:V30_5,
+         desc:'v3.0 scope planning document — with tracked changes (pre-accept version)'},
+  {n:5,  name:'v30_planning.md',                                              type:'MD',   cat:'Planning',          lang:'EN',    isNew:false, agents:V30_5,
+         desc:'v3.0 planning source — Markdown format, 5 new agents, Phase A/B/C scope'},
+  {n:6,  name:'monolith_project_summary_v25_accepted_s24_tracked.docx',      type:'DOCX', cat:'Backup',            lang:'EN',    isNew:true,  agents:LIVE20,
+         desc:'Backup — S24 Q1 2027 Annual Governance Review pre-accept snapshot (AMD-001, 155+ tracked insertions)'},
+  {n:7,  name:'monolith_project_summary_v25_accepted_s25_tracked.docx',      type:'DOCX', cat:'Backup',            lang:'EN',    isNew:true,  agents:LIVE20,
+         desc:'Backup — S25 Phase B Deployment Readiness Checklist pre-accept snapshot (58 elements, 200+ tracked insertions)'},
+  {n:8,  name:'monolith_project_summary_v25_accepted_s23_tracked.docx',      type:'DOCX', cat:'Backup',            lang:'EN',    isNew:false, agents:LIVE20,
+         desc:'Backup — S23 Programme Governance & Steering Committee Charter pre-accept snapshot (133 tracked insertions)'},
+  {n:9,  name:'monolith_project_summary_v25_accepted_s26_tracked.docx',      type:'DOCX', cat:'Backup',            lang:'EN',    isNew:false, agents:LIVE20,
+         desc:'Backup — S26 Phase B Go-Live Sign-off Records pre-accept snapshot (61 elements, 232 tracked insertions)'},
+  {n:52, name:'monolith_project_summary_v25_accepted_s27_tracked.docx',      type:'DOCX', cat:'Backup',            lang:'EN',    isNew:false, agents:ALL25,
+         desc:'Backup — S27 Phase C Deployment Assessment (Pulse & Shore) pre-accept snapshot (59 elements, 220 tracked insertions)'},
+  {n:54, name:'monolith_project_summary_v25_accepted_s28_tracked.docx',      type:'DOCX', cat:'Backup',            lang:'EN',    isNew:false, agents:ALL25,
+         desc:'Backup — S28 Q1 2028 Annual Programme Review & AMD-002 Scope pre-accept snapshot (57 elements, 208 tracked insertions)'},
+  {n:56, name:'monolith_project_summary_v25_accepted_s29_tracked.docx',      type:'DOCX', cat:'Backup',            lang:'EN',    isNew:false,  agents:ALL25,
+         desc:'Backup — S29 AMD-002-WS2 Phase D Commissioning Framework (Ledger/Frame/Draft) pre-accept snapshot (54 elements, 197 tracked insertions)'},
+  {n:10,  name:'monolith_project_summary_v25_accepted_s22_tracked.docx',      type:'DOCX', cat:'Backup',            lang:'EN',    isNew:false, agents:LIVE20,
+         desc:'Backup — S22 AI Agent Audit & Continuous Improvement pre-accept snapshot (128 tracked insertions)'},
+  {n:11,  name:'monolith_project_summary_v25_accepted_s21_tracked.docx',      type:'DOCX', cat:'Backup',            lang:'EN',    isNew:false, agents:LIVE20,
+         desc:'Backup — S21 Agent Lifecycle & Decommissioning pre-accept snapshot (157 tracked insertions)'},
+  {n:12, name:'monolith_project_summary_v25_accepted_s20_tracked.docx',      type:'DOCX', cat:'Backup',            lang:'EN',    isNew:false, agents:LIVE20,
+         desc:'Backup — S20 AI Ethics pre-accept snapshot (138 tracked insertions)'},
+  {n:13, name:'monolith_project_summary_v25_accepted_s19_tracked.docx',      type:'DOCX', cat:'Backup',            lang:'EN',    isNew:false, agents:LIVE20,
+         desc:'Backup — S19 Data Privacy & AI Compliance pre-accept snapshot'},
+  {n:14, name:'monolith_project_summary_v25_accepted_s18_tracked.docx',      type:'DOCX', cat:'Backup',            lang:'EN',    isNew:false, agents:LIVE20,
+         desc:'Backup — S18 Incident Response & Escalation Playbook pre-accept snapshot'},
+  {n:15, name:'monolith_project_summary_v25_accepted_s17_tracked.docx',      type:'DOCX', cat:'Backup',            lang:'EN',    isNew:false, agents:LIVE20,
+         desc:'Backup — S17 Agent KPIs & SLA Thresholds pre-accept snapshot'},
+  {n:16, name:'monolith_project_summary_v25_accepted_s16_tracked.docx',      type:'DOCX', cat:'Backup',            lang:'EN',    isNew:false, agents:LIVE20,
+         desc:'Backup — S16 Cross-Agent Orchestration pre-accept snapshot'},
+  {n:17, name:'monolith_project_summary_v25_final_with_tracked_changes.docx',type:'DOCX', cat:'Archive',           lang:'EN',    isNew:false, agents:LIVE20,
+         desc:'Project summary — S1–S15 with tracked changes (pre-S16 baseline)'},
+  {n:18, name:'monolith_project_summary_v25_final.docx',                     type:'DOCX', cat:'Archive',           lang:'EN',    isNew:false, agents:LIVE20,
+         desc:'Project summary — S1–S15 clean final, all tracked changes accepted'},
+  {n:19, name:'monolith_project_summary_v25.docx',                           type:'DOCX', cat:'Archive',           lang:'EN',    isNew:false,
+         agents:['Kelly','Signal','Blaze','Atlas','Bo','Nova','Aria','Rex','Forge','Leo','Remy','Finn','Hana','Core'],
+         desc:'Project summary — original v2.5 baseline document (S1–S10)'},
+  {n:20, name:'training_quiz_v25.docx',                                      type:'DOCX', cat:'Training',          lang:'EN/TH', isNew:false, agents:LIVE20,
+         desc:'Training Quiz — 30 questions, English/Thai hybrid, Parts 1–3, S8 reference, 20 agents'},
+  {n:21, name:'training_quiz_v25_thai.docx',                                 type:'DOCX', cat:'Training',          lang:'TH',    isNew:false, agents:LIVE20,
+         desc:'Training Quiz — Thai-language, 30 questions, Sarabun font, answer sheet, S8 reference'},
+  {n:22, name:'ai_agent_dashboard_v25.html',                                 type:'HTML', cat:'Dashboard',         lang:'EN',    isNew:false, agents:LIVE20,
+         desc:'Interactive AI Agent Dashboard — 20 live agents, 13 departments, department / priority / status filters'},
+  {n:23, name:'eng_exec_summary.html',                                       type:'HTML', cat:'Executive Summary', lang:'EN',    isNew:false, agents:LIVE20,
+         desc:'English Executive Summary — all 13 sections, 20 agents, roadmap highlights'},
+  {n:24, name:'thai_exec_summary.html',                                      type:'HTML', cat:'Executive Summary', lang:'TH',    isNew:false, agents:LIVE20,
+         desc:'Thai Executive Summary — ภาพรวมทุก 13 หมวด, 20 AI agents, แผนงาน v2.5'},
+  {n:25, name:'thai_v30_exec_summary.html',                                  type:'HTML', cat:'Executive Summary', lang:'TH',    isNew:false, agents:ALL25,
+         desc:'Thai Executive Summary — Complete v3.0 SOP: all 23 sections, 20 live agents + 5 planned, Phase A/B/C roadmap, S23 governance summary'},
+  {n:26, name:'roadmap_agents_thai_brief.html',                              type:'HTML', cat:'Agent Brief',       lang:'TH',    isNew:false,
+         agents:['Nexus','Compass','Scout','Guardian','Talent','Ops'],
+         desc:'Thai brief — 6 Roadmap agents (Nexus, Compass, Scout, Guardian, Talent, Ops), roles, timelines, SLA'},
+  {n:27, name:'v30_agents_thai_brief.html',                                  type:'HTML', cat:'Agent Brief',       lang:'TH',    isNew:false, agents:V30_5,
+         desc:'Thai brief — 5 v3.0 agents (Vega, Stone, Ember, Pulse, Shore), roles, priority, Phase A/B timeline'},
+  {n:28, name:'thai_s14_brief.html',                                         type:'HTML', cat:'Section Brief',     lang:'TH',    isNew:false, agents:LIVE20,
+         desc:'Thai brief — Section 14 Acceptance Sign-off, S1–S14 checklist, v2.6/v2.7 summary'},
+  {n:29, name:'thai_s15_acceptance_brief.html',                              type:'HTML', cat:'Section Brief',     lang:'TH',    isNew:true,  agents:ALL25,
+         desc:'Thai brief — Section 15 Acceptance Sign-off: all 23 sections + S24 amendment, acceptance status badges, programme declaration'},
+  {n:30, name:'thai_s16_brief.html',                                         type:'HTML', cat:'Section Brief',     lang:'TH',    isNew:false, agents:LIVE20,
+         desc:'Thai brief — Section 16 Cross-Agent Orchestration Protocol, 4 pipelines, RACI, integration timeline'},
+  {n:31, name:'thai_s17_brief.html',                                         type:'HTML', cat:'Section Brief',     lang:'TH',    isNew:false, agents:LIVE20,
+         desc:'Thai brief — Section 17 Agent KPIs & SLA Thresholds, Groups A–D, monitoring cadence, escalation'},
+  {n:32, name:'thai_s18_brief.html',                                         type:'HTML', cat:'Section Brief',     lang:'TH',    isNew:false, agents:LIVE20,
+         desc:'Thai brief — Section 18 Incident Response & Escalation Playbook, severity cards, 5-step procedure'},
+  {n:33, name:'thai_s18_escalation_brief.html',                             type:'HTML', cat:'Section Brief',     lang:'TH',    isNew:false, agents:LIVE20,
+         desc:'Thai brief — S18 Escalation Matrix, all 4 agent groups (A–D) side-by-side, P1/P2/P3 SLAs'},
+  {n:34, name:'thai_s19_brief.html',                                         type:'HTML', cat:'Section Brief',     lang:'TH',    isNew:false, agents:LIVE20,
+         desc:'Thai brief — S19 Data Privacy: Classification Tiers 1–4, PDPA/GDPR, breach protocol, audit schedule'},
+  {n:35, name:'thai_s20_brief.html',                                         type:'HTML', cat:'Section Brief',     lang:'TH',    isNew:false, agents:LIVE20,
+         desc:'Thai brief — S20 AI Ethics & Responsible Use Policy: 6 ethical principles, HITL requirements, Groups A–D guidelines'},
+  {n:36, name:'thai_s21_brief.html',                                         type:'HTML', cat:'Section Brief',     lang:'TH',    isNew:false, agents:LIVE20,
+         desc:'Thai brief — S21 Agent Lifecycle Management: 7-stage pipeline, deprecation criteria, 7-step decommission process'},
+  {n:37, name:'thai_s22_brief.html',                                         type:'HTML', cat:'Section Brief',     lang:'TH',    isNew:false, agents:LIVE20,
+         desc:'Thai brief — S22 AI Agent Audit & Continuous Improvement: 3-tier audit schedule, PDCA cycle, 4 priority tiers'},
+  {n:38, name:'thai_s23_brief.html',                                         type:'HTML', cat:'Section Brief',     lang:'TH',    isNew:false, agents:LIVE20,
+         desc:'Thai brief — S23 Programme Governance & Steering Committee: SC structure (5 voting + 4 invitees), meeting cadence, decision authority matrix'},
+  {n:39, name:'thai_s24_brief.html',                                         type:'HTML', cat:'Section Brief',     lang:'TH',    isNew:true,  agents:LIVE20,
+         desc:'Thai brief — S24 AMD-001 Annual Governance Review: FY 2026 performance findings, 5 SC decisions (Phase B ratified, ฿3.2M budget), 5 action items'},
+  {n:40, name:'thai_phase_a_brief.html',                                     type:'HTML', cat:'Agent Brief',       lang:'TH',    isNew:false, agents:LIVE20,
+         desc:'Thai brief — Phase A Stabilization, all 20 live agents, SLA Groups A–D, KPI thresholds, Q1–Q2 2027 timeline'},
+  {n:41,  name:'thai_s25_brief.html',                                         type:'HTML', cat:'Section Brief',     lang:'TH',    isNew:false,  agents:LIVE20,
+         desc:'Thai brief — S25 Phase B Deployment Readiness: PRE-01–05 prerequisites, 18 TEC checks (Vega/Stone/Ember), Go/No-Go criteria, M1–M5 milestones'},
+  {n:53, name:'thai_s26_brief.html',                                         type:'HTML', cat:'Section Brief',     lang:'TH',    isNew:false,
+         agents:['Vega','Stone','Ember'],
+         desc:'Thai brief — S26 Phase B Go-Live Sign-off Records: 3/3 GO, signatory strip, Phase B Completion Declaration (23 live agents, Phase C conditional active)'},
+  {n:55, name:'thai_s27_brief.html',                                         type:'HTML', cat:'Section Brief',     lang:'TH',    isNew:false,
+         agents:['Pulse','Shore'],
+         desc:'Thai brief — S27 Phase C Deployment Assessment: C-ASSESS-01–05, TEC-P-01–07 (Pulse), TEC-SH-01–07 (Shore), SC decision options, PC-M1–M5, 25-agent final state'},
+  {n:57, name:'thai_s28_brief.html',                                         type:'HTML', cat:'Section Brief',     lang:'TH',    isNew:false,  agents:ALL25,
+         desc:'Thai brief — S28 APR-2028 & AMD-002: 5 workstreams (WS1–WS5), Group A–D performance table, SC-2028-01–05, APR-M1–M5 milestones, AMD-002 record'},
+  {n:58, name:'thai_s29_brief.html',                                         type:'HTML', cat:'Section Brief',     lang:'TH',    isNew:false,
+         agents:['Ledger','Frame','Draft'],
+         desc:'Thai brief — S29 AMD-002-WS2 Phase D Commissioning: PD-CRIT-01–05 grid, 3-column agent cards (Ledger CONDITIONAL GO / Frame PENDING / Draft DEFER), PD-M1–M5'},
+  {n:59, name:'monolith_project_summary_v25_accepted_s30_tracked.docx',      type:'DOCX', cat:'Backup',            lang:'EN',    isNew:false, agents:['Ledger','Frame'],
+         desc:'Backup — S30 Phase D Go-Live Sign-off Records (Ledger #26 TEC-L-01–06 Q3 2028, Frame #27 TEC-F-01–06 Q4 2028) pre-accept snapshot (50 elements, 185 tracked insertions)'},
+  {n:60, name:'thai_s30_brief.html',                                         type:'HTML', cat:'Section Brief',     lang:'TH',    isNew:true,
+         agents:['Ledger','Frame'],
+         desc:'Thai brief — S30 Phase D Go-Live Sign-off: TEC-L-01–06 (Ledger PASS all), TEC-F-01–06 (Frame 1 P-LOW), SC-2028-05/06, 27-agent Partial Completion, Draft unblocked status'},
+  {n:61, name:'monolith_project_summary_v25_accepted_s31_tracked.docx',      type:'DOCX', cat:'Backup',            lang:'EN',    isNew:false, agents:['Ledger','Frame','Draft'],
+         desc:'Backup — S31 Draft #28 Go-Live Sign-off (TEC-D-01–06 Q1 2029) & Phase D Full Completion Declaration (28 agents) pre-accept snapshot (48 elements, 177 tracked insertions)'},
+  {n:62, name:'thai_s31_brief.html',                                         type:'HTML', cat:'Section Brief',     lang:'TH',    isNew:false, agents:['Draft'],
+         desc:'Thai brief — S31 Draft #28 Go-Live Sign-off: TEC-D-01–06 all PASS, SC-2029-01, Phase D Full Completion 28 agents, SLA Group A–D breakdown'},
+  {n:63, name:'monolith_project_summary_v25_accepted_s32_tracked.docx',      type:'DOCX', cat:'Backup',            lang:'EN',    isNew:false, agents:ALL28,
+         desc:'Backup — S32 APR-2029 Annual Programme Review & AMD-003 ratification (SC-2029-02/03/04/05/06, ฿4.8M) pre-accept snapshot (44 elements, 160 tracked insertions)'},
+  {n:64, name:'thai_s32_brief.html',                                         type:'HTML', cat:'Section Brief',     lang:'TH',    isNew:false, agents:ALL28,
+         desc:'Thai brief — S32 APR-2029 Annual Programme Review: 28-agent SLA scorecard (Groups A–D), AMD-002 WS1–5 closure, SC-2029-02/03/04/05/06, AMD-003 ฿4.8M WS framework, APR29-M1–M5'},
+  {n:65, name:'monolith_project_summary_v25_accepted_s33_tracked.docx',      type:'DOCX', cat:'Backup',            lang:'EN',    isNew:false, agents:ALL28,
+         desc:'Backup — S33 AMD-003 WS1 Agent Intelligence Enhancement (AI-WS1-01–07, Groups A/B/C/D enhancements, WS1-M1–M5, SC-2029-07) pre-accept snapshot (53 elements, 195 tracked insertions)'},
+  {n:66, name:'thai_s33_brief.html',                                         type:'HTML', cat:'Section Brief',     lang:'TH',    isNew:false, agents:ALL28,
+         desc:'Thai brief — S33 AMD-003 WS1 Agent Intelligence Enhancement: Group D accuracy ≥98.5%, Group A NLP 12-turn, Group C 14-day forecasting, Group B Bayesian escalation, AI-WS1-01–07, WS1-M1–M5'},
+  {n:67, name:'monolith_project_summary_v25_accepted_s34_tracked.docx',      type:'DOCX', cat:'Backup',            lang:'EN',    isNew:false, agents:ALL28,
+         desc:'Backup — S34 AMD-003 WS4 Governance Framework v2.0 (GV-WS4-01–06, GV2-P1–P5, 6 policy docs, WS4-M1–M5, Q1–Q4 2029) pre-accept snapshot (49 elements, 181 tracked insertions)'},
+  {n:68, name:'thai_s34_brief.html',                                         type:'HTML', cat:'Section Brief',     lang:'TH',    isNew:false, agents:ALL28,
+         desc:'Thai brief — S34 AMD-003 WS4 Governance Framework v2.0: GV-WS4-01–06 checklist, GV2-P1–P5 policies, 6 scope areas, \u0e3f0.9M, Q4 2029, SC-2029-03, WS4-M1–M5'},
+  {n:69, name:'monolith_project_summary_v25_accepted_s35_tracked.docx',      type:'DOCX', cat:'Backup',            lang:'EN',    isNew:false, agents:ALL28,
+         desc:'Backup — S35 AMD-003 WS2 Infrastructure Modernisation (INF-WS2-01–07, containerisation, streaming pipeline, zero-downtime protocol, \u0e3f1.1M, Q2 2029–Q2 2030) pre-accept snapshot (70 elements, 210 tracked insertions)'},
+  {n:70, name:'thai_s35_brief.html',                                         type:'HTML', cat:'Section Brief',     lang:'TH',    isNew:true,  agents:ALL28,
+         desc:'Thai brief — S35 AMD-003 WS2 Infrastructure Modernisation: INF-WS2-01–07 checklist, 5-layer scope, zero-downtime protocol (6 rules), \u0e3f1.1M, SC-2029-03/05, WS2-M1–M5'},
+  {n:71, name:'monolith_project_summary_v25_accepted_s36_tracked.docx',      type:'DOCX', cat:'Backup',            lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'Backup — S36 AMD-003 WS3 Advanced Analytics & Reporting (ANL-WS3-01–06, data warehouse 28 agents, predictive SLA model, automated SC reports, client intelligence, \u0e3f0.8M, Q3 2029–Q1 2030) pre-accept snapshot (68 elements, 204 tracked insertions)'},
+  {n:72, name:'thai_amd003_exec_summary.html',                               type:'HTML', cat:'Executive Summary',  lang:'TH',    isNew:true,  agents:ALL28,
+         desc:'Thai AMD-003 Executive Summary — all 5 workstreams WS1–WS5: \u0e3f4.8M total, 32 checkpoints, SC-2029-03/04/05/06/07, timeline Q1 2029–Q2 2030, Steering Committee distribution'},
+  {n:73, name:'thai_s36_brief.html',                                         type:'HTML', cat:'Section Brief',     lang:'TH',    isNew:true,  agents:ALL28,
+         desc:'Thai brief — S36 AMD-003 WS3 Advanced Analytics & Reporting: Analytics Data Warehouse (28 agents), Cross-Agent Dashboard (13 depts), Predictive SLA 90-day, Automated SC Reports, Client Intelligence Reporting (PDPA/GDPR), ANL-WS3-01\u201306, WS3-M1\u2013M5, \u0e3f0.8M, Q3 2029\u2013Q1 2030'},
+  {n:74, name:'monolith_project_summary_v25_accepted_s37_tracked.docx',      type:'DOCX', cat:'Backup',            lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'Backup — S37 AMD-003 WS5 Phase E Scoping (PHE-WS5-01\u201306, agent expansion study, technology refresh, capacity planning, client innovation roadmap, AMD-004 programme definition, \u0e3f0.8M, Q4 2029\u2013Q2 2030) pre-accept snapshot (35 elements, 70 tracked insertions)'},
+  {n:75, name:'thai_s37_brief.html',                                         type:'HTML', cat:'Section Brief',     lang:'TH',    isNew:true,  agents:ALL28,
+         desc:'Thai brief — S37 AMD-003 WS5 Phase E Scoping: 5 scope areas (Agent Expansion Study PHE-WS5-01, Technology Refresh PHE-WS5-02, Capacity Planning PHE-WS5-03, Client Innovation PHE-WS5-04/05, AMD-004 PDD PHE-WS5-06), PHE-WS5-01\u201306 checklist, governance gate SC-2029-06, WS5-M1\u2013M5, \u0e3f0.8M conditional, Q4 2029\u2013Q2 2030'},
+  {n:76, name:'thai_amd003_final_summary.html',                              type:'HTML', cat:'Executive Summary',  lang:'TH',    isNew:true,  agents:ALL28,
+         desc:'Thai AMD-003 final completion summary for SC distribution — all 5 workstreams WS1\u2013WS5 accepted, 28 agents, \u0e3f4.8M total, 37 sections, AMD-004 forward look (\u0e3f5.2M indicative, SC-2030-01 gate Q3 2030), SLA Groups A\u2013D Phase D baseline'},
+  {n:77, name:'monolith_project_summary_v25_accepted_s38_tracked.docx',      type:'DOCX', cat:'Backup',            lang:'EN',    isNew:true,  agents:ALL28,
+     desc:'Backup — S38 AMD-004 PDD pre-accept snapshot (S38 original 38.1–38.7 + 38.8 cost breakdown, w:ins=164, 128,935 bytes)'},
+  {n:78, name:'monolith_project_summary_v25_accepted_s38_tracked.docx',      type:'DOCX', cat:'Backup',            lang:'EN',    isNew:true,  agents:ALL28,
+     desc:'Backup — S38 AMD-004 pre-accept with cost breakdown 38.8 (w:ins=164, max_id=243, 128,935 bytes) — created by accept_s38.py'},
+  {n:79, name:'thai_s38_brief.html',                                          type:'HTML', cat:'Section Brief',     lang:'TH',    isNew:true,  agents:ALL28,
+     desc:'Thai one-page HTML brief — Section 38 AMD-004 Programme Definition Document: WS-A–E cards, PDD-001–006 checklist, 38.8 cost breakdown (Technology/PM/Compliance/Training × 5 WS), SC-2030-01 governance pathway, PDD-M1–M5 milestones, FY2031–FY2033 budget split'},
+  {n:80, name:'accept_s38.py',                                                type:'PY',   cat:'Script',            lang:'EN',    isNew:true,  agents:ALL28,
+     desc:'XML-strip accept script for S38 — removes all w:ins wrappers, w:del blocks, w:rPrChange, w:pPrChange → clean 38-section DOCX (126,233 bytes)'},
+         desc:'Backup — S38 AMD-004 Programme Definition Document (WS-A to WS-E, PDD-001\u2013006, PDD-M1\u2013M5, \u0e3f5.2M indicative, SC-2030-01, Q4 2030\u2013Q2 2033) pre-accept snapshot (47 elements, 94 tracked insertions)'},
+  {n:42, name:'thai_phase_b_brief.html',                                     type:'HTML', cat:'Agent Brief',       lang:'TH',    isNew:false,
+         agents:['Stone','Ember','Pulse','Shore'],
+         desc:'Thai brief — Phase B deployment: Stone #22, Ember #23, Pulse #24, Shore #25, Q2–Q4 2027 timeline, integrations'},
+  {n:43, name:'slide-10-delta.html',                                         type:'HTML', cat:'Presentation Slide',lang:'EN',    isNew:false, agents:LIVE20,
+         desc:'Slide 10 — v2.4 → v2.5 agent coverage delta, stacked bar chart, 13 departments'},
+  {n:44, name:'slide-12-heatmap.html',                                       type:'HTML', cat:'Presentation Slide',lang:'EN',    isNew:false, agents:LIVE20,
+         desc:'Slide 12 — SOP heatmap 23 sections × 13 departments, heat levels 0–3'},
+  {n:45, name:'slide-12-heatmap-thai.html',                                  type:'HTML', cat:'Presentation Slide',lang:'TH',    isNew:false, agents:LIVE20,
+         desc:'Slide 12 — Thai version, heatmap 23 หมวด × 13 แผนก, Thai department and section labels'},
+  {n:46, name:'slide-13-v30-roadmap.html',                                   type:'HTML', cat:'Presentation Slide',lang:'EN',    isNew:false, agents:V30_5,
+         desc:'Slide 13 — v3.0 Phase A/B/C Gantt, 5 new agents (Vega, Stone, Ember, Pulse, Shore), Q2 2027–Q1 2028'},
+  {n:47, name:'slide-13-v30-roadmap-thai.html',                              type:'HTML', cat:'Presentation Slide',lang:'TH',    isNew:false, agents:V30_5,
+         desc:'Slide 13 — Thai version, Phase A/B/C Gantt, 5 agents (Vega, Stone, Ember, Pulse, Shore), Q2 2027–Q1 2028'},
+  {n:48, name:'slide-14-summary.html',                                       type:'HTML', cat:'Presentation Slide',lang:'EN',    isNew:false, agents:ALL25,
+         desc:'Slide 14 — English: v2.9 deliverables summary + v3.0 agent roadmap table (all 5 planned agents)'},
+  {n:49, name:'slide-14-summary-thai.html',                                  type:'HTML', cat:'Presentation Slide',lang:'TH',    isNew:false, agents:ALL25,
+         desc:'Slide 14 — Thai version, Sarabun font, v2.9 deliverables + v3.0 agent roadmap table'},
+  {n:50, name:'master_index.html',                                           type:'HTML', cat:'Index & Changelog', lang:'EN/TH', isNew:false, agents:[],
+         desc:'This file — interactive master index, 86 package files, search + type / category / agent filters, gap register, GitHub mapping'},
+  {n:51, name:'changelog_v25.md',                                            type:'MD',   cat:'Index & Changelog', lang:'EN',    isNew:false, agents:[],
+         desc:'Full changelog — v2.0 through v3.0-S29, all sessions and deliverables'},
+  {n:81, name:'monolith_project_summary_v25_accepted_pre_s39_backup.docx', type:'DOCX', cat:'Backup',            lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'Backup — S1–S38 clean DOCX immediately before S39–S44 injection (126,233 bytes, 0 tracked changes) — created by inject_s39_s44.py'},
+  {n:82, name:'inject_s39_s44.py',                                         type:'PY',   cat:'Script',            lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'XML injection script — adds S39–S44 (Biophilic SOP, Design Freeze Gate, Sensory Commissioning, POE, SC Governance, GitHub Roadmap) as 663 tracked insertions (IDs 10–672) covering GAP-01/02/03/04/07 from the 15-gap register'},
+  {n:83, name:'strip_orphan_ins.py',                                       type:'PY',   cat:'Script',            lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'Final accept+clean script — strips 262 orphaned <w:ins> opening tags left by first accept pass (root cause: self-closing <w:ins/> in <w:pPr><w:rPr> consumed closing tags). Result: 0 tracked changes, 139,219 bytes, S39–S44 all clean'},
+  {n:84, name:'sop_github_mapping.md',                                     type:'MD',   cat:'Analysis',          lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'GitHub × SOP mapping — all monolith-workspace modules mapped to S1–S38 SOP sections; 3-layer architecture (Data Fabric / Agent Orchestration / Experience Delivery); 15-gap register (8 HIGH, 4 MEDIUM, 3 LOW); overall coverage 56%; Phase 1–3 roadmap; Parts A–G (254 lines, 24,708 bytes)'},
+  {n:85, name:'sc_presentation.html',                                      type:'HTML', cat:'Presentation',      lang:'EN/TH', isNew:true,  agents:ALL28,
+         desc:'Interactive SC presentation — navy/gold/green theme, Inter+Sarabun fonts; 5 sections: Cover (KPI stats), 3-Layer Architecture cards, Coverage Dashboard (6-pillar bars + 56% total), Gap Register table (15 items, JS filter by severity HIGH/MEDIUM/LOW), Roadmap Phase 1–3 cards with target 85% coverage'},
+  {n:86, name:'thai_gap_register_brief.html',                              type:'HTML', cat:'Section Brief',     lang:'TH',    isNew:true,  agents:ALL28,
+         desc:'Thai A4 brief — Gap Register 15 ข้อ + AMD-004 WS-A Implementation Plan; Sarabun font, navy/gold/green; A4 @page margins; Priority Matrix (HIGH/MEDIUM/LOW 3-column); Full 15-gap table; Q3–Q4 2030 WS-A Plan grid; Milestone Timeline; GOV-AMD4-01–06 activation checklist; target 85% coverage bar'},
+  {n:87, name:'monolith_project_summary_v25_accepted_pre_s45_backup.docx', type:'DOCX', cat:'Backup',            lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'Pre-S45 injection backup — 44 sections clean (S1–S44), 139,219 bytes; taken before inject_s45_s47.py was run'},
+  {n:88, name:'inject_s45_s47.py',                                         type:'PY',   cat:'Script',            lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'S45–S47 injection script — 286 tracked insertions (w:ins IDs 673–958); S45 AMD-004 WS-B + GAP-05 AI Creative Engine (AIE-001–005, INFRA-WS-B-01–04); S46 AMD-004 WS-C + GAP-06 Cross-Pillar Event Bus (EVT-001–005, SVC-WS-C-01–04); S47 GAP-08 Real-time KPI Dashboard (KPI-001–024, 3-layer architecture); next IDs start at 959'},
+  {n:89, name:'accept_s45_s47.py',                                         type:'PY',   cat:'Script',            lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'Two-pass accept script for S45–S47 tracked changes — Pass 1: unwrap w:ins content; Pass 2: strip orphaned opening tags; spot-check w:insideH/V intact; outputs clean DOCX + verification'},
+  {n:90, name:'monolith_project_summary_v25_accepted_pre_accept_s47_backup.docx', type:'DOCX', cat:'Backup',   lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'Pre-accept backup — 47 sections with 286 tracked changes (S45–S47 pending), 149,454 bytes; taken before accept_s45_s47.py was run'},
+  {n:91, name:'thai_sc_presentation.html',                                 type:'HTML', cat:'Presentation',      lang:'TH',    isNew:true,  agents:ALL28,
+         desc:'Thai interactive SC presentation — full translation of sc_presentation.html; Sarabun font, navy/gold/green theme; 5 sections: ปก (Cover), สถาปัตยกรรม (3-Layer Architecture), ความครอบคลุม (Coverage Dashboard), ทะเบียน Gap (15-gap table with JS filter), แผนงาน (Roadmap Phase 1–3); all agent names + GAP codes in English; 47 SOP sections; 877 lines'},
+
+  {n:92, name:'monolith_project_summary_v25_accepted_pre_s48_backup.docx',  type:'DOCX', cat:'Backup',            lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'Pre-S48/S49 injection backup — 47 sections clean, 0 tracked changes, 154,231 bytes. Created before inject_s48_s49.py run.'},
+
+  {n:93, name:'inject_s48_s49.py',                                          type:'PY',   cat:'Script',            lang:'EN',    isNew:true,  agents:[],
+         desc:'Injection script for S48 (AMD-004 WS-E Human Capital & Change Management — TRN-001–004, CHG-001–004, THB 0.6M, Q1–Q2 2032) and S49 (AMD-004 Programme Closure & Phase 2 Gateway — WS-A–E summary, THB 5.2M budget, GAP-01/02/03/04/07/08 Phase 1 cert, GAP-05/06/09/10/11/12 Phase 2 gate). IDs 959–1256 (298 tracked insertions).'},
+
+  {n:94, name:'accept_s48_s49.py',                                          type:'PY',   cat:'Script',            lang:'EN',    isNew:true,  agents:[],
+         desc:'Two-pass accept script for S48/S49 tracked insertions. Pass 1 unwraps <w:ins>content</w:ins>; Pass 2 strips orphaned tags. Verified: 298→0 w:ins, w:insideH/V intact (14 each), S48/S49 content intact, 154,231 bytes.'},
+
+  {n:95, name:'monolith_project_summary_v25_accepted_pre_accept_s49_backup.docx', type:'DOCX', cat:'Backup', lang:'EN', isNew:true, agents:ALL28,
+         desc:'Pre-accept backup for S48/S49 — 49 sections with 298 tracked insertions, before accept_s48_s49.py run. 156,335 bytes.'},
+
+  {n:96, name:'thai_roadmap_brief.html',                                    type:'HTML', cat:'Brief',             lang:'TH',    isNew:true,  agents:ALL28,
+         desc:'Thai A4 brief — Phase 1 completion summary (GAP-01/02/03/04/07/08 closed, Coverage 68%), Phase 2 action plan (GAP-05/06/09/10/11/12, target 80%), AMD-004 budget table THB 5.2M (WS-A–E), roadmap 56%→68%→80%→92%, Phase 2 gate checklist, programme timeline. Sarabun font, navy/gold/green, A4 @page margins. 547 lines.'},
+
+  {n:97, name:'sc_presentation.html',                                       type:'HTML', cat:'Presentation',      lang:'EN',    isNew:false, agents:ALL28,
+         desc:'Updated SC presentation — SOP sections 44→47, Phase 1 Complete badge added (GAP-01/02/03/04/07/08 closed, Coverage 68%), architecture layer updated to S1–S47, footer updated to (47 Sections). Interactive JS gap filter, 5-section layout.'},
+  {n:98, name:'thai_sc_presentation_v2.html',                               type:'HTML', cat:'Presentation',      lang:'TH',    isNew:true,  agents:ALL28,
+         desc:'Thai SC presentation v2 — 49 หมวด (S1–S49), Phase 1 Complete badge (GAP-01/02/03/04/07/08 ปิดแล้ว, ความครอบคลุม 68%), updated roadmap with S48/S49 cards, Phase 2 plan (GAP-05/06/09/10/11/12, THB 6.0M), Phase 3 plan (GAP-13/14/15); Sarabun font, navy/gold/green theme; coverage bar updated "Phase 1 Complete · S39–S49"; footer updated to 49 หมวด'},
+  {n:99, name:'sc_review_presentation.pptx',                                type:'PPTX', cat:'Presentation',      lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'SC Review PPTX — 10 slides: Title, Phase 1 Summary (56→68% coverage, 6 gaps closed, THB 5.2M), AMD-004 WS-A–E delivery (THB 5.2M), ROI & KPI value, 15-gap register table, Phase 2 business case (GAP-05/06/09/10/11/12, 68→80%), Phase 2 budget & timeline (THB 6.0M, P2-M1–M4), Governance & next steps, SC Recommendation (SC-2032-XX), References; navy/gold/white theme; 1280×720px'},
+  {n:100, name:'sc_review_presentation.pdf',                                type:'PDF', cat:'Presentation',       lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'PDF export of SC Review presentation — 10-slide deck, same content as sc_review_presentation.pptx; 582KB'},
+  {n:101, name:'slide-01-title.html',                                       type:'HTML', cat:'Slide',             lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'SC Review slide 01 — title slide: MONOLITH DAPH SC Review, Phase 1 Complete + Phase 2 Proposal chips'},
+  {n:102, name:'slide-02-phase1-summary.html',                              type:'HTML', cat:'Slide',             lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'SC Review slide 02 — Phase 1 achievement stats: 56→68% coverage, 6 gaps closed, 28 agents, THB 5.2M, 49 sections'},
+  {n:103, name:'slide-03-amd004-delivery.html',                             type:'HTML', cat:'Slide',             lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'SC Review slide 03 — AMD-004 WS-A–E delivery cards with budgets and Q3 2030–Q2 2032 timeline bar; total THB 5.2M'},
+  {n:104, name:'slide-04-roi-value.html',                                   type:'HTML', cat:'Slide',             lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'SC Review slide 04 — ROI & KPI value: +12% coverage, 40% cycle reduction, THB 5.2M on-budget, 100% gap closure; SLA performance bars'},
+  {n:105, name:'slide-05-gap-register.html',                                type:'HTML', cat:'Slide',             lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'SC Review slide 05 — full 15-gap register table with HIGH/MEDIUM/LOW priority badges, CLOSED/OPEN status, phase assignment'},
+  {n:106, name:'slide-06-phase2-business-case.html',                        type:'HTML', cat:'Slide',             lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'SC Review slide 06 — Phase 2 business case: 6 gap cards (GAP-05/06/09/10/11/12), coverage 68→80%, budget summary THB 6.0M'},
+  {n:107, name:'slide-07-phase2-budget-timeline.html',                      type:'HTML', cat:'Slide',             lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'SC Review slide 07 — Phase 2 budget & timeline: P2-M1–M4 milestones, budget bar chart by gap, release schedule'},
+  {n:108, name:'slide-08-governance-next-steps.html',                       type:'HTML', cat:'Slide',             lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'SC Review slide 08 — Phase 2 governance structure table, 4 next steps, pre-conditions gate box'},
+  {n:109, name:'slide-09-recommendation.html',                              type:'HTML', cat:'Slide',             lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'SC Review slide 09 — SC recommendation: endorse Phase 1, approve Phase 2 PDD + THB 6.0M budget, nominate Programme Director; vote strip'},
+  {n:110, name:'slide-10-references.html',                                  type:'HTML', cat:'Slide',             lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'SC Review slide 10 — APA-style references to 6 MONOLITH source documents'},
+  {n:111, name:'thai_sc_review_presentation.html',                          type:'HTML', cat:'Presentation',       lang:'TH',    isNew:true,  agents:ALL28,
+         desc:'Thai SC Review presentation — 10-section scrollable HTML (ปก → อ้างอิง), Sarabun font, navy/gold/green theme, Phase 1 COMPLETE summary + Phase 2 business case'},
+  {n:112, name:'inject_s51.py',                                             type:'PY',   cat:'Script',             lang:'EN',    isNew:true,  agents:[],
+         desc:'Injection script for S51 — Phase 2 Procurement &amp; Vendor Selection Framework for GAP-05; IDs 1527–1776; 250 tracked insertions; sections 51.1–51.7'},
+  {n:113, name:'accept_s51.py',                                             type:'PY',   cat:'Script',             lang:'EN',    isNew:true,  agents:[],
+         desc:'Two-pass accept script for S51 tracked insertions — strips w:ins tags, preserves insideH/V, verifies RFP-GAP05-001 + P2-CHK-08 + AIE-001 content'},
+  {n:114, name:'monolith_project_summary_v25_accepted_pre_s51_backup.docx', type:'DOCX', cat:'Backup',             lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'Pre-S51 backup of production DOCX — 50 sections (S1–S50), 165,356 bytes, captured before inject_s51.py ran'},
+  {n:115, name:'monolith_project_summary_v25_accepted_pre_accept_s51_backup.docx', type:'DOCX', cat:'Backup',      lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'Pre-accept-S51 backup — 51 sections with 250 tracked insertions (w:ins), 165,356 bytes, captured before accept_s51.py ran'},
+
+  {n:116, name:'thai_procurement_brief.html',                                 type:'HTML', cat:'Brief',              lang:'TH',    isNew:true,  agents:['Aria','Signal','Core','Nova','Nexus','Guardian'],
+         desc:'Thai A4 brief — S51 Procurement Framework; RFP-GAP05-001 สรุป, กระบวนการคัดเลือก 5 ขั้นตอน, เกณฑ์ประเมิน Technical 40%/Commercial 30%/Strategic 30%, SLA KPIs AIE-001–005 (latency/availability table), P2-CHK-01–08 checklist; Sarabun font, navy/gold/green, A4 @page margins; 2-page layout'},
+  {n:117, name:'inject_s52.py',                                               type:'PY',   cat:'Script',             lang:'EN',    isNew:true,  agents:[],
+         desc:'Injection script — S52 Phase 2 Vendor Onboarding & Integration Protocol (52.1–52.7, V-CHK-01–12, AIE-001–005 endpoint specs, 90-day hypercare); IDs 1777–2035 (259 IDs); injects into monolith_project_summary_v25_accepted.docx as tracked changes'},
+  {n:118, name:'accept_s52.py',                                               type:'PY',   cat:'Script',             lang:'EN',    isNew:true,  agents:[],
+         desc:'Accept script — two-pass strip of S52 tracked insertions; 259→0 w:ins tags; insideH/V 14 preserved; S51+S52 content verified intact; file 168,420 bytes post-accept'},
+  {n:119, name:'monolith_project_summary_v25_accepted_pre_s52_backup.docx',  type:'DOCX', cat:'Backup',             lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'Pre-S52 backup of production DOCX — 51 sections (S1–S51), 163,761 bytes, captured before inject_s52.py ran'},
+  {n:120, name:'monolith_project_summary_v25_accepted_pre_accept_s52_backup.docx', type:'DOCX', cat:'Backup',       lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'Pre-accept-S52 backup — 52 sections with 259 tracked insertions (w:ins), 170,170 bytes, captured before accept_s52.py ran'},
+
+  {n:121, name:'thai_vendor_onboarding_brief.html',                               type:'HTML', cat:'Brief',        lang:'TH',    isNew:true,  agents:['Aria','Signal','Core','Nova','Nexus','Guardian'],
+         desc:'A4 Thai brief for S52 Phase 2 Vendor Onboarding & Integration Protocol — V-CHK-01–12 checklist table, AIE-001–005 SLA table, 90-day hypercare escalation matrix (L1–L4), hypercare milestone timeline (Day 0/30/60/90); Sarabun font, navy/gold/green theme'},
+
+  {n:122, name:'inject_s53.py',                                                   type:'PY',   cat:'Script',       lang:'EN',    isNew:true,  agents:[],
+         desc:'Injection script — S53 Phase 2 Go-Live Operations Plan (53.1–53.6, GL-CHK-01–10, cutover schedule T-5→T+72h, BAU transition 4-phase, Phase 3 readiness gate); IDs 2036–2257 (222 IDs); injects into monolith_project_summary_v25_accepted.docx as tracked changes'},
+
+  {n:123, name:'accept_s53.py',                                                   type:'PY',   cat:'Script',       lang:'EN',    isNew:true,  agents:[],
+         desc:'Accept script — two-pass strip of S53 tracked insertions; 222→0 w:ins tags; insideH/V 14 preserved; S51+S52+S53 content verified intact; GL-CHK-10/Phase 3 Readiness Gate confirmed; file 173,578 bytes post-accept'},
+
+  {n:124, name:'monolith_project_summary_v25_accepted_pre_s53_backup.docx',       type:'DOCX', cat:'Backup',       lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'Pre-S53 backup — 52 sections, 0 tracked changes, 168,420 bytes, captured before inject_s53.py ran'},
+
+  {n:125, name:'monolith_project_summary_v25_accepted_pre_accept_s53_backup.docx',type:'DOCX', cat:'Backup',       lang:'EN',    isNew:true,  agents:ALL28,
+         desc:'Pre-accept-S53 backup — 53 sections with 222 tracked insertions (w:ins), 175,280 bytes, captured before accept_s53.py ran'},
+
+  {n:126, name:'thai_golive_brief.html',                                          type:'HTML', cat:'Brief',        lang:'TH',    isNew:true,  agents:['Signal','Core','Nova','Nexus','Aria','Guardian','Atlas','Ops','Pulse','Ledger','Vega','Rex'],
+         desc:'A4 Thai brief for S53 Phase 2 Go-Live Operations Plan — GL-CHK-01–10 checklist table, cutover schedule T-5→T+72h visual timeline (6 steps), BAU transition 4-phase table (Phase A–D Day 1–91+), Phase 3 Readiness Gate panel (GAP-05/06/09/10/11/12 CLOSED + GAP-01/02/03/04/13/14/15 Phase 3 scope), coverage ladder 56%→68%→80%→92%; Sarabun font, navy/gold/green theme'},
+  {n:127, name:'thai_phase2_summary_brief.html',                                  type:'HTML', cat:'Brief',        lang:'TH',    isNew:true,  agents:['Kelly','Signal','Aria','Blaze','Nova','Compass','Remy','Scout','Finn','Hana','Ember','Shore','Draft','Core','Nexus','Rex','Guardian','Ledger'],
+         desc:'1-page A4 Thai executive summary for SC Chair — consolidates S51+S52+S53 Phase 2 outcomes: three-column section cards (Procurement/Onboarding/Go-Live), programme KPI strip, timeline strip, coverage progress bar 80% gate highlighted, SC action box GL-CHK-10, next steps (S54 PDD/Phase 3 RFP/MONOLITH BAU target 92%); Sarabun font, navy/gold/green theme'},
+  {n:128, name:'inject_s54.py',                                                    type:'PY',   cat:'Script',      lang:'EN',    isNew:true,  agents:[],
+         desc:'Injection script — S54 Phase 3 Programme Definition Document (54.1–54.6, P3-CHK-01–12, WS-A GAP-01/02, WS-B GAP-03/04, WS-C GAP-13/14/15, THB 7.0M budget, milestones P3-M1–M4); IDs 2258–2570 (313 IDs); injects into monolith_project_summary_v25_accepted.docx as tracked changes; Date 2026-09-04'},
+  {n:129, name:'accept_s54.py',                                                    type:'PY',   cat:'Script',      lang:'EN',    isNew:true,  agents:[],
+         desc:'Accept script — two-pass strip of S54 tracked insertions; 313→0 w:ins tags; insideH/V 14 preserved; S51+S52+S53+S54 content verified intact; P3-CHK-12/THB 7.0M/P3-M4/GL-CHK-10/GAP-15 confirmed; file 178,044 bytes post-accept'},
+  {n:130, name:'monolith_project_summary_v25_accepted_pre_s54_backup.docx',        type:'DOCX', cat:'Backup',      lang:'EN',    isNew:true,  agents:[],
+         desc:'Pre-S54 backup — S1–S53 CLEAN (0 tracked changes), 173,578 bytes; taken by inject_s54.py before S54 injection'},
+  {n:131, name:'monolith_project_summary_v25_accepted_pre_accept_s54_backup.docx', type:'DOCX', cat:'Backup',      lang:'EN',    isNew:true,  agents:[],
+         desc:'Pre-accept-S54 backup — S1–S54 with 313 tracked insertions, 179,946 bytes; taken by accept_s54.py before stripping tracked changes'},
+  {n:132, name:'thai_phase3_kickoff_brief.html',                                   type:'HTML', cat:'Brief',        lang:'TH',    isNew:true,  agents:['Aria','Core','Signal','Nova','Nexus','Guardian','Ledger','Vega','Rex'],
+         desc:'A4 Thai Kickoff Brief for S54 Phase 3 PDD — P3-CHK-01–12 checklist table (gate per milestone M1–M4), GAP Workplan table WS-A (GAP-01/02)/WS-B (GAP-03/04)/WS-C (GAP-13/14/15) with SLA targets, milestone timeline strip P3-M1–M4 (Q3 2033–Q2 2034), budget strip THB 7.0M by GAP, SC Action Items box for P3-M1 kickoff; Sarabun font, navy/gold/green theme'},
+  {n:133, name:'inject_s55.py',                                                    type:'PY',   cat:'Script',      lang:'EN',    isNew:true,  agents:[],
+         desc:'Injection script — S55 Phase 3 RFP & Vendor Selection Framework (55.1–55.6, RFP-P3-WSA-001/WSB-001/WSC-001, 5-stage process, scoring matrix 40/25/20/15, SLA targets per GAP, P3-VND-CHK-01–10); IDs 2571–2699 (129 IDs); Date 2026-09-04'},
+  {n:134, name:'accept_s55.py',                                                    type:'PY',   cat:'Script',      lang:'EN',    isNew:true,  agents:[],
+         desc:'Accept script — two-pass strip of S55 tracked insertions; 129→0 w:ins tags; insideH/V 14 preserved; S51–S55 content verified intact; RFP-P3-WSA/B/C-001 + P3-VND-CHK-10 + SLA drift confirmed; file 183,620 bytes post-accept'},
+  {n:135, name:'monolith_project_summary_v25_accepted_pre_s55_backup.docx',        type:'DOCX', cat:'Backup',      lang:'EN',    isNew:true,  agents:[],
+         desc:'Pre-S55 backup — S1–S54 CLEAN (0 tracked changes), 178,044 bytes; taken by inject_s55.py before S55 injection'},
+  {n:136, name:'monolith_project_summary_v25_accepted_pre_accept_s55_backup.docx', type:'DOCX', cat:'Backup',      lang:'EN',    isNew:true,  agents:[],
+         desc:'Pre-accept-S55 backup — S1–S55 with 129 tracked insertions, 184,565 bytes; taken by accept_s55.py before stripping tracked changes'},
+  {n:137, name:'sop_github_mapping.md',                                            type:'MD',   cat:'Reference',   lang:'EN',    isNew:false, agents:[],
+         desc:'SOP × GitHub module mapping matrix — updated to S55; 55 sections; pending push row includes S52+S53+S54+S55 DOCX, Thai briefs (4+1=5), inject/accept scripts, rebuilt ZIP'},
+
+  {n:138, name:'inject_s56.py',                                                    type:'PY',   cat:'Script',      lang:'EN',    isNew:false, agents:[],
+         desc:'S56 injection script — 71 tracked insertions, IDs 2700–2770; P3-ONB-CHK-01–12; WS-A/B/C integration protocols; SLA acceptance matrix; 90-day hypercare; P3-M2 gate criteria'},
+  {n:139, name:'accept_s56.py',                                                    type:'PY',   cat:'Script',      lang:'EN',    isNew:false, agents:[],
+         desc:'S56 accept script — two-pass XML strip; 71→0 w:ins; insideH/V 17 preserved; S56+S55+S54+S53+S51 intact; 189,546 bytes post-accept'},
+  {n:140, name:'monolith_project_summary_v25_accepted_pre_s56_backup.docx',        type:'DOCX', cat:'Backup',      lang:'EN',    isNew:false, agents:[],
+         desc:'Pre-S56 backup — S1–S55 CLEAN (0 tracked changes), 183,620 bytes; taken by inject_s56.py before S56 injection'},
+  {n:141, name:'monolith_project_summary_v25_accepted_pre_accept_s56_backup.docx', type:'DOCX', cat:'Backup',      lang:'EN',    isNew:false, agents:[],
+         desc:'Pre-accept-S56 backup — S1–S56 with 71 tracked insertions, 190,030 bytes; taken by accept_s56.py before stripping tracked changes'},
+  {n:142, name:'thai_phase3_vendor_brief.html',                                    type:'HTML', cat:'Thai Brief',  lang:'TH',    isNew:false, agents:[],
+         desc:'Thai brief — S55 Phase 3 RFP &amp; Vendor Selection Framework; RFP-P3-WSA/B/C-001 cards, 5-stage process, scoring matrix 40/25/20/15, SLA targets GAP-01–15, P3-VND-CHK-01–10; A4 single-page Thai; Sarabun font; navy/gold/green theme'},
+  {n:143, name:'inject_s57.py',                                                    type:'PY',   cat:'Script',      lang:'EN',    isNew:true,  agents:[],
+         desc:'Injection script — S57 Phase 3 Go-Live Operations Plan (57.1–57.5, P3-GL-CHK-01–10, cutover schedule T-5→T+72h, BAU transition 4-phase, P3-M4 programme delivery milestone, 92% coverage, THB 18.2M); IDs 2771–2829 (59 IDs); injects into monolith_project_summary_v25_accepted.docx as tracked changes'},
+  {n:144, name:'accept_s57.py',                                                    type:'PY',   cat:'Script',      lang:'EN',    isNew:true,  agents:[],
+         desc:'Accept script — strips 59 w:ins tracked insertions from S57 injection; two-pass XML strip (opening tags then closing tags); produces S1–S57 CLEAN FINAL 195,663 bytes'},
+  {n:145, name:'monolith_project_summary_v25_accepted_pre_s57_backup.docx',        type:'DOCX', cat:'Backup',      lang:'EN',    isNew:true,  agents:[],
+         desc:'Pre-S57 backup — S1–S56 CLEAN FINAL before S57 injection; 189,546 bytes; 0 tracked changes'},
+  {n:146, name:'monolith_project_summary_v25_accepted_pre_accept_s57_backup.docx', type:'DOCX', cat:'Backup',      lang:'EN',    isNew:true,  agents:[],
+         desc:'Pre-accept-S57 backup — S57 injected with 59 tracked insertions before acceptance; 196,116 bytes'},
+  {n:147, name:'thai_phase3_onboarding_brief.html',                                type:'HTML', cat:'Thai Brief',  lang:'TH',    isNew:true,  agents:[],
+         desc:'Thai brief — S56 Phase 3 Vendor Onboarding &amp; Integration Protocol; P3-ONB-CHK-01–12 checklist (Access/Integration/SLA phases), WS-A/B/C integration protocol cards (method/auth/routes/SLA), SLA acceptance matrix 7 GAPs, escalation path L1–L4, 90-day hypercare strip, P3-M2 gate box; A4 single-page Thai; Sarabun font; navy/gold/green theme'},
+  {n:148, name:'thai_phase3_golive_brief.html',                                    type:'HTML', cat:'Thai Brief',  lang:'TH',    isNew:true,  agents:[],
+         desc:'Thai A4 brief — S57 Phase 3 Go-Live; coverage strip 56%→92%; cutover schedule T-5→T+72h; BAU 4-phase; P3-GL-CHK-01–10; milestones P3-M1–M4; THB 18.2M; escalation L1–L4; Sarabun font; navy/gold/green theme'},
+  {n:149, name:'inject_s58.py',                                                    type:'PY',   cat:'Script',     lang:'EN',    isNew:true,  agents:[],
+         desc:'Injection script — S58 BAU Governance Charter (MONOLITH-S58-BAUGOV-001 v1.0; 58.1–58.5: Overview, Committee Structure SC/PGB/TAG/AOC, KPI Review Cadence 5 cycles, Programme Closure Certificate MONOLITH-S58-CLOSECERT-001, Post-Programme Audit Plan T+30/60/90d+Annual); IDs 2830–2874 (45 IDs); injects into monolith_project_summary_v25_accepted.docx as tracked changes'},
+  {n:150, name:'accept_s58.py',                                                    type:'PY',   cat:'Script',     lang:'EN',    isNew:true,  agents:[],
+         desc:'Accept script — strips 45 w:ins tracked insertions from S58 injection; two-pass XML strip (opening tags then closing tags); produces S1–S58 CLEAN FINAL 200,150 bytes'},
+  {n:151, name:'monolith_project_summary_v25_accepted_pre_s58_backup.docx',        type:'DOCX', cat:'Backup',     lang:'EN',    isNew:true,  agents:[],
+         desc:'Pre-S58 backup — S1–S57 CLEAN FINAL state before inject_s58.py was run; 195,663 bytes; 0 tracked changes'},
+  {n:152, name:'monolith_project_summary_v25_accepted_pre_accept_s58_backup.docx', type:'DOCX', cat:'Backup',     lang:'EN',    isNew:true,  agents:[],
+         desc:'Pre-accept-S58 backup — S1–S57 + S58 tracked (45 w:ins) state before accept_s58.py was run; 200,444 bytes'},
+  {n:153, name:'thai_programme_completion_brief.html',                             type:'HTML', cat:'Thai Brief',  lang:'TH',    isNew:true,  agents:[],
+         desc:'Thai A4 executive brief — S57+S58 programme completion summary for SC Chair; 6-stat hero header (92% coverage, 28 agents, THB 18.2M, 58 sections, +36pp, 3 phases); phase delivery strip 56%→68%→80%→92%; Programme Closure Certificate MONOLITH-S58-CLOSECERT-001; committee table SC/PGB/TAG/AOC; audit schedule T+30/60/90d+Annual; KPI review cadence 5 cycles; BAU Governance Charter activation box; P3-GL-CHK-10 SC Chair sign-off block; Sarabun font; navy/gold/green theme'},
+  {n:154, name:'thai_programme_roadmap.html',                                      type:'HTML', cat:'Thai Brief',  lang:'TH',    isNew:true,  agents:[],
+         desc:'Thai A4 Programme Roadmap — S1–S58 full programme journey; coverage journey 56%→68%→80%→92%→BAU; phase timeline (Phase 1 S1–S49 / Phase 2 S50–S53 / Phase 3 S54–S57 / BAU S58); section map with chip grid; milestones P1-M4/P2-M4/P3-M4/BAU-M1; BAU governance committees SC/PGB/TAG/AOC; forward roadmap table (T+30/60/90d, monthly/quarterly/semi-annual/annual); cert MONOLITH-S58-CLOSECERT-001; Sarabun font; navy/gold/green theme'},
+
+         desc:'Thai brief — S57 Phase 3 Go-Live Operations Plan; coverage trajectory 56%→68%→80%→92%, cutover schedule T-5→T+72h (12-row table), BAU transition 4-phase (Day 1–90+ bar chart), readiness gate P3-GL-CHK-01–10 (CHK-08/10 hard gates highlighted), monitoring stats (24 KPIs / 28 agents / ≤1h drift / 92% target), escalation path L1–L4, milestones P3-M1–M4, programme total THB 18.2M; A4 single-page Thai; Sarabun font; navy/gold/green theme; 27,882 bytes'},
+
+  {n:155, name:'thai_build_deploy_roadmap.html',                                  type:'HTML', cat:'Thai Brief',  lang:'TH',    isNew:true,  agents:[],
+         desc:'Thai A4 Build & Deploy Roadmap — SOP documentation to live AI agents; Phase A–F (Foundation→Prompt Engineering→Agent Build→Integration→Testing & UAT→Go-Live & BAU); 28 agents deploy plan; technology stack table (AI Model/Orchestration/CRM/Chat/Monitoring/Cloud); key decisions (build vs buy, model selection, deployment, data residency, rollback); effort estimate table (Phase A–F); critical path & risks (5 risks+mitigation); vision input flow diagram; Sarabun font; navy/gold/green theme'},
+
+  {n:156, name:'thai_tech_stack_deep_research.html',                             type:'HTML', cat:'Thai Brief',  lang:'TH',    isNew:true,  agents:[],
+         desc:'Thai Deep Research Report — Technology Stack สำหรับ AI Agents บน Monolith Platform; 6-layer stack analysis (Layer 1: AI Model GPT-4o vs Claude vs Gemini; Layer 2: Orchestration Supabase Edge Functions + Vercel AI SDK + MCP Layer; Layer 3: Knowledge Base pgvector on Supabase + daph-second-brain 113KB; Layer 4: Vision Processing GPT-4o Vision + LINE webhook; Layer 5: Integration LINE OA Webhook + Supabase Realtime; Layer 6: UI Field App PWA + LINE Flex Message); repo analysis github.com/indetailsgroup-hue/monolith-workspace (4,722 files TypeScript); cost comparison old roadmap $600–1,500/mo vs correct stack $175–500/mo (60–70% saving); PDPA Data Minimization Boundary; build order recommendation; Sarabun font; navy/gold/green theme; 61KB'},
+
+  {n:157, name:'thai_mcp_layer_implementation.html',                             type:'HTML', cat:'Thai Brief',  lang:'TH',    isNew:true,  agents:['MCP Layer'],
+         desc:'Thai MCP Layer Implementation Plan (Layer 2) — อิงจาก monolith-mcp-layer_requirements.md (19 requirements) + tasks.md (Tasks 1–8, Gate-1 pending Task 1.4); architecture flow diagram (Field App→LINE Bot→MCP Server→Supabase→LLM); Tool_Class governance table (READ/WRITE/ADMIN); 8-phase task list with real task IDs and checkbox status; PDPA boundary checklist 12 items in 4 cards (Data Minimization/Audit Trail/Access Control/Retention); Data_Minimization_Boundary diagram; 5-tab TypeScript scaffold (mcp-server/index.ts + rpc_mcp_invoke_read SQL + redaction.ts + autonomy.ts + pdpa.ts); 6 DB schema tables (mcp_tool_calls/mcp_tool_classes/mcp_audit_log/mcp_autonomy_decisions/mcp_data_access_requests/mcp_pdpa_consents); Correctness Properties P1–P19 test coverage table; Sarabun font; navy/gold/green theme'},
+
+  {n:158, name:'thai_ai_agent_prompt_engineering.html',                          type:'HTML', cat:'Thai Brief',  lang:'TH',    isNew:true,  agents:['Sale Agent','Designer Agent','Factory Agent','PM Agent','Procurement Agent'],
+         desc:'Thai AI Agent Prompt Engineering — 5 MVP Agents (Sale/Designer/Factory/PM/Procurement); 5-tab interface; source: daph-second-brain _knowledge-export.json (schemaVersion 1.0.0, reviewStatus draft, sourceVersion daph-qms-2020-rev00); per-agent: RACI table, PFMEA critical risks (Sale=6 rows, Designer=31, Factory=23, PM=27, Procurement=8), MCP tools list, system prompt template (Thai), few-shot examples; key patterns: Sale=collect_info/escalate on discount>10%, Designer=unanimous approval gate, Factory=halt on CNC version mismatch, PM=first_response approval/capacity check, Procurement=budget ceiling validation; all agents include low_confidence_warning:true (reviewStatus=draft); Sarabun font; navy/gold/green theme; 61KB'},
+
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────
+let activeType='all';
+let activeAgent=null;
+
+// ── HELPERS ───────────────────────────────────────────────────────────
+function typeBadge(t){
+  const c=t==='DOCX'?'b-docx':t==='HTML'?'b-html':t==='PPTX'?'b-pptx':t==='PDF'?'b-pdf':'b-md';
+  return `<span class="badge ${c}">${t}</span>`;
+}
+function langBadge(l){
+  const c=l==='TH'?'lang-th':l==='EN/TH'?'lang-both':'lang-en';
+  return `<span class="lang-badge ${c}">${l}</span>`;
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────
+function renderRows(){
+  const tbody=document.getElementById('table-body');
+  tbody.innerHTML=FILES.map(f=>{
+    const newTag=f.isNew?'<span class="new-tag">NEW</span>':'';
+    return `<tr class="${f.isNew?'row-new':''}"
+      data-type="${f.type}"
+      data-cat="${f.cat}"
+      data-agents="|${f.agents.join('|')}|"
+      data-name="${f.name.toLowerCase()}"
+      data-desc="${f.desc.toLowerCase()}">
+      <td>${f.n}</td>
+      <td><div class="fname">${f.name}${newTag}</div></td>
+      <td>${typeBadge(f.type)}</td>
+      <td><span class="cat-badge">${f.cat}</span></td>
+      <td>${langBadge(f.lang)}</td>
+      <td class="fdesc">${f.desc}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── FILTER ────────────────────────────────────────────────────────────
+function applyFilters(){
+  const q=document.getElementById('search-input').value.toLowerCase().trim();
+  const cat=document.getElementById('cat-select').value;
+  const rows=document.querySelectorAll('#table-body tr');
+  let vis=0;
+  rows.forEach(r=>{
+    const typeOk  = activeType==='all'||r.dataset.type===activeType;
+    const catOk   = cat==='all'||r.dataset.cat===cat;
+    const srchOk  = !q||r.dataset.name.includes(q)||r.dataset.desc.includes(q)||r.dataset.agents.toLowerCase().includes(q);
+    const agentOk = !activeAgent||r.dataset.agents.includes('|'+activeAgent+'|');
+    if(typeOk&&catOk&&srchOk&&agentOk){r.classList.remove('hidden');vis++;}
+    else{r.classList.add('hidden');}
+  });
+  document.getElementById('result-count').textContent=`${vis} of ${FILES.length}`;
+  const empty=vis===0;
+  document.getElementById('empty-state').style.display=empty?'block':'none';
+  document.getElementById('file-table').style.display=empty?'none':'';
+}
+
+function setType(t){
+  activeType=t;
+  document.querySelectorAll('.type-tab').forEach(b=>b.classList.toggle('active',b.dataset.type===t));
+  applyFilters();
+}
+
+function setAgent(a){
+  activeAgent=(activeAgent===a)?null:a;
+  document.querySelectorAll('.agent-chip').forEach(c=>c.classList.toggle('active',c.dataset.agent===activeAgent));
+  applyFilters();
+}
+
+function clearAgent(){
+  activeAgent=null;
+  document.querySelectorAll('.agent-chip').forEach(c=>c.classList.remove('active'));
+  applyFilters();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────
+renderRows();
+applyFilters();
+</script>
+
+</body>
+</html>

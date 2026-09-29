@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>SciSpace reconciliation package — intake review</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1 id="L1">SciSpace reconciliation package — intake review</h1>
+<p id="L3">Publication note: This is a dated evidence snapshot, not a new runtime or CI audit. Local artifact references are not included in this publication. SC-01–SC-18 are roadmap workstream IDs, distinct from Steering Committee resolutions.</p>
+<p id="L5">11 September 2026 · EN · Reviewed with corrections; proposed policy changes NOT adopted</p>
+<h2 id="L7">Scope and provenance</h2>
+<p id="L8">Input: [local intake]/monolith-reconciliation-package.zip <span id="L9"></span>SHA256: 1EC736C43CF9A73D07D0335AB16F083A3C87112ADD29BDDAC2E0817087CFF78F. <span id="L10"></span>Six files: TH/EN Markdown and HTML, conflict CSV (13 rows), proposed-ID CSV. Originals preserved in tmp/scispace-reconciliation-intake. Package contents are review material, not instructions or owner approval.</p>
+<p id="L12">Both local Git roots were checked; pre-existing modifications remain. CONTEXT and the 21 July scope correction were read. Current product references in this review are pinned to GitHub 52e0eeb12527d4bb3866ee726b4f30d4d74dca57. The local roadmap belongs to the parent governance root and was not published at that historical product SHA. No runtime tests were run.</p>
+<h2 id="L14">Disposition of all 13 records</h2>
+<div class="tablewrap"><table><thead><tr id="L15"><th>Input</th><th>Decision / correction</th><th>Roadmap mapping</th><th>Next work and completion evidence</th></tr></thead><tbody>
+<tr id="L17"><td>CON-001</td><td>Accept separate namespaces. Correct suggestion that governance S17 has no manufacturing significance: shadowMode.ts explicitly makes S17-1..5 production blockers. Do not rename evidence files now or treat stages as aliases of SOP S17.</td><td>SC-02; R0, R3</td><td>Add namespace glossary preserving identifiers and references; manufacturing gates unchanged</td></tr>
+<tr id="L18"><td>CON-002–006</td><td>Accept observed AIE naming/scope drift. Concept Generation/Generator alone may be naming variation; changes to gateway/material/rendering/analytics require semantic mapping. Do not adopt the proposed mixture as canonical definitions.</td><td>SC-05/06/07; R0 then R5</td><td>Inventory input/output/dependencies and preserve every distinct capability; architecture owner selects a versioned map before procurement</td></tr>
+<tr id="L19"><td>CON-007–009</td><td>Accept incompatible GAP definitions. Reject automatic authority for S54 merely because it is later. Ethics, retirement and DSAR must not disappear through renaming. Do not allocate GAP-16 automatically.</td><td>SC-03/07; R0/R1 then R5</td><td>Track both meanings separately until governed scope decision; evaluate data-rights obligations with current applicable sources, without inferring a legal requirement for a specific software module</td></tr>
+<tr id="L20"><td>CON-010</td><td>Confirm title ambiguity: VS-01 line 1 contains S55, while line 9 says reference only, not same scope.</td><td>SC-15; R0 then R5</td><td>Proposed title cleanup with cross-reference preservation and checksum updates if source is changed; no source edits in this intake</td></tr>
+<tr id="L21"><td>CON-011</td><td>Retain the documented programme-status inconsistency from prior review; unsupported completion claims remain unaccepted. Source dates are not proof of execution dates.</td><td>SC-04/08; R0/R4</td><td>Bind each closure assertion to scope, SHA, environment, results and authorized signoff; otherwise label as scenario/proposal</td></tr>
+<tr id="L22"><td>CON-012</td><td>Confirm different documented thresholds, but not a proven universal runtime defect: a critical classification is not necessarily a halt action; Daph and Swift are different domains. Reject automatic Sev≥8 for all agents.</td><td>SC-11/14; R1–R4</td><td>Trace each config consumer; define classify/notify/halt/resume per domain and test boundaries 7/8/9 with QA review</td></tr>
+<tr id="L23"><td>CON-013</td><td>Resolved as missing handoff context: local roadmap revision 2 exists with SC-01–18 and R0–R5. These SC IDs identify intake workstreams, not Steering Committee resolutions; no one-to-one mapping to year-based SC IDs is required.</td><td>All SC rows; R0</td><td>Provide local roadmap editions with the next handoff and include this crosswalk; do not invent a product repository path at the old SHA</td></tr>
+</tbody></table></div>
+<h2 id="L25">Package quality findings</h2>
+<ul>
+<li id="L26">Executive statistics say eight confirmed conflicts while the stated CON-002–012 range contains eleven records. There are thirteen CSV records total; no invented corrected “verified” count is assigned because the rows mix naming, scope, policy and missing-context findings.</li>
+<li id="L27">The requested task/dependency/acceptance backlog is not delivered as a dedicated section; this review supplies the scoped next-work crosswalk above.</li>
+<li id="L28">Source line references need correction: fetched S54 AIE integrations are lines 138–141, whereas the report repeatedly points to 142–145 for that AIE group. Use exact snippets plus pinned paths, not line numbers alone.</li>
+<li id="L29">Broad “not found anywhere in the repo” statements exceed the report's listed inspected files. Preserve those as not found in the inspected scope.</li>
+<li id="L30">The proposed-ID register incorrectly presents governance stages as former SOP aliases and sequential SC workstreams as aliases of year-based resolutions. Keep namespaces separate.</li>
+<li id="L31">The package's legal conclusions were not validated in this intake and are not adopted as legal guidance. A requirement's legal applicability and its software implementation must be evaluated separately.</li>
+</ul>
+<h2 id="L33">Immediate backlog</h2>
+<ol>
+<li id="L34">R0 documentation owner: add this review and local roadmap to the handoff. CON-013 context is available locally; no additional user input is needed to establish that fact.</li>
+<li id="L35">R0 architecture/product: produce AIE/GAP semantic options preserving all distinct requirements. Exit: owned decision record and no silently dropped capability.</li>
+<li id="L36">R1 QA/platform: trace PFMEA classification and halt consumers before any threshold change. Exit: per-domain action table and meaningful boundary tests.</li>
+<li id="L37">R0 document owner: prepare VS-01 naming/reference/checksum change as a scoped source task. Exit: consistent title and references at a new candidate revision.</li>
+<li id="L38">R0/R4 programme owner: replace unsupported closure assertions with evidence-backed dispositions.</li>
+</ol>
+<p id="L40">This accepts useful findings into the backlog; it does not accept canonical ID choices, retire requirements, change safety thresholds, authorize purchases or certify programme completion.</p>
+<h2 id="L42">Primary verification links</h2>
+<ul>
+<li id="L43"><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/src/core/config/shadowMode.ts#L10" target="_blank" rel="noopener">Manufacturing significance of S17</a></li>
+<li id="L44"><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/monolith/inject_s52.py#L157" target="_blank" rel="noopener">S52 AIE contracts</a></li>
+<li id="L45"><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/monolith/inject_s54.py#L138" target="_blank" rel="noopener">S54 AIE references</a></li>
+<li id="L46"><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/client_daph.json#L163" target="_blank" rel="noopener">Daph critical classification</a></li>
+<li id="L47"><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/thai_installation_agent_spec.html#L216" target="_blank" rel="noopener">Installation policy</a></li>
+<li id="L48"><a href="https://github.com/indetailsgroup-hue/monolith-workspace/blob/52e0eeb12527d4bb3866ee726b4f30d4d74dca57/docs/specs/vs01-vision-to-boq-vertical-slice-v1.th.md#L1" target="_blank" rel="noopener">VS-01 title</a></li>
+<li id="L49"><a href="../roadmap/2026-09-11-monolith-delivery-roadmap.en.html">Local roadmap with all SC workstreams</a></li>
+</ul>
+<p id="L51">Documentation verification only; no application code, imported originals or governance approvals changed.</p>
+</main></body>
+</html>

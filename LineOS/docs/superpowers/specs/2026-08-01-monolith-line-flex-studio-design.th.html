@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>แบบระบบ MONOLITH LINE Flex Studio</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1>แบบระบบ MONOLITH LINE Flex Studio</h1>
+<ul>
+<li><strong>ฉบับ:</strong> ภาษาไทย</li>
+<li><strong>วันที่:</strong> 1 สิงหาคม 2026</li>
+<li><strong>สถานะ:</strong> อนุมัติ design ใน interactive review แล้ว; รอตรวจ written spec</li>
+<li><strong>ตำแหน่งส่งมอบ:</strong> parent governance/bootstrap repository ภายใต้ <strong>LineOS/</strong></li>
+<li><strong>Product repository:</strong> nested repository แยกที่ <strong>determined-williams/</strong>; design นี้ไม่อนุญาตให้แก้ product runtime</li>
+<li><strong>แนวทางที่เลือก:</strong> Production-shaped Standalone Studio</li>
+<li><strong>Journey หลัก:</strong> แบบพร้อมอนุมัติ → ตรวจแบบส่วนตัวลักษณะ LIFF → ยืนยันเจตนาอย่างชัดเจน → Verification Receipt — Demo</li>
+</ul>
+<h2>1. คำตัดสินระดับบริหาร</h2>
+<p>MONOLITH จะสาธิต LINE ในฐานะ Human Surface ผ่านเครื่องมือสร้าง Flex Message และ simulator การตัดสินใจที่ทำงานใน browser แบบ standalone เครื่องมือนี้ใช้สำหรับการตัดสินใจของผู้บริหาร การออกแบบประสบการณ์ลูกค้า การฝึกทีม การตรวจ JSON และการวางแผน implementation รอบต่อไป โดยไม่เชื่อม LINE, Supabase, production credentials หรือการส่งข้อความถึงลูกค้าจริง</p>
+<p>Design มีเป้าหมายสองด้านพร้อมกัน:</p>
+<ol>
+<li>สร้างประสบการณ์ที่อบอุ่น พรีเมียม conversion สูง และทุกคนเข้าใจได้ทันที</li>
+<li>ทำให้ trust boundary เห็นชัด: การแตะ Flex ไม่เท่ากับการอนุมัติทางธุรกิจ, LINE ไม่ใช่ system of record และ action ที่มีผลสำคัญต้องตรวจตัวตนและรายละเอียดผ่าน LIFF กับ MONOLITH Trust Kernel ใน production</li>
+</ol>
+<p>การขยาย customer messaging ยังเป็น <strong>NO-GO</strong> จนกว่า Trust Foundation P0 gates ที่มีอยู่จะมีหลักฐานครบถ้วนและสดใหม่</p>
+<h2>2. Repository และ evidence baseline</h2>
+<p>MONOLITH เป็นระบบสอง Git root</p>
+<div class="tablewrap"><table><thead><tr><th>Root</th><th>บทบาทที่ยืนยันแล้วสำหรับ design นี้</th><th>ผลต่อขอบเขต</th></tr></thead><tbody>
+<tr><td>Parent <strong>C:\Users\thai3\determined-williams (2)</strong></td><td>Governance/bootstrap, research, LineOS HTML mock-up และ visual artifacts เดิม</td><td>Prototype standalone และเอกสารโครงการใหม่อยู่ภายใต้ <strong>LineOS/</strong></td></tr>
+<tr><td>Nested <strong>C:\Users\thai3\determined-williams (2)\determined-williams</strong></td><td>Product source ปัจจุบัน มี LINE webhook, outbound sender, Flex template support, migrations, tests, workflow และ Trust Foundation design ที่อนุมัติแล้ว</td><td>Implementation เดิมเป็นหลักฐานและเป้าหมาย integration ในอนาคต Design นี้ไม่แก้ nested source และ source presence ไม่พิสูจน์ deployment หรือ production readiness</td></tr>
+</tbody></table></div>
+<p>Baseline นี้ทำตาม <strong>CONTEXT.md</strong> และ repository-scope correction วันที่ 21 กรกฎาคม 2026 ที่บังคับใช้ ตรวจ Git status ของทั้งสอง root แยกกันแล้ว และทั้งสองมี pre-existing changes ซึ่งยังอยู่นอกขอบเขต</p>
+<p>Inventory ใน <strong>LineOS/</strong> มี role-based HTML mock-ups, archived variants หลายรุ่น, LINE OA/LIFF masterclass, งานวิจัย Coohom, แผนภาพ Flex blocks และ North Star approval flow แต่ยังไม่มี Flex editor ที่แก้แล้ว preview/JSON เปลี่ยน real time, validator, Mock LIFF journey หรือ receipt simulator ที่ทำงานได้จริง</p>
+<p>Nested product มี:</p>
+<ul>
+<li>template composition model และ outbound sender ที่รองรับ Flex</li>
+<li>LINE OA webhook, identity, order, group, customer-document และ approval migrations</li>
+<li>LINE OA commerce test suites</li>
+<li>Trust Foundation design และ program plan หก wave ที่อนุมัติแล้ว</li>
+</ul>
+<p>การมี source ไม่ใช่หลักฐาน deployment ดังนั้น design นี้ใช้ nested source เป็น production-shaped reference ไม่ใช่ live dependency</p>
+<h2>3. ฐานงานวิจัยและ evidence labels</h2>
+<p>ดำเนินการ Perplexity Deep Research สาม track เสร็จเมื่อวันที่ 1 สิงหาคม 2026:</p>
+<ol>
+<li>LINE Messaging API, Flex Message, LIFF, Developer Console, performance และ security</li>
+<li>Trust Kernel, tenant isolation, step-up, inbox/outbox reliability, audit, privacy และ human factors</li>
+<li>ความครบถ้วนของผลิตภัณฑ์ตั้งแต่งาน interior design ถึง installation, roles, ความหลากหลายของตู้และ millwork, tools, service design และ ethical adoption</li>
+</ol>
+<p>Implementation report ต้องแยก:</p>
+<ul>
+<li><strong>Official constraint:</strong> ข้อกำหนดจาก LINE, มาตรฐาน, regulator หรือ primary authority</li>
+<li><strong>Verified local fact:</strong> ข้อเท็จจริงที่พบใน Git root และไฟล์ที่ระบุ</li>
+<li><strong>Research evidence:</strong> หลักฐาน peer-reviewed หรือ authoritative publication</li>
+<li><strong>Inference:</strong> ข้อสรุปที่อนุมานจากข้อเท็จจริง</li>
+<li><strong>MONOLITH best practice:</strong> กติกาการทำงานที่เราเสนอ</li>
+<li><strong>Unknown:</strong> สิ่งที่หลักฐานปัจจุบันยังพิสูจน์ไม่ได้</li>
+</ul>
+<p>Vendor maximum, ขนาดตู้ตามภูมิภาค หรือคำแนะนำจากงานวิจัยจะไม่กลายเป็น canonical product truth หากไม่มี provenance และ tenant/project configuration</p>
+<h2>4. Owner decisions ที่อนุมัติแล้ว</h2>
+<div class="tablewrap"><table><thead><tr><th>เรื่องตัดสินใจ</th><th>ผลที่อนุมัติ</th></tr></thead><tbody>
+<tr><td>เรื่องหลัก</td><td>แบบพร้อมอนุมัติ → ตรวจ revision → ยืนยัน → รับ evidence receipt</td></tr>
+<tr><td>Visual direction</td><td>Trust Concierge: อบอุ่น พรีเมียม และน่าเชื่อถือ</td></tr>
+<tr><td>ลำดับแบรนด์ภายนอก</td><td>Tenant-first พร้อม trust mark <strong>Secured by MONOLITH</strong> ที่สุภาพ</td></tr>
+<tr><td>ลำดับแบรนด์ภายใน</td><td>MONOLITH-first พร้อม tenant context ชัด</td></tr>
+<tr><td>Simulator layout</td><td>Studio Console: เห็น editor, phone preview และ JSON/validation พร้อมกัน</td></tr>
+<tr><td>Delivery boundary</td><td>Standalone browser demo; ไม่เชื่อม LINE หรือ Supabase จริง</td></tr>
+<tr><td>Presets</td><td>ห้าชุด: design approval, quote/order, SLA escalation, curated site update และ issue/evidence</td></tr>
+<tr><td>ความซื่อสัตย์ของ receipt</td><td><strong>Verification Receipt — Demo</strong> พร้อม digest; ไม่อ้าง production signature เท็จ</td></tr>
+<tr><td>แนวทางพัฒนา</td><td>Production-shaped standalone modules ไม่ใช่ story-only showroom และไม่ใช่ sandbox integration</td></tr>
+<tr><td>ภาษา</td><td>UI และเอกสารภาษาไทยและอังกฤษ</td></tr>
+</tbody></table></div>
+<h2>5. วัตถุประสงค์</h2>
+<p>Implementation แรกต้อง:</p>
+<ol>
+<li>ให้ผู้ใช้แก้ Header, Hero, Body และ Footer</li>
+<li>อัปเดต LINE-like phone preview, generated JSON และ validation real time</li>
+<li>มี presets ห้าชุดโดยไม่ใช้ mutable state ร่วมกัน</li>
+<li>สอนเส้นแบ่งที่ถูกต้องระหว่าง Flex actions, LIFF review และ MONOLITH business authority</li>
+<li>จำลอง approval journey ที่ผูกกับ action เฉพาะและสร้าง demo receipt ที่ติดป้ายชัด</li>
+<li>แสดง errors, warnings และ guidance พร้อมวิธีแก้สองภาษา</li>
+<li>copy, download และ reset ได้โดยไม่พึ่ง network</li>
+<li>ใช้งานได้ที่ desktop, tablet และ mobile widths</li>
+<li>ใช้งานด้วย keyboard และอ่านข้อความไทย/อังกฤษได้ดี</li>
+<li>มีเอกสาร research, installation และ decision ระดับคณะผู้บริหารสองภาษา</li>
+</ol>
+<h2>6. สิ่งที่ไม่อยู่ในขอบเขต</h2>
+<p>Implementation แรกจะไม่:</p>
+<ul>
+<li>ส่ง LINE message จริง</li>
+<li>สร้างหรือแก้ LINE Official Account, provider, channel หรือ LIFF app</li>
+<li>ใช้ channel access token, channel secret, service-role key หรือ production credential</li>
+<li>เรียก Supabase, LINE API, CDN, analytics หรือ external endpoint ใด ๆ</li>
+<li>authenticate LINE user จริง</li>
+<li>ลงนาม production receipt ด้วย governed private key</li>
+<li>อ้าง full Messaging API conformance เพียงเพราะ local validator ผ่าน</li>
+<li>แทนที่ official LINE Flex Message Simulator หรือการทดสอบบนเครื่องจริง</li>
+<li>ให้แก้ raw JSON โดยตรง</li>
+<li>ทำให้ LINE เป็น system of record, authorization service หรือ internal chat product</li>
+<li>นิยามขนาดตู้สากลแบบเดียว</li>
+<li>แก้ nested active product repository</li>
+</ul>
+<h2>7. Architecture และ safety boundary</h2>
+<h3>7.1 Browser-only authoring path</h3>
+<p>Authoring path คือ:</p>
+<p><strong>Preset Gallery / Block Editor → canonical FlexDraft → Phone Preview + JSON Builder + Validator</strong></p>
+<p>Output ทั้งสามอ่านจาก immutable draft snapshot เดียว ไม่มี output ใดถือ business state แยก การเปลี่ยน tenant, recipient, revision, action หรือ expiry ต้องอัปเดตทุก derived surface</p>
+<h3>7.2 Simulated consequential-action path</h3>
+<p>Approval path คือ:</p>
+<p><strong>Flex URI action → demo action router → Mock LIFF review → explicit confirmation → Verification Receipt — Demo</strong></p>
+<p>Demo action router ผูก:</p>
+<ul>
+<li>tenant identity</li>
+<li>audience และ recipient</li>
+<li>project/resource reference</li>
+<li>revision</li>
+<li>canonical action</li>
+<li>payload digest input</li>
+<li>created time และ expiry</li>
+<li>correlation identifier</li>
+</ul>
+<p>Mock LIFF แสดงผลกระทบที่แน่นอนและไม่ยืนยันหาก bound values ที่จำเป็นหาย หมดอายุ หรือขัดกัน จากนั้น simulator สร้าง evidence receipt แบบ deterministic นี่เป็นกลไกสอนและ review ไม่ใช่ production authorization ceremony</p>
+<h3>7.3 Future production boundary</h3>
+<p>เส้นทาง production ที่บันทึกไว้แต่ไม่เชื่อมคือ:</p>
+<p><strong>Unified ingress → tenant/resource/principal resolution → Trust Kernel decision → domain command → decision audit + business state + atomic outbox → LINE delivery worker</strong></p>
+<p>Production Trust Kernel ส่งผล <strong>PERMIT</strong>, <strong>DENY</strong>, <strong>STEP_UP</strong> หรือ <strong>QUARANTINE</strong> Standalone simulator จะไม่ทำเป็นว่าได้รันเส้นทางนี้</p>
+<h3>7.4 Non-bypass invariants</h3>
+<ol>
+<li>การแตะ Flex ไม่เท่ากับ business approval</li>
+<li>High-risk action เปิด LIFF-style review ใน simulator เสมอ และ production ต้องใช้ Trust Kernel step-up</li>
+<li>Tenant identity ต้องชัดใน draft, intent และ receipt แม้ภายนอกใช้ tenant-first branding</li>
+<li>Group evidence ที่ quarantine ห้ามเปลี่ยน workflow state</li>
+<li>Generated JSON ห้ามมี secret, bearer token, raw personal-data master หรือ authoritative business state</li>
+<li>ราคา ขนาด revision และ status ใน presets เป็น demo data จนกว่าจะอ่านจาก MONOLITH ผ่าน integration ที่อนุมัติในอนาคต</li>
+</ol>
+<h2>8. User experience architecture</h2>
+<h3>8.1 Desktop Studio Console</h3>
+<p>Desktop layout มีสามพื้นที่ถาวร:</p>
+<ol>
+<li><strong>ซ้าย:</strong> tenant/language context, preset gallery, block selector และ field controls</li>
+<li><strong>กลาง:</strong> LINE-like phone preview และ Run Journey control</li>
+<li><strong>ขวา:</strong> generated JSON, copy/download controls และ validation summary</li>
+</ol>
+<p>Header แสดง MONOLITH platform identity, tenant ปัจจุบัน, ภาษา และ help ส่วน customer-facing preview ใช้ tenant-first branding</p>
+<h3>8.2 Tablet และ mobile</h3>
+<p>เมื่อจอแคบ สามพื้นที่เปลี่ยนเป็น tabs:</p>
+<ul>
+<li>Editor</li>
+<li>Preview</li>
+<li>JSON &amp; Validation</li>
+</ul>
+<p>การเปลี่ยน tab รักษา FlexDraft เดิม ไม่ทิ้งข้อมูลหรือ validation state และ primary action ต้องเข้าถึงด้วย keyboard โดยไม่พึ่ง hover</p>
+<h3>8.3 Trust Concierge visual system</h3>
+<p>Visual system ใช้:</p>
+<ul>
+<li>warm neutrals สำหรับ project imagery และความเป็น hospitality</li>
+<li>MONOLITH green สำหรับ trust, primary action และ verified state</li>
+<li>restrained gold สำหรับ deadline หรือ attention</li>
+<li>spacing โปร่ง, rounded surfaces และ plain-language labels</li>
+<li>CTA หลักหนึ่งตัวที่เด่น</li>
+<li>revision, sender, expiry และ private-link cues ที่ชัด</li>
+<li>tenant logo/name นำใน customer-facing message</li>
+<li>trust mark <strong>Secured by MONOLITH</strong> แบบสุภาพ</li>
+</ul>
+<p>Motion เป็น optional, สั้น และปิดเมื่อผู้ใช้เลือก reduced motion ข้อความ approval ไม่แสดง celebratory animation ก่อนยืนยัน</p>
+<h2>9. Canonical draft และ derived records</h2>
+<h3>9.1 FlexDraft</h3>
+<div class="tablewrap"><table><thead><tr><th>กลุ่ม</th><th>Fields ที่ต้องมี</th></tr></thead><tbody>
+<tr><td>Context</td><td>draft version, preset ID, tenant ID/name, audience, language และ demo status</td></tr>
+<tr><td>Header</td><td>eyebrow, title, tenant mark และ status label</td></tr>
+<tr><td>Hero</td><td>local preview asset ID, exported HTTPS URL placeholder, aspect ratio, aspect mode และ accessible description</td></tr>
+<tr><td>Body</td><td>project, resource, revision, requester, amount/scope, deadline, summary และ trust note</td></tr>
+<tr><td>Footer</td><td>primary label, secondary label เมื่ออนุญาต และ action intents</td></tr>
+<tr><td>Intent</td><td>canonical action, risk tier, target mode, target reference และ expiry</td></tr>
+<tr><td>Evidence</td><td>correlation ID, created time, recipient reference และ digest input</td></tr>
+</tbody></table></div>
+<p>Draft model มี domain-neutral fields เท่าที่ห้า presets ต้องใช้ และไม่พัฒนาเป็น generic workflow engine</p>
+<h3>9.2 Generated Flex JSON</h3>
+<p>JSON Builder สร้าง LINE Flex message envelope ที่มี alternative text และหนึ่ง bubble พร้อม Header, Hero, Body และ Footer ตามลำดับมาตรฐาน</p>
+<p>รุ่นแรกรองรับหนึ่ง bubble ส่วน carousel authoring, video, rich text spans, raw JSON import และ arbitrary component nesting อยู่นอกขอบเขต Validator อาจสอนข้อจำกัด carousel/video แต่ editor จะไม่สร้างสิ่งเหล่านั้น</p>
+<h3>9.3 Demo transaction</h3>
+<p>Demo transaction สร้างเมื่อกด Run Journey โดยมี exact intent และ snapshot digest input หากเปลี่ยน bound value จะทำให้ transaction และ receipt เดิมใช้ไม่ได้</p>
+<h3>9.4 Verification Receipt — Demo</h3>
+<p>Receipt แสดง:</p>
+<ul>
+<li>ป้าย <strong>DEMO — NOT A PRODUCTION SIGNATURE</strong> ที่เห็นชัด</li>
+<li>tenant และ customer-facing provider</li>
+<li>recipient reference</li>
+<li>project/resource และ revision</li>
+<li>canonical action และ outcome</li>
+<li>created และ confirmed timestamps</li>
+<li>correlation identifier</li>
+<li>SHA-256 integrity digest ของ canonical demo fields</li>
+<li>ข้อความว่า production signing และ audit ต้องผ่าน MONOLITH Trust Kernel</li>
+</ul>
+<p>Digest แสดงการตรวจจับการเปลี่ยนแปลง และจะไม่ถูกเรียกว่า non-repudiation, legal signature, immutable archive หรือ production attestation</p>
+<h2>10. Contract ของ presets ทั้งห้า</h2>
+<div class="tablewrap"><table><thead><tr><th>Preset</th><th>LINE surface</th><th>หน้าที่ของ Flex</th><th>หน้าที่ของ Mock LIFF / MONOLITH</th><th>Shortcut ที่ห้าม</th></tr></thead><tbody>
+<tr><td>Design Approval</td><td>OA 1:1 หรือ personal push</td><td>สรุป revision, consequence, sender และ deadline; URI เปิด review</td><td>ผูก recipient/tenant/revision/expiry; explicit confirmation; receipt</td><td>อนุมัติด้วย postback แตะครั้งเดียว</td></tr>
+<tr><td>Quote / Structured Order</td><td>OA 1:1</td><td>สรุปราคาและเงื่อนไข; URI เปิด review; message action ใช้ขอให้มนุษย์ติดต่อกลับได้</td><td>เลือก option, ยืนยันผู้สั่งและ delivery details, สร้าง structured intent</td><td>ถือ free text เป็น order</td></tr>
+<tr><td>SLA Escalation</td><td>Personal push</td><td>Postback ใช้ acknowledge receipt ที่ low-risk; URI เปิด authoritative work item</td><td>แสดง owner, SLA clock, delegation และ exact action; high-risk ต้อง step-up</td><td>ถือ acknowledgement เป็น approval หรือ workflow transition</td></tr>
+<tr><td>Curated Site Update</td><td>Customer group</td><td>แสดง progress ที่มนุษย์คัดแล้ว; URI เปิด curated gallery ได้</td><td>บังคับ audience policy และ approved evidence set</td><td>auto-forward รูป internal</td></tr>
+<tr><td>Issue / Evidence</td><td>Internal group</td><td>Postback ใช้รับทราบ; URI เปิด review queue</td><td>เก็บ provenance; unknown actor เข้า quarantine; มนุษย์ promote หรือ reject</td><td>ให้ evidence ที่ quarantine เปลี่ยน business state</td></tr>
+</tbody></table></div>
+<h2>11. กฎเลือก Flex action เทียบกับ LIFF</h2>
+<div class="tablewrap"><table><thead><tr><th>เงื่อนไข</th><th>Action ที่เลือก</th></tr></thead><tbody>
+<tr><td>ผลที่ต้องการคือ conversational text ที่ผู้ใช้เห็น</td><td>Message action</td></tr>
+<tr><td>ตัวเลือก low-risk, reversible และ server reauthorize ได้ครบ</td><td>Postback action พร้อม opaque intent reference</td></tr>
+<tr><td>ปลายทางเป็น read-only content, เว็บไซต์ทั่วไป หรือ telephone link</td><td>URI action</td></tr>
+<tr><td>งานต้องใช้ identity, sensitive details, form, comparison, accessibility, confirmation หรือ policy explanation</td><td>URI action ที่เปิด LIFF</td></tr>
+<tr><td>Action เปลี่ยนเงิน สิทธิ์ scope revision release policy หรือ state ที่ย้อนยาก</td><td>LIFF พร้อม production Trust Kernel step-up</td></tr>
+</tbody></table></div>
+<p>LIFF ไม่ใช่ Messaging API action type แยก ปุ่ม Flex เปิด LIFF ผ่าน URI action Postback data จะไม่บรรจุ tenant, role, amount หรือ approval truth ที่เป็น authoritative; production MONOLITH ต้อง resolve และ reauthorize current state ใหม่</p>
+<h2>12. Validation contract</h2>
+<h3>12.1 Rule metadata</h3>
+<p>Validation rule ทุกข้อมี:</p>
+<ul>
+<li>stable rule ID</li>
+<li>severity</li>
+<li>block และ field ที่เกี่ยวข้อง</li>
+<li>title, explanation และ remediation ภาษาไทย/อังกฤษ</li>
+<li>classification ว่าเป็น official constraint หรือ MONOLITH best practice</li>
+<li>primary source URL เมื่อมี</li>
+<li>last-verified date</li>
+<li>client/version note เมื่อจำเป็น</li>
+</ul>
+<h3>12.2 Severity behavior</h3>
+<div class="tablewrap"><table><thead><tr><th>Severity</th><th>ความหมาย</th><th>พฤติกรรม UI</th></tr></thead><tbody>
+<tr><td>Error</td><td>Generated message ไม่อยู่ใน supported subset หรือ safety field ที่จำเป็นหาย</td><td>Highlight field/block; รักษา input; ปิด JSON export และ Run Journey</td></tr>
+<tr><td>Warning</td><td>Message อาจ render ไม่ดี เกิน MONOLITH soft budget ทำให้ intent สับสน หรือใช้ unsafe action pattern</td><td>Export ได้พร้อม warning count ที่เห็นชัดและวิธีแก้เฉพาะ</td></tr>
+<tr><td>Guidance</td><td>การสอน ขั้น official simulator real-device check หรือ production-boundary reminder</td><td>ไม่ block และมี source link</td></tr>
+</tbody></table></div>
+<h3>12.3 Official constraints ที่รองรับ</h3>
+<p>Initial registry ครอบคลุมอย่างน้อย:</p>
+<ul>
+<li>Flex message type, alternative text และ contents ที่จำเป็น</li>
+<li>หนึ่ง bubble พร้อม blocks ตามลำดับ Header → Hero → Body → Footer</li>
+<li>alternative-text maximum 1,500 characters</li>
+<li>one-bubble definition size ceiling 30 KB</li>
+<li>HTTPS image URL, supported format และ aspect behavior</li>
+<li>image URL maximum 2,000 characters, image maximum 1024×1024 pixels และ 10 MB ในฐานะ acceptance ceilings</li>
+<li>button action และ button-label requirements</li>
+<li>Postback และ Message data/text limits 300 characters</li>
+<li>URI limit 1,000 characters</li>
+<li>known feature/version notes เมื่อเกี่ยวข้อง</li>
+</ul>
+<p>Official acceptance ceilings ไม่ใช่ performance targets</p>
+<h3>12.4 MONOLITH best-practice warnings</h3>
+<p>Initial best-practice registry ครอบคลุม:</p>
+<ul>
+<li>dominant CTA มากกว่าหนึ่ง</li>
+<li>high-risk postback</li>
+<li>transaction-critical facts อยู่เฉพาะในรูป</li>
+<li>fixed-height text container</li>
+<li>copy ยาว, Thai/English wrapping และชื่อที่ไม่จำกัด</li>
+<li>contrast ต่ำหรือไม่มี textual equivalent</li>
+<li>image ratio/cropping risk ที่ไม่ชัด</li>
+<li>external URL host ที่ไม่อยู่ใน future production allowlist</li>
+<li>ไม่มี deadline, revision, sender, audience หรือ consequence</li>
+<li>ไม่ติดป้าย demo/prod boundary</li>
+</ul>
+<h2>13. Performance และ rendering contract</h2>
+<ol>
+<li>Prototype ใช้ local visual assets และไม่ส่ง external request</li>
+<li>HTTPS image URL ที่ผู้ใช้กรอกจะแสดงใน JSON แต่รุ่นแรกไม่ fetch; preview ใช้ local placeholder และแยกแสดง exported URL</li>
+<li>ไม่ฝัง base64 image ใน generated Flex JSON</li>
+<li>วัด generated bubble JSON เป็น UTF-8 bytes เทียบ official ceiling 30 KB</li>
+<li>UI เตือนก่อนชน ceiling โดยใช้ MONOLITH soft budget 24 KB</li>
+<li>Preview widths มี 320, 360 และ 390 pixels พร้อม desktop canvas scaling</li>
+<li>Tests ครอบคลุมไทย อังกฤษ ชื่อยาว emoji currency date และ explicit line wrapping</li>
+<li>Layout ตื้นและไม่พึ่ง pixel-perfect assumption ของ LINE clients</li>
+<li>Official image/video maxima บันทึกเป็น ceilings; guide แนะนำ media ที่เล็กกว่ามาก</li>
+<li>Simulator ใช้งานได้แม้ไม่มีรูป</li>
+<li>Reduced-motion preference ตัด animation ที่ไม่จำเป็น</li>
+<li>Standalone app ไม่มี analytics, remote fonts หรือ third-party runtime library</li>
+</ol>
+<h2>14. Error และ state handling</h2>
+<ul>
+<li>Invalid field ไม่ลบหรือ reset input อื่น</li>
+<li>Validation focus field และ block ที่ผิด</li>
+<li>การสลับ preset สร้าง fresh draft snapshot และไม่ mutate source preset</li>
+<li>Reset ขอ confirmation เฉพาะเมื่อ draft ต่างจาก preset</li>
+<li>Copy และ download รายงาน success หรือ failure ชัด</li>
+<li>ปิด Run Journey ขณะมี blocking errors</li>
+<li>Demo transaction ที่หมดอายุหรือ inconsistent ต้อง fail closed และอธิบาย bound value ที่เปลี่ยน</li>
+<li>Hero ที่หายหรือเสียใช้ local fallback โดย layout ไม่ยุบ</li>
+<li>Receipt generation ไม่แสดง production-success claim</li>
+<li>App อาจเก็บ local draft เพื่อรอด refresh แต่ approval correctness ไม่พึ่ง storage; Clear Draft ลบ local demo data</li>
+</ul>
+<h2>15. Accessibility และ ethical adoption</h2>
+<p>Prototype มุ่ง WCAG 2.2 AA practices ที่เหมาะกับ standalone demonstration:</p>
+<ul>
+<li>semantic headings, labels, buttons, tables และ dialogs</li>
+<li>keyboard operation ครบและ focus มองเห็น</li>
+<li>ไม่ใช้สีเพียงอย่างเดียวสื่อ state</li>
+<li>contrast อ่านได้และ text scale ได้</li>
+<li>alternative text และ validation สองภาษา</li>
+<li>reduced motion</li>
+<li>error summary ผูกกับ field</li>
+<li>อธิบาย consequence ด้วยภาษาง่ายก่อน confirm</li>
+</ul>
+<p>Service-design guidance ห้าม coercive retention, false urgency, preselected consent, hidden refusal, notification spam และ success animation ก่อน business confirmation Retention ต้องเกิดจากลดงานซ้ำ ตัดสินใจเร็ว โปร่งใส มี quiet hours, consent, portability, human support และ service recovery ที่ดี</p>
+<h2>16. รูปแบบเอกสาร</h2>
+<p>เอกสารโครงการสร้างภาษาอังกฤษและไทย โดยแต่ละภาษามี Markdown และ standalone HTML</p>
+<div class="tablewrap"><table><thead><tr><th>Deliverable</th><th>เนื้อหาบังคับ</th></tr></thead><tbody>
+<tr><td>Executive Deep Research Report</td><td>LINE สามเส้น, P0–P3 gaps, threat model, product/domain matrix, role scorecard, ethical adoption, roadmap, KPI hypotheses และ board go/no-go</td></tr>
+<tr><td>Flex Studio User Guide</td><td>Presets, editing, preview, validation, copy/download, Mock LIFF และ receipt</td></tr>
+<tr><td>Developer Console Installation Guide</td><td>OA/provider/channel/LIFF setup, endpoint/scopes/webhook configuration, validation, test และ rollback steps</td></tr>
+<tr><td>Flex Action vs LIFF Guide</td><td>Decision matrix, examples, risk tier และ anti-patterns</td></tr>
+<tr><td>Performance and Rendering Checklist</td><td>Payload, media, layout, ไทย/อังกฤษ, device/version, accessibility และ failure testing</td></tr>
+<tr><td>Design และ Implementation Records</td><td>Spec นี้, implementation plan, verification report และ residual-risk statement</td></tr>
+</tbody></table></div>
+<p>Installation guide ต้องระบุวันที่ตรวจ LINE console/document เพราะ UI และ terminology เปลี่ยนได้ และใช้ official LINE sources สำหรับ technical instructions</p>
+<h2>17. Planned file boundary</h2>
+<p>Implementation plan สร้างไฟล์ได้เฉพาะภายใต้ <strong>LineOS/</strong> เว้นแต่ owner decision ในอนาคตขยายขอบเขต</p>
+<div class="tablewrap"><table><thead><tr><th>Planned file</th><th>หน้าที่</th></tr></thead><tbody>
+<tr><td><strong>LineOS/line-flex-studio.html</strong></td><td>Semantic application shell และ dialogs</td></tr>
+<tr><td><strong>LineOS/line-flex-studio.css</strong></td><td>Trust Concierge tokens, layout, responsive และ print styles</td></tr>
+<tr><td><strong>LineOS/line-flex-studio.mjs</strong></td><td>UI controller และ event wiring</td></tr>
+<tr><td><strong>LineOS/line-flex-model.mjs</strong></td><td>Draft creation, immutable updates และ canonicalization</td></tr>
+<tr><td><strong>LineOS/line-flex-presets.mjs</strong></td><td>Preset definitions สองภาษาห้าชุดแบบ immutable</td></tr>
+<tr><td><strong>LineOS/line-flex-json.mjs</strong></td><td>Flex JSON generation สำหรับ supported subset และ byte measurement</td></tr>
+<tr><td><strong>LineOS/line-flex-validator.mjs</strong></td><td>Validation registry พร้อม source labels และ evaluation</td></tr>
+<tr><td><strong>LineOS/line-flex-actions.mjs</strong></td><td>Action-risk selection และ demo transaction binding</td></tr>
+<tr><td><strong>LineOS/line-flex-receipt.mjs</strong></td><td>Canonical receipt input และ SHA-256 digest</td></tr>
+<tr><td><strong>LineOS/assets/line-flex-studio/</strong></td><td>Local demo visuals และ icons</td></tr>
+<tr><td><strong>LineOS/tests/*.test.mjs</strong></td><td>Node built-in unit tests</td></tr>
+<tr><td><strong>LineOS/docs/</strong></td><td>Research, guides, design, plan และ reports สองภาษา</td></tr>
+</tbody></table></div>
+<p>ไม่มีไฟล์ใน nested product repository อยู่ใน implementation cycle นี้</p>
+<h2>18. Verification strategy</h2>
+<h3>18.1 Test-first core behavior</h3>
+<p>เขียน automated tests ก่อน production module behavior สำหรับ:</p>
+<ul>
+<li>immutable preset/draft isolation</li>
+<li>deterministic JSON</li>
+<li>required field และ byte-limit validation</li>
+<li>official-constraint เทียบ best-practice classification</li>
+<li>action selection ตาม intent และ risk</li>
+<li>high-risk postback rejection</li>
+<li>transaction expiry และ bound-value invalidation</li>
+<li>deterministic receipt digest</li>
+<li>digest เปลี่ยนเมื่อ tenant, recipient, revision หรือ action เปลี่ยน</li>
+<li>secret-shaped value rejection เมื่อเกี่ยวข้อง</li>
+</ul>
+<h3>18.2 Browser verification</h3>
+<p>Browser checks ครอบคลุม:</p>
+<ul>
+<li>presets ทั้งห้า</li>
+<li>ทุก editable field และ block</li>
+<li>preview/JSON/validation update แบบ real time</li>
+<li>copy/download/reset</li>
+<li>Mock LIFF review และ explicit confirmation</li>
+<li>expired และ changed-revision failures</li>
+<li>receipt label และ digest</li>
+<li>keyboard-only navigation</li>
+<li>layout ที่ 1440, 1024, 768, 390, 360 และ 320 pixels</li>
+<li>long text ไทย/อังกฤษ, broken hero และ reduced motion</li>
+<li>ไม่มี external network request</li>
+</ul>
+<h3>18.3 Documentation verification</h3>
+<p>Checks ยืนยัน:</p>
+<ul>
+<li>มีคู่ English/Thai Markdown และ HTML</li>
+<li>HTML เริ่มด้วย doctype, ประกาศภาษาให้ถูก และเปิดเดี่ยวได้</li>
+<li>headings, tables, links และ code samples render</li>
+<li>ไม่มี placeholder, status ขัดกัน, broken internal link หรือ unsupported production claim</li>
+<li>official technical claim ทุกข้อมี primary source</li>
+</ul>
+<h2>19. Acceptance gates</h2>
+<ol>
+<li>Presets ทั้งห้าสร้าง deterministic JSON โดยไม่มี shared mutable state</li>
+<li>การแก้ทุก block อัปเดต preview, JSON และ validation ทันที</li>
+<li>High-risk action เปิด Mock LIFF เสมอ; postback จำกัดที่ low-risk acknowledgement patterns</li>
+<li>Invalid draft export หรือ run journey ไม่ได้ และได้รับ bilingual field-level remediation</li>
+<li>Receipt digest เปลี่ยนเมื่อ tenant, recipient, revision, action หรือ canonical payload เปลี่ยน</li>
+<li>App ไม่ส่ง external request และไม่มี secret หรือ live-send path</li>
+<li>Keyboard และ responsive checks ผ่านที่ widths ที่ประกาศ</li>
+<li>Thai/English wrapping, long text, missing media และ payload warnings ผ่านการตรวจ</li>
+<li>Installation และ action guidance แยก official LINE constraints จาก MONOLITH best practices</li>
+<li>Executive report ระบุ <strong>NO-GO</strong> สำหรับ broader customer messaging จน Trust P0 release gates ผ่านทั้งหมด</li>
+</ol>
+<h2>20. Production expansion gates</h2>
+<p>Prototype ไม่เปลี่ยน Trust Foundation stop rule ที่อนุมัติแล้ว ก่อน broader customer messaging หรือ tenant ที่สองแบบ live MONOLITH ต้องพิสูจน์:</p>
+<ol>
+<li>tenant mapping ที่ไม่กำกวมสำหรับ active LINE/project records</li>
+<li>unified signature-verified ingress และ safe processing leases</li>
+<li>OAuth/OIDC state และ nonce verification</li>
+<li>action-bound, expiring, one-time step-up</li>
+<li>group actor authorization และ unknown-actor quarantine</li>
+<li>atomic business state, decision audit และ delivery intent</li>
+<li>outbox concurrency, stable retry, duplicate และ unknown-after-send recovery</li>
+<li>cross-tenant denial, revocation, expiry และ non-transitive delegation</li>
+<li>tamper-evident audit, retention, purge และ secret/PII controls</li>
+<li>second-tenant shadow proof โดย block live delivery</li>
+<li>backup/restore, monitoring, operator reconciliation และ rollback rehearsal</li>
+<li>ไม่มี Critical หรือ High finding ที่ยังไม่แก้ใน Trust Foundation scope</li>
+</ol>
+<h2>21. Primary references</h2>
+<ul>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/flex-message-elements/" target="_blank" rel="noopener">LINE Flex Message elements</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/using-flex-messages/" target="_blank" rel="noopener">Using Flex Messages</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/flex-message-layout/" target="_blank" rel="noopener">Flex Message layout</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/actions/" target="_blank" rel="noopener">Messaging API actions</a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/registering-liff-apps/" target="_blank" rel="noopener">Registering LIFF apps</a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/development-guidelines/" target="_blank" rel="noopener">LIFF development guidelines</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/verify-webhook-signature/" target="_blank" rel="noopener">Verify webhook signature</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/retrying-api-request/" target="_blank" rel="noopener">Retrying API requests</a></li>
+<li><a href="https://openid.net/specs/openid-connect-core-1_0.html" target="_blank" rel="noopener">OpenID Connect Core</a></li>
+<li><a href="https://www.rfc-editor.org/rfc/rfc9700.html" target="_blank" rel="noopener">OAuth 2.0 Security Best Current Practice, RFC 9700</a></li>
+<li><a href="https://csrc.nist.gov/pubs/sp/800/207/final" target="_blank" rel="noopener">NIST SP 800-207 Zero Trust Architecture</a></li>
+<li><a href="https://www.w3.org/TR/WCAG22/" target="_blank" rel="noopener">WCAG 2.2</a></li>
+<li><a href="https://www.mdes.go.th/uploads/tinymce/source/%E0%B8%AA%E0%B8%84%E0%B8%AA/Personal%20Data%20Protection%20Act%202019.pdf" target="_blank" rel="noopener">พระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคลของประเทศไทย</a></li>
+<li>Local <strong>CONTEXT.md</strong></li>
+<li>Local repository-scope correction วันที่ 21 กรกฎาคม 2026</li>
+<li>Nested <strong>docs/superpowers/specs/2026-07-26-line-trust-foundation-design.th.md</strong></li>
+<li>Nested <strong>docs/superpowers/plans/2026-07-26-line-trust-foundation-program.th.md</strong></li>
+</ul>
+<h2>22. Completion definition ของ design cycle</h2>
+<p>Design cycle เสร็จเมื่อ:</p>
+<ul>
+<li>มี written spec ภาษาอังกฤษและไทยพร้อม standalone HTML คู่กัน</li>
+<li>ไฟล์ผ่าน placeholder, consistency, scope และ ambiguity review</li>
+<li>ผู้ใช้อนุมัติ written spec</li>
+<li>สร้าง implementation plan สองภาษาผ่าน approved planning workflow</li>
+</ul>
+<p>การอนุมัติ design นี้ไม่ได้หมายความว่า implementation เริ่มหรือเสร็จแล้ว</p>
+</main></body>
+</html>

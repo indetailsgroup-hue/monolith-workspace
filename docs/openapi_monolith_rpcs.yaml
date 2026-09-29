@@ -1,0 +1,1424 @@
+openapi: 3.0.3
+
+info:
+  title: MONOLITH Manufacturing OS — RPC API
+  description: |
+    OpenAPI specification for all PostgreSQL RPC functions exposed via Supabase PostgREST
+    in migrations **0176–0204**.
+
+    ## Authentication
+    All endpoints require a valid Supabase JWT in the `Authorization` header:
+    ```
+    Authorization: Bearer <supabase_access_token>
+    ```
+    Service-role endpoints additionally require `apikey: <service_role_key>`.
+
+    ## Base URL
+    ```
+    https://<project_ref>.supabase.co/rest/v1/rpc
+    ```
+
+    ## Multi-Tenancy
+    All RPCs enforce Row-Level Security. The caller's `org_id` is resolved automatically
+    via `get_user_org_id()` from the `org_members` table — no explicit `org_id` parameter
+    is required for tenant-scoped operations.
+
+    ## Error Codes
+    | HTTP | Code | Meaning |
+    |------|------|---------|
+    | 400 | `invalid_input` | Bad parameter value |
+    | 403 | `insufficient_privilege` | RLS / role check failed |
+    | 404 | `not_found` | Target row does not exist in caller's org |
+    | 409 | `conflict` | Duplicate or state conflict |
+    | 422 | `unprocessable` | Business rule violation |
+    | 500 | `internal_error` | Unexpected server error |
+
+  version: '15.9.0'
+  contact:
+    name: MONOLITH Platform Team
+    email: platform@indetailsgroup.com
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://{project_ref}.supabase.co/rest/v1/rpc
+    variables:
+      project_ref:
+        default: your-project-ref
+        description: Supabase project reference ID
+
+tags:
+  - name: Accounting
+    description: Invoice approval, journal posting, and payment receipt RPCs (Migrations 0176–0179)
+  - name: Overdue Detection
+    description: Overdue invoice scanning and notification queuing (Migration 0180)
+  - name: eTax Submission
+    description: eTax queue management, submission, and status tracking (Migrations 0181–0184)
+  - name: eTax Audit
+    description: Audit log and compliance tracking (Migration 0185)
+  - name: eTax Analytics
+    description: Health metrics, trend views, risk ranking (Migrations 0186–0194)
+  - name: Risk Intelligence
+    description: Risk tier state and pg_notify events (Migration 0195)
+  - name: SLA Archive
+    description: Long-term SLA breach archive views and rollup RPCs (Migration 0202)
+  - name: SLA Executive
+    description: Executive SLA dashboard combining live MV data with long-term archive KPIs (Migration 0203)
+  - name: Infrastructure
+    description: Partition health and admin utilities (Migration 0196)
+  - name: SLA Executive KPI
+    description: Global single-row executive KPI banner aggregating all-org SLA data (Migration 0204)
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Supabase JWT access token from `supabase.auth.getSession()`
+    ServiceRoleKey:
+      type: apiKey
+      in: header
+      name: apikey
+      description: Supabase service-role key (server-side only)
+
+  schemas:
+    # ── Shared ────────────────────────────────────────────────────────────────
+    OrgId:
+      type: string
+      format: uuid
+      example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+
+    InvoiceId:
+      type: string
+      format: uuid
+      example: "f0e1d2c3-b4a5-6789-0abc-def123456789"
+
+    RpcError:
+      type: object
+      properties:
+        code:    { type: string, example: "not_found" }
+        message: { type: string, example: "Invoice not found in your organisation" }
+        details: { type: object, nullable: true }
+      required: [code, message]
+
+    # ── Accounting ─────────────────────────────────────────────────────────────
+    ApproveInvoiceRequest:
+      type: object
+      required: [invoice_id]
+      properties:
+        invoice_id:
+          $ref: '#/components/schemas/InvoiceId'
+          description: UUID of the invoice to approve. Must belong to caller's org.
+        approved_by_note:
+          type: string
+          maxLength: 500
+          description: Optional approval note appended to the journal entry memo.
+          example: "Approved by Finance Manager per PO-2026-0042"
+
+    ApproveInvoiceResponse:
+      type: object
+      properties:
+        success:        { type: boolean }
+        invoice_id:     { $ref: '#/components/schemas/InvoiceId' }
+        journal_entry_id:
+          type: string
+          format: uuid
+          description: ID of the auto-created general ledger journal entry.
+        dr_account:     { type: string, example: "1200" }
+        cr_account:     { type: string, example: "4100" }
+        amount_thb:     { type: number, format: double, example: 107000.00 }
+        vat_amount_thb: { type: number, format: double, example: 7000.00 }
+
+    VoidInvoiceRequest:
+      type: object
+      required: [invoice_id]
+      properties:
+        invoice_id:  { $ref: '#/components/schemas/InvoiceId' }
+        void_reason:
+          type: string
+          maxLength: 500
+          example: "Customer cancelled order"
+
+    VoidInvoiceResponse:
+      type: object
+      properties:
+        success:          { type: boolean }
+        invoice_id:       { $ref: '#/components/schemas/InvoiceId' }
+        reversal_entry_id:
+          type: string
+          format: uuid
+          description: ID of the reversing journal entry (Dr Revenue / Cr AR).
+
+    PostPaymentReceiptRequest:
+      type: object
+      required: [payment_slip_id]
+      properties:
+        payment_slip_id:
+          type: string
+          format: uuid
+          description: UUID of the confirmed payment_slip row that triggered the receipt.
+        book_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: |
+            Target accounting book (from multi-book ledger, Migration 0179).
+            Defaults to the org's primary book if omitted.
+
+    PostPaymentReceiptResponse:
+      type: object
+      properties:
+        success:           { type: boolean }
+        payment_slip_id:   { type: string, format: uuid }
+        receipt_entry_id:  { type: string, format: uuid }
+        dr_account:        { type: string, example: "1100" }
+        cr_account:        { type: string, example: "1200" }
+        amount_thb:        { type: number, format: double }
+        book_id:           { type: string, format: uuid, nullable: true }
+
+    # ── Overdue ────────────────────────────────────────────────────────────────
+    CheckOverdueRequest:
+      type: object
+      properties:
+        org_id:
+          $ref: '#/components/schemas/OrgId'
+          description: |
+            Restrict scan to a specific org (service_role only).
+            Omit to scan all orgs (service_role) or caller's org (authenticated).
+        dry_run:
+          type: boolean
+          default: false
+          description: If true, returns results without inserting notification queue rows.
+
+    CheckOverdueResponse:
+      type: object
+      properties:
+        scanned_count:  { type: integer, example: 142 }
+        overdue_count:  { type: integer, example: 17 }
+        queued_count:   { type: integer, example: 15, description: "Notifications actually queued (0 in dry_run mode)" }
+        skipped_count:  { type: integer, example: 2,  description: "Rows skipped (notification already sent today)" }
+        dry_run:        { type: boolean }
+
+    # ── eTax Submission ────────────────────────────────────────────────────────
+    TriggerEtaxSubmitRequest:
+      type: object
+      required: [invoice_id, document_type]
+      properties:
+        invoice_id:
+          $ref: '#/components/schemas/InvoiceId'
+        document_type:
+          type: string
+          enum: [T01, T02, T03, T04]
+          description: |
+            T01 = Tax Invoice / T02 = Receipt / T03 = Debit Note / T04 = Credit Note
+        force_resubmit:
+          type: boolean
+          default: false
+          description: |
+            If true, resets a `cancelled` or max-retry `failed` submission to `queued`.
+            Ignored for `submitted` rows (use void + re-approve workflow instead).
+
+    TriggerEtaxSubmitResponse:
+      type: object
+      properties:
+        success:        { type: boolean }
+        submission_id:  { type: string, format: uuid }
+        status:         { type: string, enum: [queued, already_queued, requeued] }
+
+    MarkSubmittedRequest:
+      type: object
+      required: [submission_id, etax_reference_no]
+      properties:
+        submission_id:
+          type: string
+          format: uuid
+        etax_reference_no:
+          type: string
+          example: "TH2026090100042"
+        submitted_at:
+          type: string
+          format: date-time
+          description: Defaults to NOW() if omitted.
+
+    MarkSubmittedResponse:
+      type: object
+      properties:
+        success:          { type: boolean }
+        submission_id:    { type: string, format: uuid }
+        etax_reference_no: { type: string }
+        pdf_queued:       { type: boolean, description: "true if trg_queue_pdf_on_submitted fired" }
+
+    ClaimPdfBatchRequest:
+      type: object
+      properties:
+        batch_size:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 10
+          description: Maximum rows to claim atomically.
+        worker_id:
+          type: string
+          description: Unique identifier for the worker claiming this batch (for idempotency).
+
+    ClaimPdfBatchResponse:
+      type: object
+      properties:
+        claimed:
+          type: array
+          items:
+            type: object
+            properties:
+              submission_id:    { type: string, format: uuid }
+              org_id:           { $ref: '#/components/schemas/OrgId' }
+              invoice_id:       { $ref: '#/components/schemas/InvoiceId' }
+              etax_reference_no:{ type: string }
+
+    MarkPdfDownloadedRequest:
+      type: object
+      required: [submission_id, pdf_path]
+      properties:
+        submission_id: { type: string, format: uuid }
+        pdf_path:
+          type: string
+          description: Storage path in Supabase Storage (e.g. `etax-pdfs/{org_id}/{ref}.pdf`)
+          example: "etax-pdfs/a1b2c3d4/TH2026090100042.pdf"
+
+    MarkPdfDownloadedResponse:
+      type: object
+      properties:
+        success:           { type: boolean }
+        submission_id:     { type: string, format: uuid }
+        pdf_path:          { type: string }
+        pdf_downloaded_at: { type: string, format: date-time }
+
+    # ── eTax Analytics ─────────────────────────────────────────────────────────
+    EtaxHealthTrendRow:
+      type: object
+      properties:
+        org_id:            { $ref: '#/components/schemas/OrgId' }
+        trend_date:        { type: string, format: date }
+        total_submissions: { type: integer }
+        submitted_count:   { type: integer }
+        failed_count:      { type: integer }
+        success_rate_pct:  { type: number, format: double }
+        avg_attempt_count: { type: number, format: double }
+
+    EtaxHealthTrendCachedResponse:
+      type: object
+      properties:
+        source:
+          type: string
+          enum: [materialized_view, live_query]
+          description: "`materialized_view` if data was served from mv_etax_health_trend, `live_query` if MV was stale."
+        refreshed_at:
+          type: string
+          format: date-time
+          nullable: true
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/EtaxHealthTrendRow'
+
+    RiskTierStateRow:
+      type: object
+      properties:
+        org_id:        { $ref: '#/components/schemas/OrgId' }
+        org_name:      { type: string }
+        risk_tier:
+          type: string
+          enum: [CRITICAL, WARNING, HEALTHY]
+        health_score:  { type: integer, minimum: 0, maximum: 100 }
+        risk_rank:     { type: integer, minimum: 1 }
+        health_status:
+          type: string
+          enum: [critical, warning, healthy]
+        updated_at:    { type: string, format: date-time }
+
+    # ── Infrastructure ─────────────────────────────────────────────────────────
+    PartitionHealthRow:
+      type: object
+      properties:
+        partition_name: { type: string, example: "etax_submissions_2026_09" }
+        from_date:      { type: string, format: date, nullable: true }
+        to_date:        { type: string, format: date, nullable: true }
+        row_count:      { type: integer, format: int64 }
+        size_pretty:    { type: string, example: "42 MB" }
+        is_default:     { type: boolean }
+
+    # ── SLA Archive ────────────────────────────────────────────────────────────
+    SlaArchiveSummaryRow:
+      type: object
+      description: Aggregated SLA breach archive data per org and severity tier.
+      properties:
+        org_id:
+          $ref: '#/components/schemas/OrgId'
+        org_name:
+          type: string
+          example: "บริษัท เฟอร์นิเจอร์ดี จำกัด"
+        severity_tier:
+          type: string
+          enum: [HEALTHY, NORMAL, ELEVATED, WARNING, CRITICAL]
+          description: Severity tier (breach-rate band) for this aggregation group.
+        first_archived_date:
+          type: string
+          format: date
+          description: Earliest breach_date present in the archive for this org/tier.
+        last_archived_date:
+          type: string
+          format: date
+          description: Most recent breach_date present in the archive for this org/tier.
+        last_archived_at:
+          type: string
+          format: date-time
+          description: Timestamp of the most recent archive write (archived_at column).
+        total_archive_days:
+          type: integer
+          description: Number of distinct calendar days in the archive for this org/tier.
+        total_created:
+          type: integer
+          format: int64
+          description: Sum of submissions created across all archived days.
+        total_breached:
+          type: integer
+          format: int64
+          description: Sum of breached submissions across all archived days.
+        avg_breach_rate:
+          type: number
+          format: float
+          description: Average daily breach_rate across archived days (0.0–1.0).
+        max_breach_rate:
+          type: number
+          format: float
+          description: Peak daily breach_rate observed for this org/tier (0.0–1.0).
+        max_cumulative:
+          type: integer
+          description: Highest cumulative_breached value observed in the archive.
+        sla_threshold_hours:
+          type: number
+          description: SLA threshold in hours from platform_config at time of archive (default 24).
+
+    SlaArchiveOrgRollupRow:
+      type: object
+      description: One-row-per-org aggregate across all severity tiers and document types.
+      properties:
+        org_id:
+          $ref: '#/components/schemas/OrgId'
+        org_name:
+          type: string
+          example: "บริษัท เฟอร์นิเจอร์ดี จำกัด"
+        first_archived_date:
+          type: string
+          format: date
+          description: Earliest breach_date in archive for this org.
+        last_archived_date:
+          type: string
+          format: date
+          description: Most recent breach_date in archive for this org.
+        last_archived_at:
+          type: string
+          format: date-time
+          description: Timestamp of the most recent archive write for this org.
+        total_archive_days:
+          type: integer
+          description: Number of distinct calendar days archived for this org.
+        total_created:
+          type: integer
+          format: int64
+          description: Total submissions created across all archived days and document types.
+        total_breached:
+          type: integer
+          format: int64
+          description: Total breached submissions across all archived days and document types.
+        overall_breach_rate:
+          type: number
+          format: float
+          description: |
+            Overall breach rate = (total_breached / total_created) × 100.
+            Expressed as a percentage (0.0–100.0). NULL when total_created = 0.
+          nullable: true
+        avg_daily_breach_rate:
+          type: number
+          format: float
+          description: Average of per-day breach_rate values (0.0–1.0 scale).
+        peak_daily_breach_rate:
+          type: number
+          format: float
+          description: Maximum single-day breach_rate observed for this org.
+        peak_cumulative:
+          type: integer
+          description: Highest cumulative_breached value across all document types.
+        worst_severity_tier:
+          type: string
+          enum: [HEALTHY, NORMAL, ELEVATED, WARNING, CRITICAL]
+          description: |
+            Worst (highest-rank) severity tier observed across all archived days.
+            Rank order: CRITICAL(5) > WARNING(4) > ELEVATED(3) > NORMAL(2) > HEALTHY(1).
+        breached_document_types:
+          type: array
+          items:
+            type: string
+            enum: [T01, T02, T03, T04]
+          description: Distinct document types that had at least one breach day in the archive.
+        sla_threshold_hours:
+          type: number
+          description: SLA threshold in hours from platform_config (default 24).
+
+    # ── SLA Executive Summary ──────────────────────────────────────────────────
+    ExecutiveKpiBannerRow:
+      type: object
+      description: Single-row global KPI banner returned by rpc_etax_executive_kpi_banner.
+      properties:
+        total_orgs:
+          type: integer
+          description: Total distinct orgs with any live or archive SLA data.
+          example: 12
+        orgs_requiring_attention:
+          type: integer
+          description: Count of orgs where combined_worst_severity is WARNING or CRITICAL.
+          example: 3
+        orgs_with_live_data:
+          type: integer
+          description: Orgs that have rows in mv_etax_submission_sla.
+          example: 10
+        orgs_with_archive_data:
+          type: integer
+          description: Orgs that have rows in etax_sla_breach_archive.
+          example: 8
+        global_worst_severity:
+          type: string
+          enum: [CRITICAL, WARNING, ELEVATED, NORMAL, HEALTHY]
+          nullable: true
+          description: Highest severity tier across all orgs (CRITICAL > WARNING > ELEVATED > NORMAL > HEALTHY).
+          example: WARNING
+        global_peak_breach_rate_pct:
+          type: number
+          format: float
+          nullable: true
+          description: Maximum peak_breach_rate_pct across all orgs.
+          example: 35.7
+        live_total_submissions:
+          type: integer
+          description: Sum of live_total_submissions across all orgs.
+          example: 4820
+        live_total_breached:
+          type: integer
+          description: Sum of live_breach_count across all orgs.
+          example: 312
+        archive_total_created:
+          type: integer
+          description: Sum of archive_total_created across all orgs.
+          example: 18450
+        archive_total_breached:
+          type: integer
+          description: Sum of archive_total_breached across all orgs.
+          example: 1200
+        sla_threshold_hours:
+          type: integer
+          description: SLA threshold in hours from platform_config (default 24).
+          example: 24
+
+    SlaExecutiveSummaryRow::
+      type: object
+      description: |
+        One-row-per-org executive KPI combining live mv_etax_submission_sla data
+        (Migration 0199) with long-term v_etax_sla_archive_org_rollup (Migration 0202).
+        Source view: v_etax_sla_executive_summary (Migration 0203).
+      properties:
+        org_id:
+          $ref: '#/components/schemas/OrgId'
+        org_name:
+          type: string
+          example: "บริษัท เฟอร์นิเจอร์ดี จำกัด"
+        live_total_submissions:
+          type: integer
+          format: int64
+          description: Total submissions currently in mv_etax_submission_sla for this org.
+        live_breach_count:
+          type: integer
+          format: int64
+          description: Count of breached submissions in the live MV.
+        live_breach_rate_pct:
+          type: number
+          format: float
+          description: Live breach rate as a percentage (0.0–100.0). NULL when no live data.
+          nullable: true
+        live_worst_severity:
+          type: string
+          enum: [HEALTHY, NORMAL, ELEVATED, WARNING, CRITICAL]
+          description: Worst severity tier in the live MV for this org.
+          nullable: true
+        live_avg_processing_hours:
+          type: number
+          format: float
+          description: Average processing hours across live submissions.
+          nullable: true
+        sla_threshold_hours:
+          type: number
+          description: SLA threshold in hours (from platform_config; defaults to 24).
+        live_last_submission_at:
+          type: string
+          format: date-time
+          description: Timestamp of the most recent submission in the live MV.
+          nullable: true
+        first_archived_date:
+          type: string
+          format: date
+          description: Earliest breach_date in the long-term archive for this org.
+          nullable: true
+        last_archived_date:
+          type: string
+          format: date
+          description: Most recent breach_date in the long-term archive.
+          nullable: true
+        archive_total_days:
+          type: integer
+          description: Number of distinct calendar days present in the archive (0 when no archive).
+        archive_total_created:
+          type: integer
+          format: int64
+          description: Total submissions created across all archived days.
+        archive_total_breached:
+          type: integer
+          format: int64
+          description: Total breached submissions across all archived days.
+        archive_breach_rate_pct:
+          type: number
+          format: float
+          description: |
+            Overall archive breach rate = (archive_total_breached / archive_total_created) × 100.
+            NULL when no archive data.
+          nullable: true
+        archive_worst_severity:
+          type: string
+          enum: [HEALTHY, NORMAL, ELEVATED, WARNING, CRITICAL]
+          description: Worst severity tier in the long-term archive for this org.
+          nullable: true
+        archive_peak_cumulative:
+          type: integer
+          description: Highest cumulative_breached value recorded in the archive (0 when no archive).
+        breached_document_types:
+          type: array
+          items:
+            type: string
+            enum: [T01, T02, T03, T04]
+          description: Document types that had at least one breach day in the archive.
+          nullable: true
+        last_archived_at:
+          type: string
+          format: date-time
+          description: Timestamp of the most recent archive write for this org.
+          nullable: true
+        peak_breach_rate_pct:
+          type: number
+          format: float
+          description: |
+            Maximum breach rate across both live and archive sources.
+            GREATEST(live_breach_rate_pct, archive_breach_rate_pct).
+        combined_worst_severity:
+          type: string
+          enum: [HEALTHY, NORMAL, ELEVATED, WARNING, CRITICAL]
+          description: |
+            Worst severity tier across both live and archive sources.
+            CASE rank: CRITICAL(5) > WARNING(4) > ELEVATED(3) > NORMAL(2) > HEALTHY(1).
+        requires_attention:
+          type: boolean
+          description: TRUE when combined_worst_severity is WARNING or CRITICAL.
+          nullable: true
+        has_live_data:
+          type: boolean
+          description: TRUE when this org has rows in mv_etax_submission_sla.
+        has_archive_data:
+          type: boolean
+          description: TRUE when this org has rows in v_etax_sla_archive_org_rollup.
+
+
+# ─── Security (global default) ────────────────────────────────────────────────
+security:
+  - BearerAuth: []
+
+# ─── Paths ────────────────────────────────────────────────────────────────────
+paths:
+
+  # ════════════════════════════════════════════════════════
+  # ACCOUNTING — Migration 0176
+  # ════════════════════════════════════════════════════════
+  /rpc_approve_invoice:
+    post:
+      tags: [Accounting]
+      operationId: rpcApproveInvoice
+      summary: Approve an invoice and auto-post journal entry
+      description: |
+        Transitions an invoice from `draft` → `approved` and atomically creates a
+        debit/credit journal entry:
+        - **DR** Accounts Receivable (1200) for invoice amount incl. VAT
+        - **CR** Revenue (4100) for net amount
+        - **CR** VAT Payable (2200) for 7% VAT
+
+        Migration: **0176** — `fn_auto_journal_on_invoice_approval`
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApproveInvoiceRequest'
+            example:
+              invoice_id: "f0e1d2c3-b4a5-6789-0abc-def123456789"
+              approved_by_note: "Approved by Finance per budget Q3-2026"
+      responses:
+        '200':
+          description: Invoice approved and journal posted.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApproveInvoiceResponse' }
+        '404':
+          description: Invoice not found in caller's organisation.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RpcError' }
+        '409':
+          description: Invoice is not in `draft` status — cannot approve.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RpcError' }
+        '422':
+          description: Invoice total is zero or missing line items.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RpcError' }
+
+  /rpc_void_invoice:
+    post:
+      tags: [Accounting]
+      operationId: rpcVoidInvoice
+      summary: Void an approved invoice and post reversing entry
+      description: |
+        Transitions an invoice from `approved` → `voided` and creates a reversing
+        journal entry (DR Revenue / CR AR). Only OWNER, ADMIN, and FINANCE roles
+        may void invoices.
+
+        Migration: **0176** — `fn_void_invoice_with_reversal`
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VoidInvoiceRequest' }
+      responses:
+        '200':
+          description: Invoice voided and reversal entry posted.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VoidInvoiceResponse' }
+        '403':
+          description: Caller lacks OWNER/ADMIN/FINANCE role.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RpcError' }
+        '409':
+          description: Invoice is not in `approved` status.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RpcError' }
+
+  # ════════════════════════════════════════════════════════
+  # ACCOUNTING — Migration 0177
+  # ════════════════════════════════════════════════════════
+  /rpc_post_payment_receipt:
+    post:
+      tags: [Accounting]
+      operationId: rpcPostPaymentReceipt
+      summary: Post payment receipt journal when a payment_slip is confirmed
+      description: |
+        Called automatically by `trg_payment_receipt_posting` when a `payment_slip`
+        row transitions to `confirmed`. Can also be called manually to repost
+        a missing receipt entry.
+
+        Posts:
+        - **DR** Cash/Bank (1100)
+        - **CR** Accounts Receivable (1200)
+
+        Migration: **0177** — `fn_post_payment_receipt`
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PostPaymentReceiptRequest' }
+      responses:
+        '200':
+          description: Receipt journal entry posted.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PostPaymentReceiptResponse' }
+        '404':
+          description: payment_slip not found or not yet confirmed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RpcError' }
+        '409':
+          description: Receipt entry already exists for this payment_slip.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RpcError' }
+
+  # ════════════════════════════════════════════════════════
+  # OVERDUE DETECTION — Migration 0180
+  # ════════════════════════════════════════════════════════
+  /rpc_check_overdue_invoices:
+    post:
+      tags: [Overdue Detection]
+      operationId: rpcCheckOverdueInvoices
+      summary: Scan for overdue invoices and queue notifications
+      description: |
+        Scans `invoices` for rows where `due_date < NOW()` and `status = 'approved'`
+        (not yet paid). Inserts rows into the notification queue for each overdue
+        invoice — deduplicated so repeat calls do not double-queue.
+
+        Called by **pg_cron** (`notify-overdue`) daily at 01:00 Bangkok time,
+        and by the `notify-overdue` Edge Function.
+
+        Migration: **0180** — `fn_check_overdue_invoices`
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CheckOverdueRequest' }
+      responses:
+        '200':
+          description: Scan complete.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CheckOverdueResponse' }
+
+  # ════════════════════════════════════════════════════════
+  # eTAX SUBMISSION — Migration 0181
+  # ════════════════════════════════════════════════════════
+  /rpc_trigger_etax_submit:
+    post:
+      tags: [eTax Submission]
+      operationId: rpcTriggerEtaxSubmit
+      summary: Queue an invoice for eTax submission
+      description: |
+        Inserts a row into `etax_submissions` with `status=queued`. Idempotent —
+        if a row already exists for `(invoice_id, document_type)` with status
+        `queued` or `submitting`, returns `already_queued`. Use `force_resubmit=true`
+        to reset failed/cancelled submissions.
+
+        Migration: **0181** — `fn_trigger_etax_submit`
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TriggerEtaxSubmitRequest' }
+      responses:
+        '200':
+          description: Submission queued.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TriggerEtaxSubmitResponse' }
+        '404':
+          description: Invoice not found.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RpcError' }
+        '409':
+          description: Submission exists with status `submitted` — void first.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RpcError' }
+
+  # ════════════════════════════════════════════════════════
+  # eTAX SUBMISSION — Migration 0183
+  # ════════════════════════════════════════════════════════
+  /rpc_etax_mark_submitted:
+    post:
+      tags: [eTax Submission]
+      operationId: rpcEtaxMarkSubmitted
+      summary: Mark an eTax submission as successfully submitted
+      description: |
+        Called by `etax-submit-worker` after successful eTax API call. Sets
+        `status=submitted`, stores `etax_reference_no`, and fires
+        `trg_queue_pdf_on_submitted` to move `pdf_status` to `pending`.
+
+        Requires **service_role** — not callable by end users.
+
+        Migration: **0183** — `fn_etax_mark_submitted`
+      security:
+        - BearerAuth: []
+        - ServiceRoleKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MarkSubmittedRequest' }
+      responses:
+        '200':
+          description: Submission marked as submitted.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MarkSubmittedResponse' }
+        '404':
+          description: submission_id not found.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RpcError' }
+        '409':
+          description: Submission is not in `submitting` status.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RpcError' }
+
+  /rpc_etax_claim_pdf_batch:
+    post:
+      tags: [eTax Submission]
+      operationId: rpcEtaxClaimPdfBatch
+      summary: Atomically claim a batch of pending PDF downloads
+      description: |
+        SELECT … FOR UPDATE SKIP LOCKED — claims up to `batch_size` rows where
+        `pdf_status=pending`, sets them to `processing`, and returns the claimed rows.
+        Idempotent for the same `worker_id`.
+
+        Requires **service_role**.
+
+        Migration: **0183** — `fn_etax_claim_pdf_batch`
+      security:
+        - BearerAuth: []
+        - ServiceRoleKey: []
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ClaimPdfBatchRequest' }
+      responses:
+        '200':
+          description: Batch claimed (may be empty if no pending PDFs).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClaimPdfBatchResponse' }
+
+  /rpc_etax_mark_pdf_downloaded:
+    post:
+      tags: [eTax Submission]
+      operationId: rpcEtaxMarkPdfDownloaded
+      summary: Record a successfully downloaded eTax PDF
+      description: |
+        Sets `pdf_status=ready` and records the `pdf_path` in Supabase Storage.
+        Called by `etax-submit-worker` after uploading the PDF.
+
+        Requires **service_role**.
+
+        Migration: **0183** — `fn_etax_mark_pdf_downloaded`
+      security:
+        - BearerAuth: []
+        - ServiceRoleKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MarkPdfDownloadedRequest' }
+      responses:
+        '200':
+          description: PDF path recorded.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MarkPdfDownloadedResponse' }
+
+  # ════════════════════════════════════════════════════════
+  # eTAX ANALYTICS — Migration 0192
+  # ════════════════════════════════════════════════════════
+  /rpc_etax_health_trend_cached:
+    post:
+      tags: [eTax Analytics]
+      operationId: rpcEtaxHealthTrendCached
+      summary: Return 30-day eTax health trend (cached MV)
+      description: |
+        Returns daily health trend rows for the calling org over the last 30 days.
+        Serves from `mv_etax_health_trend` when last refreshed < 24 hours ago;
+        falls back to a live query against `v_etax_health_trend` otherwise.
+
+        Response includes a `source` field indicating whether data came from the
+        materialized view or a live query.
+
+        Migration: **0192** — `rpc_etax_health_trend_cached`
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                days:
+                  type: integer
+                  minimum: 1
+                  maximum: 90
+                  default: 30
+                  description: Number of days to include in the trend window.
+      responses:
+        '200':
+          description: Health trend data returned.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EtaxHealthTrendCachedResponse' }
+
+  # ════════════════════════════════════════════════════════
+  # RISK INTELLIGENCE — Migration 0195
+  # ════════════════════════════════════════════════════════
+  /rpc_etax_risk_tier_state:
+    post:
+      tags: [Risk Intelligence]
+      operationId: rpcEtaxRiskTierState
+      summary: Return current risk tier state for all orgs (service_role only)
+      description: |
+        Returns the current `risk_tier`, `health_score`, `risk_rank`, and `updated_at`
+        for every organisation, joined from `etax_risk_tier_state`.
+
+        Used by `etax-risk-notify` Edge Function to determine which orgs require alerts.
+
+        Requires **service_role** — data is cross-org.
+
+        Migration: **0195** — `rpc_etax_risk_tier_state`
+      security:
+        - BearerAuth: []
+        - ServiceRoleKey: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                org_id:
+                  $ref: '#/components/schemas/OrgId'
+                  description: Filter to a single org (optional).
+                tier_filter:
+                  type: array
+                  items:
+                    type: string
+                    enum: [CRITICAL, WARNING, HEALTHY]
+                  description: Return only orgs matching these tiers.
+      responses:
+        '200':
+          description: Risk tier state rows.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/RiskTierStateRow' }
+        '403':
+          description: Caller is not service_role.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RpcError' }
+
+  # ════════════════════════════════════════════════════════
+  # INFRASTRUCTURE — Migration 0196
+  # ════════════════════════════════════════════════════════
+  /rpc_etax_partition_health:
+    post:
+      tags: [Infrastructure]
+      operationId: rpcEtaxPartitionHealth
+      summary: Return size and row count for all etax_submissions partitions
+      description: |
+        Admin utility that lists all monthly partitions of `etax_submissions`
+        with their row counts, sizes, and date ranges. Also flags partitions
+        older than 24 months as `ARCHIVE_CANDIDATE` for data lifecycle management.
+
+        Requires **service_role**.
+
+        Migration: **0196** — `rpc_etax_partition_health`
+      security:
+        - BearerAuth: []
+        - ServiceRoleKey: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: No parameters required.
+      responses:
+        '200':
+          description: Partition health rows.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PartitionHealthRow' }
+
+  # ════════════════════════════════════════════════════════
+  # SLA BREACH TIMELINE — Migration 0200
+  # ════════════════════════════════════════════════════════
+  /rpc_etax_sla_breach_timeline:
+    post:
+      operationId: rpc_etax_sla_breach_timeline
+      summary: Daily SLA breach trend per org and document type
+      description: |
+        Returns daily SLA breach trend data for the last p_days days (default 30, max 90).
+        Uses a calendar-spine view (generate_series) so every day appears even with zero
+        submissions. cumulative_breached is a monotonically increasing running total within
+        each (org_id, document_type) partition. RLS-enforced — authenticated users see only
+        their own org. Created by Migration 0200.
+      tags: [SLA]
+      security:
+        - bearerAuth: []
+        - apiKeyAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                p_org_id:
+                  type: string
+                  format: uuid
+                  description: Filter to a specific organisation (optional; service_role can see all)
+                  nullable: true
+                p_document_type:
+                  type: string
+                  enum: [T01, T02, T03, T04]
+                  description: Filter to a specific e-Tax document type (optional)
+                  nullable: true
+                p_days:
+                  type: integer
+                  minimum: 1
+                  maximum: 90
+                  default: 30
+                  description: Lookback window in days (1–90, default 30)
+      responses:
+        '200':
+          description: Daily breach trend rows ordered by (org_id, document_type, breach_date ASC)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    breach_date:
+                      type: string
+                      format: date
+                      description: Calendar day (UTC)
+                    org_id:
+                      type: string
+                      format: uuid
+                    org_name:
+                      type: string
+                    document_type:
+                      type: string
+                      enum: [T01, T02, T03, T04]
+                    total_created:
+                      type: integer
+                      description: Submissions created on this day
+                    breached_count:
+                      type: integer
+                      description: Submissions that exceeded the SLA threshold on this day
+                    breach_rate:
+                      type: number
+                      format: float
+                      description: breached_count / total_created (0–1); null if total_created = 0
+                      nullable: true
+                    severity_tier:
+                      type: string
+                      enum: [HEALTHY, NORMAL, ELEVATED, WARNING, CRITICAL]
+                      description: Severity tier for that day's breach_rate
+                    cumulative_breached:
+                      type: integer
+                      description: Running total of breaches up to and including breach_date
+                    sla_threshold_hours:
+                      type: number
+                      description: SLA threshold in hours from platform_config (default 24)
+        '401':
+          description: Unauthorized — missing or invalid JWT
+        '403':
+          description: Forbidden — RLS denied access
+
+  # ════════════════════════════════════════════════════════
+  # SLA ARCHIVE — Migration 0202
+  # ════════════════════════════════════════════════════════
+  /rpc_etax_sla_archive_summary:
+    post:
+      tags: [SLA Archive]
+      operationId: rpcEtaxSlaArchiveSummary
+      summary: Aggregated SLA archive data per org and severity tier
+      description: |
+        Returns aggregated long-term SLA breach data from `etax_sla_breach_archive`
+        grouped by `(org_id, severity_tier)`. Each row covers all archived days
+        matching the requested org and tier combination.
+
+        Supports date-range filtering via `p_from_date` / `p_to_date` and tier
+        filtering via `p_severity_tier`. RLS-enforced — authenticated users see
+        only their own org's data; service_role can query any org.
+
+        Migration: **0202** — `v_etax_sla_archive_summary` + `rpc_etax_sla_archive_summary`
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                p_org_id:
+                  $ref: '#/components/schemas/OrgId'
+                  description: Filter to a specific org (optional; service_role can query any org).
+                  nullable: true
+                p_severity_tier:
+                  type: string
+                  enum: [HEALTHY, NORMAL, ELEVATED, WARNING, CRITICAL]
+                  description: Filter to a specific severity tier (optional).
+                  nullable: true
+                p_from_date:
+                  type: string
+                  format: date
+                  description: Return archive data on or after this date (inclusive, optional).
+                  nullable: true
+                p_to_date:
+                  type: string
+                  format: date
+                  description: Return archive data on or before this date (inclusive, optional).
+                  nullable: true
+      responses:
+        '200':
+          description: SLA archive summary rows grouped by org and severity tier.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/SlaArchiveSummaryRow' }
+        '401':
+          description: Unauthorized — missing or invalid JWT.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RpcError' }
+        '403':
+          description: Forbidden — RLS denied access.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RpcError' }
+
+  /rpc_etax_sla_archive_org_rollup:
+    post:
+      tags: [SLA Archive]
+      operationId: rpcEtaxSlaArchiveOrgRollup
+      summary: One-row-per-org aggregate across all archived SLA breach data
+      description: |
+        Returns a single aggregate row per organisation summarising all archived
+        SLA breach history from `etax_sla_breach_archive`. Includes `overall_breach_rate`,
+        `worst_severity_tier`, `peak_cumulative`, and `breached_document_types` for
+        high-level executive dashboards and compliance reporting.
+
+        Supports date-range filtering via `p_from_date` / `p_to_date`. RLS-enforced —
+        authenticated users see only their own org; service_role can query any org.
+
+        Migration: **0202** — `v_etax_sla_archive_org_rollup` + `rpc_etax_sla_archive_org_rollup`
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                p_org_id:
+                  $ref: '#/components/schemas/OrgId'
+                  description: Filter to a specific org (optional; service_role can query any org).
+                  nullable: true
+                p_from_date:
+                  type: string
+                  format: date
+                  description: Include archive rows on or after this date (inclusive, optional).
+                  nullable: true
+                p_to_date:
+                  type: string
+                  format: date
+                  description: Include archive rows on or before this date (inclusive, optional).
+                  nullable: true
+      responses:
+        '200':
+          description: One-row-per-org rollup of long-term SLA archive data.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/SlaArchiveOrgRollupRow' }
+        '401':
+          description: Unauthorized — missing or invalid JWT.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RpcError' }
+        '403':
+          description: Forbidden — RLS denied access.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RpcError' }
+
+
+  /rpc_etax_sla_executive_summary:
+    post:
+      tags: [SLA Executive]
+      summary: Executive SLA dashboard — combined live + archive KPIs per org
+      operationId: rpcEtaxSlaExecutiveSummary
+      description: |
+        Returns one row per organisation combining:
+        - **Live** data aggregated from `mv_etax_submission_sla` (hourly refresh, Migration 0199)
+        - **Long-term** data from `v_etax_sla_archive_org_rollup` (daily archive, Migration 0202)
+
+        The result includes 24 columns covering identity, live KPIs, archive KPIs, and
+        combined executive signals (`combined_worst_severity`, `requires_attention`).
+
+        Results are ordered by `combined_worst_severity DESC`, `peak_breach_rate_pct DESC`.
+
+        **Access control:**
+        - `anon` role — REVOKED (HTTP 401/403).
+        - `authenticated` (non-service_role) — tenant-isolated via `get_user_org_id()`.
+        - `service_role` — full cross-tenant access.
+
+        Migration: **0203** — `v_etax_sla_executive_summary` + `rpc_etax_sla_executive_summary`
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                p_org_id:
+                  $ref: '#/components/schemas/OrgId'
+                  description: Filter to a specific org UUID (optional; non-service_role always filtered to own org).
+                  nullable: true
+                p_requires_attention:
+                  type: boolean
+                  description: |
+                    When true — return only orgs where combined_worst_severity is WARNING or CRITICAL.
+                    When false — return only orgs below WARNING threshold.
+                    Omit to return all orgs.
+                  nullable: true
+                p_has_archive_data:
+                  type: boolean
+                  description: |
+                    When true — return only orgs with long-term archive data.
+                    When false — return only orgs without archive data yet.
+                    Omit to return all orgs.
+                  nullable: true
+      responses:
+        '200':
+          description: One-row-per-org executive KPI combining live and archive SLA data.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/SlaExecutiveSummaryRow' }
+        '401':
+          description: Unauthorized — missing or invalid JWT.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RpcError' }
+        '403':
+          description: Forbidden — anon role is REVOKED for this function.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RpcError' }
+
+
+  /rpc_etax_executive_kpi_banner:
+    post:
+      tags: [SLA Executive KPI]
+      summary: Executive KPI banner — single-row global aggregate
+      operationId: rpcEtaxExecutiveKpiBanner
+      description: |
+        Returns a **single row** aggregating platform-wide SLA KPIs across every organisation
+        in `v_etax_sla_executive_summary`.
+
+        Combines live data from `mv_etax_submission_sla` and long-term archive data from
+        `etax_sla_breach_archive` into 11 global summary metrics intended for an executive
+        dashboard banner or alert card.
+
+        **Key aggregations:**
+        - `total_orgs` — count of distinct orgs with any data (live or archive).
+        - `orgs_requiring_attention` — orgs where `requires_attention = true`.
+        - `global_worst_severity` — highest severity tier across all orgs
+          (precedence: CRITICAL > WARNING > ELEVATED > NORMAL > HEALTHY).
+        - `global_peak_breach_rate_pct` — maximum `peak_breach_rate_pct` across all orgs.
+        - Live and archive totals for submissions and breached documents.
+
+        **Access control:**
+        - `anon` role — REVOKED (HTTP 401/403).
+        - `authenticated` — returns global aggregate (not tenant-scoped, by design for banner).
+        - `service_role` — full access.
+
+        **platform_config flags set by this migration:**
+        - `executive_tab_enabled = 'true'`
+        - `migration_0204_applied = 'true'`
+
+        Migration: **0204** — `rpc_etax_executive_kpi_banner`
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              description: No parameters required — returns a single global aggregate row.
+      responses:
+        '200':
+          description: Single-row global KPI aggregate.
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 1
+                items:
+                  $ref: '#/components/schemas/ExecutiveKpiBannerRow'
+        '401':
+          description: Unauthorized — missing or invalid JWT.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RpcError' }
+        '403':
+          description: Forbidden — anon role is REVOKED for this function.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RpcError' }
+
+
+# ─── Webhooks (pg_notify consumer) ───────────────────────────────────────────
+webhooks:
+  etax_risk_rank_changed:
+    post:
+      tags: [Risk Intelligence]
+      summary: pg_notify event — eTax risk tier transition
+      description: |
+        Fired by `trg_etax_risk_tier_notify` (Migration 0195) via `pg_notify`
+        whenever an org's `risk_tier` transitions between CRITICAL, WARNING, and HEALTHY.
+
+        The **etax-risk-notify** Edge Function listens for this event and delivers
+        LINE Notify / webhook alerts for configured organisations.
+
+        Payload is the JSON-encoded `TierChangePayload` struct from `0195_etax_risk_tier_notify.sql`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - org_id
+                - org_name
+                - previous_tier
+                - new_tier
+                - health_score
+                - risk_rank
+                - health_status
+                - is_priority_review
+                - transitioned_at
+              properties:
+                org_id:            { $ref: '#/components/schemas/OrgId' }
+                org_name:          { type: string, example: "บริษัท เฟอร์นิเจอร์ดี จำกัด" }
+                previous_tier:     { type: string, enum: [CRITICAL, WARNING, HEALTHY] }
+                new_tier:          { type: string, enum: [CRITICAL, WARNING, HEALTHY] }
+                health_score:      { type: integer, minimum: 0, maximum: 100 }
+                risk_rank:         { type: integer, minimum: 1 }
+                health_status:     { type: string, enum: [critical, warning, healthy] }
+                is_priority_review:{ type: boolean }
+                transitioned_at:   { type: string, format: date-time }
+      responses:
+        '200':
+          description: Alert delivered.
+        '4XX':
+          description: Alert delivery failed.
+
+

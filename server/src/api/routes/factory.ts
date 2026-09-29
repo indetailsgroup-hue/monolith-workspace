@@ -206,7 +206,7 @@ export function factoryRouter(deps: FactoryRouterDeps): Router {
    */
   router.post('/jobs/:jobId/export', async (req: Request, res: Response) => {
     try {
-      const { jobId } = req.params;
+      const jobId = req.params['jobId'] as string;
       const exportReq = req.body as ExportRequest;
 
       // Validate required fields
@@ -330,7 +330,7 @@ export function factoryRouter(deps: FactoryRouterDeps): Router {
    */
   router.get('/jobs/:jobId/export/history', async (req: Request, res: Response) => {
     try {
-      const { jobId } = req.params;
+      const jobId = req.params['jobId'] as string;
 
       // Validate job ID format
       if (!isValidJobId(jobId)) {

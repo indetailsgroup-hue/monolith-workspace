@@ -71,6 +71,37 @@ export interface NestingPart {
    * Parts with grain='HORIZONTAL' or 'VERTICAL' may be restricted.
    */
   grainDirection: GrainDirection;
+
+  // ---- Curved Panel Fields ------------------------------------------------
+
+  /**
+   * Whether this part requires kerf-bending.
+   * When true, width/height represent the FLAT BLANK dimensions (larger than finish/cut),
+   * because the optimizer bins curved panels by flat-blank size.
+   */
+  isCurved?: boolean;
+
+  /**
+   * Flat blank width (mm).
+   * = cutW for flat panels.
+   * = cutW + (developedLength − projectedDepth) for LEFT/RIGHT curved panels.
+   * When present, equals `width`. Absent for parts created outside the export pipeline.
+   */
+  flatBlankW?: number;
+
+  /**
+   * Flat blank height (mm).
+   * = cutH for flat panels.
+   * = cutH + (developedLength − projectedDepth) for TOP/BOTTOM curved panels.
+   * When present, equals `height`. Absent for parts created outside the export pipeline.
+   */
+  flatBlankH?: number;
+
+  /**
+   * Total kerf cuts required for this part (from curved panel pipeline).
+   * Absent for flat panels.
+   */
+  kerfCount?: number;
 }
 
 /**

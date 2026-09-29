@@ -1,16 +1,25 @@
 import assert from 'node:assert/strict';
-import { readdir, readFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const schemaRoot = join(repositoryRoot, 'docs', 'specs', 'schemas');
+const schemaManifest = join(schemaRoot, 'schema-bundle.sha256');
 
 async function loadSchemas() {
-  const names = (await readdir(schemaRoot))
-    .filter((name) => name.endsWith('.schema.json'))
-    .sort((a, b) => Buffer.compare(Buffer.from(a, 'utf8'), Buffer.from(b, 'utf8')));
+  const manifest = await readFile(schemaManifest, 'utf8');
+  const names = manifest.trimEnd().split('\n').map((line) => {
+    const match = /^[0-9a-f]{64} {2}([a-z0-9][a-z0-9-]*\.schema\.json)$/.exec(line);
+    assert(match, `invalid schema bundle manifest entry: ${line}`);
+    return match[1];
+  });
+  assert.deepEqual(
+    names,
+    [...names].sort((a, b) => Buffer.compare(Buffer.from(a, 'utf8'), Buffer.from(b, 'utf8'))),
+    'schema bundle manifest must use unsigned UTF-8 filename order',
+  );
   return Promise.all(names.map(async (name) => ({
     name,
     schema: JSON.parse(await readFile(join(schemaRoot, name), 'utf8')),

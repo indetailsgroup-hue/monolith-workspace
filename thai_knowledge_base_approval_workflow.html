@@ -1,0 +1,1570 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Knowledge Base Approval Workflow — Task 1.4 Gate-1 | DAPH DECOR AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #1f2d5a;
+    --navy-light: #2a3d78;
+    --navy-dark: #151f3e;
+    --gold: #c9a84c;
+    --gold-light: #e2c47a;
+    --gold-pale: #fdf6e3;
+    --green: #2d7a4f;
+    --green-light: #3a9b65;
+    --green-pale: #e8f5ed;
+    --red: #c0392b;
+    --red-pale: #fdf0ef;
+    --orange: #d35400;
+    --orange-pale: #fef5ec;
+    --blue-pale: #eef3fb;
+    --gray: #6c757d;
+    --gray-light: #f8f9fa;
+    --gray-border: #dee2e6;
+    --white: #ffffff;
+    --text-dark: #1a1a2e;
+    --text-medium: #4a5568;
+    --text-light: #718096;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.10);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+  }
+  body {
+    font-family: 'Sarabun', sans-serif;
+    font-size: 15px;
+    color: var(--text-dark);
+    background: #f0f4f8;
+    line-height: 1.65;
+  }
+  /* TOP HEADER */
+  .top-header {
+    background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy) 60%, var(--navy-light) 100%);
+    color: var(--white);
+    padding: 0;
+  }
+  .top-header-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 28px 40px 24px;
+  }
+  .breadcrumb {
+    font-size: 12px;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .breadcrumb span { color: var(--gold-light); }
+  .header-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .header-title h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--white);
+    line-height: 1.3;
+  }
+  .header-title .subtitle {
+    font-size: 14px;
+    color: rgba(255,255,255,0.75);
+    margin-top: 5px;
+  }
+  .header-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+  }
+  .status-badge-main {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 18px;
+    border-radius: 50px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 2px solid;
+  }
+  .status-badge-main.draft {
+    background: rgba(201,168,76,0.15);
+    border-color: var(--gold);
+    color: var(--gold-light);
+  }
+  .status-badge-main.in-review {
+    background: rgba(45,122,79,0.2);
+    border-color: var(--green-light);
+    color: #5ecb8a;
+  }
+  .status-badge-main.approved {
+    background: rgba(45,122,79,0.3);
+    border-color: #5ecb8a;
+    color: #7fffb2;
+  }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
+  .dot.pulse { animation: pulse 1.8s infinite; }
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.3); }
+  }
+  .meta-info {
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.55);
+    text-align: right;
+  }
+  /* NAV BAR */
+  .nav-bar {
+    background: var(--navy-dark);
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .nav-bar-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 40px;
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+  }
+  .nav-link {
+    display: inline-block;
+    padding: 12px 18px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+    text-decoration: none;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .nav-link:hover, .nav-link.active {
+    color: var(--gold-light);
+    border-bottom-color: var(--gold);
+  }
+  /* MAIN CONTAINER */
+  .main {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 32px 40px 60px;
+  }
+  /* ALERT BANNER */
+  .alert-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 20px;
+    border-radius: var(--radius-md);
+    margin-bottom: 28px;
+    border-left: 5px solid;
+  }
+  .alert-banner.warning {
+    background: var(--orange-pale);
+    border-color: var(--orange);
+  }
+  .alert-banner.info {
+    background: var(--blue-pale);
+    border-color: var(--navy);
+  }
+  .alert-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+  .alert-text h4 { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+  .alert-text p { font-size: 13px; color: var(--text-medium); }
+  .alert-text code {
+    background: rgba(0,0,0,0.06);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 12px;
+  }
+  /* SECTION TITLE */
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .section-title h2 {
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--navy);
+  }
+  .section-title .section-num {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--navy);
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .divider {
+    flex: 1;
+    height: 1px;
+    background: var(--gray-border);
+    margin-left: 8px;
+  }
+  /* STATUS TRACKER */
+  .status-tracker {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: 28px 32px;
+    box-shadow: var(--shadow-md);
+    margin-bottom: 32px;
+  }
+  .status-tracker h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 24px;
+  }
+  .tracker-flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+  .tracker-step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+  }
+  .tracker-step .step-circle {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    border: 3px solid;
+    background: var(--white);
+    transition: all 0.3s;
+    position: relative;
+    z-index: 2;
+  }
+  .tracker-step.current .step-circle {
+    background: var(--gold-pale);
+    border-color: var(--gold);
+    box-shadow: 0 0 0 6px rgba(201,168,76,0.15);
+  }
+  .tracker-step.pending .step-circle {
+    background: var(--gray-light);
+    border-color: var(--gray-border);
+    color: #ccc;
+  }
+  .tracker-step.done .step-circle {
+    background: var(--green-pale);
+    border-color: var(--green);
+  }
+  .tracker-step .step-label {
+    margin-top: 10px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dark);
+  }
+  .tracker-step.pending .step-label { color: var(--text-light); }
+  .tracker-step .step-sub {
+    font-size: 11.5px;
+    color: var(--text-light);
+    text-align: center;
+    margin-top: 3px;
+    max-width: 120px;
+  }
+  .tracker-step .step-badge {
+    margin-top: 7px;
+    padding: 3px 10px;
+    border-radius: 50px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .step-badge.current { background: var(--gold-pale); color: #8a6800; border: 1px solid var(--gold); }
+  .step-badge.pending { background: var(--gray-light); color: var(--gray); border: 1px solid var(--gray-border); }
+  .step-badge.done { background: var(--green-pale); color: var(--green); border: 1px solid var(--green-light); }
+  .tracker-connector {
+    flex: 0 0 60px;
+    height: 3px;
+    margin-bottom: 40px;
+    position: relative;
+  }
+  .tracker-connector.done { background: var(--green); }
+  .tracker-connector.pending { background: var(--gray-border); }
+  .tracker-connector::after {
+    content: '▶';
+    position: absolute;
+    right: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    color: inherit;
+  }
+  /* PROCESS STEPS */
+  .steps-section { margin-bottom: 32px; }
+  .step-card {
+    background: var(--white);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 14px;
+    overflow: hidden;
+    border: 1px solid var(--gray-border);
+  }
+  .step-card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    cursor: pointer;
+    background: var(--white);
+    border: none;
+    width: 100%;
+    text-align: left;
+    transition: background 0.2s;
+  }
+  .step-card-header:hover { background: var(--gray-light); }
+  .step-num-badge {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .step-num-badge.trigger { background: #fff3cd; color: #856404; }
+  .step-num-badge.assign { background: var(--blue-pale); color: var(--navy); }
+  .step-num-badge.review { background: var(--gold-pale); color: #8a6800; }
+  .step-num-badge.decision { background: #f8d7da; color: #842029; }
+  .step-num-badge.version { background: #d1ecf1; color: #0c5460; }
+  .step-num-badge.update { background: var(--green-pale); color: var(--green); }
+  .step-num-badge.embed { background: #e2d9f3; color: #4a2c8a; }
+  .step-num-badge.gate { background: var(--green-pale); color: var(--green); }
+  .step-card-header .step-title { font-size: 15px; font-weight: 600; color: var(--text-dark); flex: 1; }
+  .step-card-header .step-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag {
+    padding: 2px 10px;
+    border-radius: 50px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .tag.auto { background: #d1ecf1; color: #0c5460; }
+  .tag.manual { background: #fff3cd; color: #856404; }
+  .tag.system { background: #e2d9f3; color: #4a2c8a; }
+  .tag.critical { background: #f8d7da; color: #842029; }
+  .step-expand-icon { color: var(--gray); font-size: 16px; transition: transform 0.3s; }
+  .step-card-body {
+    padding: 0 20px 18px;
+    border-top: 1px solid var(--gray-border);
+  }
+  .step-desc {
+    font-size: 14px;
+    color: var(--text-medium);
+    margin: 14px 0 10px;
+  }
+  .step-body-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 12px;
+  }
+  @media (max-width: 800px) { .step-body-grid { grid-template-columns: 1fr; } }
+  .step-sub-card {
+    background: var(--gray-light);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    border: 1px solid var(--gray-border);
+  }
+  .step-sub-card h5 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 8px;
+  }
+  .checklist { list-style: none; }
+  .checklist li {
+    font-size: 13px;
+    color: var(--text-medium);
+    padding: 3px 0 3px 22px;
+    position: relative;
+  }
+  .checklist li::before {
+    content: '☐';
+    position: absolute;
+    left: 0;
+    color: var(--navy);
+    font-size: 13px;
+  }
+  .code-block {
+    background: #1e2030;
+    color: #c9d1d9;
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    overflow-x: auto;
+    margin: 10px 0;
+    line-height: 1.7;
+  }
+  .code-block .key { color: #79c0ff; }
+  .code-block .val { color: #a5d6ff; }
+  .code-block .str { color: #a8d8a8; }
+  .code-block .comment { color: #8b949e; }
+  /* REVIEW CARDS */
+  .review-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+  @media (max-width: 1100px) { .review-cards-grid { grid-template-columns: 1fr; } }
+  .review-card {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+  }
+  .review-card-header {
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .review-card-header.process { background: linear-gradient(135deg, #1f2d5a, #2a3d78); }
+  .review-card-header.pfmea { background: linear-gradient(135deg, #7b1a1a, #b02020); }
+  .review-card-header.raci { background: linear-gradient(135deg, #2d7a4f, #3a9b65); }
+  .review-card-icon { font-size: 28px; }
+  .review-card-title h3 { font-size: 16px; font-weight: 700; color: #fff; }
+  .review-card-title p { font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 2px; }
+  .review-card-body { padding: 18px 20px; }
+  .stats-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .stat-box {
+    flex: 1;
+    background: var(--gray-light);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    text-align: center;
+  }
+  .stat-box .val { font-size: 22px; font-weight: 700; color: var(--navy); }
+  .stat-box .lbl { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+  .checklist-card { margin-top: 12px; }
+  .checklist-card h5 {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-medium);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  /* ROLE TABLE */
+  .role-table-card {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    margin-bottom: 32px;
+  }
+  .role-table-card .card-header {
+    background: var(--navy);
+    color: var(--white);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .role-table-card .card-header h3 { font-size: 16px; font-weight: 700; }
+  table.role-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .role-table th {
+    background: var(--navy-dark);
+    color: var(--gold-light);
+    padding: 11px 16px;
+    font-size: 12.5px;
+    font-weight: 600;
+    text-align: left;
+  }
+  .role-table td {
+    padding: 11px 16px;
+    font-size: 13.5px;
+    border-bottom: 1px solid var(--gray-border);
+    vertical-align: middle;
+  }
+  .role-table tr:nth-child(even) td { background: var(--gray-light); }
+  .role-table tr:hover td { background: var(--blue-pale); }
+  .domain-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 50px;
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+  .domain-badge.office { background: var(--blue-pale); color: var(--navy); }
+  .domain-badge.factory { background: #fff3cd; color: #856404; }
+  .domain-badge.install { background: var(--green-pale); color: var(--green); }
+  .domain-badge.qa { background: #f8d7da; color: #842029; }
+  /* DECISION FLOW */
+  .decision-flow-card {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 28px 32px;
+    margin-bottom: 32px;
+  }
+  .decision-flow-card h3 { font-size: 16px; font-weight: 700; color: var(--navy); margin-bottom: 22px; }
+  .decision-branches {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  @media (max-width: 900px) { .decision-branches { grid-template-columns: 1fr; } }
+  .decision-branch {
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 2px solid;
+  }
+  .decision-branch.approve { border-color: var(--green); }
+  .decision-branch.reject { border-color: var(--red); }
+  .decision-branch.changes { border-color: var(--gold); }
+  .decision-branch-header {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--white);
+  }
+  .decision-branch.approve .decision-branch-header { background: var(--green); }
+  .decision-branch.reject .decision-branch-header { background: var(--red); }
+  .decision-branch.changes .decision-branch-header { background: var(--gold); }
+  .decision-branch-body {
+    padding: 14px 16px;
+    background: var(--gray-light);
+  }
+  .decision-branch-body ol {
+    padding-left: 16px;
+    font-size: 13px;
+    color: var(--text-medium);
+    line-height: 1.8;
+  }
+  .decision-branch-body ol li { margin-bottom: 4px; }
+  /* VERSION CONTROL */
+  .version-card {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    margin-bottom: 32px;
+  }
+  .version-card .card-header {
+    background: linear-gradient(135deg, #0c5460, #1a7a8a);
+    color: var(--white);
+    padding: 16px 24px;
+  }
+  .version-card .card-header h3 { font-size: 16px; font-weight: 700; }
+  .version-card .card-body { padding: 24px; }
+  .version-flow {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+  .version-box {
+    background: var(--gray-light);
+    border: 2px solid var(--gray-border);
+    border-radius: var(--radius-md);
+    padding: 14px 20px;
+    text-align: center;
+    min-width: 180px;
+  }
+  .version-box.old { border-color: var(--red); background: var(--red-pale); }
+  .version-box.new { border-color: var(--green); background: var(--green-pale); }
+  .version-box .v-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-light); margin-bottom: 6px; }
+  .version-box .v-val { font-family: monospace; font-size: 14px; font-weight: 700; color: var(--text-dark); }
+  .version-arrow { font-size: 24px; color: var(--navy); font-weight: 700; }
+  .version-rules {
+    background: var(--gray-light);
+    border-radius: var(--radius-sm);
+    padding: 14px 18px;
+    border: 1px solid var(--gray-border);
+  }
+  .version-rules h5 { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+  .version-rules ul { padding-left: 18px; font-size: 13px; color: var(--text-medium); line-height: 1.9; }
+  /* EMBED SECTION */
+  .embed-card {
+    background: linear-gradient(135deg, #1a0a3d, #2d1b69);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: 28px 32px;
+    margin-bottom: 32px;
+    color: var(--white);
+  }
+  .embed-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+  .embed-card p { font-size: 13.5px; color: rgba(255,255,255,0.8); margin-bottom: 14px; }
+  .embed-step-list {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 900px) { .embed-step-list { grid-template-columns: repeat(2,1fr); } }
+  .embed-step {
+    background: rgba(255,255,255,0.1);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .embed-step .e-icon { font-size: 20px; margin-bottom: 6px; }
+  .embed-step .e-label { font-size: 12px; color: rgba(255,255,255,0.85); font-weight: 600; }
+  .embed-trigger-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--gold);
+    color: var(--navy-dark);
+    padding: 12px 28px;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(201,168,76,0.4);
+  }
+  .embed-trigger-btn:hover { background: var(--gold-light); transform: translateY(-1px); }
+  /* GATE-1 PASS */
+  .gate-card {
+    background: linear-gradient(135deg, var(--green) 0%, var(--green-light) 100%);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: 28px 32px;
+    margin-bottom: 32px;
+    color: var(--white);
+  }
+  .gate-card h3 { font-size: 18px; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+  .gate-criteria {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  @media (max-width: 700px) { .gate-criteria { grid-template-columns: 1fr; } }
+  .gate-criterion {
+    background: rgba(255,255,255,0.15);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    border: 1px solid rgba(255,255,255,0.25);
+  }
+  .gate-criterion .gc-icon { font-size: 18px; flex-shrink: 0; }
+  .gate-criterion .gc-text { font-size: 13px; color: rgba(255,255,255,0.95); }
+  .gate-criterion .gc-text strong { display: block; font-size: 13.5px; margin-bottom: 2px; }
+  /* KNOWLEDGE FILE INFO */
+  .file-info-card {
+    background: var(--navy-dark);
+    border-radius: var(--radius-lg);
+    padding: 22px 28px;
+    margin-bottom: 28px;
+    color: var(--white);
+  }
+  .file-info-card h3 { font-size: 14px; font-weight: 700; color: var(--gold-light); margin-bottom: 14px; }
+  .file-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+  @media (max-width: 900px) { .file-meta-grid { grid-template-columns: repeat(2,1fr); } }
+  .file-meta-item .fm-key { font-size: 11px; color: rgba(255,255,255,0.55); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 5px; }
+  .file-meta-item .fm-val { font-family: monospace; font-size: 13px; color: #c9d1d9; font-weight: 600; }
+  .fm-val.status-draft { color: var(--gold-light); }
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .main { padding: 20px; }
+    .top-header-inner { padding: 20px; }
+    .tracker-flow { flex-direction: column; align-items: flex-start; }
+    .tracker-connector { width: 3px; height: 30px; margin-bottom: 0; flex: 0; }
+  }
+  .section-spacer { margin-bottom: 32px; }
+</style>
+</head>
+<body>
+
+<!-- TOP HEADER -->
+<header class="top-header">
+  <div class="top-header-inner">
+    <div class="breadcrumb">
+      <span>DAPH DECOR AI Programme</span> ›
+      <span>MCP Layer</span> ›
+      <span>Task 1.4</span> ›
+      Knowledge Base Approval Workflow
+    </div>
+    <div class="header-title-row">
+      <div class="header-title">
+        <h1>Knowledge Base Approval Workflow</h1>
+        <div class="subtitle">Task 1.4 Gate-1 — SME Review &amp; Approve <code style="color:var(--gold-light);background:rgba(255,255,255,0.1);padding:2px 7px;border-radius:4px;">_knowledge-export.json</code> จาก <strong style="color:var(--gold-light);">draft → approved</strong></div>
+      </div>
+      <div class="header-meta">
+        <div class="status-badge-main draft">
+          <span class="dot pulse"></span>
+          reviewStatus: DRAFT
+        </div>
+        <div class="meta-info">Gate-1 ยังไม่ผ่าน · Agents ส่ง low_confidence_warning</div>
+      </div>
+    </div>
+  </div>
+  <nav class="nav-bar">
+    <div class="nav-bar-inner">
+      <a class="nav-link active" href="#overview">ภาพรวม</a>
+      <a class="nav-link" href="#process">ขั้นตอน 8 Step</a>
+      <a class="nav-link" href="#sections">Review Cards</a>
+      <a class="nav-link" href="#roles">SME Roles</a>
+      <a class="nav-link" href="#decision">Decision Flow</a>
+      <a class="nav-link" href="#version">Version Control</a>
+      <a class="nav-link" href="#embed">Re-Embed</a>
+      <a class="nav-link" href="#gate">Gate-1 Pass</a>
+    </div>
+  </nav>
+</header>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- ALERT BANNER -->
+  <div class="alert-banner warning" id="overview">
+    <div class="alert-icon">⚠️</div>
+    <div class="alert-text">
+      <h4>Knowledge Export อยู่ในสถานะ DRAFT — ต้องดำเนินการ SME Review ก่อนเปิด Gate-1</h4>
+      <p>ไฟล์ <code>_knowledge-export.json</code> มี <code>reviewStatus: "draft"</code> ซึ่งหมายความว่า AI Agents จะส่ง <code>low_confidence_warning</code> ในทุก response จนกว่าจะได้รับการ approve และ re-embed เข้า Supabase knowledge_embeddings เรียบร้อยแล้ว</p>
+    </div>
+  </div>
+
+  <!-- KNOWLEDGE FILE INFO -->
+  <div class="file-info-card">
+    <h3>📄 ข้อมูลไฟล์ _knowledge-export.json</h3>
+    <div class="file-meta-grid">
+      <div class="file-meta-item">
+        <div class="fm-key">sourceVersion</div>
+        <div class="fm-val">daph-qms-2020-rev00</div>
+      </div>
+      <div class="file-meta-item">
+        <div class="fm-key">schemaVersion</div>
+        <div class="fm-val">1.0.0</div>
+      </div>
+      <div class="file-meta-item">
+        <div class="fm-key">importedAt</div>
+        <div class="fm-val">2026-07-09T14:48:40Z</div>
+      </div>
+      <div class="file-meta-item">
+        <div class="fm-key">reviewStatus</div>
+        <div class="fm-val status-draft">⚡ draft</div>
+      </div>
+      <div class="file-meta-item">
+        <div class="fm-key">processModel</div>
+        <div class="fm-val">28 steps</div>
+      </div>
+      <div class="file-meta-item">
+        <div class="fm-key">pfmeaRiskRows</div>
+        <div class="fm-val">122 rows</div>
+      </div>
+      <div class="file-meta-item">
+        <div class="fm-key">raciMap.entries</div>
+        <div class="fm-val">28 entries</div>
+      </div>
+      <div class="file-meta-item">
+        <div class="fm-key">raciMap.status</div>
+        <div class="fm-val status-draft">⚡ draft</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATUS TRACKER -->
+  <div class="status-tracker">
+    <h3>🔄 สถานะการ Review</h3>
+    <div class="tracker-flow">
+      <div class="tracker-step current">
+        <div class="step-circle">📝</div>
+        <div class="step-label">DRAFT</div>
+        <div class="step-sub">Knowledge Export นำเข้าจาก QMS</div>
+        <div class="step-badge current">ปัจจุบัน</div>
+      </div>
+      <div class="tracker-connector pending"></div>
+      <div class="tracker-step pending">
+        <div class="step-circle">👥</div>
+        <div class="step-label">SME ASSIGNED</div>
+        <div class="step-sub">กำหนด SME ตาม domain</div>
+        <div class="step-badge pending">รอดำเนินการ</div>
+      </div>
+      <div class="tracker-connector pending"></div>
+      <div class="tracker-step pending">
+        <div class="step-circle">🔍</div>
+        <div class="step-label">IN REVIEW</div>
+        <div class="step-sub">SME ตรวจสอบทุก section</div>
+        <div class="step-badge pending">รอดำเนินการ</div>
+      </div>
+      <div class="tracker-connector pending"></div>
+      <div class="tracker-step pending">
+        <div class="step-circle">⚖️</div>
+        <div class="step-label">DECISION</div>
+        <div class="step-sub">Approve / Request Changes</div>
+        <div class="step-badge pending">รอดำเนินการ</div>
+      </div>
+      <div class="tracker-connector pending"></div>
+      <div class="tracker-step pending">
+        <div class="step-circle">🏷️</div>
+        <div class="step-label">VERSIONED</div>
+        <div class="step-sub">Bump sourceVersion</div>
+        <div class="step-badge pending">รอดำเนินการ</div>
+      </div>
+      <div class="tracker-connector pending"></div>
+      <div class="tracker-step pending">
+        <div class="step-circle">🚀</div>
+        <div class="step-label">RE-EMBEDDED</div>
+        <div class="step-sub">Update Supabase</div>
+        <div class="step-badge pending">รอดำเนินการ</div>
+      </div>
+      <div class="tracker-connector pending"></div>
+      <div class="tracker-step pending">
+        <div class="step-circle">✅</div>
+        <div class="step-label">APPROVED</div>
+        <div class="step-sub">Gate-1 เปิด · Agents พร้อม</div>
+        <div class="step-badge pending">เป้าหมาย</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION: 8-STEP PROCESS -->
+  <div class="steps-section" id="process">
+    <div class="section-title">
+      <div class="section-num">1</div>
+      <h2>กระบวนการ 8 ขั้นตอน</h2>
+      <div class="divider"></div>
+    </div>
+
+    <!-- STEP 1 -->
+    <div class="step-card">
+      <div class="step-card-header">
+        <div class="step-num-badge trigger">1</div>
+        <span class="step-title">Trigger Detection — ตรวจจับสถานะ reviewStatus = "draft"</span>
+        <div class="step-tags">
+          <span class="tag auto">Automatic</span>
+          <span class="tag system">System</span>
+        </div>
+        <span class="step-expand-icon">▾</span>
+      </div>
+      <div class="step-card-body">
+        <p class="step-desc">ระบบ MCP Layer ตรวจสอบ <code>reviewStatus</code> ทุกครั้งที่ Agent ทำ knowledge lookup และเมื่อ deploy ครั้งแรก หากพบ <code>"draft"</code> ระบบจะสร้าง Gate-1 Review Task อัตโนมัติและแจ้งเตือน SME Coordinator</p>
+        <div class="step-body-grid">
+          <div class="step-sub-card">
+            <h5>🔎 Trigger Conditions</h5>
+            <ul class="checklist">
+              <li>reviewStatus === "draft" ใน knowledge-export.json</li>
+              <li>Agent ส่ง low_confidence_warning ครั้งแรก</li>
+              <li>Deploy ใหม่หลัง import knowledge</li>
+              <li>Manual trigger โดย Programme Manager</li>
+            </ul>
+          </div>
+          <div class="step-sub-card">
+            <h5>📤 Output ของ Step นี้</h5>
+            <ul class="checklist">
+              <li>Gate-1 Review Task สร้างแล้ว</li>
+              <li>แจ้งเตือนไปยัง SME Coordinator ทาง email/Line</li>
+              <li>Log entry: <code>GATE1_REVIEW_INITIATED</code></li>
+              <li>Dashboard แสดง status: "Pending SME Assignment"</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step-card">
+      <div class="step-card-header">
+        <div class="step-num-badge assign">2</div>
+        <span class="step-title">SME Assignment — กำหนด SME ตาม Domain</span>
+        <div class="step-tags">
+          <span class="tag manual">Manual</span>
+          <span class="tag critical">Critical</span>
+        </div>
+        <span class="step-expand-icon">▾</span>
+      </div>
+      <div class="step-card-body">
+        <p class="step-desc">Programme Manager มอบหมาย SME ตาม subProcessGroup ของแต่ละ array ใน knowledge-export.json โดยต้องระบุ SME หลัก (Primary) และ SME สำรอง (Backup) พร้อมกำหนด deadline</p>
+        <div class="step-body-grid">
+          <div class="step-sub-card">
+            <h5>👤 การแบ่ง Domain</h5>
+            <ul class="checklist">
+              <li>Office Domain (Sale/Design/Planning): ผู้จัดการฝ่าย</li>
+              <li>Factory Domain (Production steps): หัวหน้าฝ่ายผลิต</li>
+              <li>Installation Domain: หัวหน้าทีมติดตั้ง</li>
+              <li>PFMEA Risk Rows: QA Manager (ทุก domain)</li>
+              <li>RACI Map cross-check: Programme Manager</li>
+            </ul>
+          </div>
+          <div class="step-sub-card">
+            <h5>⏰ SLA ที่ต้องปฏิบัติ</h5>
+            <ul class="checklist">
+              <li>SME Assignment ต้องเสร็จภายใน 1 วันทำการ</li>
+              <li>Review processModel: ≤ 3 วันทำการ</li>
+              <li>Review pfmeaRiskRows: ≤ 5 วันทำการ</li>
+              <li>Review raciMap: ≤ 2 วันทำการ</li>
+              <li>Final Decision: ≤ 1 วันทำการหลัง review ครบ</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step-card">
+      <div class="step-card-header">
+        <div class="step-num-badge review">3</div>
+        <span class="step-title">Review processModel — ตรวจสอบ 28 Process Steps</span>
+        <div class="step-tags">
+          <span class="tag manual">Manual Review</span>
+        </div>
+        <span class="step-expand-icon">▾</span>
+      </div>
+      <div class="step-card-body">
+        <p class="step-desc">SME ตามแต่ละ subProcessGroup ตรวจสอบว่า processStep ถูกต้องตรงกับ Standard Operating Procedure ปัจจุบัน ครบทุก 28 ขั้นตอน ไม่มีขาด/เกิน/ซ้ำ</p>
+        <div class="step-body-grid">
+          <div class="step-sub-card">
+            <h5>📋 Checklist — processModel</h5>
+            <ul class="checklist">
+              <li>processStep ชื่อตรงกับ SOP ล่าสุด</li>
+              <li>subProcessGroup จัดหมวดหมู่ถูกต้อง (Office/Factory/Install)</li>
+              <li>canonicalOrder เรียงลำดับถูกต้อง (1–28)</li>
+              <li>requiresApproval ตั้งค่าถูก (true/false)</li>
+              <li>approvalQuorum สอดคล้องกับ RACI accountable</li>
+              <li>ไม่มี processStep ที่ซ้ำกัน</li>
+              <li>ครบ 28 steps ไม่ขาด</li>
+            </ul>
+          </div>
+          <div class="step-sub-card">
+            <h5>📊 subProcessGroup ที่ต้องครบ</h5>
+            <ul class="checklist">
+              <li>Sale &amp; Customer Intake</li>
+              <li>Design &amp; Approval</li>
+              <li>Production Planning</li>
+              <li>Material Procurement</li>
+              <li>Factory Production (Laminate→Packing)</li>
+              <li>Quality Control</li>
+              <li>Installation &amp; Handover</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step-card">
+      <div class="step-card-header">
+        <div class="step-num-badge review">4</div>
+        <span class="step-title">Review pfmeaRiskRows — ตรวจสอบ 122 PFMEA Risk Rows</span>
+        <div class="step-tags">
+          <span class="tag manual">QA Review</span>
+          <span class="tag critical">Critical</span>
+        </div>
+        <span class="step-expand-icon">▾</span>
+      </div>
+      <div class="step-card-body">
+        <p class="step-desc">QA Manager ตรวจสอบ PFMEA Risk Rows ทุก 122 แถว โดยเน้นที่ Severity ≥ 7 เป็นพิเศษ ต้องตรวจว่า Control Measures ที่ระบุยังสอดคล้องกับ Process ปัจจุบัน และ Detection Method ทำได้จริง</p>
+        <div class="step-body-grid">
+          <div class="step-sub-card">
+            <h5>📋 Checklist — pfmeaRiskRows</h5>
+            <ul class="checklist">
+              <li>Severity Rating (1–10) ถูกต้องตามความรุนแรงจริง</li>
+              <li>Occurrence Rating สะท้อนความถี่จริงในปัจจุบัน</li>
+              <li>Detection Rating ตรงกับความสามารถตรวจจับจริง</li>
+              <li>RPN = Sev × Occ × Det คำนวณถูกต้อง</li>
+              <li>Control Measures ยังใช้งานได้ (ไม่ obsolete)</li>
+              <li>Sev=9 rows มี Action Required ที่ชัดเจน</li>
+              <li>Recommended Actions สอดคล้องกับ SOP</li>
+            </ul>
+          </div>
+          <div class="step-sub-card">
+            <h5>🚨 Focus Areas — High Severity</h5>
+            <ul class="checklist">
+              <li>Sev=9: ตรวจทุก row (Critical) — Actions ต้องมี owner</li>
+              <li>Sev=8: ตรวจ Control Measures ครบถ้วน</li>
+              <li>Sev=7: ตรวจ Detection Method ว่าทำได้จริง</li>
+              <li>RPN ≥ 200: Priority review &amp; escalation path</li>
+              <li>New risks ที่เกิดจาก AI Agent process ต้องเพิ่ม</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 5 -->
+    <div class="step-card">
+      <div class="step-card-header">
+        <div class="step-num-badge review">5</div>
+        <span class="step-title">Review raciMap — ตรวจสอบ 28 RACI Entries</span>
+        <div class="step-tags">
+          <span class="tag manual">RACI Review</span>
+        </div>
+        <span class="step-expand-icon">▾</span>
+      </div>
+      <div class="step-card-body">
+        <p class="step-desc">Programme Manager ร่วมกับ Domain Leads ตรวจสอบ RACI Map ทุก 28 entries ว่า responsible/accountable/consulted/informed ถูกต้องและไม่ขัดแย้งกัน โดยเฉพาะ entries ที่มี <code>approvers</code> field</p>
+        <div class="step-body-grid">
+          <div class="step-sub-card">
+            <h5>📋 Checklist — raciMap</h5>
+            <ul class="checklist">
+              <li>ทุก entry มี responsible (ผู้ทำ) ชัดเจน</li>
+              <li>accountable เป็นผู้จัดการระดับ Manager ขึ้นไป</li>
+              <li>ไม่มีบุคคลเดียวเป็นทั้ง responsible และ accountable</li>
+              <li>consulted list ครบ (ไม่ขาดผู้ที่ต้องให้ input)</li>
+              <li>informed list ถูกต้อง (ผู้รับทราบแต่ไม่ตัดสิน)</li>
+              <li>approvers field ตรงกับ requiresApproval=true ใน processModel</li>
+              <li>approvalQuorum ตรงกับนโยบาย (unanimous/majority/first_response)</li>
+            </ul>
+          </div>
+          <div class="step-sub-card">
+            <h5>✅ Approval-Required Steps ต้องตรวจพิเศษ</h5>
+            <ul class="checklist">
+              <li>Design Approval: approvers=[ผู้จัดการออกแบบ, ลูกค้า] — quorum=unanimous</li>
+              <li>Production Plan Approval: approvers=[ผู้จัดการผลิต, ผู้จัดการทั่วไป] — quorum=first_response</li>
+              <li>PO Approval: approvers=[ผู้จัดการฝ่ายจัดซื้อ, ผู้จัดการโครงการ]</li>
+              <li>QC Sign-off: approvers=[หัวหน้า QA, ผู้จัดการผลิต]</li>
+              <li>Installation Handover: approvers=[ลูกค้า, หัวหน้าทีมติดตั้ง]</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 6 -->
+    <div class="step-card">
+      <div class="step-card-header">
+        <div class="step-num-badge decision">6</div>
+        <span class="step-title">SME Decision — Approve / Request Changes / Reject</span>
+        <div class="step-tags">
+          <span class="tag manual">Decision Point</span>
+          <span class="tag critical">Gate</span>
+        </div>
+        <span class="step-expand-icon">▾</span>
+      </div>
+      <div class="step-card-body">
+        <p class="step-desc">หลัง SME review ครบ 3 sections SME แต่ละคนส่ง Review Report พร้อมคำแนะนำ Programme Manager รวบรวมและตัดสิน: Approve (ทุก SME ไม่มีข้อบกพร่องร้ายแรง) / Request Changes (มีแก้ไขบางส่วน) / Reject (ต้องทบทวน QMS ใหม่)</p>
+        <div class="step-body-grid">
+          <div class="step-sub-card">
+            <h5>📊 Approval Criteria</h5>
+            <ul class="checklist">
+              <li>SME ทุกคนต้อง Sign off — ไม่มี Critical Issue</li>
+              <li>Sev=9 PFMEA rows ทุก row มี Control Measure</li>
+              <li>RACI ไม่มี gap ในขั้นตอน requiresApproval</li>
+              <li>processModel ตรงกับ SOP ปัจจุบัน 100%</li>
+              <li>ไม่มี Minor Issue เกิน 5 ข้อ (ถ้ามีให้ Request Changes)</li>
+            </ul>
+          </div>
+          <div class="step-sub-card">
+            <h5>📝 Review Report ต้องระบุ</h5>
+            <ul class="checklist">
+              <li>Section ที่ตรวจ (processModel/pfmea/raci)</li>
+              <li>จำนวน items ที่ตรวจ</li>
+              <li>Issues พบ (Critical/Minor)</li>
+              <li>คำแนะนำ (Approve/Request Changes/Reject)</li>
+              <li>ลายเซ็น SME และ วันที่</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 7 -->
+    <div class="step-card">
+      <div class="step-card-header">
+        <div class="step-num-badge version">7</div>
+        <span class="step-title">Version Control — Bump sourceVersion และอัปเดต reviewStatus</span>
+        <div class="step-tags">
+          <span class="tag system">System</span>
+          <span class="tag auto">Semi-Auto</span>
+        </div>
+        <span class="step-expand-icon">▾</span>
+      </div>
+      <div class="step-card-body">
+        <p class="step-desc">เมื่อ Decision = Approve: อัปเดต <code>sourceVersion</code> เป็น <code>daph-qms-2026-rev01</code> และ <code>reviewStatus</code> เป็น <code>"approved"</code> พร้อม <code>reviewedAt</code> timestamp ก่อน push ไปยัง GitHub repository</p>
+        <div class="code-block">
+<span class="comment">// knowledge-export.json — fields to update</span>
+{
+  <span class="key">"sourceVersion"</span>: <span class="str">"daph-qms-2026-rev01"</span>,  <span class="comment">// was: "daph-qms-2020-rev00"</span>
+  <span class="key">"reviewStatus"</span>: <span class="str">"approved"</span>,               <span class="comment">// was: "draft"</span>
+  <span class="key">"reviewedAt"</span>: <span class="str">"2026-{MM}-{DD}T{HH}:{mm}:{ss}Z"</span>,
+  <span class="key">"reviewedBy"</span>: <span class="str">"Programme Manager + SME Team"</span>,
+  <span class="key">"raciMap"</span>: {
+    <span class="key">"status"</span>: <span class="str">"approved"</span>,              <span class="comment">// was: "draft"</span>
+    <span class="key">"entries"</span>: [ <span class="comment">/* 28 entries unchanged or updated */</span> ]
+  }
+}
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 8 -->
+    <div class="step-card">
+      <div class="step-card-header">
+        <div class="step-num-badge gate">8</div>
+        <span class="step-title">Gate-1 Pass — Re-Embed ใน Supabase → Agents หยุดส่ง Warning</span>
+        <div class="step-tags">
+          <span class="tag system">System</span>
+          <span class="tag auto">Automatic</span>
+        </div>
+        <span class="step-expand-icon">▾</span>
+      </div>
+      <div class="step-card-body">
+        <p class="step-desc">รัน embed script เพื่ออัปเดต <code>knowledge_embeddings</code> table ใน Supabase ด้วย knowledge ที่ approved แล้ว หลังจากนี้ AI Agents จะหยุดส่ง <code>low_confidence_warning</code> และ Gate-1 ถือว่า PASS</p>
+        <div class="step-body-grid">
+          <div class="step-sub-card">
+            <h5>🚀 Embed Script Command</h5>
+            <div class="code-block" style="margin-top:0">
+npx ts-node scripts/embed-knowledge.ts \
+  --source github_content/_knowledge-export.json \
+  --table knowledge_embeddings \
+  --mode upsert \
+  --validate-status approved
+            </div>
+          </div>
+          <div class="step-sub-card">
+            <h5>✅ Gate-1 Pass Confirmation</h5>
+            <ul class="checklist">
+              <li>Embed script exit code 0</li>
+              <li>Supabase: knowledge_embeddings rows updated</li>
+              <li>Agent test call: ไม่มี low_confidence_warning</li>
+              <li>Gate-1 dashboard: สถานะเปลี่ยนเป็น PASS</li>
+              <li>Tasks 2.x สามารถเริ่มได้</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION: REVIEW CARDS -->
+  <div class="section-spacer" id="sections">
+    <div class="section-title">
+      <div class="section-num">2</div>
+      <h2>Section Review Cards</h2>
+      <div class="divider"></div>
+    </div>
+    <div class="review-cards-grid">
+      <!-- processModel -->
+      <div class="review-card">
+        <div class="review-card-header process">
+          <div class="review-card-icon">⚙️</div>
+          <div class="review-card-title">
+            <h3>processModel</h3>
+            <p>กระบวนการผลิต / workflow steps</p>
+          </div>
+        </div>
+        <div class="review-card-body">
+          <div class="stats-row">
+            <div class="stat-box"><div class="val">28</div><div class="lbl">Steps</div></div>
+            <div class="stat-box"><div class="val">7</div><div class="lbl">Groups</div></div>
+            <div class="stat-box"><div class="val">8</div><div class="lbl">Require Approval</div></div>
+          </div>
+          <div class="checklist-card">
+            <h5>🔑 Keys ที่ต้องตรวจ</h5>
+            <ul class="checklist">
+              <li><code>processStep</code> — ชื่อขั้นตอน (string)</li>
+              <li><code>subProcessGroup</code> — หมวดหมู่</li>
+              <li><code>requiresApproval</code> — boolean</li>
+              <li><code>approvalQuorum</code> — unanimous/first_response</li>
+              <li><code>canonicalOrder</code> — integer 1–28</li>
+            </ul>
+          </div>
+          <div class="checklist-card" style="margin-top:12px">
+            <h5>👤 SME ที่รับผิดชอบ</h5>
+            <ul class="checklist">
+              <li>Office steps → ผู้จัดการฝ่ายขาย/ออกแบบ/โครงการ</li>
+              <li>Factory steps → หัวหน้าฝ่ายผลิต</li>
+              <li>Install steps → หัวหน้าทีมติดตั้ง</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <!-- pfmeaRiskRows -->
+      <div class="review-card">
+        <div class="review-card-header pfmea">
+          <div class="review-card-icon">⚠️</div>
+          <div class="review-card-title">
+            <h3>pfmeaRiskRows</h3>
+            <p>ตาราง PFMEA ความเสี่ยงการผลิต</p>
+          </div>
+        </div>
+        <div class="review-card-body">
+          <div class="stats-row">
+            <div class="stat-box"><div class="val">122</div><div class="lbl">Rows</div></div>
+            <div class="stat-box"><div class="val">Sev=9</div><div class="lbl">Critical</div></div>
+            <div class="stat-box"><div class="val">RPN</div><div class="lbl">Score</div></div>
+          </div>
+          <div class="checklist-card">
+            <h5>🔑 Keys ที่ต้องตรวจ</h5>
+            <ul class="checklist">
+              <li><code>severity</code> — 1–10 rating</li>
+              <li><code>occurrence</code> — 1–10 rating</li>
+              <li><code>detection</code> — 1–10 rating</li>
+              <li><code>rpn</code> — Sev×Occ×Det</li>
+              <li><code>controlMeasure</code> — มาตรการควบคุม</li>
+              <li><code>recommendedAction</code> — action items</li>
+            </ul>
+          </div>
+          <div class="checklist-card" style="margin-top:12px">
+            <h5>👤 SME ที่รับผิดชอบ</h5>
+            <ul class="checklist">
+              <li>ทุก row → QA Manager (Primary SME)</li>
+              <li>Sev=9 rows → Engineering Manager (co-review)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <!-- raciMap -->
+      <div class="review-card">
+        <div class="review-card-header raci">
+          <div class="review-card-icon">🗂️</div>
+          <div class="review-card-title">
+            <h3>raciMap</h3>
+            <p>Responsibility Assignment Matrix</p>
+          </div>
+        </div>
+        <div class="review-card-body">
+          <div class="stats-row">
+            <div class="stat-box"><div class="val">28</div><div class="lbl">Entries</div></div>
+            <div class="stat-box"><div class="val">5</div><div class="lbl">Approver Types</div></div>
+            <div class="stat-box"><div class="val">2</div><div class="lbl">Quorum Types</div></div>
+          </div>
+          <div class="checklist-card">
+            <h5>🔑 Keys ที่ต้องตรวจ</h5>
+            <ul class="checklist">
+              <li><code>responsible</code> — ผู้ดำเนินการ</li>
+              <li><code>accountable</code> — ผู้รับผิดชอบสุดท้าย</li>
+              <li><code>consulted</code> — ผู้ให้คำปรึกษา</li>
+              <li><code>informed</code> — ผู้รับทราบ</li>
+              <li><code>approvers[]</code> — ผู้อนุมัติ (ถ้า requiresApproval)</li>
+              <li><code>confidence</code> — ความมั่นใจ (0.0–1.0)</li>
+            </ul>
+          </div>
+          <div class="checklist-card" style="margin-top:12px">
+            <h5>👤 SME ที่รับผิดชอบ</h5>
+            <ul class="checklist">
+              <li>Cross-check → Programme Manager</li>
+              <li>Office entries → ผู้จัดการแต่ละฝ่าย</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION: SME ROLES -->
+  <div class="section-spacer" id="roles">
+    <div class="section-title">
+      <div class="section-num">3</div>
+      <h2>SME Assignment Table</h2>
+      <div class="divider"></div>
+    </div>
+    <div class="role-table-card">
+      <div class="card-header">
+        <span style="font-size:20px">👥</span>
+        <h3>ตาราง SME ตาม Domain และ Section</h3>
+      </div>
+      <table class="role-table">
+        <thead>
+          <tr>
+            <th>Domain</th>
+            <th>Section ที่ Review</th>
+            <th>SME Primary</th>
+            <th>SME Backup</th>
+            <th>SLA</th>
+            <th>สถานะ</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="domain-badge office">Office</span></td>
+            <td>processModel — Sale &amp; Customer Intake steps</td>
+            <td>ผู้จัดการฝ่ายขาย</td>
+            <td>เจ้าหน้าที่ฝ่ายขาย Senior</td>
+            <td>3 วันทำการ</td>
+            <td><span class="tag manual">Pending</span></td>
+          </tr>
+          <tr>
+            <td><span class="domain-badge office">Office</span></td>
+            <td>processModel — Design &amp; Approval steps</td>
+            <td>ผู้จัดการฝ่ายออกแบบ</td>
+            <td>Designer Senior</td>
+            <td>3 วันทำการ</td>
+            <td><span class="tag manual">Pending</span></td>
+          </tr>
+          <tr>
+            <td><span class="domain-badge office">Office</span></td>
+            <td>processModel — Production Planning steps</td>
+            <td>ผู้จัดการโครงการ</td>
+            <td>เจ้าหน้าที่วางแผนผลิต Senior</td>
+            <td>3 วันทำการ</td>
+            <td><span class="tag manual">Pending</span></td>
+          </tr>
+          <tr>
+            <td><span class="domain-badge factory">Factory</span></td>
+            <td>processModel — Production steps (Laminate→Packing)</td>
+            <td>หัวหน้าฝ่ายผลิต</td>
+            <td>ผู้ควบคุมสายการผลิต</td>
+            <td>3 วันทำการ</td>
+            <td><span class="tag manual">Pending</span></td>
+          </tr>
+          <tr>
+            <td><span class="domain-badge install">Install</span></td>
+            <td>processModel — Installation &amp; Handover steps</td>
+            <td>หัวหน้าทีมติดตั้ง</td>
+            <td>ผู้ประสานงานติดตั้ง</td>
+            <td>3 วันทำการ</td>
+            <td><span class="tag manual">Pending</span></td>
+          </tr>
+          <tr>
+            <td><span class="domain-badge qa">QA</span></td>
+            <td>pfmeaRiskRows — ทุก 122 rows</td>
+            <td>QA Manager</td>
+            <td>Engineering Manager</td>
+            <td>5 วันทำการ</td>
+            <td><span class="tag manual">Pending</span></td>
+          </tr>
+          <tr>
+            <td><span class="domain-badge office">Programme</span></td>
+            <td>raciMap — ทุก 28 entries (cross-check)</td>
+            <td>Programme Manager</td>
+            <td>ผู้จัดการฝ่ายขาย</td>
+            <td>2 วันทำการ</td>
+            <td><span class="tag manual">Pending</span></td>
+          </tr>
+          <tr>
+            <td><span class="domain-badge office">Programme</span></td>
+            <td>approvalQuorumByStep — top-level validation</td>
+            <td>Programme Manager</td>
+            <td>ผู้จัดการโครงการ</td>
+            <td>1 วันทำการ</td>
+            <td><span class="tag manual">Pending</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SECTION: DECISION FLOW -->
+  <div class="section-spacer" id="decision">
+    <div class="section-title">
+      <div class="section-num">4</div>
+      <h2>Decision Flow — Approve / Request Changes / Reject</h2>
+      <div class="divider"></div>
+    </div>
+    <div class="decision-flow-card">
+      <h3>🔀 เส้นทางการตัดสินใจหลัง SME Review ครบ</h3>
+      <div class="decision-branches">
+        <div class="decision-branch approve">
+          <div class="decision-branch-header">✅ APPROVE</div>
+          <div class="decision-branch-body">
+            <ol>
+              <li>SME ทุกคน sign off ไม่มี Critical Issue</li>
+              <li>Programme Manager ออก Approval Record</li>
+              <li>อัปเดต reviewStatus → <code>"approved"</code></li>
+              <li>Bump sourceVersion → <code>"daph-qms-2026-rev01"</code></li>
+              <li>Push ไป GitHub branch main</li>
+              <li>รัน Re-Embed Script</li>
+              <li>Gate-1: <strong>PASS ✅</strong></li>
+            </ol>
+          </div>
+        </div>
+        <div class="decision-branch changes">
+          <div class="decision-branch-header">📝 REQUEST CHANGES</div>
+          <div class="decision-branch-body">
+            <ol>
+              <li>SME ระบุ items ที่ต้องแก้ไข (Minor Issues)</li>
+              <li>Programme Manager ส่ง Change Request</li>
+              <li>Content Owner แก้ไข knowledge-export.json</li>
+              <li>SME ตรวจสอบ items ที่แก้ไขแล้ว</li>
+              <li>ถ้า OK → กลับไป Approve Decision</li>
+              <li>ถ้า Round &gt; 2 → Escalate ถึง Management</li>
+              <li>Gate-1: <strong>รอ PASS ⏳</strong></li>
+            </ol>
+          </div>
+        </div>
+        <div class="decision-branch reject">
+          <div class="decision-branch-header">❌ REJECT</div>
+          <div class="decision-branch-body">
+            <ol>
+              <li>พบ Critical Issues ที่แก้ไขไม่ได้ใน JSON</li>
+              <li>Programme Manager ออก Rejection Report</li>
+              <li>ส่งกลับ QMS Team เพื่อ revise source documents</li>
+              <li>Re-export knowledge จาก QMS ใหม่</li>
+              <li>เริ่ม Review Process ใหม่ตั้งแต่ Step 1</li>
+              <li>ETA: ตกลง timeline ใหม่กับ Management</li>
+              <li>Gate-1: <strong>BLOCKED 🚫</strong></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION: VERSION CONTROL -->
+  <div class="section-spacer" id="version">
+    <div class="section-title">
+      <div class="section-num">5</div>
+      <h2>Version Control Procedure</h2>
+      <div class="divider"></div>
+    </div>
+    <div class="version-card">
+      <div class="card-header">
+        <h3>🏷️ การอัปเดต sourceVersion หลัง Approval</h3>
+      </div>
+      <div class="card-body">
+        <div class="version-flow">
+          <div class="version-box old">
+            <div class="v-label">ปัจจุบัน (Draft)</div>
+            <div class="v-val">daph-qms-2020-rev00</div>
+          </div>
+          <div class="version-arrow">→</div>
+          <div class="version-box new">
+            <div class="v-label">หลัง Approval</div>
+            <div class="v-val">daph-qms-2026-rev01</div>
+          </div>
+        </div>
+        <div class="version-rules">
+          <h5>📐 Version Naming Convention</h5>
+          <ul>
+            <li>Format: <code>daph-qms-{YYYY}-rev{NN}</code></li>
+            <li><code>{YYYY}</code> = ปีที่ review/approve (2026)</li>
+            <li><code>{NN}</code> = revision number 2 digits (เริ่มที่ 01)</li>
+            <li>Patch update (minor corrections ≤5 items): bump rev เท่านั้น เช่น rev01→rev02</li>
+            <li>Major update (เพิ่ม/ลบ process steps): bump year + reset rev เช่น 2027-rev01</li>
+            <li>ทุก version bump ต้องมี changelog entry ใน knowledge-export.json</li>
+            <li>GitHub: tag <code>knowledge-v2026-rev01</code> ที่ commit นั้น</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION: RE-EMBED -->
+  <div class="section-spacer" id="embed">
+    <div class="section-title">
+      <div class="section-num">6</div>
+      <h2>Re-Embed Trigger — อัปเดต Supabase knowledge_embeddings</h2>
+      <div class="divider"></div>
+    </div>
+    <div class="embed-card">
+      <h3>🚀 Re-Embed Process หลัง Approval</h3>
+      <p>เมื่อ reviewStatus เปลี่ยนเป็น "approved" และ push ขึ้น GitHub แล้ว ให้รัน embed script เพื่ออัปเดต vector embeddings ใน Supabase ซึ่งจะทำให้ AI Agents ใช้ knowledge ที่ validated แล้วในทุก query</p>
+      <div class="embed-step-list">
+        <div class="embed-step">
+          <div class="e-icon">📥</div>
+          <div class="e-label">Pull approved JSON จาก GitHub</div>
+        </div>
+        <div class="embed-step">
+          <div class="e-icon">🔢</div>
+          <div class="e-label">Chunk &amp; Tokenize knowledge chunks</div>
+        </div>
+        <div class="embed-step">
+          <div class="e-icon">🧠</div>
+          <div class="e-label">Generate OpenAI text-embedding-3-small vectors</div>
+        </div>
+        <div class="embed-step">
+          <div class="e-icon">💾</div>
+          <div class="e-label">Upsert ลง Supabase knowledge_embeddings table</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:6px;">
+        <button class="embed-trigger-btn">🚀 Trigger Re-Embed Script</button>
+        <div style="font-size:12px;color:rgba(255,255,255,0.6)">⚠️ ต้อง Approve knowledge-export.json ก่อนกดปุ่มนี้</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GATE-1 PASS CRITERIA -->
+  <div class="section-spacer" id="gate">
+    <div class="section-title">
+      <div class="section-num">7</div>
+      <h2>Gate-1 Pass Criteria</h2>
+      <div class="divider"></div>
+    </div>
+    <div class="gate-card">
+      <h3>🏆 Gate-1 — เงื่อนไขการผ่าน</h3>
+      <div class="gate-criteria">
+        <div class="gate-criterion">
+          <div class="gc-icon">✅</div>
+          <div class="gc-text">
+            <strong>reviewStatus = "approved"</strong>
+            _knowledge-export.json มี reviewStatus เป็น "approved" และ push ขึ้น GitHub main branch แล้ว
+          </div>
+        </div>
+        <div class="gate-criterion">
+          <div class="gc-icon">✅</div>
+          <div class="gc-text">
+            <strong>raciMap.status = "approved"</strong>
+            raciMap dict มี status field เป็น "approved" และทุก 28 entries ผ่าน SME sign-off
+          </div>
+        </div>
+        <div class="gate-criterion">
+          <div class="gc-icon">✅</div>
+          <div class="gc-text">
+            <strong>Supabase embeddings อัปเดตแล้ว</strong>
+            Re-embed script ทำงาน exit 0 และ knowledge_embeddings table มี vectors ใหม่
+          </div>
+        </div>
+        <div class="gate-criterion">
+          <div class="gc-icon">✅</div>
+          <div class="gc-text">
+            <strong>Agents หยุดส่ง low_confidence_warning</strong>
+            Test call ไปทุก 5 Agents ไม่มี warning flag ใน response metadata
+          </div>
+        </div>
+        <div class="gate-criterion">
+          <div class="gc-icon">✅</div>
+          <div class="gc-text">
+            <strong>SME Sign-off ครบ</strong>
+            SME ทุกคน (5 domains) ส่ง Review Report พร้อม Approve recommendation
+          </div>
+        </div>
+        <div class="gate-criterion">
+          <div class="gc-icon">✅</div>
+          <div class="gc-text">
+            <strong>UAT Phase E พร้อมเริ่ม</strong>
+            หลัง Gate-1 PASS: Tasks 2.x unlock และ 5 MVP Agents พร้อมเข้า UAT evaluation
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INFO FOOTER -->
+  <div class="alert-banner info" style="margin-top:8px">
+    <div class="alert-icon">ℹ️</div>
+    <div class="alert-text">
+      <h4>ข้อมูลอ้างอิง: Task 1.4 ใน MCP Layer Task List</h4>
+      <p>เอกสารนี้อ้างอิงจาก <code>monolith-mcp-layer_tasks.md</code> Task 1.4 (OPEN GATE-1) และ <code>_knowledge-export.json</code> (schemaVersion 1.0.0, importedAt 2026-07-09) ใน GitHub repository <code>monolith-workspace</code> · n:159 DAPH DECOR AI Programme Documentation v2.5</p>
+    </div>
+  </div>
+
+</main>
+</body>
+</html>

@@ -18,6 +18,7 @@ export type TabId =
   | 'materials'
   | 'hardware'
   | 'decor'
+  | 'curves'
   | 'skills'
   | 'safety'
   | 'logic'

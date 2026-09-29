@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>การติดตั้ง LINE Developer Console และส่งมอบอย่างมีการควบคุม</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1>การติดตั้ง LINE Developer Console และส่งมอบอย่างมีการควบคุม</h1>
+<ul>
+<li>สถานะ: operator runbook; production activation ยังติด gate</li>
+<li>ฉบับ: ภาษาไทย</li>
+<li>ตรวจ platform facts กับเอกสารทางการของ LINE เมื่อ 2026-08-02</li>
+</ul>
+<h2>อ่านส่วนนี้ก่อน</h2>
+<p><strong>Flex JSON is not installed in Developer Console.</strong> Console ใช้ตั้งค่า channels, webhooks และการลงทะเบียน LIFF app ส่วน Flex JSON คือ message payload: ให้นำไป prototype ใน <strong>Flex Message Simulator</strong> ทางการ ตรวจให้ผ่าน แล้วส่งต่อให้ server-side <strong>Messaging API</strong> integration ภายใต้ MONOLITH</p>
+<p>คู่มือนี้บันทึกลำดับ configuration โดยไม่มี production credentials และไม่ได้อนุมัติ live send หรือลูกค้าจริง เงื่อนไขคือ <strong>no production token</strong> ใน standalone Studio, Flex JSON, LIFF client code, screenshots, source control หรือ URLs</p>
+<p>หมายเหตุแพลตฟอร์มปัจจุบัน: LINE แนะนำ LINE MINI App สำหรับงานใหม่เนื่องจากทิศทางการรวมกับ LIFF คู่มือนี้ทำตาม scope LIFF ที่อนุมัติแล้ว แต่ต้องทบทวนตัวเลือกอีกครั้งที่ production architecture gate</p>
+<h2>บทบาทและหลักฐานก่อนเริ่ม</h2>
+<div class="tablewrap"><table><thead><tr><th>บทบาท</th><th>ความรับผิดชอบ</th></tr></thead><tbody>
+<tr><td>LINE Official Account owner</td><td>Business ID, ความเป็นเจ้าของ account และ Manager access</td></tr>
+<tr><td>Provider/channel admin</td><td>การเลือก provider, channel membership และ configuration evidence</td></tr>
+<tr><td>Security owner</td><td>Secrets, redirect allowlist, LIFF identity verification, MONOLITH transaction reference, OAuth/OIDC controls และ step-up</td></tr>
+<tr><td>Platform operator</td><td>Webhook endpoint, workers, idempotency, monitoring และ rollback</td></tr>
+<tr><td>Product owner</td><td>Trust P0 go/no-go และ journey ที่อนุมัติ</td></tr>
+</tbody></table></div>
+<p>บันทึก environment (<code>development</code>, <code>review</code>, <code>production</code>), owner, change ticket, provider ที่ตั้งใจใช้ และ rollback owner ก่อนตั้งค่า ห้ามถือว่า identifier ของ development ใช้แทน production ได้</p>
+<h2>ลำดับการตั้งค่าที่ถูกต้อง</h2>
+<h3>1. ลงทะเบียน Business ID และสร้าง/เลือก Official Account</h3>
+<p>ลงทะเบียน LINE Business ID สร้าง LINE Official Account หากจำเป็น และยืนยัน account ใน LINE Official Account Manager ใช้ account ที่องค์กรควบคุมและให้สิทธิ์ admin เท่าที่จำเป็น ห้ามใช้ personal shadow owner</p>
+<p>หลักฐาน: account display name, accountable owner และ environment โดยไม่มี customer identifiers หรือ secrets</p>
+<h3>2. เปิด Messaging API ใน Official Account Manager</h3>
+<p>เปิด account ที่ต้องการใน LINE Official Account Manager และ enable <strong>Messaging API</strong> ตั้งแต่ 2024-09-04 ไม่สามารถสร้าง Messaging API channel โดยตรงจาก LINE Developers Console; การเปิด Messaging API ให้ Official Account จะสร้าง channel ให้ ห้ามสั่ง operator ให้เลือก “Create a Messaging API channel” ใน Developers Console</p>
+<h3>3. เลือก provider โดยเจตนา</h3>
+<p>เลือก provider ที่ควรเป็นเจ้าของ service LINE ระบุว่า provider assignment นี้เปลี่ยนหรือถอดภายหลังไม่ได้ เมื่อจำเป็นต้องให้ provider-scoped user identity ตรงกัน ให้ Messaging API channel และ LINE Login/LIFF channel อยู่ใต้ provider เดียวกัน ผู้ใช้จะได้ user ID ต่างกันในคนละ provider ดังนั้นนี่คือการตัดสินใจด้าน identity/tenancy ไม่ใช่การจัด folder</p>
+<p>หยุดหากไม่พบ provider ที่ตั้งใจใช้หรือ operator ไม่มี Admin role ให้แก้ ownership แทนการสร้าง provider ซ้ำ</p>
+<h3>4. ยืนยัน Messaging API channel</h3>
+<p>เปิด LINE Developers Console เลือก provider จากข้อ 3 ตรวจ channel ที่สร้างให้ Official Account และบันทึก channel ID ใน controlled environment registry ตรวจ mapping ของ account/provider/channel แบบสองคน Channel ID เป็น identifier ไม่ใช่ secret แต่ยังต้องหลีกเลี่ยง screenshot ที่ควบคุมไม่ได้</p>
+<h3>4A. ปิดหรือกำกับ default-message paths ของ Official Account</h3>
+<p>เปิด LINE Official Account Manager ทันทีและตรวจ Messaging API response settings LINE ระบุว่าสองค่านี้ Enabled เป็นค่าเริ่มต้นตอนสร้าง channel และสามารถส่งข้อความนอก MONOLITH workers</p>
+<div class="tablewrap"><table><thead><tr><th>Setting</th><th>Required state for a closed environment</th><th>Evidence</th></tr></thead><tbody>
+<tr><td>Greeting messages</td><td>Disabled</td><td>Dated, redacted Official Account Manager evidence</td></tr>
+<tr><td>Auto-reply messages</td><td>Disabled</td><td>Dated, redacted Official Account Manager evidence</td></tr>
+</tbody></table></div>
+<p><strong>Every environment claiming delivery closed must keep both settings Disabled.</strong> บันทึก environment, operator, timestamp และ setting view ที่ redact แล้ว หาก approved operating model ตั้งใจเปิดค่าใด ต้องกำกับ <strong>ownership, content, audience, approval, and rollback</strong> ทดสอบ duplicate/conflicting responses และ <strong>remove the absolute closed-delivery claim</strong> สำหรับ environment นั้น</p>
+<h3>5. กำหนด secret boundary</h3>
+<p>ถือ channel secret และ channel access token ทุกชนิดเป็น production secrets:</p>
+<ul>
+<li>เก็บใน approved server-side secret manager เท่านั้น</li>
+<li>จำกัดสิทธิ์ read/rotate/revoke และบันทึก rotation evidence</li>
+<li>ห้ามใส่ใน Flex JSON, LIFF client code, frontend environment variables, URLs, logs, screenshots, tickets หรือ standalone Studio</li>
+<li>ห้ามส่ง secret ไป browser</li>
+<li>แยก credentials และ identifiers ต่อ environment</li>
+</ul>
+<p>คำว่า <strong>no production token</strong> เป็น release condition ของ standalone artifact ทุกชิ้น</p>
+<h3>6. ตั้งค่าและ Verify webhook</h3>
+<ol>
+<li>Deploy public HTTPS endpoint ด้วย TLS configuration ที่อนุมัติ</li>
+<li>เก็บ raw request body แล้วตรวจ <code>x-line-signature</code> แบบ HMAC-SHA256 ด้วย channel secret ก่อน parse valid signature พิสูจน์ transport origin/integrity ไม่ใช่ business authorization</li>
+<li>รองรับ verification POST ของ LINE ที่มี <code>events: []</code> และตอบ HTTP <code>200</code></li>
+<li>ในแท็บ Messaging API ระบุ Webhook URL แล้วคลิก <strong>Verify</strong></li>
+<li>เปิด <strong>Use webhook</strong></li>
+<li>เปิด <strong>Webhook redelivery</strong> หลังมี idempotent ingestion ด้วย <code>webhookEventId</code> แล้วเท่านั้น Redelivery อาจซ้ำ สลับลำดับ และไม่รับประกัน delivery</li>
+<li>เปิด/ติดตาม webhook error statistics และทดสอบ alert routing ให้ตอบ webhook เร็วแล้วประมวลผลแบบ asynchronous</li>
+</ol>
+<p>ระหว่าง connectivity verification ให้ business mutation path ของ worker ปิดอยู่</p>
+<h3>7. สร้าง LINE Login channel</h3>
+<p>ใต้ provider ที่ตั้งใจใช้ สร้างหรือเลือก LINE Login channel สำหรับ environment นั้น ตรวจ provider, region, service identity, admin/tester membership และ callback policy ห้ามเพิ่ม LIFF app ใน Messaging API channel; คู่มือนี้ให้ LIFF app อยู่ใน LINE Login channel</p>
+<h3>8. เพิ่ม LIFF app</h3>
+<p>เปิดแท็บ <strong>LIFF</strong> ของ LINE Login channel แล้วเลือก <strong>Add</strong> official UI จะสร้าง LIFF ID และ LIFF URL บันทึก configuration evidence โดยไม่มี secrets หรือ personal user IDs</p>
+<h3>9. ตั้งชื่อ ขนาด และ endpoint ของ LIFF</h3>
+<p>กำหนด:</p>
+<ul>
+<li>ชื่อ app ที่สื่อ service</li>
+<li>ขนาด <code>Compact</code>, <code>Tall</code> หรือ <code>Full</code> ให้เหมาะกับ review task</li>
+<li>HTTPS Endpoint URL แบบ public และไม่มี URL fragment</li>
+<li>scopes/options เท่าที่จำเป็น</li>
+</ul>
+<p>Endpoint ต้องคงที่สำหรับ environment นั้น ห้ามซ่อน tenant, amount, revision, bearer token หรือ authority ใน endpoint/LIFF URL</p>
+<h3>10. ลด LIFF scopes ให้ต่ำสุด</h3>
+<div class="tablewrap"><table><thead><tr><th>Scope</th><th>เลือกเมื่อ</th></tr></thead><tbody>
+<tr><td><code>openid</code></td><td>Server ต้องใช้ ID token; จำเป็นสำหรับ <code>liff.getIDToken()</code> / decoded token</td></tr>
+<tr><td><code>profile</code></td><td>UI ต้องใช้ <code>liff.getProfile()</code> หรือ friendship data จริง ไม่ใช่ permission เปลี่ยน MONOLITH</td></tr>
+<tr><td><code>chat_message.write</code></td><td>มี approved requirement สำหรับ <code>liff.sendMessages()</code> เท่านั้น approval form ปกติไม่ต้องใช้</td></tr>
+</tbody></table></div>
+<p>ห้ามขอ email หรือ optional scope อื่นโดยไม่มี purpose, privacy basis, retention rule และ review</p>
+<h3>11. บันทึก LIFF ID/URL แยกตาม environment</h3>
+<p>บันทึก LIFF ID และ LIFF URL ของ <code>development</code>, <code>review</code>, <code>production</code> แยกกัน พร้อม channel ID, provider, endpoint, scopes, owner, capture date และ approval status ถือ registry เป็น configuration evidence ห้ามใช้ review LIFF URL ใน production Flex โดยเงียบ ๆ</p>
+<h3>12. ทำ supported LIFF identity path และ transaction verification ที่แยกกัน</h3>
+<p>ใช้ LIFF identity path ที่รองรับก่อน bind LINE identity กับ MONOLITH principal:</p>
+<ol>
+<li>เรียก <code>liff.init()</code> ที่ registered endpoint และเรียกอีกครั้งหลัง external-browser redirect ตามเอกสาร ใน external browser หรือ LINE in-app browser ให้ใช้ <code>liff.login()</code> เมื่อจำเป็น ส่วน LIFF browser จัดการ login ผ่าน initialization</li>
+<li>หลัง init/login ให้ส่ง <strong>raw <code>liff.getIDToken()</code> ID token or access token</strong> ไป server ผ่าน HTTPS ห้ามใช้ decoded profile เป็น identity proof</li>
+<li>ฝั่ง server ให้ <strong>verify using LINE's documented server flow</strong>: ตรวจ ID token กับ expected LINE Login channel ID รวม issuer/audience/expiry/signature ตามเอกสาร หรือ verify access token แล้วเรียก profile จาก LINE ตามเอกสาร</li>
+<li>Map เฉพาะ verified LINE subject กับ stored MONOLITH principal binding แล้วทำ tenant/resource authorization แยก</li>
+</ol>
+<p><strong>Direct LINE Login authorization requests inside the LIFF browser are not guaranteed</strong>; LINE กำหนดให้ LIFF app ใช้ <code>liff.login()</code> ใน in-app/external-browser LIFF login path โดย documented input ของ <code>liff.login()</code> ระบุ <code>redirectUri</code> ส่วน application-supplied OAuth <code>state</code> หรือ OIDC <code>nonce</code> ต้องอยู่ใน separate supported authorization flow ที่รองรับค่าเหล่านั้น</p>
+<p>แยกสี่แนวคิดให้ชัด:</p>
+<div class="tablewrap"><table><thead><tr><th>Concept</th><th>Meaning and required handling</th></tr></thead><tbody>
+<tr><td>MONOLITH transaction reference</td><td>opaque reference แบบ server-created, server-stored, high-entropy พร้อม CSRF/session binding; bind tenant, principal/audience, resource, revision, action, expiry และ exact return target; one-time consumed แบบ atomic และไม่ใช่ ID-token nonce</td></tr>
+<tr><td>LINE-managed liff.state</td><td>ข้อมูลเพิ่มเติมของ LIFF URL ที่ LINE ส่งต่อ เป็น untrusted routing input; not OAuth state, not permission และ not the MONOLITH transaction reference ประมวลผล routing หลัง <code>liff.init()</code> resolve เท่านั้น</td></tr>
+<tr><td>OAuth state</td><td>CSRF correlation สำหรับ separate supported authorization flow; flow นั้นสร้าง/เก็บเอง; not liff.state และไม่ใช่ business permission</td></tr>
+<tr><td>OIDC nonce</td><td>ID-token replay/correlation input; compare only when a separate supported authorization flow lets MONOLITH supply it และ LINE คืน claim; omit expected nonce เมื่อ flow ไม่ได้ส่ง nonce</td></tr>
+</tbody></table></div>
+<p>สำหรับ approved LIFF path ให้สร้าง MONOLITH transaction reference ใน server session ก่อนแสดง exact-action review Bind กับ verified principal/audience และ business values ทั้งหมด บังคับ exact allowlisted return target ตรวจ authorization/revision freshness ใหม่ และ consume แบบ atomic พร้อม command/audit result ส่วน forwarded URL และ <code>liff.state</code> เลือกได้เพียง proposed route ไม่ให้ permission หรือ authoritative tenant/resource state</p>
+<h3>13. ตั้งปุ่ม Flex ให้ถูกชนิด</h3>
+<p>ปุ่มใน Flex JSON ใช้ URI action มาตรฐาน:</p>
+<pre><code class="language-json">{
+  "type": "uri",
+  "label": "Review and confirm",
+  "uri": "https://liff.line.me/{environment-specific-liff-id}"
+}</code></pre>
+<p>LIFF ไม่ใช่ Flex action type แยกต่างหาก Action คือ <code>uri</code> และปลายทางคือ approved LIFF URL ห้ามใส่ bearer tokens, tenant authority, amounts, roles หรือ reusable command IDs ใน URI</p>
+<p>v1 standalone Studio สร้าง action <code>https://example.com/monolith/demo/...</code> เป็น demo placeholder โดยเจตนา ค่านี้ไม่ใช่ LIFF deployment target และห้ามส่งให้ลูกค้า Governed server-side builder ต้องแทนด้วย environment-approved LIFF entry point หลังผ่าน Trust P0 และ configuration review</p>
+<h3>14. ใช้ Flex Message Simulator สำหรับ official prototyping</h3>
+<p>Copy Studio export เมื่อ validation แสดง zero blocking errors เปิด <strong>Flex Message Simulator</strong> ทางการ วาง exported JSON ใน JSON workflow แล้วตรวจ official simulator preview หาก simulator เวอร์ชันปัจจุบันรับเฉพาะ container ให้ใช้ <code>contents</code> bubble จาก export และคง <code>type: flex</code> กับ <code>altText</code> ไว้ใน Messaging API message envelope</p>
+<p>Simulator ช่วย prototype layout โดยไม่ส่ง ไม่ได้ deploy message, register template หรือ authorize send ย้ำอีกครั้ง: <strong>Flex JSON is not installed in Developer Console.</strong></p>
+<h3>15. ทดสอบ LINE clients จริงและ fallback</h3>
+<p>ก่อน controlled send ให้ทดสอบด้วย test accounts ที่อนุมัติบน LINE เวอร์ชันปัจจุบันสำหรับ iOS, Android และ desktop ตรวจ Thai/English wrap, large font, image failure, Compact/Tall/Full LIFF, external-browser login, cancel, expiry, stale revision, forwarded link, duplicate tap, replay, offline/timeout และ customer-support fallback ที่ปลอดภัย บันทึก app/OS version และวันที่</p>
+<p>ห้ามถือ Studio preview หรือ Flex Message Simulator ว่าเทียบเท่า real client</p>
+<h3>16. ปิด customer delivery จน Trust P0 ผ่าน</h3>
+<p>Live customer delivery ถือว่าปิดได้เมื่อ Official Account default-message settings ทั้งสองเป็น Disabled และทุก MONOLITH Trust P0 gate มี fresh evidence: tenant/principal/resource authorization, webhook signature verification ก่อน parse, replay/idempotency, secure identity binding, revision freshness, step-up สำหรับ consequential action, one-time command, durable audit, consent/preferences, delivery reconciliation, monitoring และ tested rollback Product approval ไม่สามารถยกเว้น gate ที่ fail</p>
+<h3>17. Rollback อย่างปลอดภัย</h3>
+<p>เมื่อ release ไม่ปลอดภัย มี compromise, ambiguous delivery หรือ uncontrolled error rate:</p>
+<ol>
+<li>ใน Official Account Manager ตั้ง <strong>Greeting messages</strong> และ <strong>Auto-reply messages</strong> เป็น Disabled แล้วเก็บ dated, redacted evidence; หาก intentionally enabled ให้ใช้ approved owner/content/audience rollback และถอด closed-delivery claim</li>
+<li>ปิด affected command policy และ new LIFF entry point</li>
+<li>ปิด <strong>Use webhook</strong> เมื่อจำเป็นต้องหยุดรับ; มิฉะนั้น quarantine ingestion และหยุด business workers</li>
+<li>หยุด outbound/command workers โดยไม่ทิ้ง durable queue</li>
+<li>Revoke/rotate secrets เมื่อสงสัย compromise</li>
+<li>เก็บ audit, raw evidence, request/retry identifiers และ unknown-after-send state</li>
+<li>Reconcile accepted, failed, duplicate และ ambiguous outcomes ห้าม blind resend และห้าม delete unexplained delivery state</li>
+<li>ส่งผู้ใช้ไป authenticated web/operator fallback ที่อนุมัติ</li>
+<li>ต้องมี Trust P0 evidence ชุดใหม่ก่อน restore</li>
+</ol>
+<p>การลบ LIFF registration หรือ event history ไม่ใช่การตอบสนองแรก ต้อง preserve และ reconcile ก่อน retirement cleanup</p>
+<h2>นโยบาย Screenshot</h2>
+<p>ฉบับนี้ไม่มี screenshot เพราะไม่ได้ capture official console UI ปัจจุบันระหว่าง execution ให้เพิ่มเฉพาะภาพจาก official UI ระหว่าง governed change ทุกภาพต้องระบุ capture date/environment และปิด provider/channel identifiers, user IDs, webhook paths, secrets, tokens ห้ามใส่ simulated console image</p>
+<h2>Operator sign-off</h2>
+<div class="tablewrap"><table><thead><tr><th>Gate</th><th>Evidence</th><th>Owner</th><th>Result</th></tr></thead><tbody>
+<tr><td>Provider/channel mapping reviewed</td><td>Registry entry และ second reviewer</td><td>Channel admin</td><td>Pass/Fail</td></tr>
+<tr><td>Greeting messages</td><td>Disabled พร้อม dated, redacted Official Account Manager evidence หรือ approved governed exception ที่ถอด closed claim</td><td>OA owner</td><td>Pass/Fail</td></tr>
+<tr><td>Auto-reply messages</td><td>Disabled พร้อม dated, redacted Official Account Manager evidence หรือ approved governed exception ที่ถอด closed claim</td><td>OA owner</td><td>Pass/Fail</td></tr>
+<tr><td>Webhook verify + empty-event 200</td><td>Timestamped non-secret result</td><td>Platform</td><td>Pass/Fail</td></tr>
+<tr><td>Signature-before-parse + idempotency</td><td>Test evidence</td><td>Security/Platform</td><td>Pass/Fail</td></tr>
+<tr><td>LIFF scopes/endpoint minimized</td><td>Configuration export/redacted capture</td><td>Security</td><td>Pass/Fail</td></tr>
+<tr><td>LIFF identity flow</td><td><code>liff.init()</code> / <code>liff.login()</code> พร้อม raw-token server-verification evidence</td><td>Security</td><td>Pass/Fail</td></tr>
+<tr><td>MONOLITH transaction reference</td><td>CSRF/session binding, exact values/return target และ one-time-consume adversarial evidence</td><td>Security</td><td>Pass/Fail</td></tr>
+<tr><td>OAuth state / OIDC nonce</td><td>ใช้เฉพาะ separate supported flow ที่มีวิธี supply ตามเอกสาร</td><td>Security</td><td>Pass/Fail</td></tr>
+<tr><td>Real-client/fallback matrix</td><td>Device evidence</td><td>QA</td><td>Pass/Fail</td></tr>
+<tr><td>Trust P0</td><td>Signed gate record</td><td>Product + Security</td><td>Pass/Fail</td></tr>
+<tr><td>Rollback drill</td><td>Drill/reconciliation record</td><td>Incident owner</td><td>Pass/Fail</td></tr>
+</tbody></table></div>
+<p>หากมี Fail ผลคือ NO-GO สำหรับ live customer delivery</p>
+<h2>แหล่งข้อมูลทางการ</h2>
+<p>Retrieved 2026-08-02:</p>
+<ul>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/getting-started/" target="_blank" rel="noopener">Get started with the Messaging API</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/building-bot/" target="_blank" rel="noopener">Build a bot and configure webhook</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/verify-webhook-url/" target="_blank" rel="noopener">Verify webhook URL</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/receiving-messages/" target="_blank" rel="noopener">Receive messages and Webhook redelivery</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/verify-webhook-signature/" target="_blank" rel="noopener">Verify webhook signature</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/check-webhook-error-statistics/" target="_blank" rel="noopener">Webhook error statistics</a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/registering-liff-apps/" target="_blank" rel="noopener">Adding a LIFF app and scopes</a></li>
+<li><a href="https://developers.line.biz/en/reference/liff/" target="_blank" rel="noopener">LIFF API reference: initialization และ login</a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/developing-liff-apps/" target="_blank" rel="noopener">Developing a LIFF app</a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/opening-liff-app/" target="_blank" rel="noopener">Opening a LIFF app และ <code>liff.state</code></a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/using-user-profile/" target="_blank" rel="noopener">Using user profile information safely</a></li>
+<li><a href="https://developers.line.biz/en/docs/liff/development-guidelines/" target="_blank" rel="noopener">LIFF development guidelines</a></li>
+<li><a href="https://developers.line.biz/en/reference/line-login/" target="_blank" rel="noopener">LINE Login API: server token verification และ conditional ID-token nonce</a></li>
+<li><a href="https://developers.line.biz/en/docs/messaging-api/using-flex-message-simulator/" target="_blank" rel="noopener">Flex Message Simulator tutorial</a></li>
+</ul>
+</main></body>
+</html>

@@ -107,14 +107,14 @@ const MockIcon = () => <span data-testid="mock-icon">🎨</span>;
 // ============================================
 
 describe('MaterialSelector', () => {
-  let mockOnSelect: ReturnType<typeof vi.fn>;
+  let mockOnSelect: ReturnType<typeof vi.fn<(materialId: string, applyMode?: 'selected' | 'all') => void>>;
 
   afterEach(() => {
     cleanup();
   });
 
   beforeEach(() => {
-    mockOnSelect = vi.fn();
+    mockOnSelect = vi.fn<(materialId: string, applyMode?: 'selected' | 'all') => void>();
     vi.clearAllMocks();
   });
 

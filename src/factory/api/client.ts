@@ -10,39 +10,22 @@ export interface ApiError extends Error {
   code?: string;
 }
 
-const BASE_URL = (import.meta as any).env?.VITE_FACTORY_API_BASE ?? "/api";
-const ANON_KEY = ((import.meta as any).env?.VITE_SUPABASE_ANON_KEY as string | undefined) ?? "";
+const BASE_URL = import.meta.env?.VITE_FACTORY_API_BASE ?? "/api";
+import { fetchWithRequestAuth } from '../../core/auth/requestAuthHeaders';
 
-/** Attach the end-user JWT; the anon key is never used as a fallback identity. */
-function authHeaders(): Record<string, string> {
-  const h: Record<string, string> = {};
-  if (!ANON_KEY) return h;
-  h["apikey"] = ANON_KEY;
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (!key || !/^sb-.+-auth-token$/.test(key)) continue;
-      const s = JSON.parse(localStorage.getItem(key) ?? "");
-      if (s?.access_token && (!s.expires_at || s.expires_at * 1000 > Date.now())) {
-        h["Authorization"] = "Bearer " + s.access_token;
-        break;
-      }
-    }
-  } catch { /* no session */ }
-  return h;
+function requestHeaders(extra?: HeadersInit, json = false): Headers {
+  const headers = new Headers(extra);
+  if (json && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+  return headers;
 }
 
 export async function apiFetch<T>(
   path: string,
   options?: RequestInit
 ): Promise<{ data: T; headers: Headers }> {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...authHeaders(),
-      ...(options?.headers ?? {}),
-    },
+  const res = await fetchWithRequestAuth(`${BASE_URL}${path}`, {
     ...options,
+    headers: requestHeaders(options?.headers, true),
   });
 
   if (!res.ok) {
@@ -70,12 +53,9 @@ export async function apiFetchBlob(
   path: string,
   options?: RequestInit
 ): Promise<{ blob: Blob; headers: Headers }> {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    headers: {
-      ...authHeaders(),
-      ...(options?.headers ?? {}),
-    },
+  const res = await fetchWithRequestAuth(`${BASE_URL}${path}`, {
     ...options,
+    headers: requestHeaders(options?.headers),
   });
 
   if (!res.ok) {

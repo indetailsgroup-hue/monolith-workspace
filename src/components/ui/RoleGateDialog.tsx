@@ -67,6 +67,7 @@ export function RoleGateDialog({
 
   return (
     <div
+      data-testid="role-gate-dialog"
       style={{
         position: 'fixed',
         inset: 0,

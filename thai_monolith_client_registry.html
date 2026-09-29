@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MONOLITH Client Registry — n:167</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Sarabun',sans-serif;background:#f0f2f6;color:#2c2c2c;min-height:100vh}
+
+/* ── Header ──────────────────────────────── */
+header{background:linear-gradient(135deg,#1f2d5a 0%,#2a3f7e 100%);color:#fff;padding:28px 40px 20px;position:relative;overflow:hidden}
+header::before{content:'';position:absolute;right:-60px;top:-60px;width:280px;height:280px;border-radius:50%;background:rgba(201,168,76,.08)}
+.header-row{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.header-left h1{font-size:22px;font-weight:700;letter-spacing:.4px}
+.header-left p{font-size:13px;opacity:.75;margin-top:4px}
+.badge-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.hbadge{padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600}
+.hb-p{background:rgba(45,122,79,.8)}
+.hb-c{background:rgba(201,168,76,.8);color:#1f2d5a}
+.hb-s{background:rgba(255,255,255,.15)}
+.doc-meta{font-size:11px;opacity:.6;text-align:right}
+
+/* ── Filter Bar ────────────────────────── */
+.filter-bar{background:#fff;border-bottom:2px solid #e8ebf0;padding:14px 40px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.filter-bar label{font-size:12px;font-weight:600;color:#1f2d5a}
+.filter-select{border:1.5px solid #dde1ea;border-radius:8px;padding:6px 10px;font-family:'Sarabun',sans-serif;font-size:13px;color:#2c2c2c;background:#fafafa;cursor:pointer;outline:none}
+.filter-select:focus{border-color:#1f2d5a}
+.view-toggle{margin-left:auto;display:flex;gap:6px}
+.vbtn{border:1.5px solid #dde1ea;background:#fafafa;border-radius:8px;padding:6px 12px;font-family:'Sarabun',sans-serif;font-size:12px;cursor:pointer;color:#555;transition:all .2s}
+.vbtn.active,.vbtn:hover{background:#1f2d5a;color:#fff;border-color:#1f2d5a}
+.search-input{border:1.5px solid #dde1ea;border-radius:8px;padding:6px 12px;font-family:'Sarabun',sans-serif;font-size:13px;width:200px;outline:none}
+.search-input:focus{border-color:#c9a84c}
+
+/* ── Stat Cards ─────────────────────────── */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;padding:28px 40px 0}
+.stat-card{background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 2px 8px rgba(0,0,0,.06);border-left:4px solid #1f2d5a;display:flex;flex-direction:column;gap:4px}
+.stat-card.gold{border-left-color:#c9a84c}
+.stat-card.green{border-left-color:#2d7a4f}
+.stat-card.orange{border-left-color:#e65c00}
+.stat-card.purple{border-left-color:#5b4fcf}
+.stat-num{font-size:28px;font-weight:700;color:#1f2d5a;line-height:1}
+.stat-card.gold .stat-num{color:#b08a35}
+.stat-card.green .stat-num{color:#2d7a4f}
+.stat-card.orange .stat-num{color:#e65c00}
+.stat-card.purple .stat-num{color:#5b4fcf}
+.stat-label{font-size:12px;color:#666;font-weight:600}
+.stat-sub{font-size:11px;color:#999}
+
+/* ── Section ────────────────────────────── */
+.section{padding:24px 40px}
+.section-title{font-size:14px;font-weight:700;color:#1f2d5a;margin-bottom:16px;padding-bottom:6px;border-bottom:2px solid #e8ebf0;display:flex;align-items:center;gap:6px}
+
+/* ── Card Grid ──────────────────────────── */
+.client-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:20px}
+.client-card{background:#fff;border-radius:14px;padding:22px 24px;box-shadow:0 3px 12px rgba(0,0,0,.07);border:2px solid transparent;transition:all .25s;position:relative;overflow:hidden}
+.client-card:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.client-card.active-card{border-color:#2d7a4f}
+.client-card.pilot-card{border-color:#e65c00}
+.card-accent-bar{position:absolute;top:0;left:0;right:0;height:4px}
+.daph-bar{background:linear-gradient(90deg,#5b4fcf,#7b6fe0)}
+.swift-bar{background:linear-gradient(90deg,#e65c00,#ff8533)}
+
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+.client-logo{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.logo-daph{background:#f0eeff}
+.logo-swift{background:#fff3ec}
+
+.client-info{flex:1;margin-left:12px}
+.client-name-th{font-size:16px;font-weight:700;color:#1f2d5a}
+.client-name-en{font-size:11px;color:#888;font-weight:400;margin-top:1px}
+.client-domain{font-size:11px;color:#666;margin-top:3px}
+
+.status-badge{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+.status-active{background:#e6f5ec;color:#2d7a4f;border:1px solid #b8dfc7}
+.status-pilot{background:#fff3ec;color:#e65c00;border:1px solid #ffd1b0}
+.status-inactive{background:#f5f5f5;color:#888;border:1px solid #ddd}
+
+.card-divider{border:none;border-top:1px solid #f0f2f6;margin:12px 0}
+
+.info-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.info-label{font-size:12px;color:#888;font-weight:600}
+.info-val{font-size:12px;color:#333;font-weight:500}
+
+.agent-count{display:inline-flex;align-items:center;gap:4px;background:#f5f0ff;color:#5b4fcf;border-radius:8px;padding:3px 10px;font-size:12px;font-weight:700}
+.agent-count.swift-count{background:#fff3ec;color:#e65c00}
+
+.components-area{margin-top:10px}
+.comp-label{font-size:11px;color:#888;font-weight:600;margin-bottom:6px}
+.comp-chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600}
+.chip-on{background:#e6f5ec;color:#2d7a4f;border:1px solid #b8dfc7}
+.chip-off{background:#f5f5f5;color:#bbb;border:1px solid #e5e5e5;text-decoration:line-through}
+.chip-partial{background:#fff9e6;color:#b08a35;border:1px solid #f0d27a}
+
+.card-footer{margin-top:14px;padding-top:10px;border-top:1px solid #f0f2f6;display:flex;align-items:center;justify-content:space-between}
+.mcp-events{font-size:11px;color:#666}
+.mcp-num{font-weight:700;color:#1f2d5a}
+.onboard-date{font-size:11px;color:#aaa}
+
+/* ── Table View ─────────────────────────── */
+#table-view{display:none}
+table.registry-table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 3px 12px rgba(0,0,0,.07)}
+.registry-table th{background:#1f2d5a;color:#fff;padding:11px 14px;font-size:12px;font-weight:700;text-align:left}
+.registry-table td{padding:11px 14px;font-size:13px;border-bottom:1px solid #f0f2f6;vertical-align:middle}
+.registry-table tr:hover td{background:#fafbff}
+.registry-table tr:last-child td{border-bottom:none}
+.tbl-name-cell{display:flex;align-items:center;gap:8px}
+.tbl-icon{font-size:18px}
+.tbl-chips{display:flex;flex-wrap:wrap;gap:3px}
+.tbl-chip{padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600}
+.tbl-chip-on{background:#e6f5ec;color:#2d7a4f}
+.tbl-chip-pilot{background:#fff3ec;color:#e65c00}
+
+/* ── Component Matrix ─────────────────── */
+.matrix-table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 3px 12px rgba(0,0,0,.07)}
+.matrix-table th{background:#1f2d5a;color:#fff;padding:10px 14px;font-size:12px;font-weight:700;text-align:center}
+.matrix-table th:first-child{text-align:left}
+.matrix-table td{padding:10px 14px;font-size:12px;border-bottom:1px solid #f0f2f6;text-align:center}
+.matrix-table td:first-child{text-align:left;font-weight:600;color:#333}
+.matrix-table tr:hover td{background:#fafbff}
+.matrix-table tr:last-child td{border-bottom:none}
+.mc{font-size:16px}
+.mc-on{color:#2d7a4f}
+.mc-partial{color:#c9a84c}
+.mc-off{color:#ccc}
+
+/* ── Platform Summary ──────────────────── */
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.sum-card{background:#fff;border-radius:10px;padding:16px 18px;box-shadow:0 2px 8px rgba(0,0,0,.05);border-left:3px solid #c9a84c}
+.sum-title{font-size:12px;font-weight:700;color:#1f2d5a;margin-bottom:8px}
+.sum-item{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #f5f5f5}
+.sum-item:last-child{border-bottom:none}
+.sum-val{font-weight:700;color:#1f2d5a}
+
+/* ── Legend / Timeline ─────────────────── */
+.legend-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:12px;color:#555}
+.legend-dot{width:10px;height:10px;border-radius:50%}
+
+.timeline{position:relative;padding-left:24px}
+.timeline::before{content:'';position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:#e8ebf0}
+.tl-item{position:relative;margin-bottom:14px}
+.tl-dot{position:absolute;left:-21px;top:4px;width:12px;height:12px;border-radius:50%;border:2px solid #1f2d5a;background:#fff}
+.tl-dot.active{background:#2d7a4f;border-color:#2d7a4f}
+.tl-dot.pilot{background:#e65c00;border-color:#e65c00}
+.tl-dot.future{background:#e8ebf0;border-color:#ccc}
+.tl-date{font-size:11px;color:#888;font-weight:600}
+.tl-label{font-size:12px;color:#333}
+
+/* ── Footer ─────────────────────────────── */
+footer{background:#1f2d5a;color:rgba(255,255,255,.5);text-align:center;padding:16px;font-size:11px;margin-top:32px}
+
+/* ── Hidden ─────────────────────────────── */
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     HEADER
+══════════════════════════════════════════════════════════ -->
+<header>
+  <div class="header-row">
+    <div class="header-left">
+      <h1>🏛️ MONOLITH Client Registry</h1>
+      <p>Platform: MONOLITH — Multi-Tenant AI Agent Platform | หน้า Dashboard แสดง Registered Clients ทั้งหมด</p>
+      <div class="badge-row">
+        <span class="hbadge hb-p">🟢 Platform: Active</span>
+        <span class="hbadge hb-c">🔶 Clients: 2 Registered</span>
+        <span class="hbadge hb-s">📡 MCP Events: 12 Standard</span>
+        <span class="hbadge hb-s">🤖 Total Agents: 11</span>
+      </div>
+    </div>
+    <div class="doc-meta">
+      n:167 | MONOLITH SOP Package v2.5<br>
+      Registry Version: 1.0.0<br>
+      Updated: 2025-Q2
+    </div>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════════════════════
+     FILTER BAR
+══════════════════════════════════════════════════════════ -->
+<div class="filter-bar">
+  <label>Status:</label>
+  <select class="filter-select" id="filterStatus" onchange="applyFilters()">
+    <option value="all">ทั้งหมด</option>
+    <option value="active">Active</option>
+    <option value="pilot">Pilot</option>
+    <option value="inactive">Inactive</option>
+  </select>
+
+  <label>Domain:</label>
+  <select class="filter-select" id="filterDomain" onchange="applyFilters()">
+    <option value="all">ทั้งหมด</option>
+    <option value="interior_decoration">Interior Decoration</option>
+    <option value="logistics_delivery">Logistics / Delivery</option>
+  </select>
+
+  <input type="text" class="search-input" id="searchInput" placeholder="🔍 ค้นหา client..." oninput="applyFilters()">
+
+  <div class="view-toggle">
+    <button class="vbtn active" id="btnCard" onclick="switchView('card')">⊞ Cards</button>
+    <button class="vbtn" id="btnTable" onclick="switchView('table')">☰ Table</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     STAT CARDS
+══════════════════════════════════════════════════════════ -->
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-num">2</div>
+    <div class="stat-label">Total Clients</div>
+    <div class="stat-sub">Registered on Platform</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-num">1</div>
+    <div class="stat-label">Active</div>
+    <div class="stat-sub">Daph Decor (Interior)</div>
+  </div>
+  <div class="stat-card orange">
+    <div class="stat-num">1</div>
+    <div class="stat-label">Pilot</div>
+    <div class="stat-sub">Swift Logistics (Delivery)</div>
+  </div>
+  <div class="stat-card gold">
+    <div class="stat-num">11</div>
+    <div class="stat-label">Total Agents Deployed</div>
+    <div class="stat-sub">6 Daph + 5 Swift</div>
+  </div>
+  <div class="stat-card purple">
+    <div class="stat-num">12</div>
+    <div class="stat-label">MCP Events</div>
+    <div class="stat-sub">Standard Platform Events</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">6</div>
+    <div class="stat-label">Core Components</div>
+    <div class="stat-sub">All Enabled (Both Clients)</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     CLIENT CARDS VIEW
+══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">📋 Registered Clients</div>
+
+  <div id="card-view">
+    <div class="client-grid">
+
+      <!-- ── Daph Decor ── -->
+      <div class="client-card active-card" data-status="active" data-domain="interior_decoration" data-name="daph">
+        <div class="card-accent-bar daph-bar"></div>
+        <div class="card-top">
+          <div class="client-logo logo-daph">🏠</div>
+          <div class="client-info">
+            <div class="client-name-th">Daph Decor</div>
+            <div class="client-name-en">ดาฟ เดคอร์ — Interior Decoration</div>
+            <div class="client-domain">domain: <code>interior_decoration</code></div>
+          </div>
+          <span class="status-badge status-active">● Active</span>
+        </div>
+
+        <div class="info-row">
+          <span class="info-label">Client ID</span>
+          <span class="info-val"><code>daph</code></span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Channel</span>
+          <span class="info-val">LINE OA + LIFF (5 apps)</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Agents Deployed</span>
+          <span class="agent-count">🤖 6 Agents</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">PFMEA Rows</span>
+          <span class="info-val">122 rows (Sev9: 6 / Sev8: 53)</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Critical Test Cases</span>
+          <span class="info-val">TC-INSTALL-02 + TC-INSTALL-05 (score=4)</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Customer Journey</span>
+          <span class="info-val">10 Stages</span>
+        </div>
+
+        <hr class="card-divider">
+
+        <div class="components-area">
+          <div class="comp-label">Platform Components Enabled (6/6)</div>
+          <div class="comp-chips">
+            <span class="chip chip-on">✓ Agent Framework</span>
+            <span class="chip chip-on">✓ MCP Event Layer</span>
+            <span class="chip chip-on">✓ LINE Integration</span>
+            <span class="chip chip-on">✓ KB Engine</span>
+            <span class="chip chip-on">✓ PFMEA Engine</span>
+            <span class="chip chip-on">✓ PWA Field App SDK</span>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <span class="mcp-events">MCP Events: <span class="mcp-num">12</span> standard</span>
+          <span class="onboard-date">Onboard: 2024-Q4</span>
+        </div>
+      </div>
+
+      <!-- ── Swift Logistics ── -->
+      <div class="client-card pilot-card" data-status="pilot" data-domain="logistics_delivery" data-name="swift">
+        <div class="card-accent-bar swift-bar"></div>
+        <div class="card-top">
+          <div class="client-logo logo-swift">🚚</div>
+          <div class="client-info">
+            <div class="client-name-th">Swift Logistics</div>
+            <div class="client-name-en">สวิฟท์ โลจิสติกส์ — Logistics & Delivery</div>
+            <div class="client-domain">domain: <code>logistics_delivery</code></div>
+          </div>
+          <span class="status-badge status-pilot">◐ Pilot</span>
+        </div>
+
+        <div class="info-row">
+          <span class="info-label">Client ID</span>
+          <span class="info-val"><code>swift</code></span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Channel</span>
+          <span class="info-val">LINE OA + PWA Driver App</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Agents Deployed</span>
+          <span class="agent-count swift-count">🤖 5 Agents</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">PFMEA Rows</span>
+          <span class="info-val">Pilot — in configuration</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Critical Failure Modes</span>
+          <span class="info-val">Package damage / Wrong delivery / Delay / Lost</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Customer Journey</span>
+          <span class="info-val">7 Stages (Pickup → POD → Review)</span>
+        </div>
+
+        <hr class="card-divider">
+
+        <div class="components-area">
+          <div class="comp-label">Platform Components Enabled (6/6)</div>
+          <div class="comp-chips">
+            <span class="chip chip-on">✓ Agent Framework</span>
+            <span class="chip chip-on">✓ MCP Event Layer</span>
+            <span class="chip chip-on">✓ LINE Integration</span>
+            <span class="chip chip-on">✓ KB Engine</span>
+            <span class="chip chip-partial">~ PFMEA Engine (pilot)</span>
+            <span class="chip chip-on">✓ PWA Field App SDK</span>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <span class="mcp-events">MCP Events: <span class="mcp-num">8</span> of 12 active</span>
+          <span class="onboard-date">Onboard: 2025-Q1</span>
+        </div>
+      </div>
+
+    </div><!-- end .client-grid -->
+  </div><!-- end #card-view -->
+
+  <!-- ══════════ TABLE VIEW ══════════ -->
+  <div id="table-view">
+    <table class="registry-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Client</th>
+          <th>Domain</th>
+          <th>Status</th>
+          <th>Agents</th>
+          <th>Components</th>
+          <th>MCP Events</th>
+          <th>Journey Stages</th>
+          <th>Onboard</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr data-status="active" data-domain="interior_decoration" data-name="daph">
+          <td>001</td>
+          <td>
+            <div class="tbl-name-cell">
+              <span class="tbl-icon">🏠</span>
+              <div>
+                <strong>Daph Decor</strong><br>
+                <span style="font-size:11px;color:#888">id: daph</span>
+              </div>
+            </div>
+          </td>
+          <td>Interior Decoration</td>
+          <td><span class="status-badge status-active">● Active</span></td>
+          <td style="text-align:center">6</td>
+          <td>
+            <div class="tbl-chips">
+              <span class="tbl-chip tbl-chip-on">Agent ✓</span>
+              <span class="tbl-chip tbl-chip-on">MCP ✓</span>
+              <span class="tbl-chip tbl-chip-on">LINE ✓</span>
+              <span class="tbl-chip tbl-chip-on">KB ✓</span>
+              <span class="tbl-chip tbl-chip-on">PFMEA ✓</span>
+              <span class="tbl-chip tbl-chip-on">PWA ✓</span>
+            </div>
+          </td>
+          <td style="text-align:center">12 / 12</td>
+          <td style="text-align:center">10</td>
+          <td>2024-Q4</td>
+        </tr>
+        <tr data-status="pilot" data-domain="logistics_delivery" data-name="swift">
+          <td>002</td>
+          <td>
+            <div class="tbl-name-cell">
+              <span class="tbl-icon">🚚</span>
+              <div>
+                <strong>Swift Logistics</strong><br>
+                <span style="font-size:11px;color:#888">id: swift</span>
+              </div>
+            </div>
+          </td>
+          <td>Logistics / Delivery</td>
+          <td><span class="status-badge status-pilot">◐ Pilot</span></td>
+          <td style="text-align:center">5</td>
+          <td>
+            <div class="tbl-chips">
+              <span class="tbl-chip tbl-chip-on">Agent ✓</span>
+              <span class="tbl-chip tbl-chip-on">MCP ✓</span>
+              <span class="tbl-chip tbl-chip-on">LINE ✓</span>
+              <span class="tbl-chip tbl-chip-on">KB ✓</span>
+              <span class="tbl-chip tbl-chip-pilot">PFMEA ~</span>
+              <span class="tbl-chip tbl-chip-on">PWA ✓</span>
+            </div>
+          </td>
+          <td style="text-align:center">8 / 12</td>
+          <td style="text-align:center">7</td>
+          <td>2025-Q1</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- No results message -->
+  <div id="no-results" class="hidden" style="text-align:center;padding:40px;color:#888;font-size:14px">
+    ไม่พบ client ที่ตรงกับเงื่อนไขที่เลือก
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     COMPONENT MATRIX
+══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">⚙️ Component Enablement Matrix</div>
+  <table class="matrix-table">
+    <thead>
+      <tr>
+        <th style="text-align:left">Platform Component</th>
+        <th>เจ้าของ</th>
+        <th>🏠 Daph Decor</th>
+        <th>🚚 Swift Logistics</th>
+        <th>หมายเหตุ</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>🤖 Agent Framework</td>
+        <td>Platform 🔷</td>
+        <td><span class="mc mc-on">✅</span></td>
+        <td><span class="mc mc-on">✅</span></td>
+        <td style="font-size:11px;text-align:left">Multi-agent orchestration, tool registry</td>
+      </tr>
+      <tr>
+        <td>📡 MCP Event Layer</td>
+        <td>Platform 🔷</td>
+        <td><span class="mc mc-on">✅</span> 12/12</td>
+        <td><span class="mc mc-partial">🟡</span> 8/12</td>
+        <td style="font-size:11px;text-align:left">Swift: pickup/dispatch events active; design/approval events N/A</td>
+      </tr>
+      <tr>
+        <td>💬 LINE Integration Engine</td>
+        <td>Platform 🔷</td>
+        <td><span class="mc mc-on">✅</span></td>
+        <td><span class="mc mc-on">✅</span></td>
+        <td style="font-size:11px;text-align:left">LINE Messaging API (not Notify), LIFF, Rich Menu</td>
+      </tr>
+      <tr>
+        <td>📚 KB Engine</td>
+        <td>Platform 🔷</td>
+        <td><span class="mc mc-on">✅</span></td>
+        <td><span class="mc mc-on">✅</span></td>
+        <td style="font-size:11px;text-align:left">Client-specific knowledge bases loaded separately</td>
+      </tr>
+      <tr>
+        <td>🔬 PFMEA Engine</td>
+        <td>Platform 🔷</td>
+        <td><span class="mc mc-on">✅</span> 122 rows</td>
+        <td><span class="mc mc-partial">🟡</span> Pilot</td>
+        <td style="font-size:11px;text-align:left">Daph: full 122 rows; Swift: PFMEA config in progress</td>
+      </tr>
+      <tr>
+        <td>📱 PWA Field App SDK</td>
+        <td>Platform 🔷</td>
+        <td><span class="mc mc-on">✅</span> Install App</td>
+        <td><span class="mc mc-on">✅</span> Driver App</td>
+        <td style="font-size:11px;text-align:left">Same SDK, different checklist/UX per client</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     AGENT SUMMARY
+══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">🤖 Agent Deployment Summary</div>
+  <div class="summary-grid">
+    <div class="sum-card">
+      <div class="sum-title">🏠 Daph Decor — 6 Agents</div>
+      <div class="sum-item"><span>Sale Agent</span><span class="sum-val" style="color:#5b4fcf">Active</span></div>
+      <div class="sum-item"><span>Designer Agent</span><span class="sum-val" style="color:#5b4fcf">Active</span></div>
+      <div class="sum-item"><span>Factory Agent</span><span class="sum-val" style="color:#5b4fcf">Active</span></div>
+      <div class="sum-item"><span>Install Agent</span><span class="sum-val" style="color:#5b4fcf">Active</span></div>
+      <div class="sum-item"><span>PM Agent</span><span class="sum-val" style="color:#5b4fcf">Active</span></div>
+      <div class="sum-item"><span>Procurement Agent</span><span class="sum-val" style="color:#5b4fcf">Active</span></div>
+    </div>
+    <div class="sum-card" style="border-left-color:#e65c00">
+      <div class="sum-title">🚚 Swift Logistics — 5 Agents</div>
+      <div class="sum-item"><span>Dispatch Agent</span><span class="sum-val" style="color:#e65c00">Pilot</span></div>
+      <div class="sum-item"><span>CS Agent</span><span class="sum-val" style="color:#e65c00">Pilot</span></div>
+      <div class="sum-item"><span>Driver Agent</span><span class="sum-val" style="color:#e65c00">Pilot</span></div>
+      <div class="sum-item"><span>Warehouse Agent</span><span class="sum-val" style="color:#e65c00">Pilot</span></div>
+      <div class="sum-item"><span>QC Agent</span><span class="sum-val" style="color:#e65c00">Pilot</span></div>
+    </div>
+    <div class="sum-card" style="border-left-color:#1f2d5a">
+      <div class="sum-title">📊 Platform Totals</div>
+      <div class="sum-item"><span>Total Clients</span><span class="sum-val">2</span></div>
+      <div class="sum-item"><span>Total Agents</span><span class="sum-val">11</span></div>
+      <div class="sum-item"><span>Active Clients</span><span class="sum-val">1</span></div>
+      <div class="sum-item"><span>Pilot Clients</span><span class="sum-val">1</span></div>
+      <div class="sum-item"><span>Total PFMEA Rows</span><span class="sum-val">122+ (Daph)</span></div>
+      <div class="sum-item"><span>MCP Event Types</span><span class="sum-val">12 Standard</span></div>
+    </div>
+    <div class="sum-card" style="border-left-color:#2d7a4f">
+      <div class="sum-title">🔑 Platform Config Keys</div>
+      <div class="sum-item"><span>Config Schema Ver</span><span class="sum-val">1.0.0</span></div>
+      <div class="sum-item"><span>Supabase Projects</span><span class="sum-val">2 (1/client)</span></div>
+      <div class="sum-item"><span>LINE Channels</span><span class="sum-val">2 (1/client)</span></div>
+      <div class="sum-item"><span>LIFF Apps (Daph)</span><span class="sum-val">5</span></div>
+      <div class="sum-item"><span>Rich Menus (Daph)</span><span class="sum-val">5</span></div>
+      <div class="sum-item"><span>PWA Instances</span><span class="sum-val">2</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     PLATFORM TIMELINE
+══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">📅 Client Onboarding Timeline</div>
+  <div class="legend-row">
+    <div class="legend-item"><div class="legend-dot" style="background:#2d7a4f"></div> Active</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#e65c00"></div> Pilot</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#e8ebf0;border:1px solid #ccc"></div> Planned</div>
+  </div>
+  <div class="timeline">
+    <div class="tl-item">
+      <div class="tl-dot active"></div>
+      <div class="tl-date">2024 Q4</div>
+      <div class="tl-label"><strong>Daph Decor</strong> — Onboarded ✅ (Interior Decoration / 6 agents / 122 PFMEA rows / LINE OA full)</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-dot pilot"></div>
+      <div class="tl-date">2025 Q1</div>
+      <div class="tl-label"><strong>Swift Logistics</strong> — Pilot started 🚀 (Logistics & Delivery / 5 agents / PFMEA configuring / PWA Driver App)</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-dot future"></div>
+      <div class="tl-date">2025 Q2</div>
+      <div class="tl-label"><strong>Swift Logistics</strong> — Go-Live planned (PFMEA full config + all MCP events enabled)</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-dot future"></div>
+      <div class="tl-date">2025 Q3+</div>
+      <div class="tl-label"><strong>Client #3</strong> — Next onboarding slot (TBD)</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     FOOTER
+══════════════════════════════════════════════════════════ -->
+<footer>
+  MONOLITH Client Registry v1.0.0 | n:167 | MONOLITH SOP Package v2.5 | ข้อมูลสำหรับ internal use only
+</footer>
+
+<script>
+// ── View Toggle ──────────────────────────────────────────
+function switchView(mode) {
+  const cardView  = document.getElementById('card-view');
+  const tableView = document.getElementById('table-view');
+  const btnCard   = document.getElementById('btnCard');
+  const btnTable  = document.getElementById('btnTable');
+
+  if (mode === 'card') {
+    cardView.style.display  = 'block';
+    tableView.style.display = 'none';
+    btnCard.classList.add('active');
+    btnTable.classList.remove('active');
+  } else {
+    cardView.style.display  = 'none';
+    tableView.style.display = 'block';
+    btnCard.classList.remove('active');
+    btnTable.classList.add('active');
+  }
+}
+
+// ── Filters ──────────────────────────────────────────────
+function applyFilters() {
+  const status  = document.getElementById('filterStatus').value;
+  const domain  = document.getElementById('filterDomain').value;
+  const search  = document.getElementById('searchInput').value.toLowerCase();
+
+  // Apply to cards
+  const cards = document.querySelectorAll('.client-card');
+  let visibleCards = 0;
+  cards.forEach(card => {
+    const matchStatus = (status === 'all') || (card.dataset.status === status);
+    const matchDomain = (domain === 'all') || (card.dataset.domain === domain);
+    const matchSearch = !search || card.dataset.name.includes(search) ||
+                        card.innerText.toLowerCase().includes(search);
+    const visible = matchStatus && matchDomain && matchSearch;
+    card.style.display = visible ? 'block' : 'none';
+    if (visible) visibleCards++;
+  });
+
+  // Apply to table rows
+  const rows = document.querySelectorAll('.registry-table tbody tr');
+  let visibleRows = 0;
+  rows.forEach(row => {
+    const matchStatus = (status === 'all') || (row.dataset.status === status);
+    const matchDomain = (domain === 'all') || (row.dataset.domain === domain);
+    const matchSearch = !search || row.dataset.name.includes(search) ||
+                        row.innerText.toLowerCase().includes(search);
+    const visible = matchStatus && matchDomain && matchSearch;
+    row.style.display = visible ? '' : 'none';
+    if (visible) visibleRows++;
+  });
+
+  // No-results message
+  const noResults = document.getElementById('no-results');
+  noResults.classList.toggle('hidden', visibleCards + visibleRows > 0);
+}
+</script>
+</body>
+</html>

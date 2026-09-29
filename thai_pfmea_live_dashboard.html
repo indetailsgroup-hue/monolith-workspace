@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DAPH PFMEA Live Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{--navy:#1f2d5a;--gold:#c9a84c;--green:#2d7a4f;--purple:#5b4fcf;--red:#c0392b;--orange:#e07b39;--bg:#f0f4fa;--white:#fff;--border:#d1d5db;--muted:#64748b}
+    body{font-family:'Inter','Sarabun',sans-serif;background:var(--bg);color:var(--navy);min-height:100vh}
+    /* ── HEADER ── */
+    .header{background:linear-gradient(135deg,#1f2d5a,#2d4a8a);color:#fff;padding:24px 32px 20px;box-shadow:0 2px 12px rgba(0,0,0,.2)}
+    .header-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px}
+    .header-title{font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}
+    .header-sub{font-size:13px;opacity:.75;margin-top:3px}
+    .header-badge{background:var(--gold);color:#1f2d5a;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px}
+    .live-dot{width:8px;height:8px;background:#4ade80;border-radius:50%;display:inline-block;animation:pulse 1.5s infinite;margin-right:4px}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+    /* ── STAT CARDS ── */
+    .stats-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;padding:20px 32px;max-width:1400px;margin:0 auto}
+    .stat{background:var(--white);border-radius:12px;padding:16px 20px;box-shadow:0 1px 5px rgba(0,0,0,.08);border-top:4px solid transparent}
+    .stat.total{border-color:var(--navy)}
+    .stat.critical{border-color:var(--red)}
+    .stat.high{border-color:var(--orange)}
+    .stat.review{border-color:var(--gold)}
+    .stat.open{border-color:var(--purple)}
+    .stat.resolved{border-color:var(--green)}
+    .stat-num{font-size:28px;font-weight:700;line-height:1}
+    .stat-label{font-size:11px;color:var(--muted);margin-top:3px;font-weight:500}
+    .stat-sub{font-size:10px;color:var(--muted);margin-top:2px}
+    /* ── FILTER BAR ── */
+    .filter-bar{background:var(--white);border-bottom:1px solid var(--border);padding:14px 32px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;max-width:1400px;margin:0 auto;position:sticky;top:0;z-index:10;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+    .filter-bar select,.filter-bar input[type=text]{padding:7px 12px;border:1.5px solid var(--border);border-radius:7px;font-family:'Sarabun',sans-serif;font-size:12px;color:var(--navy);outline:none;background:#fff;cursor:pointer}
+    .filter-bar select:focus,.filter-bar input:focus{border-color:var(--purple)}
+    .filter-bar label{font-size:11px;font-weight:600;color:var(--muted)}
+    .sev-filters{display:flex;gap:4px;flex-wrap:wrap}
+    .sev-chip{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid transparent;transition:all .15s}
+    .sev-chip.all{background:#e2e8f0;color:var(--navy);border-color:#cbd5e1}
+    .sev-chip.s9,.sev-chip.s8{background:#fef2f2;color:var(--red);border-color:#fecaca}
+    .sev-chip.s6{background:#fff7ed;color:var(--orange);border-color:#fed7aa}
+    .sev-chip.s3,.sev-chip.s2{background:#f0fdf4;color:var(--green);border-color:#bbf7d0}
+    .sev-chip.snull{background:#f1f5f9;color:var(--muted);border-color:#e2e8f0}
+    .sev-chip.active{border-width:2px;transform:scale(1.05);font-weight:700}
+    .sev-chip.all.active{border-color:var(--navy);background:var(--navy);color:#fff}
+    .sev-chip.s9.active,.sev-chip.s8.active{border-color:var(--red);box-shadow:0 0 0 2px rgba(192,57,43,.15)}
+    .sev-chip.s6.active{border-color:var(--orange);box-shadow:0 0 0 2px rgba(224,123,57,.15)}
+    .sev-chip.s3.active,.sev-chip.s2.active{border-color:var(--green)}
+    .sev-chip.snull.active{border-color:var(--muted)}
+    .client-chip{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid #cbd5e1;background:#e2e8f0;color:var(--navy);transition:all .15s}
+    .client-chip.active{border-width:2px;transform:scale(1.05)}
+    .client-chip.all.active{border-color:var(--navy);background:var(--navy);color:#fff}
+    .client-chip.daph-chip.active{border-color:#1f2d5a;background:#1f2d5a;color:#fff}
+    .client-chip.swift-chip.active{border-color:#e65c00;background:#e65c00;color:#fff}
+    .filter-count{font-size:12px;color:var(--muted);margin-left:auto;font-weight:600;white-space:nowrap}
+    .btn-reset{padding:6px 12px;border:1.5px solid var(--border);border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;background:#fff;color:var(--navy);transition:all .15s}
+    .btn-reset:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
+    /* ── MAIN TABLE ── */
+    .main-wrap{max-width:1400px;margin:16px auto 32px;padding:0 20px}
+    .table-card{background:var(--white);border-radius:12px;box-shadow:0 1px 5px rgba(0,0,0,.08);overflow:hidden}
+    .table-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .table-title{font-size:14px;font-weight:700;color:var(--navy)}
+    .export-btn{margin-left:auto;padding:6px 14px;background:var(--navy);color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px}
+    .export-btn:hover{background:#2d4a8a}
+    .tbl-wrap{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    thead th{background:#f8fafc;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:10px 12px;border-bottom:2px solid var(--border);text-align:left;white-space:nowrap;cursor:pointer;user-select:none}
+    thead th:hover{background:#f1f5f9;color:var(--navy)}
+    thead th.sorted-asc::after{content:" ↑"}
+    thead th.sorted-desc::after{content:" ↓"}
+    tbody tr{border-bottom:1px solid #f1f5f9;transition:background .1s}
+    tbody tr:hover{background:#fafbff}
+    tbody tr.row-critical{background:#fef9f9}
+    tbody tr.row-critical:hover{background:#fef2f2}
+    td{padding:10px 12px;vertical-align:top;line-height:1.4}
+    .td-id{font-family:monospace;font-size:10px;color:var(--muted);white-space:nowrap}
+    /* ── SEV BADGE ── */
+    .sev-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+    .sev-9{background:#fef2f2;color:var(--red);border:1px solid #fecaca}
+    .sev-8{background:#fff0ec;color:#b84c1e;border:1px solid #fdd1bc}
+    .sev-6{background:#fff7ed;color:var(--orange);border:1px solid #fed7aa}
+    .sev-3,.sev-2{background:#f0fdf4;color:var(--green);border:1px solid #bbf7d0}
+    .sev-null{background:#f1f5f9;color:var(--muted);border:1px solid #e2e8f0}
+    /* ── AGENT BADGE ── */
+    .agent-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap}
+    .ag-sale{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+    .ag-designer{background:#faf5ff;color:#7c3aed;border:1px solid #ddd6fe}
+    .ag-factory{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}
+    .ag-install{background:#f0fdfa;color:#0f766e;border:1px solid #99f6e4}
+    /* ── STATUS CONTROLS ── */
+    .status-sel{padding:4px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:#fff;outline:none;color:var(--navy)}
+    .status-sel.open{border-color:#94a3b8;color:var(--muted)}
+    .status-sel.in_progress{border-color:var(--gold);color:#92400e;background:#fffbeb}
+    .status-sel.resolved{border-color:var(--green);color:var(--green);background:#f0fdf4}
+    .status-sel.na{border-color:#e2e8f0;color:#94a3b8;background:#f8fafc}
+    /* ── REVIEW FLAG ── */
+    .review-flag{font-size:11px;color:var(--orange);font-weight:600}
+    /* ── FAILURE TEXT ── */
+    .fail-text{color:#374151;max-width:250px}
+    .ctrl-text{color:var(--muted);max-width:220px;font-size:11px}
+    .req-text{color:var(--navy);font-weight:500;max-width:180px}
+    /* ── EMPTY STATE ── */
+    #empty-state{padding:48px;text-align:center;color:var(--muted);font-size:14px;display:none}
+    /* ── DETAIL PANEL ── */
+    .detail-row td{background:#fafbff;font-size:11px;padding:8px 16px 14px 40px;color:var(--muted);border-bottom:2px solid #e2e8f0}
+    .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:900px}
+    .detail-item label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);display:block;margin-bottom:2px}
+    .detail-item p{font-size:12px;color:#374151;line-height:1.5}
+    /* ── AGENT SUMMARY STRIP ── */
+    .agent-strip{display:flex;gap:10px;flex-wrap:wrap;max-width:1400px;margin:0 auto;padding:0 20px 4px}
+    .agent-stat{background:var(--white);border-radius:8px;padding:10px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,.06);min-width:160px;cursor:pointer;border:2px solid transparent;transition:all .15s}
+    .agent-stat:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,0,0,.1)}
+    .agent-stat.active-agent{border-color:var(--purple)}
+    .agent-icon{font-size:22px}
+    .agent-info .label{font-size:10px;color:var(--muted);font-weight:600}
+    .agent-info .count{font-size:18px;font-weight:700;color:var(--navy)}
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="header-title">📊 PFMEA Live Dashboard <span class="header-badge">DAPH Decor</span></div>
+      <div class="header-sub"><span class="live-dot"></span> daph-qms-2020-rev00 · schemaVersion 1.0.0 · pfmeaRiskRows 122 rows · reviewStatus: draft</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div style="text-align:right;font-size:11px;opacity:.7">Last sync: 2026-07-09T14:48:40Z</div>
+    </div>
+  </div>
+</div>
+
+<!-- STAT CARDS -->
+<div class="stats-bar">
+  <div class="stat total"><div class="stat-num" id="st-total">122</div><div class="stat-label">Total Risk Rows</div><div class="stat-sub">All PFMEA entries</div></div>
+  <div class="stat critical"><div class="stat-num" style="color:var(--red)" id="st-crit">6</div><div class="stat-label">Critical (Sev = 9)</div><div class="stat-sub">Immediate action required</div></div>
+  <div class="stat high"><div class="stat-num" style="color:var(--orange)" id="st-high">53</div><div class="stat-label">High (Sev = 8)</div><div class="stat-sub">Priority monitoring</div></div>
+  <div class="stat review"><div class="stat-num" style="color:var(--gold)" id="st-review">105</div><div class="stat-label">Requires Review</div><div class="stat-sub">Human SME review needed</div></div>
+  <div class="stat open"><div class="stat-num" style="color:var(--purple)" id="st-open">122</div><div class="stat-label">Status: Open</div><div class="stat-sub">No controls resolved yet</div></div>
+  <div class="stat resolved"><div class="stat-num" style="color:var(--green)" id="st-resolved">0</div><div class="stat-label">Resolved</div><div class="stat-sub">Controls implemented</div></div>
+</div>
+
+<!-- AGENT SUMMARY -->
+<div class="agent-strip" id="agent-strip">
+  <div class="agent-stat" data-agent="all" onclick="filterAgent(this,'all')">
+    <div class="agent-icon">🔍</div>
+    <div class="agent-info"><div class="label">All Agents</div><div class="count">157</div></div>
+  </div>
+  <div class="agent-stat" data-agent="Sale Agent" onclick="filterAgent(this,'Sale Agent')">
+    <div class="agent-icon">💼</div>
+    <div class="agent-info"><div class="label">Sale Agent</div><div class="count">6</div></div>
+  </div>
+  <div class="agent-stat" data-agent="Designer Agent" onclick="filterAgent(this,'Designer Agent')">
+    <div class="agent-icon">🎨</div>
+    <div class="agent-info"><div class="label">Designer Agent</div><div class="count">44</div></div>
+  </div>
+  <div class="agent-stat" data-agent="Factory Agent" onclick="filterAgent(this,'Factory Agent')">
+    <div class="agent-icon">🏭</div>
+    <div class="agent-info"><div class="label">Factory Agent</div><div class="count">50</div></div>
+  </div>
+  <div class="agent-stat" data-agent="Install Agent" onclick="filterAgent(this,'Install Agent')">
+    <div class="agent-icon">🔧</div>
+    <div class="agent-info"><div class="label">Install Agent</div><div class="count">22</div></div>
+  
+  </div>
+  <div style="width:1px;background:#e2e8f0;margin:0 4px;"></div>
+  <div class="agent-stat" data-agent="Dispatch Agent" onclick="filterAgent(this,'Dispatch Agent')">
+    <div class="agent-icon">📡</div>
+    <div class="agent-info"><div class="label">Dispatch Agent</div><div class="count">8</div></div>
+  </div>
+  <div class="agent-stat" data-agent="CS Agent" onclick="filterAgent(this,'CS Agent')">
+    <div class="agent-icon">💬</div>
+    <div class="agent-info"><div class="label">CS Agent</div><div class="count">5</div></div>
+  </div>
+  <div class="agent-stat" data-agent="Driver Agent" onclick="filterAgent(this,'Driver Agent')">
+    <div class="agent-icon">🚚</div>
+    <div class="agent-info"><div class="label">Driver Agent</div><div class="count">12</div></div>
+  </div>
+  <div class="agent-stat" data-agent="Warehouse Agent" onclick="filterAgent(this,'Warehouse Agent')">
+    <div class="agent-icon">🏭</div>
+    <div class="agent-info"><div class="label">Warehouse Agent</div><div class="count">5</div></div>
+  </div>
+  <div class="agent-stat" data-agent="QC Agent" onclick="filterAgent(this,'QC Agent')">
+    <div class="agent-icon">🔍</div>
+    <div class="agent-info"><div class="label">QC Agent</div><div class="count">5</div></div>
+  </div>
+</div>
+
+<!-- FILTER BAR -->
+<div class="filter-bar" id="filter-bar">
+  <label>Client:</label>
+  <div id="client-filters" style="display:inline-flex;gap:6px;flex-wrap:wrap;">
+    <span class="client-chip all active" data-client="all" onclick="filterClient(this,'all')">ทั้งหมด</span>
+    <span class="client-chip daph-chip" style="background:#eef0fa;border-color:#1f2d5a;color:#1f2d5a;" data-client="daph" onclick="filterClient(this,'daph')">🏠 Daph</span>
+    <span class="client-chip swift-chip" style="background:#fff2e8;border-color:#e65c00;color:#e65c00;" data-client="swift" onclick="filterClient(this,'swift')">🚚 Swift</span>
+  </div>
+  <label>Sev:</label>
+  <div class="sev-filters" id="sev-filters">
+    <span class="sev-chip all active" data-sev="all" onclick="filterSev(this,'all')">ทั้งหมด</span>
+    <span class="sev-chip s9" data-sev="9" onclick="filterSev(this,'9')">Sev 9 🔴</span>
+    <span class="sev-chip s8" data-sev="8" onclick="filterSev(this,'8')">Sev 8 🟠</span>
+    <span class="sev-chip s6" data-sev="6" onclick="filterSev(this,'6')">Sev 6 🟡</span>
+    <span class="sev-chip s3" data-sev="3" onclick="filterSev(this,'3')">Sev 3 🟢</span>
+    <span class="sev-chip s2" data-sev="2" onclick="filterSev(this,'2')">Sev 2 🟢</span>
+    <span class="sev-chip snull" data-sev="null" onclick="filterSev(this,'null')">N/A</span>
+  </div>
+  <label style="margin-left:8px">Stage:</label>
+  <select id="filter-stage" onchange="applyFilters()">
+    <option value="all">ทุก Stage</option>
+    <option value="Sale">Sale</option>
+    <option value="Design">Designer / 3D</option>
+    <option value="Production">Production / Factory</option>
+    <option value="Installation">Installation</option>
+  </select>
+  <label>สถานะ:</label>
+  <select id="filter-status" onchange="applyFilters()">
+    <option value="all">ทุกสถานะ</option>
+    <option value="open">Open</option>
+    <option value="in_progress">In Progress</option>
+    <option value="resolved">Resolved</option>
+  </select>
+  <label>Review:</label>
+  <select id="filter-review" onchange="applyFilters()">
+    <option value="all">ทั้งหมด</option>
+    <option value="yes">ต้องการ Review</option>
+    <option value="no">ไม่ต้องการ Review</option>
+  </select>
+  <input type="text" id="search-input" placeholder="🔍 ค้นหา..." oninput="applyFilters()" style="min-width:160px"/>
+  <span class="filter-count" id="filter-count">122 / 122 rows</span>
+  <button class="btn-reset" onclick="resetFilters()">↺ Reset</button>
+</div>
+
+<!-- MAIN TABLE -->
+<div class="main-wrap">
+  <div class="table-card">
+    <div class="table-header">
+      <span class="table-title">📋 PFMEA Risk Rows</span>
+      <button class="export-btn" onclick="exportCSV()">⬇ Export CSV</button>
+    </div>
+    <div class="tbl-wrap">
+      <table id="main-table">
+        <thead>
+          <tr>
+            <th onclick="sortBy('id')">#</th>
+            <th onclick="sortBy('agent')">Agent</th>
+            <th onclick="sortBy('step')">Process Step</th>
+            <th onclick="sortBy('req')">Requirement</th>
+            <th onclick="sortBy('failure')">Failure Mode</th>
+            <th onclick="sortBy('sev')">Sev</th>
+            <th onclick="sortBy('rpn')">RPN</th>
+            <th onclick="sortBy('review')">Review</th>
+            <th onclick="sortBy('status')">Status</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+      <div id="empty-state">ไม่พบ PFMEA rows ที่ตรงกับ filter ที่เลือก</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════════════════
+const PFMEA_DATA = [{"id":1,"agent":"Sale Agent","step":"Sale","srcStep":"Sales","req":"เก็บข้อมูลลูกค้า","failure":"ไม่เก็บข้อมูลลูกค้า / ข้อมูลความต้องการของลูกค้าไม่ถูกต้องและไม่ครบถ้วน","control":"Operator ไม่ปฏิบัติตาม มาตราฐานที่กำหนดไว้ / Form เอกสารสำหรับกรอกข้อมูลลูกค้าไม่ถูกต้องหรือรายละเอียดไม่ครบถ้วน","sev":9,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":2,"agent":"Sale Agent","step":"Sale","srcStep":"Sales","req":"เสนอราคาเบื้องต้นในส่วนงานออกแบบและงานตกแต่ง","failure":"พนักงานลืมจัดส่งใบเสนอราคาให้ลูกค้า / ใส่รายละเอียดของสินค้าไม่ครบถ้วน / ใส่รายละเอียดของสินค้าไม่ถูกต้อง / ใส่รายละเอียดเรื่องขนาดผิด / พนักงานขายคำนวณราคาสินค้าผิดพลาด","control":"พนักงานขายไม่ทราบรายละเอียดราคาของสินค้าแต่ละตัว / ไม่ได้ note วันที่จะจัดส่งใบเสนอราคา","sev":9,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":3,"agent":"Sale Agent","step":"Sale","srcStep":"Sales","req":"ชี้แจงขั้นตอนการทำงานในส่วนการออกแบบ ผลิตและติดตั้งรวมไปถึงขั้นตอนการชำระเงิน","failure":"ชี้แจงขั้นตอนการดำเนินงานไม่ครบถ้วน / ไม่ได้ชี้แจงขั้นตอนการชำระเงินให้ลูกค้าทราบ","control":"พนักงานขายไม่ทราบถึงขั้นตอนการทำงานในโรงงานและการติดตั้งหน้างาน / ไม่ได้ทำระบบแจ้งเตือนการชำระเงินของลูกค้าแต่ละราย","sev":9,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":4,"agent":"Sale Agent","step":"Sale","srcStep":"Sales","req":"เรียกเก็บชำระค่าวัดพื้นที่ และ ค่าออกแบบ","failure":"ไม่เรียกเก็บค่าบริการในอัตราที่บริษัทกำหนด / ละเลยการเก็บค่าบริการก่อนส่งพนักงานวัดพื้นที่ออกไปปฏิบัติหน้าที่","control":"ชี้แจงเงื่อนไขการดำเนินงานให้แก่พนักงานทราบทุกขั้นตอน","sev":9,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":5,"agent":"Sale Agent","step":"Sale","srcStep":"Sales","req":"สรุปใบเสนอราคารอบสุดท้าย","failure":"พนักงานลืมจัดส่งใบเสนอราคาให้ลูกค้า / ใส่รายละเอียดของสินค้าไม่ครบถ้วน / ใส่รายละเอียดของสินค้าไม่ถูกต้อง / ใส่รายละเอียดเรื่องขนาดผิด / พนักงานขายคำนวณราคาสินค้าผิดพลาด","control":"ต้องส่งใบเสนอราคาให้หัวหน้าตรวจสอบอีกครั้งก่อนส่งใบเสนอราคาให้ลูกค้า","sev":9,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":6,"agent":"Sale Agent","step":"Sale","srcStep":"Sales","req":"เรียกเก็บชำระค่าผลิตเฟอร์นิเจอร์","failure":"สรุปรายการโอนเงินผิดพลาด / ไม่ได้แจ้งวันโอนที่ชัดเจนให้ลูกค้าทราบ","control":"ไม่มีระบบการออก invoice ที่รองรับในส่วนของการออกเอกสารวางบิลแบ่งงวดการชำระเงิน","sev":9,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":7,"agent":"Designer Agent","step":"Area Measurement","srcStep":"1. ตรวจสอบและ เตรียมข้อมูลเบื้องต้นจากฝ่ายขาย ได้แก่ ชื่อ ที่อยู่ เบอร์โทรศัพท์ เวลานัดหมาย พื้นที่ที่ต้องการตกแต่ง","req":"ตรวจสอบและ เตรียมชื่อโครงการ/สถานที่ตั้ง","failure":"พนักงานเดินทางไปผิดหมู่บ้าน / ไปไม่ทันเวลานัดหมาย / ลืมปริ้นเอกสารสำหรับรายละเอียดที่ลูกค้าให้มา / ลืมปริ้นแบบแปลน","control":"ไม่ได้เตรียมรายละเอียดของงานไว้ล่วงหน้า / ไม่ศึกษาเส้นทางก่อนการเดินทาง /","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":8,"agent":"Designer Agent","step":"Area Measurement","srcStep":"1. ตรวจสอบและ เตรียมข้อมูลเบื้องต้นจากฝ่ายขาย ได้แก่ ชื่อ ที่อยู่ เบอร์โทรศัพท์ เวลานัดหมาย พื้นที่ที่ต้องการตกแต่ง","req":"ตรวจสอบและ เตรียมแบบ / Type / บ้าน / ห้อง","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":9,"agent":"Designer Agent","step":"Area Measurement","srcStep":"1. ตรวจสอบและ เตรียมข้อมูลเบื้องต้นจากฝ่ายขาย ได้แก่ ชื่อ ที่อยู่ เบอร์โทรศัพท์ เวลานัดหมาย พื้นที่ที่ต้องการตกแต่ง","req":"ตรวจสอบและ เตรียมส่วนที่ต้องการออกแบบ / ตร.ม","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":10,"agent":"Designer Agent","step":"Area Measurement","srcStep":"2. เตรียมอุปกรณ์","req":"เตรียมเลเซอร์","failure":"หลงลืมอุปกรณ์ในการวัดพื้นที่ / อุปกรณ์ที่จัดเตรียมไว้ไม่ได้มาตรฐาน และหรือ ใช้ไม่ได้จริง / อุปกรณ์เสื่อมประสิทธภาพ / ไม่ได้เตรียมเอกสารสำหรับบันทึกข้อมูล หรือบันทึกความต้องการของลูกค้า","control":"ไม่ได้ตรวจสอบอุปกรณ์ก่อนออกเดินทาง","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":11,"agent":"Designer Agent","step":"Area Measurement","srcStep":"2. เตรียมอุปกรณ์","req":"เตรียมตลับเมตร","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":12,"agent":"Designer Agent","step":"Area Measurement","srcStep":"2. เตรียมอุปกรณ์","req":"เตรียมฉาก","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":13,"agent":"Designer Agent","step":"Area Measurement","srcStep":"2. เตรียมอุปกรณ์","req":"เตรียมเทปกาว","failure":"","control":"","sev":6,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":14,"agent":"Designer Agent","step":"Area Measurement","srcStep":"2. เตรียมอุปกรณ์","req":"เตรียมเอกสารใบบันทึก","failure":"","control":"","sev":6,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":15,"agent":"Designer Agent","step":"Area Measurement","srcStep":"3. ตรวจสอบความถูกต้องในกรณีที่ลูกค้าส่งแบบแปลนมาให้","req":"สอบถามลูกค้าว่าแบบแปลนที่ให้มา เป็นไปตามแบบนี้เลยหรือไม่ เพราะในบางกรณีแบบที่ได้กับพื้นที่จริงจะสลับด้านกัน","failure":"ได้รับแบบแปลน สลับด้านกับหน้างานจริง / หรือแบบที่ได้รับเป็นแบบเฟอร์นิเจอร์ที่ทางลูกค้าจัดเตรียมไว้แล้วไม่สามารถฟิตกับหน้างานจริงได้","control":"รีเช็คพื้นที่กับแบบที่ได้รับใหม่อีกครั้ง เพื่อความถูกต้องและแม่นยำ หากในกรณีที่จะต้องมีการปรับแก้แบบใหม่ ให้ทำการแจ้งกับลูกค้าภายหลังวัดพื้นที่เสร็จเรียบร้อยแล้ว","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":16,"agent":"Designer Agent","step":"Area Measurement","srcStep":"4. บันทึกข้อมูลพื้นที่","req":"ตรวจเช็คความเอียงของผนัง","failure":"พนักงานไม่มีความแม่นยำในการใช้เครื่องมือ / อ่านค่าเครื่องมือวัดไม่ถูกต้อง / จดรายละเอียดขนาดพื้นที่ผิดพลาด / ไม่ได้วัดพื้นที่ครบทุกจุด / ไม่ได้วัดระยะตำแหน่งไฟฟ้า","control":"ไม่มีความชำนาญในการใข้เครื่องมือ หรืออ่านค่าไม่เป็น / ไม่โฟกัสกับงานในขณะนั้น / เร่งรีบในการทำงานทำให้วัดระยะมาไม่ครบทุกจุด","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":17,"agent":"Designer Agent","step":"Area Measurement","srcStep":"4. บันทึกข้อมูลพื้นที่","req":"วัดระยะพื้นที่ กว้าง ยาว สูง","failure":"","control":"","sev":6,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":18,"agent":"Designer Agent","step":"Area Measurement","srcStep":"4. บันทึกข้อมูลพื้นที่","req":"วัดระยะพื้นที่ ประตู หน้าต่าง","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":19,"agent":"Designer Agent","step":"Area Measurement","srcStep":"4. บันทึกข้อมูลพื้นที่","req":"วัดระยะตำแหน่งไฟ","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":20,"agent":"Designer Agent","step":"Designer","srcStep":"1. สรุปฟังก์ชั่นการใช้งานของลูกค้า","req":"สรุปข้อมูลลูกค้า","failure":"ไม่เข้าใจสิ่งที่ลูกค้าต้องการสื่อสาร / จดรายละเอียดความต้องการไม่ครบถ้วน / ไม่เข้าใจลักษณะการใช้งานหรือการทำงานในส่วนต่างๆ","control":"ดีไซน์เนอร์ไม่ศึกษาถึงฟังก์ชั่นการใช้งาน ในส่วนต่างๆ ของเฟอร์นิเจอร์  และ ไม่เข้าใจความต้องการของลูกค้า","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":21,"agent":"Designer Agent","step":"Designer","srcStep":"1. สรุปฟังก์ชั่นการใช้งานของลูกค้า","req":"สรุปฟังก์ชั่นผู้ใช้งานพื้นที่ และจำนวนผู้ใช้งาน","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":22,"agent":"Designer Agent","step":"Designer","srcStep":"1. สรุปฟังก์ชั่นการใช้งานของลูกค้า","req":"สรุปลักษณะการใช้งาน","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":23,"agent":"Designer Agent","step":"Designer","srcStep":"1. สรุปฟังก์ชั่นการใช้งานของลูกค้า","req":"สรุปวิธีการจัดเก็บ","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":24,"agent":"Designer Agent","step":"Designer","srcStep":"2. สรุป Mood and Tone","req":"สรุป Mood and Tone ที่ลูกค้าต้องการ","failure":"รับบรีฟมาไม่ครบถ้วน เข้าใจ mood & tones ผิด ทำให้จัดทำ material board , furniture selection ผิดพลาด","control":"ไม่เข้าใจถึงความหมายของสไตล์ในแต่ละแบบที่แตกต่างกัน","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":25,"agent":"Designer Agent","step":"Designer","srcStep":"2. สรุป Mood and Tone","req":"สรุป Material Board","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":26,"agent":"Designer Agent","step":"Designer","srcStep":"2. สรุป Mood and Tone","req":"สรุป Furniture selection Board","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":27,"agent":"Designer Agent","step":"Designer","srcStep":"2. สรุป Mood and Tone","req":"สรุป Lighting Selection Board","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":28,"agent":"Designer Agent","step":"Designer","srcStep":"2. สรุป Mood and Tone","req":"สรุป Decoration Selection","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":29,"agent":"Designer Agent","step":"Designer","srcStep":"3. จัดทำ furniture layout plan","req":"จัดทำ Lay out plan","failure":"วาง layout plan ผิดพลาด / ใส่ความสูงของตัวบ้านผิด ส่งผลให้ section & elevation ผิดพลาดไปด้วย / วางตำแหน่ง lighting ไม่เหมาะสม ทำให้ห้องมืดหรือสว่างจนเกินไป / ระดับฝ้าต่ำหรือสูงเกินไป","control":"ไม่เข้าใจหลักการวาง layout plan , lighting, ceiling plan / ไม่รู้จักวิธีคำนวณความสว่างของแสงไฟ และ ไม่ทราบระยะห่างระหว่างตำแหน่งไฟแต่ละจุด","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":30,"agent":"Designer Agent","step":"Designer","srcStep":"3. จัดทำ furniture layout plan","req":"จัดทำ Elevation Plan","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":31,"agent":"Designer Agent","step":"Designer","srcStep":"3. จัดทำ furniture layout plan","req":"จัดทำ Furniture Layout","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":32,"agent":"Designer Agent","step":"Designer","srcStep":"3. จัดทำ furniture layout plan","req":"จัดทำ Ceiling Plan","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":33,"agent":"Designer Agent","step":"Designer","srcStep":"3. จัดทำ furniture layout plan","req":"จัดทำ Lighting Plan","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":34,"agent":"Designer Agent","step":"Designer","srcStep":"3. จัดทำ furniture layout plan","req":"ยสวอ","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":35,"agent":"Designer Agent","step":"3D_Presentation","srcStep":"1. 3D Model","req":"Build each room","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":36,"agent":"Designer Agent","step":"3D_Presentation","srcStep":"1. 3D Model","req":"Build Structure","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":37,"agent":"Designer Agent","step":"3D_Presentation","srcStep":"1. 3D Model","req":"Import Cabinet","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":38,"agent":"Designer Agent","step":"3D_Presentation","srcStep":"1. 3D Model","req":"Check all Corner","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":39,"agent":"Designer Agent","step":"3D_Presentation","srcStep":"1. 3D Model","req":"Check all Filler","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":40,"agent":"Designer Agent","step":"3D_Rendering_Final","srcStep":"2. 3D Rendering","req":"ตรวจสอบระยะ และความถูกต้องของไฟล์ 3D","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":41,"agent":"Designer Agent","step":"3D_Rendering_Final","srcStep":"2. 3D Rendering","req":"ทำ Furniture Selection","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":42,"agent":"Designer Agent","step":"3D_Rendering_Final","srcStep":"2. 3D Rendering","req":"ทำ Decoration Selection","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":43,"agent":"Designer Agent","step":"3D_Rendering_Final","srcStep":"2. 3D Rendering","req":"ทำ Lighting","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":44,"agent":"Designer Agent","step":"3D_Rendering_Final","srcStep":"2. 3D Rendering","req":"ทำ Material Installation Setting","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":45,"agent":"Designer Agent","step":"3D_Rendering_Final","srcStep":"2. 3D Rendering","req":"ทำ Rendering Setting","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":46,"agent":"Designer Agent","step":"3D_Presentation","srcStep":"3. Contruction Drawing","req":"DAPH : Scrap 100% Customer :  Scrap 100%","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":47,"agent":"Designer Agent","step":"3D_Presentation","srcStep":"3. Contruction Drawing","req":"","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":48,"agent":"Designer Agent","step":"3D_Presentation","srcStep":"3. Contruction Drawing","req":"","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":49,"agent":"Designer Agent","step":"3D_Presentation","srcStep":"3. Contruction Drawing","req":"","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":50,"agent":"Designer Agent","step":"3D_Presentation","srcStep":"3. Contruction Drawing","req":"","failure":"","control":"","sev":8,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":true,"status":"open"},{"id":51,"agent":"Factory Agent","step":"Production Planning","srcStep":"1. การขึ้น Model Construction","req":"ศึกษาแบบ 3D จากดีไซเนอร์","failure":"พนักงานไม่ได้ทำการเช็คแบบ 3D โดยละเอียด ทำให้ข้อมูลในการขึ้นห้องและเฟอร์นิเจอร์ไม่ครบถ้วน","control":"ไม่มีความละเอียดรอบคอบและรีบร้อนในการทำงาน / ไม่เข้าใจแบบที่ได้รับและไม่สอบถามในจุดที่ติดปัญหา","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":52,"agent":"Factory Agent","step":"Production Planning","srcStep":"1. การขึ้น Model Construction","req":"รับข้อมูลวัสดุ จากดีไซเนอร์","failure":"ดูรหัสวัสดุผิด ใส่รหัสวัสดุไม่ครบ","control":"ใส่ใจรายละเอียดงานทุกจุด","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":53,"agent":"Factory Agent","step":"Production Planning","srcStep":"1. การขึ้น Model Construction","req":"เช็คระยะพื้นที่อย่างละเอียดจากไฟล์ 3D กับข้อมูลส่วนกลางของลูกค้า","failure":"ดูรายละเอียดไม่ครบ","control":"","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":54,"agent":"Factory Agent","step":"Production Planning","srcStep":"1. การขึ้น Model Construction","req":"ใช้โปรแกรม Pytha ในการขึ้นผนัง ตามแบบจากดีไซเนอร์ (ดูวิธีทำจากคู่มือ การใช้งาน Pytha)","failure":"ขึ้นระยะผิดจากแบบวัดพื้นที่ ที่ได้มา","control":"สอบถามข้อมูลให้ชัดเจน","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":55,"agent":"Factory Agent","step":"Production Planning","srcStep":"1. การขึ้น Model Construction","req":"ใส่ระยะประตู และหน้าต่าง ตามแบบจากดีไซเนอร์ (ดูวิธีทำจากคู่มือ การใช้งาน Pytha)","failure":"ระยะพื้นที่ประตูหน้าต่างมาไม่ครบ รายละเอียดไม่ชัดเจน","control":"","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":56,"agent":"Factory Agent","step":"Production Planning","srcStep":"1. การขึ้น Model Construction","req":"ใส่ระยะปลั๊กไฟ ตามแบบจากดีไซเนอร์ (ดูวิธีทำจากคู่มือ การใช้งาน Pytha)","failure":"ระยะปลั๊กที่ได้มาไม่ชัดเจน ไม่ครบถ้วน","control":"เช็คจำนวนปลั๊กหน้างานว่ามีระยะครบทุกจุดหรือไม่","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":57,"agent":"Factory Agent","step":"Production Planning","srcStep":"2. การขึ้นโครงอลูมิเนียม","req":"เช็คไฟล์ 3D ตามแบบดีไซเนอร์","failure":"ทำแบบไม่ครบ","control":"ดีไซเนอร์ใส่รายละเอียดมาให้ไม่ครบ","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":58,"agent":"Factory Agent","step":"Production Planning","srcStep":"2. การขึ้นโครงอลูมิเนียม","req":"ระยะต้องหาร 3 ลงตัว","failure":"ระยะที่ได้มาไม่ตรงกับแบบไม้ที่ทำได้","control":"","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":59,"agent":"Factory Agent","step":"Production Planning","srcStep":"2. การขึ้นโครงอลูมิเนียม","req":"การคำนวนเพื่อหาเสาและระยะแนวตั้ง และแนวนอน","failure":"","control":"","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":60,"agent":"Factory Agent","step":"Production Planning","srcStep":"2. การขึ้นโครงอลูมิเนียม","req":"จุดเริ่มต้นและจุดจบงาน","failure":"ดีไซเนอร์ไม่ได้ระบุจุดเริ่มต้นและจบงาน","control":"","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":61,"agent":"Factory Agent","step":"Production Planning","srcStep":"3. การ Import ผนัง ตู้ ฟิลเลอร์","req":"ขึ้นแบบโครงตู้ (ดูวิธีทำจากคู่มือ การใช้งาน Pytha)","failure":"ดึงตู้มาใช้ไม่เช็คระยะความหนาไม้","control":"ไม่เช็ครายละเอียดก่อนเริ่มงาน","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":62,"agent":"Factory Agent","step":"Production Planning","srcStep":"3. การ Import ผนัง ตู้ ฟิลเลอร์","req":"ขึ้นแบบฟิลเลอร์ (ดูวิธีทำจากคู่มือ การใช้งาน Pytha)","failure":"ระยะเหลือด้านข้างไม่ตรงตามแบบ","control":"","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":63,"agent":"Factory Agent","step":"Production Planning","srcStep":"3. การ Import ผนัง ตู้ ฟิลเลอร์","req":"ขึ้นแบบผนัง (ดูวิธีทำจากคู่มือ การใช้งาน Pytha)","failure":"ทำลายต่อไม้ไม่ตรงตามแบบ","control":"","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":64,"agent":"Factory Agent","step":"Production Planning","srcStep":"4. การโน๊ตรายละเอียด Material","req":"ระบุแมททีเรียลให้ชัดเจนทั้งหมด ตามแบบฟอร์มในโปรแกรม Note pad","failure":"เปลี่ยนแมททีเรียลระหว่างทำงาน หรือทำเสร็จไปแล้ว","control":"ยังไม่สามารถระบุแมททีเรียลได้ชัดเจน","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":65,"agent":"Factory Agent","step":"Production Planning","srcStep":"4. การโน๊ตรายละเอียด Material","req":"ระบุแมททีเรียลแล้วแต่ไม่มีของ","failure":"ไม่เช็คของก่อนระบุแมททีเรียล","control":"เลือกเฉพาะแมททีเรียลที่มีจำนวนเยอะ สินค้าไม่ขาดตลาด","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":66,"agent":"Factory Agent","step":"Production Planning","srcStep":"5. การใส่ Material และคิดรายการวัสดุ เพื่อผลิต","req":"ใส่ Material ในแบบ Pytha","failure":"ระบุแมททีเรียลผิด","control":"ไม่ได้ดูขนาดไม้ที่ใช้กับขนาดที่ระบุในแมททีเรียลว่าตรงกันหรือไม่","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":67,"agent":"Factory Agent","step":"Production Planning","srcStep":"5. การใส่ Material และคิดรายการวัสดุ เพื่อผลิต","req":"Export ไฟล์ Material จาก Pytha ไป Maxcut เพื่อทำรายการตัด","failure":"ใส่แมททีเรียลไม่ครบทุกชิ้น","control":"ดูรายละเอียดให้ครบถ้วน ทั้งรายชื่อไฟล์ และ แมททีเรียล","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":68,"agent":"Factory Agent","step":"Production Planning","srcStep":"5. การใส่ Material และคิดรายการวัสดุ เพื่อผลิต","req":"ขนาดไม้ใน Pytha กับขนาดจริงของ แมททีเรียลไม่ตรงกัน","failure":"ไม่ได้เช็คขนาดความยาวของไม้ที่ใช้ใน Pytha กับแมททีเรียลที่ใช้ไม่ตรงกัน","control":"ต้องรู้รายละเอียดของแมททีเรียลก่อนทำแบบทุกครั้ง","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":69,"agent":"Factory Agent","step":"Production Planning","srcStep":"5. การใส่ Material และคิดรายการวัสดุ เพื่อผลิต","req":"สรุปวัสดุจากรายการตัด เป็นรายการเพลทไม้ และเป็นรายการสั่งของใน Excel รายการไม้เปลือย ลามิเนต เส้นขอบ","failure":"ใส่รายการสั่งของไม่ครบ","control":"ค่อยๆ ดูรายการอย่างละเอียด ทีละหน้า","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":70,"agent":"Factory Agent","step":"Production Planning","srcStep":"5. การใส่ Material และคิดรายการวัสดุ เพื่อผลิต","req":"ใส่รายการวัสดุผิด","failure":"ไม่ได้ดูรายการแมททีเรียลให้ดีอาจพิมพ์ตกหล่น","control":"","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":71,"agent":"Factory Agent","step":"Production Planning","srcStep":"6. ทำแบบติดตั้ง","req":"ทำแบบติดตั้งตู้ใน Pytha","failure":"ใส่รายละเอียดในแบบไม่ครบ","control":"ไม่เช็ครายละเอียดทั้งหมดให้ดี","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":72,"agent":"Factory Agent","step":"Production Planning","srcStep":"6. ทำแบบติดตั้ง","req":"ทำแบบติดตั้งโครงอลูมิเนียมใน Pytha","failure":"ใส่ระยะไม่ครบถ้วน","control":"ใส่ระยะให้ครบทุกจุด","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":73,"agent":"Factory Agent","step":"Production Planning","srcStep":"7. ทำไฟล์เจาะ","req":"ทำไฟล์เจาะใน Pytha แล้ว Export ไปใช้กับโปรแกรมเจาะ","failure":"รูเจาะอยู่สลับด้านกัน","control":"โปรแกรม Pytha คิดรูออกมาคนละด้าน","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":74,"agent":"Factory Agent","step":"Production Planning","srcStep":"7. ทำไฟล์เจาะ","req":"ทำแบบตู้สำหรับประกอบใน Pytha","failure":"Save แบบผิดห้อง","control":"ตรวจดูชื่อโฟลเดอร์ทุกครั้ง","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":75,"agent":"Factory Agent","step":"Production Planning","srcStep":"7. ทำไฟล์เจาะ","req":"Export ไฟล์เจาะจากโปรแกรมเจาะไปใช้ในโปรแกรม Cad สำหรับดึงไดเมนชั้น","failure":"ดึงไดเมนชั่น ไม่ครบทุกจุด","control":"ตรวจสอบรายละเอียดให้ครบทุกจุดห้ามขาด","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":76,"agent":"Factory Agent","step":"Production Planning","srcStep":"7. ทำไฟล์เจาะ","req":"ทำรายละเอียดการเจาะ และรายการเช็คของส่งร้าน","failure":"ระบุรายละเอียดการเจาะไม่ครบ","control":"","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":77,"agent":"Factory Agent","step":"Production Planning","srcStep":"8. รายการสั่งของเพื่อติดตั้ง","req":"ทำรายการเช็คลิสสั่งของ รายการบานพับ รางลิ้นชัก ไฟ ฟิตติ้งต่างๆ ตามแบบฟอร์มเช็คลิส","failure":"ดูรายการของไม่ครบทุกชิ้น","control":"ไม่มีรายการแจ้งในแบบ","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":78,"agent":"Factory Agent","step":"Laminate HPL","srcStep":"1. Incoming Inspection","req":"วัสดุถูกต้องตรงตาม Drawing - ไม้ - Laminate","failure":"วัสดุ ไม่ถูกต้อง - ไม้ - Laminate","control":"Operator ไม่ได้ทำการตรวจสอบการนำชิ้นงานมาผลิต","sev":8,"occ":2,"det":7,"rpn":112,"rpnStatus":"computed","priority":"High","review":false,"sevWarn":false,"status":"open"},{"id":79,"agent":"Factory Agent","step":"Laminate HPL","srcStep":"1. Incoming Inspection","req":"เอกสารไม่ได้ถูกระบุให้ตรวจสอบ","failure":"บันทึกผล ลงใน Check sheet xxxxxx   ทุกครั้งก่อนเริ่มผลิต","control":"","sev":3,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":80,"agent":"Factory Agent","step":"Laminate HPL","srcStep":"1. Incoming Inspection","req":"วัสดุ ต้องไม่มีรอยแตก รอยบิ่น - ไม้ - Laminate","failure":"วัสดุ มีรอยแตก รอยบิ่น - ไม้ - Laminate","control":"ชิ้นงานตกหล่น ระหว่างการผลิตหรือขนย้าย","sev":8,"occ":2,"det":7,"rpn":112,"rpnStatus":"computed","priority":"High","review":false,"sevWarn":false,"status":"open"},{"id":81,"agent":"Factory Agent","step":"Laminate HPL","srcStep":"1. Incoming Inspection","req":"วัสดุต้องไม่โก่งงอ - ไม้","failure":"วัสดุโก่งงอ - ไม้","control":"การจัดวางชิ้นงาน (ไม้) ระหว่างรอผลิตไม่ถูกต้อง","sev":8,"occ":2,"det":7,"rpn":112,"rpnStatus":"computed","priority":"High","review":false,"sevWarn":false,"status":"open"},{"id":82,"agent":"Factory Agent","step":"Laminate HPL","srcStep":"2. Laminate HPL","req":"แผ่นไม้ต้องถูกปิดผิวด้วย Laminate","failure":"แผ่นไม้ไม่ได้ถูกปิดผิวด้วย Laminate","control":"Operator ไม่ปฏิบัติตาม มาตราฐานที่กำหนดไว้ ตามเอกสาร XXXXXX","sev":8,"occ":2,"det":7,"rpn":112,"rpnStatus":"computed","priority":"High","review":false,"sevWarn":false,"status":"open"},{"id":83,"agent":"Factory Agent","step":"Laminate HPL","srcStep":"2. Laminate HPL","req":"Laminate ต้องถูกติดทั่วทั้งแผ่นไม้","failure":"Laminate ยึดติดไม่ทั้ว ทั้งแผ่นไม้","control":"Operator ทากาวไม่ตรงตาม มาตราฐาน","sev":8,"occ":2,"det":7,"rpn":112,"rpnStatus":"computed","priority":"High","review":false,"sevWarn":false,"status":"open"},{"id":84,"agent":"Factory Agent","step":"Laminate HPL","srcStep":"2. Laminate HPL","req":"เครื่องจักรมีแรงกดไม่ได้ มาตราฐาน","failure":"กำหนดมาตราฐานในการเช็คเครื่องจักรตามเอกสาร XXXXXXX","control":"","sev":2,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":85,"agent":"Factory Agent","step":"Laminate HPL","srcStep":"2. Laminate HPL","req":"Laminate ติดในตำแหน่งที่ถูกต้อง","failure":"แผ่น Laminate เอียงเมื่อติดบนแผ่นไม้","control":"Operator ไม่ปฏิบัติตาม มาตราฐานที่กำหนดไว้ ตามเอกสาร XXXXXX","sev":6,"occ":2,"det":7,"rpn":84,"rpnStatus":"computed","priority":"Medium","review":false,"sevWarn":false,"status":"open"},{"id":86,"agent":"Factory Agent","step":"Cutting","srcStep":"3. Cutting","req":"ตัดชิ้นงานตาม Drawing","failure":"ชิ้นงานไม่ได้ขนาดตาม Drawing (Out of spec)","control":"Operator ไม่เข้าใจการใส่ข้อมูลที่เครื่อง  ตามเอกสาร XXXXXX","sev":8,"occ":3,"det":6,"rpn":144,"rpnStatus":"computed","priority":"Medium","review":false,"sevWarn":false,"status":"open"},{"id":87,"agent":"Factory Agent","step":"Cutting","srcStep":"3. Cutting","req":"จัดเรียงไม้ ไม่ถูกต้องตามมาตราฐาน","failure":"กำหนดมาตารฐานการจัดวางไม้","control":"","sev":3,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":88,"agent":"Factory Agent","step":"Cutting","srcStep":"3. Cutting","req":"มีสิ่งแปลกปลอมติดที่ เครื่องมือตัด","failure":"กำหนดมาตารฐานในการตรวจเช็ค  ทำความสะอาดเครื่องมือตัดก่อนตัดงาน","control":"","sev":3,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":89,"agent":"Factory Agent","step":"Cutting","srcStep":"3. Cutting","req":"ขอบไม้ไม่ฉีกเสียหาย","failure":"ขอบไม้ฉีกเสียหาย","control":"ใบมีดในการตัดเกินกว่าอายุที่กำหนด","sev":8,"occ":5,"det":7,"rpn":280,"rpnStatus":"computed","priority":"High","review":false,"sevWarn":false,"status":"open"},{"id":90,"agent":"Factory Agent","step":"Cutting","srcStep":"3. Cutting","req":"ใช้งานในการตัดเกินระยะเวลา","failure":"กำหนดมาตราฐานในการใช้ใบมีดตัด ต่อเนื่อง ในกรบวนการผลิต","control":"","sev":3,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":91,"agent":"Factory Agent","step":"Edging","srcStep":"4. Edging","req":"การติดขอบชิ้นงานให้ถูกต้องตาม Drawing ถูกด้านไม้ที่กำหนด","failure":"ติดขอบชิ้นงานไม่ถูกต้องตาม Drawing   ติดผิดด้านไม้ที่กำหนด","control":"Operator ไม่ทำตามมาตราฐาน ตามเอกสาร XXXXXX","sev":8,"occ":3,"det":7,"rpn":168,"rpnStatus":"computed","priority":"High","review":false,"sevWarn":false,"status":"open"},{"id":92,"agent":"Factory Agent","step":"Edging","srcStep":"4. Edging","req":"การติดขอบชิ้นงานต้องบิดเบี้ยว","failure":"ติดขอบชิ้นงานเบี้ยว","control":"พื้นที่วางชิ้นงานเอียง","sev":6,"occ":3,"det":7,"rpn":126,"rpnStatus":"computed","priority":"Medium","review":false,"sevWarn":false,"status":"open"},{"id":93,"agent":"Factory Agent","step":"Edging","srcStep":"4. Edging","req":"DAPH : Rework Customer : Rework","failure":"Operator วางชิ้นงานเอียง","control":"100% ตรวจสอบด้วยสายตา / วัดด้วยระดับน้ำ","sev":6,"occ":3,"det":7,"rpn":126,"rpnStatus":"computed","priority":"Medium","review":false,"sevWarn":false,"status":"open"},{"id":94,"agent":"Factory Agent","step":"Edging","srcStep":"4. Edging","req":"การติดขอบชิ้นงานต้องแนบสนิท","failure":"ติดของชิ้นงานไม่แนบสนิท","control":"ตรวจสอบพื้นผิวชิ้นงาน และ เครื่องจักรก่อนทำการติดชิ้นงาน","sev":8,"occ":3,"det":7,"rpn":168,"rpnStatus":"computed","priority":"High","review":false,"sevWarn":false,"status":"open"},{"id":95,"agent":"Factory Agent","step":"CNC","srcStep":"5. CNC","req":"ตัดชิ้นงานให้ได้ตาม Drawing","failure":"ชิ้นงานไม่ได้ตาม Drawing","control":"Operator ไม่เตรียมเครื่องจักรตามมาตราฐานที่กำหนด ตามเอกสาร xxxxxxx","sev":8,"occ":3,"det":6,"rpn":144,"rpnStatus":"computed","priority":"Medium","review":false,"sevWarn":false,"status":"open"},{"id":96,"agent":"Factory Agent","step":"CNC","srcStep":"5. CNC","req":"Operator เตรียมไฟล์ตัดไม่ตรงตามงาน","failure":"กำหนดมาตราฐานในการ set up เครื่องจักรตามเอกสาร XXXXXXX","control":"","sev":2,"occ":null,"det":null,"rpn":null,"rpnStatus":"severity_only","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":97,"agent":"Factory Agent","step":"Assembly","srcStep":"6. Assembly","req":"ประกอบชิ้นงานให้ได้ตาม Drawing -ใส่เกือกม้า -ใส่เดือยไม้ -ใส่เดือยเหล็ก","failure":"ประกอบชิ้นงานไม่ตรงตาม Drawing -ใส่เกือกม้า -ใส่เดือยไม้ -ใส่เดือยเหล็ก","control":"Operator ขาดทักษะการประกอบ","sev":8,"occ":2,"det":7,"rpn":112,"rpnStatus":"computed","priority":"High","review":false,"sevWarn":false,"status":"open"},{"id":98,"agent":"Factory Agent","step":"Assembly","srcStep":"6. Assembly","req":"ชิ้นงานต้องไม่เป็นรอยบุบหรือแตกหัก","failure":"ชิ้นงานบุบ แตกหัก","control":"Training Operator ตามมาตราฐานการปฏิบัติงาน","sev":8,"occ":3,"det":7,"rpn":168,"rpnStatus":"computed","priority":"High","review":false,"sevWarn":false,"status":"open"},{"id":99,"agent":"Factory Agent","step":"Packing","srcStep":"7. Packing","req":"แพ็คชิ้นงานถูกต้องตามกลุ่ม Drawing","failure":"แพ็คชิ้นงานไม่ถูกต้องตามกลุ่ม Drawing","control":"มาตราฐานไม่ชัดเจน , Operator ไม่ปฎิบัติตาม","sev":6,"occ":2,"det":7,"rpn":84,"rpnStatus":"computed","priority":"Medium","review":false,"sevWarn":false,"status":"open"},{"id":100,"agent":"Factory Agent","step":"Packing","srcStep":"7. Packing","req":"แพ็คชิ้นงานถูกต้องตามมาตราฐาน","failure":"แพ็คชิ้นงานไม่ถูกต้องตามมาตราฐาน","control":"Training Operator ตามมาตราฐานการปฏิบัติงาน","sev":6,"occ":2,"det":7,"rpn":84,"rpnStatus":"computed","priority":"Medium","review":false,"sevWarn":false,"status":"open"},{"id":101,"agent":"Install Agent","step":"การบรีฟงาน","srcStep":"1. การบรีฟงาน","req":"เข้าใจแบบ, แผนการทำปฏิบัติงาน","failure":"ขาดความเข้าใจแบบ และแผนการปฏิบัติงาน / เข้าใจผิดในแบบ แผนการปฏิบัติงาน","control":"พนักงานติดตั้งไม่มีแบบ,แผนการปฏิบัติงาน / ไม่ได้อบรม เรื่องการอ่านแบบ","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":102,"agent":"Install Agent","step":"การบรีฟงาน","srcStep":"1. การบรีฟงาน","req":"พนักงานติดตั้งควรเข้าใจแบบ ก่อนออกสู่หน้างาน","failure":"","control":"","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":103,"agent":"Install Agent","step":"การบรีฟงาน","srcStep":"1. การบรีฟงาน","req":"รู้วิธีการปฏิบัติงาน","failure":"ขาดความรู้ในการปฏิบัติงาน","control":"ไม่ได้เตรียมตัวก่อนปฎิบัติงาน","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":104,"agent":"Install Agent","step":"การบรีฟงาน","srcStep":"1. การบรีฟงาน","req":"รู้อุปกรณ์ที่ใช้ในการทำงาน","failure":"ขาดความรู้ในอุปกรณ์ที่ใช้ในการทำงาน","control":"ไม่ได้เตรียมตัวก่อนปฎิบัติงาน","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":105,"agent":"Install Agent","step":"การบรีฟงาน","srcStep":"1. การบรีฟงาน","req":"รู้ระยะเวลาการทำงาน","failure":"ไม่รู้ระยะเวลาการทำงาน","control":"ไม่มีการวางแผนการปฏิบัติงาน","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":106,"agent":"Install Agent","step":"การบรีฟงาน","srcStep":"1. การบรีฟงาน","req":"รู้ปัญหาที่อาจเกิดระหว่างทำงาน","failure":"ไม่รู้ปัญหาที่อาจเกิดระหว่างทำงาน","control":"ไม่มีการวางแผนการปฏิบัติงาน","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":107,"agent":"Install Agent","step":"การตรวจสอบระยะ","srcStep":"3. การตรวจสอบระยะในแบบกับหน้างาน","req":"เริ่มวัดจากจุดเริ่มต้นตามแบบ","failure":"ไม่ได้เริ่มวัดจากจุดเริ่มต้นตามแบบ","control":"พนักงานติดตั้งไม่เข้าใจแบบ","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":108,"agent":"Install Agent","step":"การตรวจสอบระยะ","srcStep":"3. การตรวจสอบระยะในแบบกับหน้างาน","req":"ขนาดตรงกับแบบ","failure":"ขนาดไม่ตรงกับแบบ","control":"เกิดจากความผิดพลาดในการวัดหน้างาน","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":109,"agent":"Install Agent","step":"การติดตั้งโครงอลูมิเนียม","srcStep":"6. การติดตั้งโครงอลูมิเนียม","req":"โครงอลูมิเนียมตรงแบบ","failure":"โครงอลูมิเนียมไม่ตรงแบบ","control":"กำหนดให้มีการตรวจสอบก่อนเข้าติดตั้ง","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":110,"agent":"Install Agent","step":"การติดตั้งโครงอลูมิเนียม","srcStep":"6. การติดตั้งโครงอลูมิเนียม","req":"โครงอลูมิเนียมตั้งฉาก 90องศา จากเลเซอร์","failure":"โครงอลูมิเนียมไม่ตั้งฉาก 90องศา จากเลเซอร์","control":"Training พนักงานติดตั้ง ตามมาตราฐานการปฏิบัติงาน","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":111,"agent":"Install Agent","step":"การติดตั้งโครงอลูมิเนียม","srcStep":"6. การติดตั้งโครงอลูมิเนียม","req":"ไม่มีรอยเจาะอื่นๆ นอกเหนือจากแบบ","failure":"มีรอยเจาะอื่นๆ นอกเหนือจากแบบ","control":"Training พนักงานติดตั้ง ตามมาตราฐานการปฏิบัติงาน","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":112,"agent":"Install Agent","step":"การติดตั้งโครงอลูมิเนียม","srcStep":"6. การติดตั้งโครงอลูมิเนียม","req":"หัวน๊อตพุกเหล็ก ต้องจมไปกับผนัง","failure":"หัวน๊อตพุกเหล็ก ไม่จมไปกับผนัง","control":"Training พนักงานติดตั้ง ตามมาตราฐานการปฏิบัติงาน","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":113,"agent":"Install Agent","step":"งานระบบไฟฟ้า","srcStep":"12. งานระบบไฟฟ้า","req":"ตำแหน่งปลั๊กไฟฟ้าตรงตามแบบ","failure":"ตำแหน่งปลั๊กไฟฟ้าไม่ตรงตามแบบ","control":"Training พนักงานติดตั้ง ตามมาตราฐานการปฏิบัติงาน","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":114,"agent":"Install Agent","step":"งานระบบไฟฟ้า","srcStep":"12. งานระบบไฟฟ้า","req":"ไฟฟ้าใช้งานได้จริง","failure":"ไฟฟ้าใช้งานไม่ได้จริง","control":"Training พนักงานติดตั้ง ตามมาตราฐานการปฏิบัติงาน","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":115,"agent":"Install Agent","step":"การติดตั้งผนัง","srcStep":"9. การติดตั้งผนังระหว่างตู้","req":"ไม่เกิดช่องว่างระหว่างรอยต่อ","failure":"เกิดช่องว่างระหว่างรอยต่อ","control":"Training พนักงานติดตั้ง ตามมาตราฐานการปฏิบัติงาน","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":116,"agent":"Install Agent","step":"การติดตั้งผนัง","srcStep":"9. การติดตั้งผนังระหว่างตู้","req":"เรียบสนิท","failure":"ไม่เรียบสนิท","control":"Training พนักงานติดตั้ง ตามมาตราฐานการปฏิบัติงาน","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":117,"agent":"Install Agent","step":"การติดตั้งอุปกรณ์ภายในตู้","srcStep":"11. การติดตั้งอุปกรณ์ภายในตู้","req":"ตำแหน่งติดตั้งถูกต้องตามแบบ","failure":"ตำแหน่งติดตั้งไม่ถูกต้องตามแบบ","control":"Training พนักงานติดตั้ง ตามมาตราฐานการปฏิบัติงาน","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":118,"agent":"Install Agent","step":"การติดตั้งอุปกรณ์ภายในตู้","srcStep":"11. การติดตั้งอุปกรณ์ภายในตู้","req":"ใช้งานได้จริง","failure":"ใช้งานไม่ได้จริง","control":"Training พนักงานติดตั้ง ตามมาตราฐานการปฏิบัติงาน","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":119,"agent":"Install Agent","step":"การตรวจสอบหน้าบาน","srcStep":"14. การตรวจสอบหน้าบาน","req":"หน้าบานปิดสนิท,         ไม่เหลี่อม","failure":"หน้าบานปิดไม่สนิท, เหลี่อม","control":"Training พนักงานติดตั้ง ตามมาตราฐานการปฏิบัติงาน","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":120,"agent":"Install Agent","step":"การตรวจสอบหน้าบาน","srcStep":"14. การตรวจสอบหน้าบาน","req":"การเปิด-ปิด ไม่เบียด, ลื่นไม่ติดขัด","failure":"การเปิด-ปิด เบียด, ไม่ลื่น ติดขัด","control":"Training พนักงานติดตั้ง ตามมาตราฐานการปฏิบัติงาน","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":121,"agent":"Install Agent","step":"การรักษาความสะอาด","srcStep":"15. การรักษาความสะอาด","req":"ช่างสวมถุงมือ ขณะทำงาน","failure":"ช่างไม่สวมถุงมือขณะทำงาน","control":"Training พนักงานติดตั้ง ตามมาตราฐานการปฏิบัติงาน","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},{"id":122,"agent":"Install Agent","step":"การรักษาความสะอาด","srcStep":"15. การรักษาความสะอาด","req":"ใช้ถุงรองฝุ่นทุกครั้งที่มีการเจาะ","failure":"ไม่ใช้ถุงรองฝุ่นทุกครั้งที่มีการเจาะ","control":"Training พนักงานติดตั้ง ตามมาตราฐานการปฏิบัติงาน","sev":null,"occ":null,"det":null,"rpn":null,"rpnStatus":"not_assessed","priority":null,"review":true,"sevWarn":false,"status":"open"},
+{"id": 123, "client": "swift", "agent": "Dispatch Agent", "step": "Dispatch Planning", "srcStep": "1. จัดเส้นทางเดินรถ", "req": "จัดเส้นทางเดินรถ optimal", "failure": "จัดเส้นทางผิดพลาด / วนรถโดยไม่จำเป็น / เส้นทางไม่ optimal", "control": "ไม่มี algorithm จัดเส้นทาง / พนักงาน dispatch ตัดสินใจด้วยตนเอง", "sev": 9, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": true, "status": "open"},
+{"id": 124, "client": "swift", "agent": "Dispatch Agent", "step": "Dispatch Planning", "srcStep": "2. มอบหมายคนขับ", "req": "assign คนขับที่ว่างและพร้อมงาน", "failure": "assign คนขับซ้ำ / assign คนขับที่ไม่ว่าง / assign รถที่ผิด capacity", "control": "ไม่มี real-time driver status dashboard", "sev": 8, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": true, "status": "open"},
+{"id": 125, "client": "swift", "agent": "Dispatch Agent", "step": "Job Assignment", "srcStep": "3. ส่ง job card", "req": "ส่ง job card ให้คนขับ ครบถ้วน", "failure": "คนขับไม่ได้รับ job card / job card ข้อมูลไม่ครบ / ส่ง job ผิดคน", "control": "ไม่มีระบบ confirm การรับ job บังคับก่อน start", "sev": 8, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": true, "status": "open"},
+{"id": 126, "client": "swift", "agent": "Dispatch Agent", "step": "Job Assignment", "srcStep": "4. แจ้ง ETA", "req": "แจ้ง ETA ที่แม่นยำให้ลูกค้า", "failure": "ไม่แจ้ง ETA / แจ้ง ETA ผิดพลาด / ETA เปลี่ยนโดยไม่แจ้งลูกค้า", "control": "ไม่มีระบบคำนวณ ETA อัตโนมัติ", "sev": 8, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": true, "status": "open"},
+{"id": 127, "client": "swift", "agent": "Dispatch Agent", "step": "Route Optimization", "srcStep": "5. ปรับเส้นทางตามจราจร", "req": "ปรับเส้นทางเมื่อมีการจราจรหรืออุบัติเหตุ", "failure": "ไม่ปรับเส้นทาง / รถติดทำให้ส่งของล่าช้ากว่า SLA", "control": "ไม่มีการ integrate กับ traffic API realtime", "sev": 6, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": false, "status": "open"},
+{"id": 128, "client": "swift", "agent": "Dispatch Agent", "step": "Route Optimization", "srcStep": "6. จัดลำดับ priority", "req": "ส่ง priority shipment ก่อน", "failure": "ส่ง priority shipment ล่าช้าเพราะ sequence ผิดหรือ assignment ไม่คำนึง priority", "control": "ไม่มีระบบ priority queue ใน dispatch module", "sev": 8, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": true, "status": "open"},
+{"id": 129, "client": "swift", "agent": "Dispatch Agent", "step": "Dispatch Planning", "srcStep": "7. ตรวจ manifest", "req": "บันทึก manifest รายการสินค้าครบถ้วน", "failure": "manifest ไม่ตรงกับสินค้าจริง / รายการขาดหาย / รายการซ้ำ", "control": "ไม่มีการ cross-check manifest กับ barcode scan", "sev": 6, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": false, "status": "open"},
+{"id": 130, "client": "swift", "agent": "Dispatch Agent", "step": "Job Assignment", "srcStep": "8. ตรวจ vehicle/license", "req": "ตรวจสอบ license และสภาพรถก่อน assign", "failure": "assign รถที่มีปัญหาเชิงกลไก / คนขับไม่มี license หรือ license หมดอายุ", "control": "ไม่มีขั้นตอน pre-dispatch vehicle/driver check บังคับ", "sev": 9, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": true, "status": "open"},
+{"id": 131, "client": "swift", "agent": "CS Agent", "step": "Customer Response", "srcStep": "1. ตอบ inquiry ภายใน SLA", "req": "ตอบ inquiry ลูกค้าภายใน 4 ชั่วโมง", "failure": "ไม่ตอบ inquiry / ตอบช้ากว่า SLA 4h / ตอบผิดประเด็น", "control": "ไม่มีระบบแจ้งเตือน SLA หรือ escalation อัตโนมัติ", "sev": 9, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": true, "status": "open"},
+{"id": 132, "client": "swift", "agent": "CS Agent", "step": "Tracking Update", "srcStep": "2. ส่ง tracking status", "req": "ส่ง tracking status update ให้ลูกค้าทุก milestone", "failure": "ไม่อัพเดต tracking / ลูกค้าไม่รู้สถานะสินค้า / push notification ล้มเหลว", "control": "ไม่มีระบบ push notification อัตโนมัติเมื่อ status เปลี่ยน", "sev": 8, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": true, "status": "open"},
+{"id": 133, "client": "swift", "agent": "CS Agent", "step": "Customer Response", "srcStep": "3. รับ complaint", "req": "รับ complaint และ escalate ภายใน 2 ชั่วโมง", "failure": "ไม่รับ complaint / escalate ล่าช้า / ปิด ticket โดยไม่แก้ปัญหา", "control": "ไม่มี escalation flow ที่ชัดเจนและ SLA ต่อ complaint type", "sev": 8, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": true, "status": "open"},
+{"id": 134, "client": "swift", "agent": "CS Agent", "step": "Tracking Update", "srcStep": "4. แจ้งเตือนสินค้าถึง", "req": "แจ้งเตือนเมื่อสินค้าถึงปลายทาง", "failure": "ไม่แจ้งเตือน / แจ้งผิด user_id / แจ้งก่อนส่งจริง", "control": "ไม่มีการ match user_id กับ shipment_id อย่างเคร่งครัด", "sev": 6, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": false, "status": "open"},
+{"id": 135, "client": "swift", "agent": "CS Agent", "step": "Customer Response", "srcStep": "5. ส่งลิงก์ POD review", "req": "ส่งลิงก์ LIFF POD review หลังส่งสำเร็จ", "failure": "ไม่ส่งลิงก์ review / ส่งลิงก์ที่ expired / ลูกค้าไม่ได้ให้คะแนน", "control": "ไม่มี trigger อัตโนมัติเมื่อ job_complete event เกิดขึ้น", "sev": 3, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": false, "status": "open"},
+{"id": 136, "client": "swift", "agent": "Driver Agent", "step": "GPS Pickup", "srcStep": "TC-DRIVER-01: Check-in จุดรับสินค้า", "req": "Check-in ณ จุดรับสินค้าก่อนรับสินค้า", "failure": "ไม่ check-in / check-in ณ ตำแหน่งผิด / check-in โดยไม่ไปจริง (ghost check-in)", "control": "GPS drift / ไม่มีระบบบังคับ check-in ก่อนเปิด manifest", "sev": 9, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": true, "status": "open"},
+{"id": 137, "client": "swift", "agent": "Driver Agent", "step": "GPS Pickup", "srcStep": "2. ยืนยัน manifest รับสินค้า", "req": "Scan barcode ยืนยัน manifest รับสินค้าครบ", "failure": "รับสินค้าโดยไม่ scan / scan ผิด barcode / รับผิดรายการหรือขาดรายการ", "control": "ไม่มีขั้นตอน barcode scan บังคับใน PWA ก่อนปิด pickup", "sev": 8, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": true, "status": "open"},
+{"id": 138, "client": "swift", "agent": "Driver Agent", "step": "In Transit", "srcStep": "3. อัพเดต GPS location", "req": "ส่ง GPS location ทุก 5 นาทีระหว่างขนส่ง", "failure": "ตัดการส่ง GPS / battery ตาย / ลูกค้าไม่สามารถ track รถได้", "control": "ไม่มีระบบ fallback หรือ alert เมื่อ GPS signal หาย", "sev": 6, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": false, "status": "open"},
+{"id": 139, "client": "swift", "agent": "Driver Agent", "step": "In Transit", "srcStep": "4. แจ้งเตือนออกนอกเส้นทาง", "req": "รับ alert เมื่อออกนอกเส้นทางที่กำหนด", "failure": "คนขับออกนอกเส้นทางโดยไม่แจ้ง dispatch / นำรถออกนอกเขตพื้นที่", "control": "ไม่มีระบบ geofence alert ใน driver app", "sev": 8, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": true, "status": "open"},
+{"id": 140, "client": "swift", "agent": "Driver Agent", "step": "Delivery", "srcStep": "5. ยืนยัน address", "req": "ยืนยัน address กับลูกค้าก่อนส่ง", "failure": "ส่งผิดบ้าน / ผิดชั้น / ผิดห้อง / ผิดอาคาร", "control": "ไม่มีขั้นตอนยืนยัน address สองชั้นก่อนส่งสินค้า", "sev": 9, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": true, "status": "open"},
+{"id": 141, "client": "swift", "agent": "Driver Agent", "step": "Delivery", "srcStep": "6. แจ้งก่อนถึง 30 นาที", "req": "โทรแจ้งลูกค้าก่อนถึง 30 นาที", "failure": "ไม่โทรแจ้ง / ลูกค้าไม่อยู่บ้าน / ต้องนัดใหม่ทำให้ cost เพิ่ม", "control": "ไม่มี script บังคับหรือ reminder ก่อนถึงจุดส่ง", "sev": 8, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": true, "status": "open"},
+{"id": 142, "client": "swift", "agent": "Driver Agent", "step": "POD Capture", "srcStep": "TC-DRIVER-03: ถ่ายรูป POD", "req": "ถ่ายรูปหลักฐาน POD ที่หน้าจุดส่ง", "failure": "ไม่ถ่ายรูป / รูปไม่ชัด / ถ่ายผิดสินค้า / ถ่ายในสถานที่ผิด", "control": "ไม่มีขั้นตอนบังคับถ่ายรูปก่อนปิด job ใน PWA", "sev": 9, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": true, "status": "open"},
+{"id": 143, "client": "swift", "agent": "Driver Agent", "step": "POD Capture", "srcStep": "8. รับลายเซ็น digital", "req": "รับลายเซ็น digital จากผู้รับจริง", "failure": "ไม่รับลายเซ็น / ลายเซ็นเป็นของคนอื่น / ลายเซ็น blank", "control": "ไม่มีการยืนยัน identity ผู้รับ / pad รับลายเซ็นไม่ responsive", "sev": 8, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": true, "status": "open"},
+{"id": 144, "client": "swift", "agent": "Driver Agent", "step": "POD Capture", "srcStep": "9. Upload POD ขึ้น server", "req": "Upload รูป + ลายเซ็น POD ขึ้น server สำเร็จ", "failure": "Upload ล้มเหลว / ข้อมูล POD สูญหาย / offline และไม่มี retry", "control": "ไม่มี retry logic และ offline queue ใน PWA", "sev": 8, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": true, "status": "open"},
+{"id": 145, "client": "swift", "agent": "Driver Agent", "step": "Damage Report", "srcStep": "10. รายงาน damage", "req": "รายงานความเสียหายระหว่างขนส่งทันที", "failure": "ไม่รายงาน damage / ซ่อนความเสียหาย / รายงานล่าช้าหลังส่งแล้ว", "control": "ไม่มีขั้นตอนบังคับ damage check ก่อนส่งสินค้า", "sev": 9, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": true, "status": "open"},
+{"id": 146, "client": "swift", "agent": "Driver Agent", "step": "Damage Report", "srcStep": "11. ถ่ายรูปสินค้าเสียหาย", "req": "ถ่ายรูปสินค้าเสียหายทุกด้านก่อนส่ง", "failure": "ไม่ถ่ายรูป / รูปไม่เพียงพอสำหรับการ claim ประกัน", "control": "ไม่มี checklist ถ่ายรูป 4 ด้านบังคับ", "sev": 8, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": true, "status": "open"},
+{"id": 147, "client": "swift", "agent": "Driver Agent", "step": "GPS Pickup", "srcStep": "12. บันทึก timestamp", "req": "บันทึก timestamp รับ/ส่งสินค้าถูกต้อง", "failure": "Timestamp ผิดพลาด / บันทึกย้อนหลัง / timezone ผิด", "control": "คนขับบันทึกเองโดยไม่มี server-side validation", "sev": 6, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": false, "status": "open"},
+{"id": 148, "client": "swift", "agent": "Warehouse Agent", "step": "Inbound Check", "srcStep": "1. Scan barcode สินค้าขาเข้า", "req": "Scan barcode สินค้าทุกรายการเมื่อเข้าคลัง", "failure": "ไม่ scan / scan ผิดรายการ / stock ไม่ตรงกับ manifest", "control": "ไม่มีขั้นตอน inbound barcode check บังคับ", "sev": 8, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": true, "status": "open"},
+{"id": 149, "client": "swift", "agent": "Warehouse Agent", "step": "Inbound Check", "srcStep": "2. ตรวจสอบ damage ขาเข้า", "req": "ตรวจสอบและบันทึกความเสียหายสินค้าขาเข้า", "failure": "ไม่ตรวจ / บันทึก damage ผิด / ไม่ถ่ายรูปหลักฐาน", "control": "ไม่มี damage checklist มาตรฐาน inbound", "sev": 9, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": true, "status": "open"},
+{"id": 150, "client": "swift", "agent": "Warehouse Agent", "step": "Storage", "srcStep": "3. จัด location สินค้าในคลัง", "req": "จัดสินค้าในตำแหน่งที่ถูกต้องและอัพเดต WMS", "failure": "จัดผิดตำแหน่ง / ไม่อัพเดต WMS / ไม่พบสินค้าเมื่อต้องจ่ายออก", "control": "ไม่มีระบบ WMS / จัดตำแหน่งด้วยความจำของพนักงาน", "sev": 6, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": false, "status": "open"},
+{"id": 151, "client": "swift", "agent": "Warehouse Agent", "step": "Outbound", "srcStep": "4. จ่ายสินค้าออก", "req": "จ่ายสินค้าออกถูกต้องตาม manifest", "failure": "จ่ายสินค้าผิดรายการ / จ่ายขาด / จ่ายเกิน", "control": "ไม่มีการ cross-check manifest กับ barcode scan ขาออก", "sev": 8, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": true, "status": "open"},
+{"id": 152, "client": "swift", "agent": "Warehouse Agent", "step": "Outbound", "srcStep": "5. อัพเดต stock", "req": "อัพเดต stock realtime หลังจ่ายสินค้าออก", "failure": "ไม่อัพเดต stock / stock ติดลบโดยไม่มีแจ้งเตือน / over-commit", "control": "ไม่มีระบบ real-time stock deduction และ low-stock alert", "sev": 6, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": false, "status": "open"},
+{"id": 153, "client": "swift", "agent": "QC Agent", "step": "Damage Inspection", "srcStep": "1. ตรวจ damage ทุก shipment", "req": "ตรวจสอบ damage report ทุก shipment", "failure": "ไม่ตรวจ / ผ่าน QC โดยไม่ได้ตรวจ / บันทึกผลผิดพลาด", "control": "ไม่มีระบบบังคับ QC step ก่อนปิด job", "sev": 9, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": true, "status": "open"},
+{"id": 154, "client": "swift", "agent": "QC Agent", "step": "Damage Inspection", "srcStep": "2. บันทึกผล QC", "req": "บันทึกผลการตรวจ QC ใน system ครบถ้วน", "failure": "บันทึกผิด / ไม่บันทึก / ข้อมูล QC สูญหาย", "control": "บันทึกบน paper form แทนระบบ digital", "sev": 8, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": true, "status": "open"},
+{"id": 155, "client": "swift", "agent": "QC Agent", "step": "QC Report", "srcStep": "3. ออก QC report", "req": "ออก QC report ให้ลูกค้าและผู้บริหาร", "failure": "ไม่ออก report / report ไม่ครบ / ล่าช้ากว่า SLA", "control": "ไม่มี template QC report มาตรฐานหรือ automation", "sev": 6, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": false, "status": "open"},
+{"id": 156, "client": "swift", "agent": "QC Agent", "step": "QC Report", "srcStep": "4. Escalate recurring issues", "req": "Escalate ถ้าพบ damage pattern ซ้ำซาก", "failure": "ไม่ escalate / ปัญหาเดิมซ้ำ / root cause ไม่ถูกแก้", "control": "ไม่มีระบบ track recurring QC issues หรือ trend analysis", "sev": 8, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": true, "status": "open"},
+{"id": 157, "client": "swift", "agent": "QC Agent", "step": "Damage Inspection", "srcStep": "5. ถ่ายรูปหลักฐาน QC", "req": "ถ่ายรูปหลักฐานทุกรายการที่ผ่าน QC", "failure": "ไม่ถ่ายรูป / รูปไม่ครบ / รูปไม่ชัดพอสำหรับ audit", "control": "ไม่มีขั้นตอน mandatory photo capture ใน QC checklist", "sev": 6, "occ": null, "det": null, "rpn": null, "rpnStatus": "severity_only", "priority": null, "review": true, "sevWarn": false, "status": "open"}];
+
+// Status stored per row id in localStorage
+function loadStatuses(){
+  try{return JSON.parse(localStorage.getItem('pfmea_statuses')||'{}')}catch(e){return{}}
+}
+function saveStatuses(s){localStorage.setItem('pfmea_statuses',JSON.stringify(s))}
+let statuses = loadStatuses();
+
+// ══════════════════════════════════════════════════════════
+// FILTER STATE
+// ══════════════════════════════════════════════════════════
+let fSev='all', fAgent='all', fStage='all', fStatus='all', fReview='all', fSearch='', fClient='all', sortCol='id', sortAsc=true;
+let expandedRow=null;
+
+// ══════════════════════════════════════════════════════════
+// AGENT MAP FOR STAGE FILTER
+// ══════════════════════════════════════════════════════════
+const STAGE_STEPS = {
+  'Sale': ['Sale'],
+  'Design': ['Area Measurement','Designer','3D_Presentation','3D_Rendering_Final'],
+  'Production': ['Production Planning','Laminate HPL','Cutting','Edging','CNC','Assembly','Packing'],
+  'Installation': ['การบรีฟงาน','การตรวจสอบระยะ','การติดตั้งโครงอลูมิเนียม','งานระบบไฟฟ้า','การติดตั้งผนัง','การติดตั้งอุปกรณ์ภายในตู้','การตรวจสอบหน้าบาน','การรักษาความสะอาด']
+};
+
+// ══════════════════════════════════════════════════════════
+// FILTER + SORT
+// ══════════════════════════════════════════════════════════
+function filterSev(el, val){
+  document.querySelectorAll('.sev-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  fSev=val; applyFilters();
+}
+function filterAgent(el, val){
+  document.querySelectorAll('.agent-stat').forEach(c=>c.classList.remove('active-agent'));
+  el.classList.add('active-agent');
+  fAgent=val; applyFilters();
+}
+function filterClient(el, val){
+  document.querySelectorAll('.client-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  fClient=val; applyFilters();
+}
+function applyFilters(){
+  fStage=document.getElementById('filter-stage').value;
+  fStatus=document.getElementById('filter-status').value;
+  fReview=document.getElementById('filter-review').value;
+  fSearch=document.getElementById('search-input').value.toLowerCase().trim();
+  renderTable();
+}
+function resetFilters(){
+  fSev='all';fAgent='all';fStage='all';fStatus='all';fReview='all';fSearch='';fClient='all';
+  document.querySelectorAll('.client-chip').forEach(c=>c.classList.remove('active'));
+  document.querySelector('.client-chip.all').classList.add('active');
+  document.querySelectorAll('.sev-chip').forEach(c=>c.classList.remove('active'));
+  document.querySelector('.sev-chip.all').classList.add('active');
+  document.querySelectorAll('.agent-stat').forEach(c=>c.classList.remove('active-agent'));
+  document.querySelector('[data-agent="all"]').classList.add('active-agent');
+  document.getElementById('filter-stage').value='all';
+  document.getElementById('filter-status').value='all';
+  document.getElementById('filter-review').value='all';
+  document.getElementById('search-input').value='';
+  renderTable();
+}
+
+function getStatus(id){return statuses[id]||'open'}
+function setStatus(id, val){
+  statuses[id]=val;
+  saveStatuses(statuses);
+  document.getElementById('ssel-'+id).value=val;
+  document.getElementById('ssel-'+id).className='status-sel '+val;
+  updateStats();
+}
+
+function filteredRows(){
+  return PFMEA_DATA.filter(r=>{
+    const st=getStatus(r.id);
+    if(fSev!=='all'){if(fSev==='null'){if(r.sev!==null)return false;}else if(r.sev!==parseInt(fSev))return false;}
+    if(fAgent!=='all'&&r.agent!==fAgent)return false;
+    if(fClient!=='all'&&(r.client||'daph')!==fClient)return false;
+    if(fStage!=='all'){const steps=STAGE_STEPS[fStage]||[];if(!steps.includes(r.step))return false;}
+    if(fStatus!=='all'&&st!==fStatus)return false;
+    if(fReview==='yes'&&!r.review)return false;
+    if(fReview==='no'&&r.review)return false;
+    if(fSearch){
+      const combined=(r.req+r.failure+r.step+r.agent+r.control).toLowerCase();
+      if(!combined.includes(fSearch))return false;
+    }
+    return true;
+  });
+}
+function sortedRows(rows){
+  return [...rows].sort((a,b)=>{
+    let av=a[sortCol],bv=b[sortCol];
+    if(sortCol==='status'){av=getStatus(a.id);bv=getStatus(b.id);}
+    if(av===null&&bv===null)return 0;
+    if(av===null)return 1;if(bv===null)return -1;
+    if(typeof av==='string')return sortAsc?av.localeCompare(bv,'th'):bv.localeCompare(av,'th');
+    return sortAsc?av-bv:bv-av;
+  });
+}
+function sortBy(col){sortAsc=sortCol===col?!sortAsc:true;sortCol=col;renderTable();}
+
+// ══════════════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════════════
+function sevBadge(s){if(!s)return'<span class="sev-badge sev-null">N/A</span>';return`<span class="sev-badge sev-${s}">Sev ${s}${s>=9?' 🔴':s>=8?' 🟠':s>=6?' 🟡':' 🟢'}</span>`;}
+function agentBadge(a){const cls={'Sale Agent':'ag-sale','Designer Agent':'ag-designer','Factory Agent':'ag-factory','Install Agent':'ag-install'}[a]||'ag-sale';return`<span class="agent-badge ${cls}">${a}</span>`;}
+
+function renderTable(){
+  const rows=sortedRows(filteredRows());
+  document.getElementById('filter-count').textContent=`${rows.length} / ${PFMEA_DATA.length} rows`;
+  const tbody=document.getElementById('table-body');
+  if(!rows.length){
+    tbody.innerHTML='';
+    document.getElementById('empty-state').style.display='block';
+    return;
+  }
+  document.getElementById('empty-state').style.display='none';
+
+  tbody.innerHTML=rows.map(r=>{
+    const st=getStatus(r.id);
+    const isCrit=r.sev&&r.sev>=9;
+    const fail=r.failure.length>80?r.failure.slice(0,80)+'…':r.failure;
+    const req=r.req.length>60?r.req.slice(0,60)+'…':r.req;
+    return `<tr class="${isCrit?'row-critical':''}" id="row-${r.id}">
+      <td class="td-id" style="cursor:pointer;color:var(--purple);text-decoration:underline" onclick="toggleDetail(${r.id})">#${r.id}</td>
+      <td>${agentBadge(r.agent)}</td>
+      <td style="font-size:11px;white-space:nowrap;color:var(--muted)">${r.step}</td>
+      <td class="req-text">${req}</td>
+      <td class="fail-text">${fail}</td>
+      <td>${sevBadge(r.sev)}</td>
+      <td style="font-size:11px;color:var(--muted)">${r.rpn||'—'}</td>
+      <td>${r.review?'<span class="review-flag">⚠️ Required</span>':'<span style="font-size:11px;color:var(--muted)">—</span>'}</td>
+      <td><select class="status-sel ${st}" id="ssel-${r.id}" onchange="setStatus(${r.id},this.value)">
+        <option value="open" ${st==='open'?'selected':''}>🔵 Open</option>
+        <option value="in_progress" ${st==='in_progress'?'selected':''}>🟡 In Progress</option>
+        <option value="resolved" ${st==='resolved'?'selected':''}>🟢 Resolved</option>
+        <option value="na" ${st==='na'?'selected':''}>⚪ N/A</option>
+      </select></td>
+    </tr>
+    <tr id="detail-${r.id}" style="display:none" class="detail-row">
+      <td colspan="9">
+        <div class="detail-grid">
+          <div class="detail-item"><label>Requirement</label><p>${r.req}</p></div>
+          <div class="detail-item"><label>Failure Mode</label><p>${r.failure}</p></div>
+          <div class="detail-item"><label>Cause</label><p>${r.cause}</p></div>
+          <div class="detail-item"><label>Control Measure</label><p>${r.control}</p></div>
+          <div class="detail-item"><label>Process Step</label><p>${r.step} → ${r.srcStep}</p></div>
+          <div class="detail-item"><label>RPN Status</label><p>${r.rpnStatus} | OCC: ${r.occ||'—'} | DET: ${r.det||'—'} | RPN: ${r.rpn||'—'}</p></div>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+  updateStats();
+}
+
+function toggleDetail(id){
+  const el=document.getElementById('detail-'+id);
+  if(!el)return;
+  const visible=el.style.display!=='none';
+  if(expandedRow!==null&&expandedRow!==id){
+    const prev=document.getElementById('detail-'+expandedRow);
+    if(prev)prev.style.display='none';
+  }
+  el.style.display=visible?'none':'table-row';
+  expandedRow=visible?null:id;
+}
+
+// ══════════════════════════════════════════════════════════
+// STATS UPDATE
+// ══════════════════════════════════════════════════════════
+function updateStats(){
+  const open=PFMEA_DATA.filter(r=>getStatus(r.id)==='open').length;
+  const resolved=PFMEA_DATA.filter(r=>getStatus(r.id)==='resolved').length;
+  document.getElementById('st-open').textContent=open;
+  document.getElementById('st-resolved').textContent=resolved;
+}
+
+// ══════════════════════════════════════════════════════════
+// SORT HEADERS
+// ══════════════════════════════════════════════════════════
+function updateSortHeaders(){
+  document.querySelectorAll('thead th').forEach(th=>{
+    th.classList.remove('sorted-asc','sorted-desc');
+    const cols=['id','agent','step','req','failure','sev','rpn','review','status'];
+    const col=cols[Array.from(th.parentElement.children).indexOf(th)];
+    if(col===sortCol)th.classList.add(sortAsc?'sorted-asc':'sorted-desc');
+  });
+}
+
+const _origRenderTable=renderTable.bind({});
+const renderTable2=function(){_origRenderTable();updateSortHeaders();};
+Object.assign(window,{renderTable:renderTable2});
+
+// ══════════════════════════════════════════════════════════
+// EXPORT CSV
+// ══════════════════════════════════════════════════════════
+function exportCSV(){
+  const rows=filteredRows();
+  const headers=['ID','Agent','ProcessStep','Requirement','FailureMode','Sev','RPN','RpnStatus','ReviewRequired','Status'];
+  const lines=[headers.join(',')];
+  rows.forEach(r=>{
+    const st=getStatus(r.id);
+    const vals=[r.id,r.agent,r.step,'"'+r.req.replace(/"/g,'""')+'"','"'+r.failure.replace(/"/g,'""')+'"',r.sev||'',r.rpn||'',r.rpnStatus,r.review?'Yes':'No',st];
+    lines.push(vals.join(','));
+  });
+  const blob=new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`pfmea_export_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+document.querySelector('[data-agent="all"]').classList.add('active-agent');
+renderTable2();
+</script>
+</body>
+</html>

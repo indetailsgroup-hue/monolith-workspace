@@ -1,0 +1,260 @@
+name: Production Migration Apply (guarded)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type APPLY for writes or VERIFY for read-only post-apply recovery verification
+        required: true
+        type: string
+      expected_commit:
+        description: Exact main commit SHA that passed the no-write reconciliation
+        required: true
+        type: string
+      expected_missing_migrations:
+        description: Exact pending migration count from the reviewed no-write plan
+        required: true
+        type: string
+      expected_recorded_merged_versions:
+        description: Exact recorded merged-source version count from the reviewed no-write plan
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-database-write
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    name: Reconcile and apply reviewed production migrations
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      SUPABASE_PROJECT_REF: ${{ secrets.MONOLITH_SUPABASE_PROJECT_REF }}
+      MIGRATION_BACKUP_KEY: ${{ secrets.MIGRATION_BACKUP_KEY }}
+
+    steps:
+      - name: Validate explicit authorization and target
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          EXPECTED_MISSING_MIGRATIONS: ${{ inputs.expected_missing_migrations }}
+          EXPECTED_RECORDED_MERGED_VERSIONS: ${{ inputs.expected_recorded_merged_versions }}
+        run: |
+          if [ "$CONFIRMATION" != 'APPLY' ] && [ "$CONFIRMATION" != 'VERIFY' ]; then
+            echo "::error::confirmation must be exactly APPLY or VERIFY"
+            exit 1
+          fi
+          if [ "$EXPECTED_COMMIT" != "$GITHUB_SHA" ]; then
+            echo "::error::expected_commit does not match the selected main commit"
+            exit 1
+          fi
+          if [[ ! "$EXPECTED_MISSING_MIGRATIONS" =~ ^[0-9]+$ ]]; then
+            echo "::error::expected_missing_migrations must be a non-negative integer"
+            exit 1
+          fi
+          if [ "$CONFIRMATION" = 'APPLY' ] && [ "$EXPECTED_MISSING_MIGRATIONS" -eq 0 ]; then
+            echo "::error::APPLY requires at least one pending migration"
+            exit 1
+          fi
+          if [ "$CONFIRMATION" = 'VERIFY' ] && [ "$EXPECTED_MISSING_MIGRATIONS" -ne 0 ]; then
+            echo "::error::VERIFY requires expected_missing_migrations=0"
+            exit 1
+          fi
+          if [[ ! "$EXPECTED_RECORDED_MERGED_VERSIONS" =~ ^[0-9]+$ ]]; then
+            echo "::error::expected_recorded_merged_versions must be a non-negative integer"
+            exit 1
+          fi
+          if [ -z "$DATABASE_URL" ] || [ -z "$SUPABASE_PROJECT_REF" ]; then
+            echo "::error::DATABASE_URL and SUPABASE_PROJECT_REF are required"
+            exit 1
+          fi
+          if [ "$CONFIRMATION" = 'APPLY' ] && [ -z "$MIGRATION_BACKUP_KEY" ]; then
+            echo "::error::MIGRATION_BACKUP_KEY is required for APPLY"
+            exit 1
+          fi
+          if [[ "$DATABASE_URL" != postgres://* && "$DATABASE_URL" != postgresql://* ]]; then
+            echo "::error::DATABASE_URL must be a full PostgreSQL connection URI"
+            exit 1
+          fi
+          if [[ "$DATABASE_URL" != *"$SUPABASE_PROJECT_REF"* ]]; then
+            echo "::error::DATABASE_URL does not target SUPABASE_PROJECT_REF"
+            exit 1
+          fi
+
+      - name: Checkout reviewed main commit
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
+        with:
+          version: 2.116.0
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends postgresql-client
+
+      - name: Render exact canonical migration bundle
+        run: bash scripts/create_production_bootstrap_plan.sh production-plan
+
+      - name: Capture read-only pre-apply inventory
+        env:
+          PGOPTIONS: '-c default_transaction_read_only=on'
+        run: |
+          bash scripts/capture_hosted_bootstrap_inventory.sh \
+            evidence/pre-apply-inventory.json
+
+      - name: Reconcile hosted history immediately before apply
+        env:
+          EXPECTED_MISSING_MIGRATIONS: ${{ inputs.expected_missing_migrations }}
+          EXPECTED_RECORDED_MERGED_VERSIONS: ${{ inputs.expected_recorded_merged_versions }}
+        run: |
+          node scripts/compare_hosted_migration_inventory.mjs \
+            evidence/pre-apply-inventory.json \
+            production-plan/migration-manifest.tsv \
+            production-plan/duplicate-version-map.tsv \
+            evidence/pre-apply-reconciliation.json \
+            evidence/pre-apply-reconciliation.md
+
+          jq -e \
+            --argjson expectedMissing "$EXPECTED_MISSING_MIGRATIONS" \
+            --argjson expectedMerged "$EXPECTED_RECORDED_MERGED_VERSIONS" '
+            .historyOrderingCandidate == true
+            and .canonicalVersionsMissing == $expectedMissing
+            and .historicalGapCount == 0
+            and (.hostedVersionsNotCanonical | length) == 0
+            and (.duplicateHostedVersions | length) == 0
+            and .mergedVersionRiskCount == $expectedMerged
+            and .productionWritesPerformed == false
+          ' evidence/pre-apply-reconciliation.json > /dev/null
+
+          jq -e '.transactionReadOnly == true' \
+            evidence/pre-apply-inventory.json > /dev/null
+
+          jq -e --arg commit "$GITHUB_SHA" '
+            .sourceCommit == $commit
+            and .renderedDuplicateVersions == 0
+            and .renderedMigrationFiles > 0
+            and .productionWritesPerformed == false
+          ' production-plan/plan-summary.json > /dev/null
+
+      - name: Create encrypted pre-apply logical backup
+        if: inputs.confirmation == 'APPLY'
+        env:
+          PGOPTIONS: '-c default_transaction_read_only=on'
+        run: |
+          docker run --rm \
+            -e DATABASE_URL \
+            -e PGOPTIONS \
+            -v "$PWD/evidence:/output" \
+            postgres:17 \
+            sh -ceu 'pg_dump "$DATABASE_URL" \
+              --format=custom \
+              --no-owner \
+              --no-privileges \
+              --file=/output/pre-apply-backup.dump'
+
+          openssl enc -aes-256-cbc -salt -pbkdf2 \
+            -in evidence/pre-apply-backup.dump \
+            -out evidence/pre-apply-backup.dump.enc \
+            -pass env:MIGRATION_BACKUP_KEY
+
+          rm -f evidence/pre-apply-backup.dump
+          test -s evidence/pre-apply-backup.dump.enc
+
+      - name: Preview the exact pending migration set
+        if: inputs.confirmation == 'APPLY'
+        working-directory: production-plan
+        run: |
+          set -o pipefail
+          supabase db push \
+            --db-url "$DATABASE_URL" \
+            --include-all \
+            --dry-run 2>&1 | tee ../evidence/db-push-dry-run.txt
+
+      - name: Apply reviewed migrations to production
+        if: inputs.confirmation == 'APPLY'
+        working-directory: production-plan
+        run: |
+          set -o pipefail
+          supabase --yes db push \
+            --db-url "$DATABASE_URL" \
+            --include-all 2>&1 | tee ../evidence/db-push-apply.txt
+
+      - name: Capture and enforce post-apply database state
+        run: |
+          bash scripts/capture_hosted_bootstrap_inventory.sh \
+            evidence/post-apply-inventory.json
+
+          node scripts/compare_hosted_migration_inventory.mjs \
+            evidence/post-apply-inventory.json \
+            production-plan/migration-manifest.tsv \
+            production-plan/duplicate-version-map.tsv \
+            evidence/post-apply-reconciliation.json \
+            evidence/post-apply-reconciliation.md
+
+          # Count only duplicate-source versions that survive normalization as
+          # canonical manifest versions. For example, source version 20260828
+          # is folded into canonical 0172 and must not be expected in hosted
+          # migration history as a separate recorded version.
+          EXPECTED_POST_MERGED_VERSIONS="$(awk -F '\t' '
+            NR == FNR {
+              if (FNR > 1) canonical[$2] = 1
+              next
+            }
+            FNR > 1 && ($1 in canonical) { count++ }
+            END { print count + 0 }
+          ' production-plan/migration-manifest.tsv \
+            production-plan/duplicate-version-map.tsv)"
+
+          jq -e --argjson expectedMerged "$EXPECTED_POST_MERGED_VERSIONS" '
+            .historyOrderingCandidate == true
+            and .canonicalVersionsMissing == 0
+            and .historicalGapCount == 0
+            and (.hostedVersionsNotCanonical | length) == 0
+            and (.duplicateHostedVersions | length) == 0
+            and .mergedVersionRiskCount == $expectedMerged
+          ' evidence/post-apply-reconciliation.json > /dev/null
+
+          jq -e '
+            .coreTables.organizations == true
+            and .coreTables.orgMembers == true
+            and .coreTables.superAdmins == true
+            and .coreTables.notificationDigestQueue == true
+            and .coreTables.platformMetricsSnapshots == true
+            and .securityState.notificationDigestQueueRls == true
+            and .securityState.notificationDigestQueuePolicy == true
+            and .securityState.notificationDigestQueuePermissiveBypass == false
+            and .securityState.platformMetricsSnapshotsRls == true
+            and .securityState.platformMetricsSelectPolicy == true
+            and .securityState.platformMetricsInsertPolicy == true
+          ' evidence/post-apply-inventory.json > /dev/null
+
+      - name: Enforce hosted public database lint
+        run: |
+          set -o pipefail
+          supabase db lint \
+            --db-url "$DATABASE_URL" \
+            --schema public \
+            --level error \
+            --fail-on error 2>&1 | tee evidence/post-apply-db-lint.txt
+
+      - name: Upload non-secret deployment evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-migration-apply-${{ github.sha }}
+          path: |
+            evidence/
+            production-plan/plan-summary.json
+            production-plan/migration-manifest.tsv
+            production-plan/duplicate-version-map.tsv
+            production-plan/semantic-version-map.tsv
+          retention-days: 30
