@@ -58,7 +58,7 @@ Open a PR and verify actual Actions on its head SHA. Required branch-protection 
 
 | Destination | Deployment mechanism | Acceptance evidence |
 |---|---|---|
-| [GitHub Pages](https://indetailsgroup-hue.github.io/monolith-workspace/) | deploy-docs-pages.yml and auto-deploy-scispace.yml both use deploy-pages | Successful deployment run, deployed SHA/artifact, live content |
+| [GitHub Pages](https://indetailsgroup-hue.github.io/monolith-workspace/docs/) | field-app-pages.yml is the only deploy-pages workflow; it publishes the Field PWA (/), Designer (/designer/) and this site (/docs/) together | Successful deployment run, deployed SHA/artifact, live content |
 | [SciSpace site](https://0ly1b489.scispace.co/) | Separate SciSpace publishing process | SciSpace publication evidence and independently checked live content |
 
 The workflow named Auto-Deploy SciSpace Site does **not** publish to scispace.co. A reachable old site is not proof that the PR was deployed. Record pending/skipped/failed runs as observed. Lighthouse requires performance≥70 and accessibility≥90; reports/comments must be preserved before the final gate fails.

@@ -4,7 +4,7 @@
 # then posts a formatted comment to the associated PR (if any).
 #
 # Triggers:
-#   - workflow_run: fires when "Deploy Manufacturing OS Docs to GitHub Pages" completes (success only)
+#   - workflow_run: fires when "Deploy GitHub Pages" completes (success only)
 #   - workflow_dispatch: manual run with optional URL override
 # ──────────────────────────────────────────────────────────────────────────────
 name: Lighthouse Audit
@@ -12,8 +12,7 @@ name: Lighthouse Audit
 on:
   workflow_run:
     workflows:
-      - "Deploy Manufacturing OS Docs to GitHub Pages"
-      - "Auto-Deploy SciSpace Site"
+      - "Deploy GitHub Pages"
     types:
       - completed
 
@@ -30,7 +29,7 @@ permissions:
   actions: read
 
 env:
-  DEFAULT_URL: "https://indetailsgroup-hue.github.io/monolith-workspace/"
+  DEFAULT_URL: "https://indetailsgroup-hue.github.io/monolith-workspace/docs/"
 
 jobs:
   lighthouse:
