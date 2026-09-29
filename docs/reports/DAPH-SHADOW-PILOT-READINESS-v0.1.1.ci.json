@@ -1,0 +1,110 @@
+[
+  {
+    "name": "Run pgTAP suites against fresh Supabase DB",
+    "head_sha": "dae8afd108444ae30ae7e9465cceb068f3ec49cc",
+    "status": "completed",
+    "conclusion": "success",
+    "html_url": "https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/36562134070/job/109385732881",
+    "started_at": "2026-09-29T11:31:32Z",
+    "completed_at": "2026-09-29T11:38:16Z"
+  },
+  {
+    "name": "Storybook Build (CI verify)",
+    "head_sha": "dae8afd108444ae30ae7e9465cceb068f3ec49cc",
+    "status": "completed",
+    "conclusion": "success",
+    "html_url": "https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/36562133912/job/109385470824",
+    "started_at": "2026-09-29T11:30:46Z",
+    "completed_at": "2026-09-29T11:31:44Z"
+  },
+  {
+    "name": "Auto-merge patch Storybook / Vitest PRs",
+    "head_sha": "dae8afd108444ae30ae7e9465cceb068f3ec49cc",
+    "status": "completed",
+    "conclusion": "skipped",
+    "html_url": "https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/36562134200/job/109385271784",
+    "started_at": "2026-09-29T11:30:11Z",
+    "completed_at": "2026-09-29T11:30:10Z"
+  },
+  {
+    "name": "deep absence re-verification (schedule + on demand)",
+    "head_sha": "dae8afd108444ae30ae7e9465cceb068f3ec49cc",
+    "status": "completed",
+    "conclusion": "skipped",
+    "html_url": "https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/36562134106/job/109385271250",
+    "started_at": "2026-09-29T11:30:11Z",
+    "completed_at": "2026-09-29T11:30:10Z"
+  },
+  {
+    "name": "TypeScript Type Check",
+    "head_sha": "dae8afd108444ae30ae7e9465cceb068f3ec49cc",
+    "status": "completed",
+    "conclusion": "success",
+    "html_url": "https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/36562133912/job/109385271049",
+    "started_at": "2026-09-29T11:30:13Z",
+    "completed_at": "2026-09-29T11:30:44Z"
+  },
+  {
+    "name": "Unit Tests (people + culture)",
+    "head_sha": "dae8afd108444ae30ae7e9465cceb068f3ec49cc",
+    "status": "completed",
+    "conclusion": "success",
+    "html_url": "https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/36562133912/job/109385270739",
+    "started_at": "2026-09-29T11:30:13Z",
+    "completed_at": "2026-09-29T11:30:55Z"
+  },
+  {
+    "name": "claim + certification linters (local mode)",
+    "head_sha": "dae8afd108444ae30ae7e9465cceb068f3ec49cc",
+    "status": "completed",
+    "conclusion": "success",
+    "html_url": "https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/36562134106/job/109385269319",
+    "started_at": "2026-09-29T11:30:12Z",
+    "completed_at": "2026-09-29T11:30:30Z"
+  },
+  {
+    "name": "vendored skill provenance + installer guards (Windows)",
+    "head_sha": "dae8afd108444ae30ae7e9465cceb068f3ec49cc",
+    "status": "completed",
+    "conclusion": "success",
+    "html_url": "https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/36562133975/job/109385268472",
+    "started_at": "2026-09-29T11:30:12Z",
+    "completed_at": "2026-09-29T11:30:40Z"
+  },
+  {
+    "name": "npm audit — server dependencies",
+    "head_sha": "dae8afd108444ae30ae7e9465cceb068f3ec49cc",
+    "status": "completed",
+    "conclusion": "success",
+    "html_url": "https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/36562133974/job/109385268375",
+    "started_at": "2026-09-29T11:30:12Z",
+    "completed_at": "2026-09-29T11:30:31Z"
+  },
+  {
+    "name": "Chromatic — Playwright Visual Snapshots",
+    "head_sha": "dae8afd108444ae30ae7e9465cceb068f3ec49cc",
+    "status": "completed",
+    "conclusion": "success",
+    "html_url": "https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/36562133811/job/109385268112",
+    "started_at": "2026-09-29T11:30:12Z",
+    "completed_at": "2026-09-29T11:32:24Z"
+  },
+  {
+    "name": "Storybook Build Verify (pre-Chromatic)",
+    "head_sha": "dae8afd108444ae30ae7e9465cceb068f3ec49cc",
+    "status": "completed",
+    "conclusion": "success",
+    "html_url": "https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/36562133811/job/109385268002",
+    "started_at": "2026-09-29T11:30:12Z",
+    "completed_at": "2026-09-29T11:31:08Z"
+  },
+  {
+    "name": "Chromatic — Visual Regression (People & Culture)",
+    "head_sha": "dae8afd108444ae30ae7e9465cceb068f3ec49cc",
+    "status": "completed",
+    "conclusion": "success",
+    "html_url": "https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/36562133811/job/109385267688",
+    "started_at": "2026-09-29T11:30:12Z",
+    "completed_at": "2026-09-29T11:31:16Z"
+  }
+]

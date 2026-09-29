@@ -60,7 +60,7 @@ ul,ol{padding-left:1.5em}li{margin:.3em 0}
 <li><strong>ฐานโค้ดที่ตรวจ:</strong> <code>main</code> @ <code>5dc57e10</code></li>
 <li><strong>ขอบเขต:</strong> Daph ใช้ Monolith ติดตามบ้านจริง 1 หลัง ข้อมูลเก็บบน server ส่วนโรงงานยังตัดตามใบสั่งเดิม (<code>SHADOW_MODE_NOT_FOR_PRODUCTION = true</code>, packet ออกผลได้เฉพาะ <code>NO_CUT</code>)</li>
 </ul>
-<blockquote><p>แผนนี้ต่อยอดจากรายงาน <code>DAPH-SHADOW-PILOT-READINESS-v0.1</code> ซึ่ง ณ วันที่เขียนยังอยู่ใน working tree ของ checkout หลัก และยังไม่ได้ merge เข้า <code>main</code></p></blockquote>
+<blockquote><p>แผนนี้ต่อยอดจากรายงาน <a href="DAPH-SHADOW-PILOT-READINESS-v0.1.1.th.html">DAPH-SHADOW-PILOT-READINESS-v0.1.1</a> (<a href="DAPH-SHADOW-PILOT-READINESS-v0.1.1.en.html">EN</a>) ซึ่งอยู่ใน PR เดียวกัน v0.1.1 ปรับเฉพาะถ้อยคำจาก v0.1 ให้ผ่าน guardrail ของ repo เนื้อหาเดิมไม่เปลี่ยน</p></blockquote>
 <h2>1. ใช้แผนนี้อย่างไร</h2>
 <ul>
 <li>เป็น<strong>กรอบสำรวจและเตรียม pilot</strong> ไม่ใช่คำรับปากขอบเขตหรืองบ</li>
@@ -125,8 +125,8 @@ ul,ol{padding-left:1.5em}li{margin:.3em 0}
 <div class="tablewrap"><table><thead><tr><th>งาน</th><th>วัน</th><th>เสร็จเมื่อ</th></tr></thead><tbody>
 <tr><td>5.1 จับคู่รหัสวัสดุและอุปกรณ์เฉพาะที่บ้านทดลองใช้</td><td>1.5–2.5</td><td>ทุกชิ้นของบ้านทดลองมีรหัสในระบบ</td></tr>
 <tr><td>5.2 อบรมผู้ใช้ 3–5 คน</td><td>1–2</td><td>แต่ละคนทำขั้นตอนของตัวเองได้</td></tr>
-<tr><td>5.3 แบบฟอร์มบันทึกส่วนต่าง (ตามหัวข้อ 8 ของรายงาน v0.1)</td><td>0.5</td><td>พร้อมใช้</td></tr>
-<tr><td>5.4 ซ้อม UAT 17 ขั้น (ตามหัวข้อ 9 ของรายงาน v0.1)</td><td>1.5–3</td><td>ทุกขั้นมีหลักฐาน และไม่นับขั้นที่ถูกข้ามว่าผ่าน</td></tr>
+<tr><td>5.3 แบบฟอร์มบันทึกส่วนต่าง (ตามหัวข้อ 8 ของรายงาน v0.1.1)</td><td>0.5</td><td>พร้อมใช้</td></tr>
+<tr><td>5.4 ซ้อม UAT 17 ขั้น (ตามหัวข้อ 9 ของรายงาน v0.1.1)</td><td>1.5–3</td><td>ทุกขั้นมีหลักฐาน และไม่นับขั้นที่ถูกข้ามว่าผ่าน</td></tr>
 <tr><td>5.5 ซ้อมเทียบยอดการเงินกับบัญชีเดิม</td><td>0.5–1</td><td>ยอดตรงกัน หรืออธิบายส่วนต่างได้</td></tr>
 </tbody></table></div>
 <h2>9. WP6 — เงินเผื่อแก้ข้อบกพร่องระหว่าง UAT (วิศวกร 3–6 วัน)</h2>
@@ -174,6 +174,7 @@ ul,ol{padding-left:1.5em}li{margin:.3em 0}
 <ol>
 <li>1.2 เปลี่ยนจาก "ทำแล้ว" เป็น "แก้โค้ดแล้วใน PR #127 รอ merge และ deploy" เพราะระบบจริงยังไม่เปลี่ยน</li>
 <li>แนบหลักฐาน Pages 404 เป็นลิงก์ run, SHA ที่ deploy และผลตรวจหน้าเว็บพร้อมเวลา แทนข้อความเล่าประวัติ</li>
+<li>เปลี่ยนการอ้างอิงรายงาน v0.1 (ซึ่งอยู่นอก repo) เป็นลิงก์ไปที่ v0.1.1 ใน PR เดียวกัน</li>
 </ol>
 </main></body>
 </html>

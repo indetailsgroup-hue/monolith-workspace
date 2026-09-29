@@ -5,7 +5,7 @@
 - **Code checked:** `main` @ `5dc57e10`
 - **Scope:** Daph uses Monolith to track one real house, with data stored on the server. The factory still cuts from its existing work orders (`SHADOW_MODE_NOT_FOR_PRODUCTION = true`; the packet verifier can only return `NO_CUT`).
 
-> This plan builds on `DAPH-SHADOW-PILOT-READINESS-v0.1`. On the date of writing that report sits in the main checkout's working tree and has not been merged into `main`.
+> This plan builds on [DAPH-SHADOW-PILOT-READINESS-v0.1.1](DAPH-SHADOW-PILOT-READINESS-v0.1.1.en.md) ([TH](DAPH-SHADOW-PILOT-READINESS-v0.1.1.th.md)), in the same PR. v0.1.1 only rewords v0.1 to pass the repo guardrails; its substance is unchanged.
 
 ## 1. How to use this plan
 
@@ -87,8 +87,8 @@
 |---|---|---|
 | 5.1 Map material and hardware codes used by the pilot house | 1.5–2.5 | Every part of the pilot house has a code in the system |
 | 5.2 Train 3–5 users | 1–2 | Each person can do their own steps |
-| 5.3 Discrepancy record form (per section 8 of the v0.1 report) | 0.5 | Ready to use |
-| 5.4 Rehearse the 17-step UAT (per section 9 of the v0.1 report) | 1.5–3 | Every step has evidence; a skipped step never counts as passed |
+| 5.3 Discrepancy record form (per section 8 of the v0.1.1 report) | 0.5 | Ready to use |
+| 5.4 Rehearse the 17-step UAT (per section 9 of the v0.1.1 report) | 1.5–3 | Every step has evidence; a skipped step never counts as passed |
 | 5.5 Rehearse reconciling finance against the existing ledger | 0.5–1 | Totals match, or the difference is explained |
 
 ## 9. WP6 — Contingency for defects found in UAT (3–6 engineer-days)
@@ -138,3 +138,4 @@ Real cutting and machine calibration, ADR-064 sign-off, S17 closure, inventory, 
 **v0.2 second revision** (after the second review)
 1. 1.2 changed from "Done" to "Code fixed in PR #127, awaiting merge and deploy", because the live system has not changed yet.
 2. The Pages 404 fact now cites run links, the deployed SHAs and a timestamped live check instead of a narrative.
+3. References to the v0.1 report (outside the repo) now link to v0.1.1 in the same PR.

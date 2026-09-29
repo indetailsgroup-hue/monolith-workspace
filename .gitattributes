@@ -29,3 +29,5 @@ src/packet-verifier/interop/fixtures/*.json -text
 # Kept outside docs/ on purpose: these are quoted historical transcripts, not
 # authored claims, and tools/lint_claims.py does not finish on files this size.
 archive/scispace-monolith-chats-2026-09-29/** -text
+# DAPH shadow-pilot readiness report: byte-exact so the sha256 values in its evidence.json verify.
+docs/reports/DAPH-SHADOW-PILOT-READINESS-* -text
