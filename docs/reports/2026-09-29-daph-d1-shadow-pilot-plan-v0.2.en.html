@@ -77,7 +77,7 @@ ul,ol{padding-left:1.5em}li{margin:.3em 0}
 <tr><td><code>jobs</code> was removed from realtime on purpose, to stop cross-organisation leaks</td><td><code>supabase/migrations/0173_rls_isolation_hardening.sql</code>, section F6</td></tr>
 <tr><td><code>useCreateJobSubmit.ts</code> posts to <code>/rest/v1/job</code> with the anon key as the Bearer token, and in source only <code>src/jobs/index.ts</code> references the hook</td><td><code>src/jobs/useCreateJobSubmit.ts:133–139</code>; searched with <code>git grep useCreateJobSubmit -- src</code></td></tr>
 <tr><td>Three <code>0190</code> migrations share a number; CI merges duplicates before testing</td><td><code>scripts/prepare_supabase_migrations_ci.sh --merge-duplicates</code> in <code>pgtap-tests.yml</code> and <code>db-verify.yml</code></td></tr>
-<tr><td>Three workflows deployed GitHub Pages over one another, so <code>/designer/</code> and the Field PWA return 404</td><td>Run history: last field-app deploy 13 Sep, docs deploy 21 Sep; the live root serves the docs site (checked 29 Sep). Fixed in PR #127</td></tr>
+<tr><td>Three workflows deployed GitHub Pages over one another, so <code>/designer/</code> and the Field PWA return 404</td><td><code>github-pages</code> deployment history (Deployments API): last field-app deploy 2026-09-13 <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34731453999" target="_blank" rel="noopener">run 34731453999</a> at <code>13de5d1b</code>; docs deploy on top of it 2026-09-21 <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/35594892612" target="_blank" rel="noopener">run 35594892612</a> at <code>62651733</code>. Live check 2026-09-29T12:59Z: <code>/</code> = 200 (docs site v2.0.0 title), <code>/designer/</code> = 404, <code>/manifest.webmanifest</code> = 404. Commands: <code>gh api repos/indetailsgroup-hue/monolith-workspace/deployments?environment=github-pages</code> and <code>curl -s -o /dev/null -w %{http_code}</code> per URL. Code fix in PR #127</td></tr>
 <tr><td>Real-cut gates: 0/4</td><td><code>node scripts/readiness-status.mjs --json</code>, run 29 Sep</td></tr>
 </tbody></table></div>
 <p><strong>Not yet confirmed:</strong> whether the Supabase project we will use has every migration applied, whether server-side RLS behaves as the source says, and whether the data relationships and revisions are enough for the pilot. So "the database is ready" is not yet established.</p>
@@ -93,7 +93,7 @@ ul,ol{padding-left:1.5em}li{margin:.3em 0}
 <h2>4. WP1 — Environment and deploy (2.75–3.75 engineer-days)</h2>
 <div class="tablewrap"><table><thead><tr><th>Task</th><th>Days</th><th>Done when</th></tr></thead><tbody>
 <tr><td>1.1 Compare the server's applied migrations with source and name the owner of each secret, <strong>without renumbering files</strong></td><td>1–1.5</td><td>Migration and secret-owner lists match reality</td></tr>
-<tr><td>1.2 Fix the Pages collision</td><td>Done (PR #127); 0.25 left to check after merge</td><td><code>/</code>, <code>/designer/</code> and <code>/docs/</code> all load</td></tr>
+<tr><td>1.2 Fix the Pages collision</td><td>Code fixed in PR #127, <strong>awaiting merge and deploy</strong>; then check the URLs, 0.25</td><td><code>/</code>, <code>/designer/</code> and <code>/docs/</code> all load</td></tr>
 <tr><td>1.3 Configure auth redirects, TLS and the pilot env</td><td>0.5</td><td>Login and logout work from another machine</td></tr>
 <tr><td>1.4 Rehearse backup and restore for both the DB and storage objects</td><td>1–1.5</td><td>A successful restore is recorded</td></tr>
 </tbody></table></div>
@@ -169,6 +169,11 @@ ul,ol{padding-left:1.5em}li{margin:.3em 0}
 <li>1.1 does not renumber the <code>0190</code> migrations.</li>
 <li>WP1 is a decision point before committing to WP2–WP4.</li>
 <li>Reworded "doing it yourself with AI costs almost no cash" to "outside labour costs fall, but time and running costs remain".</li>
+</ol>
+<p><strong>v0.2 second revision</strong> (after the second review)</p>
+<ol>
+<li>1.2 changed from "Done" to "Code fixed in PR #127, awaiting merge and deploy", because the live system has not changed yet.</li>
+<li>The Pages 404 fact now cites run links, the deployed SHAs and a timestamped live check instead of a narrative.</li>
 </ol>
 </main></body>
 </html>

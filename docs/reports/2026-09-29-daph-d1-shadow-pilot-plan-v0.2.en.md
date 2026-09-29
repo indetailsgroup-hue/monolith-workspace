@@ -25,7 +25,7 @@
 | `jobs` was removed from realtime on purpose, to stop cross-organisation leaks | `supabase/migrations/0173_rls_isolation_hardening.sql`, section F6 |
 | `useCreateJobSubmit.ts` posts to `/rest/v1/job` with the anon key as the Bearer token, and in source only `src/jobs/index.ts` references the hook | `src/jobs/useCreateJobSubmit.ts:133–139`; searched with `git grep useCreateJobSubmit -- src` |
 | Three `0190` migrations share a number; CI merges duplicates before testing | `scripts/prepare_supabase_migrations_ci.sh --merge-duplicates` in `pgtap-tests.yml` and `db-verify.yml` |
-| Three workflows deployed GitHub Pages over one another, so `/designer/` and the Field PWA return 404 | Run history: last field-app deploy 13 Sep, docs deploy 21 Sep; the live root serves the docs site (checked 29 Sep). Fixed in PR #127 |
+| Three workflows deployed GitHub Pages over one another, so `/designer/` and the Field PWA return 404 | `github-pages` deployment history (Deployments API): last field-app deploy 2026-09-13 [run 34731453999](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34731453999) at `13de5d1b`; docs deploy on top of it 2026-09-21 [run 35594892612](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/35594892612) at `62651733`. Live check 2026-09-29T12:59Z: `/` = 200 (docs site v2.0.0 title), `/designer/` = 404, `/manifest.webmanifest` = 404. Commands: `gh api repos/indetailsgroup-hue/monolith-workspace/deployments?environment=github-pages` and `curl -s -o /dev/null -w %{http_code}` per URL. Code fix in PR #127 |
 | Real-cut gates: 0/4 | `node scripts/readiness-status.mjs --json`, run 29 Sep |
 
 **Not yet confirmed:** whether the Supabase project we will use has every migration applied, whether server-side RLS behaves as the source says, and whether the data relationships and revisions are enough for the pilot. So "the database is ready" is not yet established.
@@ -46,7 +46,7 @@
 | Task | Days | Done when |
 |---|---|---|
 | 1.1 Compare the server's applied migrations with source and name the owner of each secret, **without renumbering files** | 1–1.5 | Migration and secret-owner lists match reality |
-| 1.2 Fix the Pages collision | Done (PR #127); 0.25 left to check after merge | `/`, `/designer/` and `/docs/` all load |
+| 1.2 Fix the Pages collision | Code fixed in PR #127, **awaiting merge and deploy**; then check the URLs, 0.25 | `/`, `/designer/` and `/docs/` all load |
 | 1.3 Configure auth redirects, TLS and the pilot env | 0.5 | Login and logout work from another machine |
 | 1.4 Rehearse backup and restore for both the DB and storage objects | 1–1.5 | A successful restore is recorded |
 
@@ -134,3 +134,7 @@ Real cutting and machine calibration, ADR-064 sign-off, S17 closure, inventory, 
 5. 1.1 does not renumber the `0190` migrations.
 6. WP1 is a decision point before committing to WP2–WP4.
 7. Reworded "doing it yourself with AI costs almost no cash" to "outside labour costs fall, but time and running costs remain".
+
+**v0.2 second revision** (after the second review)
+1. 1.2 changed from "Done" to "Code fixed in PR #127, awaiting merge and deploy", because the live system has not changed yet.
+2. The Pages 404 fact now cites run links, the deployed SHAs and a timestamped live check instead of a narrative.

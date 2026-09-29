@@ -25,7 +25,7 @@
 | `jobs` ถูกถอดออกจาก realtime โดยตั้งใจ เพื่อกันข้อมูลรั่วข้ามองค์กร | `supabase/migrations/0173_rls_isolation_hardening.sql` หัวข้อ F6 |
 | `useCreateJobSubmit.ts` ส่งไป `/rest/v1/job` โดยใช้ anon key เป็น Bearer และ source อ้างถึง hook นี้เฉพาะใน `src/jobs/index.ts` | `src/jobs/useCreateJobSubmit.ts:133–139`; ค้นด้วย `git grep useCreateJobSubmit -- src` |
 | migration `0190` ซ้ำ 3 ไฟล์ และ CI รวมไฟล์ซ้ำให้ก่อนทดสอบ | `scripts/prepare_supabase_migrations_ci.sh --merge-duplicates` ใน `pgtap-tests.yml` และ `db-verify.yml` |
-| มี workflow 3 ตัว deploy GitHub Pages ทับกัน ทำให้ `/designer/` และ Field PWA ขึ้น 404 | ประวัติ run: field-app deploy ครั้งสุดท้าย 13 ก.ย., docs deploy 21 ก.ย.; หน้าแรกที่เปิดอยู่เป็นเว็บเอกสาร ตรวจ 29 ก.ย. — แก้ใน PR #127 |
+| มี workflow 3 ตัว deploy GitHub Pages ทับกัน ทำให้ `/designer/` และ Field PWA ขึ้น 404 | ประวัติ deploy ของ environment `github-pages` (Deployments API): field-app ครั้งสุดท้าย 2026-09-13 [run 34731453999](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34731453999) บน `13de5d1b`; เว็บเอกสาร deploy ทับ 2026-09-21 [run 35594892612](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/35594892612) บน `62651733`. ตรวจหน้าเว็บ 2026-09-29T12:59Z: `/` = 200 (title เว็บเอกสาร v2.0.0), `/designer/` = 404, `/manifest.webmanifest` = 404. คำสั่ง: `gh api repos/indetailsgroup-hue/monolith-workspace/deployments?environment=github-pages` และ `curl -s -o /dev/null -w %{http_code}` ต่อ URL — แก้โค้ดใน PR #127 |
 | ด่านอนุญาตตัดจริง 0/4 | `node scripts/readiness-status.mjs --json` รันเมื่อ 29 ก.ย. |
 
 **สิ่งที่ยังไม่ได้ยืนยัน:** Supabase ที่จะใช้จริงลง migration ครบหรือไม่, RLS บน server ทำงานตรงกับ source หรือไม่, และความสัมพันธ์ของข้อมูลกับ revision พอสำหรับ pilot หรือไม่ จึงยังสรุปไม่ได้ว่า "ฐานข้อมูลพร้อมแล้ว"
@@ -46,7 +46,7 @@
 | งาน | วัน | เสร็จเมื่อ |
 |---|---|---|
 | 1.1 ตรวจรายการ migration บน server เทียบกับ source และระบุผู้ถือ secret แต่ละตัว **โดยไม่เปลี่ยนเลขไฟล์** | 1–1.5 | มีรายการ migration และ secret owner ที่ตรงกับของจริง |
-| 1.2 แก้ Pages ทับกัน | ทำแล้ว (PR #127) เหลือตรวจหลัง merge 0.25 | `/`, `/designer/`, `/docs/` เปิดได้ทั้งสาม |
+| 1.2 แก้ Pages ทับกัน | แก้โค้ดแล้วใน PR #127 **รอ merge และ deploy** แล้วตรวจ URL 0.25 | `/`, `/designer/`, `/docs/` เปิดได้ทั้งสาม |
 | 1.3 ตั้งค่า auth redirect, TLS และ env ของ pilot | 0.5 | login และ logout ได้จากเครื่องอื่น |
 | 1.4 ซ้อม backup และ restore ทั้ง DB และไฟล์ใน storage | 1–1.5 | มีบันทึกการกู้คืนที่สำเร็จ |
 
@@ -134,3 +134,7 @@
 5. 1.1 ไม่เปลี่ยนเลข migration `0190`
 6. WP1 เป็นจุดตัดสินใจก่อนรับปาก WP2–WP4
 7. เปลี่ยนถ้อยคำ "ทำเองกับ AI เงินสดเกือบศูนย์" เป็น "ลดค่าจ้างภายนอกได้ แต่ยังมีต้นทุนเวลาและค่าระบบ"
+
+**v0.2 แก้ไขรอบ 2** (ตามรีวิวรอบที่สอง)
+1. 1.2 เปลี่ยนจาก "ทำแล้ว" เป็น "แก้โค้ดแล้วใน PR #127 รอ merge และ deploy" เพราะระบบจริงยังไม่เปลี่ยน
+2. แนบหลักฐาน Pages 404 เป็นลิงก์ run, SHA ที่ deploy และผลตรวจหน้าเว็บพร้อมเวลา แทนข้อความเล่าประวัติ
