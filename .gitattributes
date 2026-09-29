@@ -25,3 +25,7 @@ docs/evidence/**/*.sha256 text eol=lf
 # S17-4 generator (eeed1ce6) — any byte change must fail the pinned hashes.
 src/packet-verifier/interop/fixtures/*.zip binary
 src/packet-verifier/interop/fixtures/*.json -text
+# SciSpace chat archive: byte-exact so checksums.sha256.json verifies.
+# Kept outside docs/ on purpose: these are quoted historical transcripts, not
+# authored claims, and tools/lint_claims.py does not finish on files this size.
+archive/scispace-monolith-chats-2026-09-29/** -text

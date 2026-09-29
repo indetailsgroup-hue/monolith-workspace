@@ -1,0 +1,118 @@
+{
+  "links": [
+    {
+      "text": "Monolith",
+      "url": "https://scispace.com/folder/monolith-4x8ff57g"
+    },
+    {
+      "text": "https://github.com/indetailsgroup-hue/monolith-workspace/pull/new/feat/digital-shadow-service",
+      "url": "https://github.com/indetailsgroup-hue/monolith-workspace/pull/new/feat/digital-shadow-service"
+    },
+    {
+      "text": "https://github.com/settings/tokens",
+      "url": "https://github.com/settings/tokens"
+    },
+    {
+      "text": "https://www.blum.com/th/en/products/liftsystems/aventos/overview/",
+      "url": "https://www.blum.com/th/en/products/liftsystems/aventos/overview/"
+    },
+    {
+      "text": "https://www.blum.com/th/en/products/hingesystems/overview/",
+      "url": "https://www.blum.com/th/en/products/hingesystems/overview/"
+    },
+    {
+      "text": "https://www.blum.com/th/en/products/boxsystems/overview/",
+      "url": "https://www.blum.com/th/en/products/boxsystems/overview/"
+    },
+    {
+      "text": "https://www.blum.com/th/en/products/runnersystems/overview/",
+      "url": "https://www.blum.com/th/en/products/runnersystems/overview/"
+    },
+    {
+      "text": "https://www.blum.com/th/en/products/pocketsystems/revego/overview/",
+      "url": "https://www.blum.com/th/en/products/pocketsystems/revego/overview/"
+    },
+    {
+      "text": "https://www.blum.com/th/en/products/innerdividingsystems/",
+      "url": "https://www.blum.com/th/en/products/innerdividingsystems/"
+    },
+    {
+      "text": "https://www.blum.com/th/en/products/motion-technologies/",
+      "url": "https://www.blum.com/th/en/products/motion-technologies/"
+    },
+    {
+      "text": "https://www.blum.com/th/en/products/cabinet-applications/overview/",
+      "url": "https://www.blum.com/th/en/products/cabinet-applications/overview/"
+    },
+    {
+      "text": "https://www.blum.com/th/en/products/further-products/",
+      "url": "https://www.blum.com/th/en/products/further-products/"
+    },
+    {
+      "text": "https://www.blum.com/th/en/products/assembly-devices/overview/",
+      "url": "https://www.blum.com/th/en/products/assembly-devices/overview/"
+    },
+    {
+      "text": "www.blum.com/th/en/products/motion-technologies/",
+      "url": "http://www.blum.com/th/en/products/motion-technologies/"
+    },
+    {
+      "text": "https://www.blum.com/th/en/products/various-products/",
+      "url": "https://www.blum.com/th/en/products/various-products/"
+    },
+    {
+      "text": "www.blue-inter.com",
+      "url": "http://www.blue-inter.com/"
+    }
+  ],
+  "fileReferences": [
+    "blum_bom_x2g1.docx",
+    "blum_bom_x2g1.pdf",
+    "blum_supplier_comparison_x2g1.pdf",
+    "blum_checklist_x2g1.docx",
+    "blum_checklist_x2g1.pdf",
+    "blum_supplier_comparison_x2g1.docx",
+    "blum_comparison_revego_legrabox.docx",
+    "blum_comparison_revego_legrabox.pdf",
+    "blum_rfq_template.docx",
+    "blum_rfq_template.pdf",
+    "blum_product_guide.pdf",
+    "blum_product_guide.docx",
+    "blum_product_guide_th.md",
+    "RULPredictionService_patched.ts",
+    "weibull_rul_insights.md",
+    "add_changelog_v227.py",
+    "add_bv_formulas.py",
+    "blum_bom_x2g1_pre_formula.docx",
+    "add_budget_variance.py",
+    "blue_inter_blum_page.md",
+    "add_checklist_cover_pdf.py",
+    "add_bom_actual_cost_owner.py",
+    "add_bom_cover_pdf.py",
+    "add_bom_price_lt.py",
+    "add_servdrive_col.py",
+    "add_cover_export_pdf.py",
+    "blum_motion_tech.md",
+    "blum_legrabox_programme.md",
+    "blue_inter_leadtime.csv",
+    "add_blum_images.py",
+    "blue_inter.md",
+    "blum_legrabox_assembly.md",
+    "blum_pocket_assembly.md",
+    "blum_installation.md",
+    "blum_assembly_devices.md",
+    "blum_cabinet.md",
+    "blum_motion.md",
+    "blum_pocket.md",
+    "blum_inner.md",
+    "blum_box.md",
+    "blum_hinge.md",
+    "blum_lift.md",
+    "blum_product_world.md",
+    "RULPredictionService.ts",
+    "arxiv_weibull_reliability_analysis.papertable",
+    "arxiv_phm_prognostics.papertable",
+    "arxiv_weibull_rul_bearings.papertable"
+  ],
+  "binaryAttachmentsDownloaded": false
+}

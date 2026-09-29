@@ -1,0 +1,47 @@
+{
+  "links": [
+    {
+      "text": "Monolith",
+      "url": "https://scispace.com/folder/monolith-4x8ff57g"
+    },
+    {
+      "text": "https://j7dk04lc.scispace.co/",
+      "url": "https://j7dk04lc.scispace.co/"
+    },
+    {
+      "text": "https://0ly1b489.scispace.co",
+      "url": "https://0ly1b489.scispace.co/"
+    },
+    {
+      "text": "https://github.com/indetailsgroup-hue/monolith-workspace",
+      "url": "https://github.com/indetailsgroup-hue/monolith-workspace"
+    },
+    {
+      "text": "https://github.com/settings/tokens/new",
+      "url": "https://github.com/settings/tokens/new"
+    },
+    {
+      "text": "bacaa37",
+      "url": "https://github.com/indetailsgroup-hue/monolith-workspace/commit/bacaa37a6da584813d421ab02e0c44aaf5c3cf5e"
+    },
+    {
+      "text": "https://github.com/indetailsgroup-hue/monolith-workspace/tree/main/docs/manufacturing-os-site",
+      "url": "https://github.com/indetailsgroup-hue/monolith-workspace/tree/main/docs/manufacturing-os-site"
+    },
+    {
+      "text": "https://github.com/settings/tokens",
+      "url": "https://github.com/settings/tokens"
+    }
+  ],
+  "fileReferences": [
+    "chapter_map_phases.md",
+    "monolith_roadmap_15phases.png",
+    "monolith_doc_home.md",
+    "folder_catalog.json",
+    "patch_script_js.py",
+    "patch_site.py",
+    "build_search_index.py",
+    "build_site.py"
+  ],
+  "binaryAttachmentsDownloaded": false
+}
