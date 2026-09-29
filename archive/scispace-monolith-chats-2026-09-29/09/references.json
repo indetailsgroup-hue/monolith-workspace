@@ -1,0 +1,140 @@
+{
+  "links": [
+    {
+      "text": "Monolith",
+      "url": "https://scispace.com/folder/monolith-4x8ff57g"
+    },
+    {
+      "text": "บทนำ",
+      "url": "https://scispace.com/chat/8fe0bb23-1325-4cf5-98c5-5e05b740286f#"
+    },
+    {
+      "text": "https://github.com/indetailsgroup-hue/monolith-workspace/pull/new/feature/people-culture-module",
+      "url": "https://github.com/indetailsgroup-hue/monolith-workspace/pull/new/feature/people-culture-module"
+    },
+    {
+      "text": "https://github.com/settings/tokens",
+      "url": "https://github.com/settings/tokens"
+    },
+    {
+      "text": "https://www.chromatic.com",
+      "url": "https://www.chromatic.com/"
+    },
+    {
+      "text": "chromatic.com/setup?appId=6a916bc5171efe1f3f09f56e",
+      "url": "https://chromatic.com/setup?appId=6a916bc5171efe1f3f09f56e"
+    },
+    {
+      "text": "github.com/indetailsgroup-hue/monolith-workspace/actions",
+      "url": "https://github.com/indetailsgroup-hue/monolith-workspace/actions"
+    },
+    {
+      "text": "https://github.com/indetailsgroup-hue/monolith-workspace/releases/tag/v16.0.0",
+      "url": "https://github.com/indetailsgroup-hue/monolith-workspace/releases/tag/v16.0.0"
+    },
+    {
+      "text": "https://github.com/indetailsgroup-hue/monolith-workspace/blob/main/.github/ISSUE_TEMPLATE/people-culture-bug.yml",
+      "url": "https://github.com/indetailsgroup-hue/monolith-workspace/blob/main/.github/ISSUE_TEMPLATE/people-culture-bug.yml"
+    },
+    {
+      "text": "https://github.com/indetailsgroup-hue/monolith-workspace/blob/main/.github/ISSUE_TEMPLATE/people-culture-feature-request.yml",
+      "url": "https://github.com/indetailsgroup-hue/monolith-workspace/blob/main/.github/ISSUE_TEMPLATE/people-culture-feature-request.yml"
+    },
+    {
+      "text": "https://github.com/indetailsgroup-hue/monolith-workspace/blob/main/.github/CODEOWNERS",
+      "url": "https://github.com/indetailsgroup-hue/monolith-workspace/blob/main/.github/CODEOWNERS"
+    },
+    {
+      "text": "https://github.com/indetailsgroup-hue/monolith-workspace/blob/main/.github/dependabot.yml",
+      "url": "https://github.com/indetailsgroup-hue/monolith-workspace/blob/main/.github/dependabot.yml"
+    },
+    {
+      "text": "#77",
+      "url": "https://github.com/indetailsgroup-hue/monolith-workspace/pull/77"
+    }
+  ],
+  "fileReferences": [
+    "vitest.config.ts",
+    "20261001_people_culture_schema.sql",
+    "20261001_audit_log.sql",
+    "MONOLITH_DEEP_REVIEW.md",
+    "MONOLITH_2S2P1C_FEATURE_SPEC_ROADMAP.md",
+    "SECURITY_REVIEW_RLS.md",
+    "folder_catalog.json",
+    "Screenshot 2569-09-01 at 17.24.01.png",
+    "Screenshot 2569-08-28 at 18.13.36.png",
+    "Screenshot 2569-08-28 at 18.17.06.png",
+    "orgScopedQuery.ts",
+    "20260828_multi_tenant_schema.sql",
+    "README.md",
+    "ARCHITECTURE.md",
+    "abstract_included.csv",
+    "combined_organizational_framework_results.criteria.json",
+    "combined_psych_safety_ai_culture.criteria.json",
+    "combined_psych_safety_ai_culture.csv",
+    "combined_psych_safety_ai_culture_comprehensive.csv",
+    "combined_psychological_safety_ai_adoption.csv",
+    "google_scholar_ai_receptive_culture.csv",
+    "google_scholar_digital_leadership_safety.csv",
+    "google_scholar_human_centered_ai.csv",
+    "google_scholar_org_framework_1.csv",
+    "google_scholar_q1_psychological_safety_edmondson.csv",
+    "paper_table_organizationa_5cnJ60.csv",
+    "paper_table_organizationa_JQDZQ9.csv",
+    "paper_table_organizationa_rFbf0e.csv",
+    "paper_table_psychological_GVozDf.csv",
+    "prisma_2020_thai_flow_diagram.png",
+    "pubmed_q3_leadership_psychological_safety.csv",
+    "arxiv_org_ai_workforce_1.csv",
+    "google_scholar_future_work_mit_3.csv",
+    "paper_table_psychological_yz83sA.csv",
+    "pubmed_q1_psychological_safety_ai.csv",
+    "arxiv_human_ai_teams_2.csv",
+    "fulltext_screened.csv",
+    "google_scholar_org_framework_2.csv",
+    "google_scholar_psych_safety_ai_1.csv",
+    "google_scholar_q2_change_ready_culture.csv",
+    "google_scholar_q3_transformational_leadership.csv",
+    "paper_table_psychological_jrWK2L.csv",
+    "abstract_screened.csv",
+    "google_scholar_ai_anxiety_culture.csv",
+    "merged_all_psychological_safety_culture.csv",
+    "SLR_รวม_การออกแบบองค์กรยุค_AI_2S2P1C_Culture.md",
+    "combined_org_redesign_ai_era_final.criteria.json",
+    "combined_psych_safety_ai_culture_final.csv",
+    "combined_psychological_safety_ai_adoption.criteria.json",
+    "fulltext_included.csv",
+    "google_scholar_org_framework_3.csv",
+    "google_scholar_q5_thai_asian_cultural.csv",
+    "paper_table_ai-era-organi_hLU7B2.csv",
+    "paper_table_organizationa_rBUEwD.csv",
+    "paper_table_organizationa_uEZPfP.csv",
+    "paper_table_psychological_ITR02u.csv",
+    "pubmed_q4_ai_employee_engagement.csv",
+    "abstract_screened_filtered.csv",
+    "combined_org_redesign_ai_era_final.csv",
+    "combined_organizational_framework_results.csv",
+    "google_scholar_human_ai_collab_2.csv",
+    "google_scholar_org_redesign_ai_1.csv",
+    "google_scholar_psych_safety_ai_2.csv",
+    "google_scholar_psych_safety_ai_3.csv",
+    "google_scholar_q4_empirical_outcomes.csv",
+    "paper_table_ai-enabled-or_Vcv9sL.csv",
+    "paper_table_ai-enabled-or_bAdQht.csv",
+    "paper_table_case-studies_4zigxP.csv",
+    "paper_table_measuring-psy_nVC8YD.csv",
+    "paper_table_organizationa_Dodg5D.csv",
+    "paper_table_organizationa_yTYt1i.csv",
+    "paper_table_sociotechnica_tEm4fd.csv",
+    "prisma_2020_flow_diagram_psychological_safety_ai.png",
+    "prisma_2020_flow_diagram_thai.png",
+    "pubmed_q2_organizational_culture_ai.csv",
+    "pubmed_q5_asian_cultural_ai.csv",
+    "fulltext_screened_filtered.csv",
+    "google_scholar_edmondson_safety_tech.csv",
+    "paper_table_organizationa_hemX6o.csv",
+    "agent-artifacts-zip_76f21253-aeaa-42c2-9a5c-10f987a7c2f3_1787883205.zip",
+    "Screenshot 2569-08-28 at 09.00.56.png"
+  ],
+  "binaryAttachmentsDownloaded": false
+}

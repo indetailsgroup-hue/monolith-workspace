@@ -1,0 +1,87 @@
+{
+  "links": [
+    {
+      "text": "Monolith",
+      "url": "https://scispace.com/folder/monolith-4x8ff57g"
+    },
+    {
+      "text": "https://github.com/indetailsgroup-hue/monolith-workspace/issues/42",
+      "url": "https://github.com/indetailsgroup-hue/monolith-workspace/issues/42"
+    },
+    {
+      "text": "open",
+      "url": "https://github.com/indetailsgroup-hue/monolith-workspace/issues/43"
+    },
+    {
+      "text": "https://github.com/indetailsgroup-hue/monolith-workspace/pull/45",
+      "url": "https://github.com/indetailsgroup-hue/monolith-workspace/pull/45"
+    },
+    {
+      "text": "github.com/…/pull/47",
+      "url": "https://github.com/indetailsgroup-hue/monolith-workspace/pull/47"
+    },
+    {
+      "text": "github.com/…/issues/48",
+      "url": "https://github.com/indetailsgroup-hue/monolith-workspace/issues/48"
+    },
+    {
+      "text": "https://github.com/indetailsgroup-hue/monolith-workspace/pull/55",
+      "url": "https://github.com/indetailsgroup-hue/monolith-workspace/pull/55"
+    },
+    {
+      "text": "https://github.com/settings/tokens",
+      "url": "https://github.com/settings/tokens"
+    },
+    {
+      "text": "app.supabase.com/account/tokens",
+      "url": "https://app.supabase.com/account/tokens"
+    },
+    {
+      "text": "https://github.com/indetailsgroup-hue/monolith-workspace/releases/tag/v16.8.0",
+      "url": "https://github.com/indetailsgroup-hue/monolith-workspace/releases/tag/v16.8.0"
+    },
+    {
+      "text": "#56",
+      "url": "https://github.com/indetailsgroup-hue/monolith-workspace/issues/56"
+    },
+    {
+      "text": "#73",
+      "url": "https://github.com/indetailsgroup-hue/monolith-workspace/issues/73"
+    }
+  ],
+  "fileReferences": [
+    "fix_ts_build_pass6_5.py",
+    "pass6_5_root_log.txt",
+    "architecture-document.md",
+    "security-posture-report.md",
+    "npm-audit-fix-plan.md",
+    "rls-audit-report.md",
+    "security-remediation-plan.md",
+    "v16.8.0-code-review.md",
+    "secdef-audit-report.md",
+    "fix_ts_build_pass6.py",
+    "latest_vitest_log.txt",
+    "claim_linter_log.txt",
+    "folder_catalog.json",
+    "fix_ts_build_pass5.py",
+    "fix_ts_build_pass4.py",
+    "fix_ts_build_pass3.py",
+    "fix_ts_build_pass2.py",
+    "fix_ts_build.py",
+    "fetch_build_files.py",
+    "fix_z115.py",
+    "fix_z114.py",
+    "all_migrations.txt",
+    "20261001_audit_log_z109.sql",
+    "20261001_audit_log_fixed.sql",
+    "20261001_audit_log.sql",
+    "lint_rls_updated.py",
+    "0212_updated.sql",
+    "0212_current.sql",
+    "lint_rls_current.py",
+    "0211_fpr_receiving_confirmation.sql",
+    "close_prs_push_rollback.py",
+    "monolith-workspace-full.zip"
+  ],
+  "binaryAttachmentsDownloaded": false
+}

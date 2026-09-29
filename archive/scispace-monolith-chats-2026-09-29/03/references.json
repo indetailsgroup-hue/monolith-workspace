@@ -1,0 +1,118 @@
+{
+  "links": [
+    {
+      "text": "Monolith",
+      "url": "https://scispace.com/folder/monolith-4x8ff57g"
+    },
+    {
+      "text": "https://3q83mu3p.scispace.co/",
+      "url": "https://3q83mu3p.scispace.co/"
+    },
+    {
+      "text": "Contributor Covenant",
+      "url": "https://www.contributor-covenant.org/"
+    },
+    {
+      "text": "https://www.contributor-covenant.org/version/2/1/code_of_conduct.html",
+      "url": "https://www.contributor-covenant.org/version/2/1/code_of_conduct.html"
+    },
+    {
+      "text": "Mozilla's code of conduct enforcement ladder",
+      "url": "https://github.com/mozilla/diversity"
+    },
+    {
+      "text": "https://www.contributor-covenant.org/faq",
+      "url": "https://www.contributor-covenant.org/faq"
+    },
+    {
+      "text": "https://www.contributor-covenant.org/translations",
+      "url": "https://www.contributor-covenant.org/translations"
+    },
+    {
+      "text": "https://j7dk04lc.scispace.co",
+      "url": "https://j7dk04lc.scispace.co/"
+    },
+    {
+      "text": "https://j7dk04lc.scispace.co/swagger.html",
+      "url": "https://j7dk04lc.scispace.co/swagger.html"
+    }
+  ],
+  "fileReferences": [
+    "monolith-additions /",
+    "packages /",
+    ".github /",
+    "CHANGELOG.md",
+    "docs /",
+    "GAP_ANALYSIS_AND_MIGRATION_PLAN.md",
+    "CODE_OF_CONDUCT.md",
+    "SECURITY.md",
+    "CONTRIBUTING.md",
+    "eslint.config.mjs",
+    "INTEGRATION.md",
+    "monolith_openapi.yaml",
+    "monolith_mcp_postman_collection.json",
+    "phase14_iot_edge.pptx",
+    "phase14_iot_edge.pdf",
+    "monolith-sdk /",
+    "phase13_bi_reporting.pptx",
+    "phase13_bi_reporting.pdf",
+    "monolith_complete_documentation.docx",
+    "load_test_phase13_results.json",
+    "load_test_phase12_results.json",
+    "phase12_crm_aftersales.pptx",
+    "phase12_crm_aftersales.pdf",
+    "monolith_documentation.tex",
+    "phase11_compliance_audit.pptx",
+    "phase11_compliance_audit.pdf",
+    "benchmark_phase11_comparison_report.md",
+    "performance_benchmark_report.md",
+    "e2e_test_coverage.pptx",
+    "e2e_test_coverage.pdf",
+    "j7dk04lc.scispace.co.website",
+    "phase10_document_esignature.pptx",
+    "phase10_document_esignature.pdf",
+    "load_test_phase10_report.md",
+    "benchmark_comparison_report.md",
+    "adr_architecture_decisions.pptx",
+    "adr_architecture_decisions.pdf",
+    "monolith_complete_documentation.md",
+    "benchmark_phase9.pptx",
+    "benchmark_phase9.pdf",
+    "load_test_phase9_report.md",
+    "phase9_hr.pptx",
+    "phase9_hr.pdf",
+    "phase8_finance.pptx",
+    "phase8_finance.pdf",
+    "monolith-docs-site /",
+    "phase7_supply_chain.pptx",
+    "phase7_supply_chain.pdf",
+    "monolith_persona_journey.pptx",
+    "monolith_persona_journey.pdf",
+    "v3_release_highlights.pptx",
+    "v3_release_highlights.pdf",
+    "phase6_analytics.pptx",
+    "phase6_analytics.pdf",
+    "phase5_migration.pptx",
+    "phase5_migration.pdf",
+    "monolith_complete_documentation.tex",
+    "governance_presentation.pptx",
+    "governance_presentation.pdf",
+    "monolith_workspace_github.md",
+    "monolith_complete_documentation.pdf",
+    "monolith_business_ops.pptx",
+    "monolith_business_ops.pdf",
+    "reports /",
+    "monolith_complete_documentation.html",
+    "graphql_api_section.md",
+    "api-ref-website /",
+    "websocket_events_section.md",
+    "monolith_api_reference.pptx",
+    "monolith_api_reference.pdf",
+    "monolith_prd_rebuild.pptx",
+    "monolith_prd_rebuild.pdf",
+    "prisma_systematic_review_monolith_manufacturing_os.md",
+    "prisma_flow_diagram.png",
+    "oriverse_vs_monolith_analysis.md"
+  ],
+  "binaryAttachmentsDownloaded": false
+}

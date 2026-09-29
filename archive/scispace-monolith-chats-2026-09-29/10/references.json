@@ -1,0 +1,133 @@
+{
+  "links": [
+    {
+      "text": "Monolith",
+      "url": "https://scispace.com/folder/monolith-4x8ff57g"
+    },
+    {
+      "text": "https://www.barausse.com/media/download/federlegno-manuale-porte-interne-def.pdf",
+      "url": "https://www.barausse.com/media/download/federlegno-manuale-porte-interne-def.pdf"
+    },
+    {
+      "text": "https://www.barausse.com/en/download-area/data-sheets",
+      "url": "https://www.barausse.com/en/download-area/data-sheets"
+    },
+    {
+      "text": "https://www.barausse.com/downloads/Baraussesphere.pdf",
+      "url": "https://www.barausse.com/downloads/Baraussesphere.pdf"
+    },
+    {
+      "text": "https://www.barausse.com/downloads/Barausse_DeCastelli_Metalsphere.pdf",
+      "url": "https://www.barausse.com/downloads/Barausse_DeCastelli_Metalsphere.pdf"
+    },
+    {
+      "text": "https://www.barausse.com/downloads/Barausse_Contemporary.pdf",
+      "url": "https://www.barausse.com/downloads/Barausse_Contemporary.pdf"
+    },
+    {
+      "text": "https://www.barausse.com/downloads/Barausse_Continuity.pdf",
+      "url": "https://www.barausse.com/downloads/Barausse_Continuity.pdf"
+    },
+    {
+      "text": "https://www.barausse.com/downloads/Barausse_Glass_Doors%26Partitions.pdf",
+      "url": "https://www.barausse.com/downloads/Barausse_Glass_Doors%26Partitions.pdf"
+    },
+    {
+      "text": "https://www.barausse.com/downloads/Barausse_Secret.pdf",
+      "url": "https://www.barausse.com/downloads/Barausse_Secret.pdf"
+    },
+    {
+      "text": "https://www.barausse.com/downloads/Barausse_Exclusive_Homes.pdf",
+      "url": "https://www.barausse.com/downloads/Barausse_Exclusive_Homes.pdf"
+    },
+    {
+      "text": "https://www.barausse.com/downloads/Barausse_Contract",
+      "url": "https://www.barausse.com/downloads/Barausse_Contract"
+    },
+    {
+      "text": "https://www.barausse.com/downloads/Barausse_Highlights.pdf",
+      "url": "https://www.barausse.com/downloads/Barausse_Highlights.pdf"
+    },
+    {
+      "text": "https://www.barausse.com/downloads/Barausse_Flowing_Spaces.pdf",
+      "url": "https://www.barausse.com/downloads/Barausse_Flowing_Spaces.pdf"
+    },
+    {
+      "text": "https://www.barausse.com/downloads/Barausse_Doors_WallPaneling_Partitions.pdf",
+      "url": "https://www.barausse.com/downloads/Barausse_Doors_WallPaneling_Partitions.pdf"
+    },
+    {
+      "text": "https://www.archiproducts.com/en/products/barausse/multi-leaf-glass-pivot-system-syncrosystem_784395",
+      "url": "https://www.archiproducts.com/en/products/barausse/multi-leaf-glass-pivot-system-syncrosystem_784395"
+    },
+    {
+      "text": "https://raw.githubusercontent.com/indetailsgroup-hue/monolith-workspace/main/docs/reports/2026-09-11-scispace-reconciliation-intake.th.md",
+      "url": "https://raw.githubusercontent.com/indetailsgroup-hue/monolith-workspace/main/docs/reports/2026-09-11-scispace-reconciliation-intake.th.md"
+    }
+  ],
+  "fileReferences": [
+    "barausse_monolith_docs.zip",
+    "fieldflow-mobile.zip",
+    "MONOLITH_Strategic_Analysis_5Y.md",
+    "FieldFlow_DevKickoff.pptx",
+    "FieldFlow_DevKickoff.pdf",
+    "FieldFlow_Onboarding_Pack.pdf",
+    "FieldFlow_Onboarding_Pack.docx",
+    "kanna_comparison.html",
+    "barausse_notes_thai.docx",
+    "MONOLITH_BOI_ExecutiveSummary.docx",
+    "barausse_installation_checklist.docx",
+    "barausse_bom_1bed2bath.docx",
+    "barausse_worksheet.docx",
+    "barausse_notes_thai.html",
+    "barausse_bom_1bed2bath.html",
+    "barausse_installation_checklist.html",
+    "barausse_worksheet.html",
+    "barausse_business_questions.md",
+    "barausse_notes_thai.md",
+    "folder_catalog.json",
+    "archiproducts_barausse_product.md",
+    "archiproducts_homepage.md",
+    "convert_docx_pdf.py",
+    "patch_slides_font.py",
+    "add_toc_fieldflow.py",
+    "create_fieldflow_pack_p2.py",
+    "create_fieldflow_pack.py",
+    "create_boi_summary.py",
+    "edit_notes_s9s10.py",
+    "edit_checklist_sop.py",
+    "barausse_feasibility_canvas.md",
+    "gdrive_folder.md",
+    "Screenshot 2569-09-10 at 12.14.15.png",
+    "gdoc_barausse_blueprint.md",
+    "gen_showroom_journey.py",
+    "gen_worksheet_html.py",
+    "build_worksheet_p3.py",
+    "build_worksheet_p2.py",
+    "build_worksheet_p1.py",
+    "barausse_critical_path_answers.md",
+    "thai_door_suppliers_detail.md",
+    "thai_real_estate_premium.csv",
+    "web_search_thai_real_estate_premium.json",
+    "thai_door_manufacturers.md",
+    "concealed_frame_market.md",
+    "web_search_wood_climate_thailand.json",
+    "wood_climate_thailand.csv",
+    "web_search_thai_construction_cost.json",
+    "thai_construction_cost.csv",
+    "web_search_flush_frame_patent.json",
+    "flush_frame_patent.csv",
+    "web_search_thai_aluminium_profile.json",
+    "thai_aluminium_profile.csv",
+    "thai_door_suppliers.csv",
+    "web_search_thai_door_suppliers.json",
+    "thai_door_market.csv",
+    "web_search_thai_door_market.json",
+    "gen_html.py",
+    "build_barausse_checklist.py",
+    "build_barausse_bom.py",
+    "build_barausse_notes.py",
+    "extract_pdfs.py"
+  ],
+  "binaryAttachmentsDownloaded": false
+}
