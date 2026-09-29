@@ -1,6 +1,6 @@
 # DAPH-SHADOW-PILOT-READINESS-v0.1.1
 
-ตรวจแบบอ่านอย่างเดียวและวางแผน • 29 กันยายน 2026 • v0.1.1 ปรับถ้อยคำให้ผ่าน guardrail ของ repo (ดูหัวข้อ "ประวัติการแก้ไข" ท้ายเอกสาร) • เจ้าของเลือก baseline แล้ว • D1 ยังไม่ผ่านการอนุมัติเริ่ม / REAL-CUT BLOCKED
+ตรวจแบบอ่านอย่างเดียวและวางแผน • 29 กันยายน 2026 • v0.1.1 ปรับถ้อยคำให้ผ่าน guardrail ของ repo (ดูหัวข้อ "ประวัติการแก้ไข" ท้ายเอกสาร) • ผู้ตรวจ v0.1: Codex • ผู้ปรับเอกสาร v0.1.1: Claude • งบล่าสุดสำหรับวางแผนอยู่ในแผน v0.2 (52,250–146,750 บาท) • เจ้าของเลือก baseline แล้ว • D1 ยังไม่ผ่านการอนุมัติเริ่ม / REAL-CUT BLOCKED
 
 ## 1. Executive Verdict
 
@@ -12,7 +12,14 @@
 
 ## 2. Current HEAD
 
-Root หลักที่ตรวจ: `C:/Users/thai3/.codex/worktrees/daph-shadow-readiness/determined-williams (2)` Git HEAD `5dc57e10457641cacddf9d776800b0bc704b209a` เป็น detached checkout และผู้ตรวจบันทึกว่า `git status` ว่างทั้งก่อนและหลังตรวจ (checkout นี้อยู่ในเครื่องของผู้ตรวจ Claude จึงตรวจซ้ำไม่ได้) product version **17.5.2** (`package.json`) commit ล่าสุด `docs(research): add SciSpace Monolith 12-chat reading archive (#126)` เวลา 2026-09-29T11:48:51Z [Pinned commit](https://github.com/indetailsgroup-hue/monolith-workspace/commit/5dc57e10457641cacddf9d776800b0bc704b209a)
+Root หลักที่ตรวจ: `C:/Users/thai3/.codex/worktrees/daph-shadow-readiness/determined-williams (2)` Git HEAD `5dc57e10457641cacddf9d776800b0bc704b209a` เป็น detached checkout · Codex (ผู้ตรวจ v0.1) บันทึกว่า `git status` ว่างทั้งก่อนและหลังตรวจ · Claude ตรวจซ้ำในเครื่องเดียวกันเมื่อ 2026-09-29T13:12Z ได้ HEAD เดิมและ `git status --porcelain` 0 บรรทัด (ดูบล็อกคำสั่งท้ายย่อหน้านี้) product version **17.5.2** (`package.json`) commit ล่าสุด `docs(research): add SciSpace Monolith 12-chat reading archive (#126)` เวลา 2026-09-29T11:48:51Z [Pinned commit](https://github.com/indetailsgroup-hue/monolith-workspace/commit/5dc57e10457641cacddf9d776800b0bc704b209a)
+
+```
+$ git -C "C:/Users/thai3/.codex/worktrees/daph-shadow-readiness/determined-williams (2)" rev-parse HEAD
+5dc57e10457641cacddf9d776800b0bc704b209a
+$ git -C "C:/Users/thai3/.codex/worktrees/daph-shadow-readiness/determined-williams (2)" status --porcelain | wc -l
+0
+```
 
 Root เปรียบเทียบ: parent `C:/Users/thai3/determined-williams (2)` / branch `guardrails/claim-linters` / HEAD `9bd52f36744693b154324a3bc772bf15796102a3`; nested `C:/Users/thai3/determined-williams (2)/determined-williams` / branch `fix/dxf-truth-chain` / HEAD `ccb47589de7d9980a59774aa168b7c50cb23f417` version 2.1.0 ทั้งคู่ remote `indetailsgroup-hue/monolith-workspace` parent เดิมมี tracked แก้ไข 11 และ untracked 747 รายการ nested มีแก้ไข 11 ลบ 12 และ untracked 65 รายการ ตัวเลขนับ Git status entries ซึ่งอาจรวมโฟลเดอร์ยุบ parent ตอนนี้เพิ่มเอกสาร/evidence และตัวสร้างรายงานรอบนี้ ไม่แก้งานเดิม
 
@@ -58,9 +65,9 @@ Status คือความพร้อมหลักฐาน D1 ไม่ใ
 | Material | ตรวจและบันทึก Material | MaterialSelector | src/components/ui/MaterialSelector.tsx | material master/version and thickness | src/components/ui/__tests__/MaterialSelector.test.tsx | NOT re-verified at runtime | ตรงรหัสแผ่นที่โรงงานอนุมัติ | calibrated material/tool | PARTIAL | ยังไม่ยืนยัน master import/owner | src/components/ui/MaterialSelector.tsx | verified-by-inspection |
 | Hardware | ตรวจและบันทึก Hardware | HardwarePanel | src/data/HardwareLibrary.ts | catalog/provenance and supplier codes | src/core/catalog/__tests__/MinifixHardware.test.ts | NOT re-verified at runtime | ตรงอุปกรณ์และมิติจริง | validated machining intent | PARTIAL | มี catalog ไม่ได้แปลว่า stock อนุมัติ | src/data/HardwareLibrary.ts | verified-by-inspection |
 | Validation | ตรวจและบันทึก Validation | /projects/:projectId/validation | src/core/auth/permissions.ts | gate evidence + server checks | src/core/export/__tests__/dxfZipG10Block.test.ts | NOT re-verified at runtime | เก็บ refusal และ inputs ที่ review | no bypass | PARTIAL | ยังไม่ทดสอบ refusal runtime | src/core/auth/permissions.ts | verified-by-inspection |
-| Spec Freeze/Release | ตรวจและบันทึก Spec Freeze/Release | /release | supabase/functions/factory-api/index.ts | factory state RPCs; RELEASED invariant | docs/evidence/hosted/s17-1-2/s17-hosted-auth-evidence.json | NOT re-verified at runtime | Freeze แล้ว Release ชัดเจน | S17-2 closure | PARTIAL | 13 cases staging เก่า; ยังไม่ได้เก็บ proof การ deploy ปัจจุบัน | supabase/functions/factory-api/index.ts | verified-by-inspection |
+| Spec Freeze/Release | ตรวจและบันทึก Spec Freeze/Release | /release | supabase/functions/factory-api/index.ts | factory state RPCs; RELEASED invariant | docs/evidence/hosted/s17-1-2/s17-hosted-auth-evidence.json | NOT re-verified at runtime | Freeze แล้ว Release ชัดเจน | S17-2 closure | PARTIAL | 13 cases staging เก่า; ยังไม่ได้ยืนยัน proof การ deploy ปัจจุบันจากหลักฐานที่ตรวจ | supabase/functions/factory-api/index.ts | verified-by-inspection |
 | BOM | ตรวจและบันทึก BOM | ExportPanel | src/core/skills/generate/bom.ts | design/material/hardware snapshot | src/core/hardware/__tests__/handleBom.test.ts | NOT re-verified at runtime | เทียบจำนวนและรหัสครบ | accepted BOM lineage | PARTIAL | ยังไม่พิสูจน์ BOM lineage UI-to-DB ครบ | src/core/skills/generate/bom.ts | verified-by-inspection |
-| Cutlist | ตรวจและบันทึก Cutlist | packet/export | src/factory/packet/builders/buildCutList.ts | cabinet data -> cutlist/CSV | src/factory/packet/__tests__/cutListCsv.test.ts | NOT re-verified at runtime | เทียบมิติ/หน่วย/จำนวน | tolerances accepted | PARTIAL | ยังไม่ได้เก็บหลักฐาน discrepancy จากโรงงาน | src/factory/packet/builders/buildCutList.ts | verified-by-inspection |
+| Cutlist | ตรวจและบันทึก Cutlist | packet/export | src/factory/packet/builders/buildCutList.ts | cabinet data -> cutlist/CSV | src/factory/packet/__tests__/cutListCsv.test.ts | NOT re-verified at runtime | เทียบมิติ/หน่วย/จำนวน | tolerances accepted | PARTIAL | ยังไม่ได้ยืนยันหลักฐาน discrepancy จากโรงงานในหลักฐานที่ตรวจ | src/factory/packet/builders/buildCutList.ts | verified-by-inspection |
 | Nesting | ตรวจและบันทึก Nesting | NestingPanel | src/nesting/ffdh.ts | sheet sizes, grain, kerf, material | src/nesting/__tests__/ffdh.test.ts | NOT re-verified at runtime | เทียบ layout/yield กับโรงงาน | accepted machine/material | PARTIAL | constraints ทางกายภาพยังไม่ calibrate | src/nesting/ffdh.ts | verified-by-inspection |
 | DXF | ตรวจและบันทึก DXF | shadow download | src/core/export/dxfExportFromOperationGraph.ts | operation graph/revision/G10 | e2e/dxf-export.spec.ts | NOT re-verified at runtime | NFP และตรวจหน่วย/geometry อิสระ | exporter/profile acceptance | PARTIAL | E2E skip ตามเงื่อนไข; ยังไม่ตรวจ deployed path | src/core/export/dxfExportFromOperationGraph.ts | verified-by-inspection |
 | Factory Packet | ตรวจและบันทึก Factory Packet | /packet/:id | src/factory/packet/buildFactoryPacket.ts | legacy packet vs server/src/packet/v2/generator.ts | server/src/packet/v2/__tests__/generator.test.ts | NOT re-verified at runtime | pin schema/hash; มี upload receipt | S17-3/4 + custody | PARTIAL | ต้องบันทึก generation path และ server acceptance | src/factory/packet/buildFactoryPacket.ts | verified-by-inspection |
@@ -134,7 +141,7 @@ DB workflow เตรียม canonical fresh migrations โดย merge duplic
 | DB/migrations/RLS | pgtap-tests.yml; db-verify.yml; cross_tenant_isolation.sql | PR-head fresh DB check success; not hosted apply/restore |
 | Security/audit | audit:production; npm-audit.yml | PR-head server dependency audit success; not whole-system security certification |
 | Playwright | playwright.e2e.config.ts; verify-full.yml | Visual check success at PR head; full Golden Path not established |
-| Factory verification | e2e/factory-verify-flow.spec.ts; src/packet-verifier | Deterministic contract exists; current no-cut operator run: not yet executed |
+| Factory verification | e2e/factory-verify-flow.spec.ts; src/packet-verifier | Deterministic contract exists; ยังไม่ได้ยืนยันการรัน no-cut operator ปัจจุบันจากหลักฐานที่ตรวจ |
 | DXF E2E | e2e/dxf-export.spec.ts | Conditional skips exist; @smoke CI has anti-skip enforcement; no current full path result |
 | Jobs/quotation E2E | e2e/jobs-quotation.spec.ts | Uses localStorage fixtures and conditional skips; not shared persistence proof |
 | Daph-specific | packages/field-app; scripts/dogfood-record.mjs; house-01 | Field tests exist; actual house core chain incomplete |
@@ -145,7 +152,7 @@ DB workflow เตรียม canonical fresh migrations โดย merge duplic
 
 `docs/evidence/dogfood/house-01/started.json` บันทึก STARTED วันที่ 2026-07-18, shadowPacketEnabled=true, realCutAllowed=false มี project/site/role และ first-event references ใน tree มีเพียง started.json และ digest · `docs/evidence/dogfood/` มีโฟลเดอร์เดียวคือ `house-01` · reporter แสดง contract, payment, install-plan, production และ acceptance เป็น PENDING และ shadow-compare 0 record จึงยังไม่ถึงขั้นรับมอบบ้านครบสายที่ลงนาม
 
-คำสั่งอ่านอย่างเดียวที่รันใหม่ `node scripts/dogfood-record.mjs house-01 --status` รายงาน core chain ไม่ครบ และ shadow comparison ศูนย์ record ที่เริ่มแล้วเป็น verified-by-inspection ไม่ใช่ query โครงการที่ใช้งานจริงใหม่ reporter ใช้การมีไฟล์ตัดสิน chain ดังนั้นแม้ภายหลังขึ้น COMPLETE ก็ต้องตรวจเนื้อหา/provenance/acceptance ไม่ดูแค่ไฟล์ `git grep -nE 'realCutAllowed"?\s*[:=]\s*true' origin/main -- docs/evidence` คืน 0 บรรทัด ค่าเดียวที่เจอคือ `"realCutAllowed": false` ใน `house-01/started.json` (Claude ตรวจ 2026-09-29)
+คำสั่งอ่านอย่างเดียวที่รันใหม่ `node scripts/dogfood-record.mjs house-01 --status` รายงาน core chain ไม่ครบ และ shadow comparison ศูนย์ record ที่เริ่มแล้วเป็น verified-by-inspection ไม่ใช่ query โครงการที่ใช้งานจริงใหม่ reporter ใช้การมีไฟล์ตัดสิน chain ดังนั้นแม้ภายหลังขึ้น COMPLETE ก็ต้องตรวจเนื้อหา/provenance/acceptance ไม่ดูแค่ไฟล์ `git grep -nE 'realCutAllowed"?\s*[:=]\s*true' 5dc57e10457641cacddf9d776800b0bc704b209a -- docs/evidence` คืน 0 บรรทัด ค่าเดียวที่เจอคือ `"realCutAllowed": false` ใน `house-01/started.json` (Claude ตรวจ 2026-09-29)
 
 ## 11. S17 Status
 
@@ -163,7 +170,7 @@ S17-3: `docs/governance/ct-dec-002-signoff-checklist.en.md` บันทึก�
 
 Software machine profiles/post-processors: **PASS เฉพาะมีอยู่** มี presets ใน `src/cnc/machine/presets`, post dialects และ `server/src/post/machineProfiles.ts`  · การ calibrate จริง: **NOT FOUND ใน evidence tree หลัก** · production authority: **BLOCKED**
 
-`docs/governance/adr-070-machine-onboarding.en.md` อ้างเอกสาร KDT KN-2409LP บน governance commit ในอดีตอีกชุด และระบุ NOT_ASSESSED / MANUFACTURING RELEASE PROHIBITED / machine_verification_pending `git ls-tree origin/main docs/evidence/` แสดง 4 โฟลเดอร์ (ci, dogfood, hosted, interop) · `docs/evidence/machines` อยู่ใน branch `governance/s17-control-pack` ซึ่งยังไม่ merge เข้า main (Claude ตรวจ 2026-09-29) · ไม่ยืนยัน dimensional First Article, air-cut ที่มีพยาน, calibration, signed factory acceptance หรือ activation ของเครื่องจริง simulator/unit/golden fixtures เป็นหลักฐาน software เท่านั้น ADR-070 บังคับตรวจ identity/controller/tool/WCS/envelope, known-good job, simulation, dry-run, First Article และมนุษย์รับรองแยกแต่ละเครื่อง
+`docs/governance/adr-070-machine-onboarding.en.md` อ้างเอกสาร KDT KN-2409LP บน governance commit ในอดีตอีกชุด และระบุ NOT_ASSESSED / MANUFACTURING RELEASE PROHIBITED / machine_verification_pending `git ls-tree 5dc57e10457641cacddf9d776800b0bc704b209a docs/evidence/` แสดง 4 โฟลเดอร์ (ci, dogfood, hosted, interop) · `docs/evidence/machines` อยู่ใน branch `governance/s17-control-pack` @ `d5a9ce5ecd4472cb16a34106faf256630241603b` และ `git merge-base --is-ancestor` ยืนยันว่า commit นี้ยังไม่อยู่ใน main ที่ pin (Claude ตรวจ 2026-09-29T13:12Z) · ไม่ยืนยัน dimensional First Article, air-cut ที่มีพยาน, calibration, signed factory acceptance หรือ activation ของเครื่องจริง simulator/unit/golden fixtures เป็นหลักฐาน software เท่านั้น ADR-070 บังคับตรวจ identity/controller/tool/WCS/envelope, known-good job, simulation, dry-run, First Article และมนุษย์รับรองแยกแต่ละเครื่อง
 
 ## 14. D1 Blockers
 
@@ -186,6 +193,8 @@ field RPC ที่มีเป็นสิ่งที่อาจใช้ซ�
 DEFERRED: Phase 15 Predictive Maintenance, IoT Edge fleet, full warehouse, advanced BI, external SaaS billing, enterprise infrastructure, Phase 15 PPTX, 123-MCP completeness และ Real-Cut authority ไม่รวมการซื้อเครื่อง CNC, KMS ceremony เพื่อตัดจริง, certification หรือค่า physical calibration ในงบ D1 โรงงานผลิตจริงด้วยกระบวนการเดิมที่อนุมัติ
 
 ## 17. Cost to D0
+
+> **หมายเหตุ v0.1.1:** ประมาณการล่าสุดสำหรับวางแผนอยู่ใน[แผน v0.2](2026-09-29-daph-d1-shadow-pilot-plan-v0.2.th.md) คือ **52,250–146,750 บาท** (วิศวกร 15.75–25.75 วัน) ตัวเลขในหัวข้อ 17–20 คงไว้ตาม v0.1 เพื่อให้ตรวจย้อนได้
 
 **งบเผื่อเพื่อวางแผนตามเงื่อนไข ไม่ใช่ใบเสนอราคาหรืออนุมัติจ่าย** สมมติหนึ่ง tenant, staff 3–5 คน, บ้าน pilot หนึ่งงาน มีคอมพิวเตอร์/เครื่องจักร/กระบวนการโรงงานเดิม และ environment ที่อนุมัติรองรับ Supabase ไม่ใช้ตัวเลขเดิม 8,000–20,000 บาทต่อ subscriptions/เงินเดือนภายในยังไม่ทราบ ต้องแยกเงินสดกับ effort
 
@@ -265,14 +274,16 @@ verified-by-inspection: source/files/reporter observations; verified-by-gate: �
 
 ## ประวัติการแก้ไข
 
-**v0.1 → v0.1.1** (Claude, 29 กันยายน 2026) นำเข้า repo ตามที่เจ้าของอนุมัติ **ไม่ได้เปลี่ยนคำตัดสิน สถานะ ตัวเลข หรือข้อเสนอใดของ v0.1** แก้เฉพาะเพื่อให้ผ่าน `tools/lint_claims.py` และ `tools/lint_certifications.py` แบ่งเป็น 4 กลุ่ม:
+**v0.1** ตรวจและเขียนโดย Codex บน main ที่ pin `5dc57e10` · **v0.1.1** ปรับเอกสารโดย Claude วันที่ 29 กันยายน 2026 และนำเข้า repo ตามที่เจ้าของอนุมัติ **ไม่ได้เปลี่ยนคำตัดสิน สถานะ ตัวเลข หรือข้อเสนอใดของ v0.1** แก้เฉพาะถ้อยคำให้ผ่าน `tools/lint_claims.py` และ `tools/lint_certifications.py` และให้ทุกข้ออ้างอยู่ในกรอบของหลักฐาน
 
-1. **แยกประโยคหรือระบุประธานให้ชัด (13 จุด):** คำปฏิเสธในประโยคเดิมหมายถึงหลักฐานหรือการรันที่ยังไม่ได้ทำ แต่ linter ผูกเข้ากับชื่อไฟล์ที่มีอยู่จริงในประโยคหรือแถวตารางเดียวกัน เช่น "ไม่มี proof deploy ปัจจุบัน" เปลี่ยนเป็น "ยังไม่ได้เก็บ proof การ deploy ปัจจุบัน" หรือแทรก ` · ` คั่นประโยค
-2. **เปลี่ยนเป็นข้อเท็จจริงเชิงบวกพร้อมคำสั่งตรวจ (2 จุด):**
-   - เดิมเขียนว่า "main ที่เลือกไม่มี `docs/evidence/machines`" ฉบับนี้ระบุว่า `git ls-tree origin/main docs/evidence/` แสดง ci, dogfood, hosted, interop และ `docs/evidence/machines` อยู่ใน branch `governance/s17-control-pack` ที่ยังไม่ merge ข้อมูลนี้ละเอียดกว่าเดิม
-   - `realCutAllowed=true`: แนบคำสั่ง `git grep` และผล 0 บรรทัด
+1. **แยกประโยคหรือระบุประธานให้ชัด (13 จุด):** ภาษาไทยไม่มี ". " คั่นประโยค linter จึงนับทั้งย่อหน้าหรือทั้งแถวตารางเป็นประโยคเดียว แล้วผูกคำปฏิเสธเข้ากับชื่อไฟล์ที่มีอยู่จริงข้างๆ ข้อความที่พูดถึงหลักฐานเขียนใหม่เป็น "ยังไม่ได้ยืนยันจากหลักฐานที่ตรวจ" ไม่ใช่ "ยังไม่ได้ทำ" เช่น "ไม่มี proof deploy ปัจจุบัน" เปลี่ยนเป็น "ยังไม่ได้ยืนยัน proof การ deploy ปัจจุบันจากหลักฐานที่ตรวจ"
+2. **เปลี่ยนเป็นข้อเท็จจริงที่ตรวจได้ พร้อมคำสั่งที่ pin SHA:**
+   - `git ls-tree 5dc57e10… docs/evidence/` แสดง ci, dogfood, hosted, interop
+   - `docs/evidence/machines` อยู่ที่ `governance/s17-control-pack` @ `d5a9ce5e…` และ `git merge-base --is-ancestor` ยืนยันว่า commit นั้นยังไม่อยู่ใน main ที่ pin
+   - การค้น `realCutAllowed=true` ที่ `5dc57e10…` คืน 0 บรรทัด
    - `tools/verify_absence.py` ใช้กับกรณีนี้ไม่ได้ เพราะเป็นการค้นข้อความ ซึ่งเจอสตริงเดียวกันในเอกสารและประวัติ git
-3. **ใช้ผลจาก reporter แทนคำว่า "missing" (2 จุด):** acceptance ของ house-01 และสถานะ chain ของ dogfood อ้างผลของ `dogfood-record.mjs --status`
-4. **คำรับรองที่ตรวจซ้ำไม่ได้ (1 จุด):** "status สะอาด" เปลี่ยนเป็น "ผู้ตรวจบันทึกว่า `git status` ว่าง" เพราะ checkout นั้นอยู่ในเครื่องของผู้ตรวจ
+3. **ใช้ผลจาก reporter แทนคำว่า "missing":** acceptance ของ house-01 อ้างผลของ `dogfood-record.mjs --status`
+4. **`git status` ว่าง:** ระบุว่าเป็นบันทึกของ Codex และ Claude ตรวจซ้ำในเครื่องเดียวกันเมื่อ 2026-09-29T13:12Z คำสั่งและผลอยู่ในหัวข้อ 2
+5. **ตัวชี้ไปยังงบล่าสุด:** หัวข้อ 17–20 คงตัวเลขของ v0.1 ไว้ ประมาณการล่าสุดสำหรับวางแผนอยู่ในแผน v0.2 (52,250–146,750 บาท)
 
-**`evidence.json`:** ตัดรายชื่อไฟล์ใน `agent-artifacts-zip_9c76194a…zip` ออก เพราะเป็นเอกสารธุรกิจของ Daph และ repo นี้เป็น public ยังคงชื่อ ZIP, SHA-256 และจำนวนไฟล์ (695) ไว้ ส่วนรายชื่อไฟล์ใน `oriverse_vs_monolith_analysis.zip` ยังอยู่ครบ ไฟล์ HTML สร้างใหม่ด้วย `tools/render_docs.py`
+**`evidence.json`:** ตัดรายชื่อไฟล์ใน `agent-artifacts-zip_9c76194a…zip` ออก เพราะเป็นเอกสารธุรกิจของ Daph และ repo นี้เป็น public ยังคงชื่อ ZIP, SHA-256 และจำนวนไฟล์ (695) ไว้ ไฟล์ HTML สร้างใหม่ด้วย `tools/render_docs.py`

@@ -1,6 +1,6 @@
 # DAPH-SHADOW-PILOT-READINESS-v0.1.1
 
-Read-only inspection and planning • 29 September 2026 • v0.1.1 rewords claims to meet the repo guardrails (see "Revision history" at the end) • Primary baseline selected by owner • D1 NOT YET CLEARED / REAL-CUT BLOCKED
+Read-only inspection and planning • 29 September 2026 • v0.1.1 rewords claims to meet the repo guardrails (see "Revision history" at the end) • v0.1 inspector: Codex • v0.1.1 editor: Claude • Current planning estimate: v0.2 plan (52,250–146,750 THB) • Primary baseline selected by owner • D1 NOT YET CLEARED / REAL-CUT BLOCKED
 
 ## 1. Executive Verdict
 
@@ -12,7 +12,14 @@ The inspection/planning deliverable is complete within stated limits. It is not 
 
 ## 2. Current HEAD
 
-Primary audit root: `C:/Users/thai3/.codex/worktrees/daph-shadow-readiness/determined-williams (2)`. Git HEAD `5dc57e10457641cacddf9d776800b0bc704b209a`, detached checkout, and the inspector recorded an empty `git status` before and after inspection (the checkout is on the inspector's machine, so Claude could not re-check it). Product version: **17.5.2** (`package.json`). Latest commit: `docs(research): add SciSpace Monolith 12-chat reading archive (#126)`, 2026-09-29T11:48:51Z. [Pinned commit](https://github.com/indetailsgroup-hue/monolith-workspace/commit/5dc57e10457641cacddf9d776800b0bc704b209a).
+Primary audit root: `C:/Users/thai3/.codex/worktrees/daph-shadow-readiness/determined-williams (2)`. Git HEAD `5dc57e10457641cacddf9d776800b0bc704b209a`, detached checkout, and Codex (the v0.1 inspector) recorded an empty `git status` before and after inspection. Claude re-checked on the same machine at 2026-09-29T13:12Z: HEAD unchanged, `git status --porcelain` 0 lines (commands below).. Product version: **17.5.2** (`package.json`). Latest commit: `docs(research): add SciSpace Monolith 12-chat reading archive (#126)`, 2026-09-29T11:48:51Z. [Pinned commit](https://github.com/indetailsgroup-hue/monolith-workspace/commit/5dc57e10457641cacddf9d776800b0bc704b209a).
+
+```
+$ git -C "C:/Users/thai3/.codex/worktrees/daph-shadow-readiness/determined-williams (2)" rev-parse HEAD
+5dc57e10457641cacddf9d776800b0bc704b209a
+$ git -C "C:/Users/thai3/.codex/worktrees/daph-shadow-readiness/determined-williams (2)" status --porcelain | wc -l
+0
+```
 
 Comparison roots: parent `C:/Users/thai3/determined-williams (2)` / branch `guardrails/claim-linters` / HEAD `9bd52f36744693b154324a3bc772bf15796102a3`; nested `C:/Users/thai3/determined-williams (2)/determined-williams` / branch `fix/dxf-truth-chain` / HEAD `ccb47589de7d9980a59774aa168b7c50cb23f417`, version 2.1.0. Both remotes are `indetailsgroup-hue/monolith-workspace`. Parent had 11 modified tracked and 747 untracked status entries; nested had 11 modified, 12 deleted, 65 untracked entries. Counts are Git status entries, including collapsed directories. Parent now additionally contains this audit's documents/evidence and generation helper. No pre-existing changes were modified.
 
@@ -134,7 +141,7 @@ The DB workflow prepares canonical fresh migrations with duplicate-version mergi
 | DB/migrations/RLS | pgtap-tests.yml; db-verify.yml; cross_tenant_isolation.sql | PR-head fresh DB check success; not hosted apply/restore |
 | Security/audit | audit:production; npm-audit.yml | PR-head server dependency audit success; not whole-system security certification |
 | Playwright | playwright.e2e.config.ts; verify-full.yml | Visual check success at PR head; full Golden Path not established |
-| Factory verification | e2e/factory-verify-flow.spec.ts; src/packet-verifier | Deterministic contract exists; current no-cut operator run: not yet executed |
+| Factory verification | e2e/factory-verify-flow.spec.ts; src/packet-verifier | Deterministic contract exists; current no-cut operator run not confirmed by the inspected evidence |
 | DXF E2E | e2e/dxf-export.spec.ts | Conditional skips exist; @smoke CI has anti-skip enforcement; no current full path result |
 | Jobs/quotation E2E | e2e/jobs-quotation.spec.ts | Uses localStorage fixtures and conditional skips; not shared persistence proof |
 | Daph-specific | packages/field-app; scripts/dogfood-record.mjs; house-01 | Field tests exist; actual house core chain incomplete |
@@ -145,7 +152,7 @@ Proposed checks after execution is separately authorized: npm run typecheck:all;
 
 `docs/evidence/dogfood/house-01/started.json` records STARTED on 2026-07-18, shadowPacketEnabled=true, realCutAllowed=false, with project/site/role references and a first-event reference. The tree contains only started.json and its digest; no newer house directory was found. There are no contract, payment, install-plan, production or acceptance records in that tree; no shadow-compare records; no signed complete-house acceptance.
 
-Fresh read-only `node scripts/dogfood-record.mjs house-01 --status` reports core chain incomplete and zero shadow comparisons. The started record is verified-by-inspection, not a fresh query of the operational project. The reporter uses file presence for chain completeness; even a future COMPLETE must be checked for content, provenance and acceptance, not inferred solely from files. Source/docs search found no realCutAllowed=true in the inspected evidence tree.
+Fresh read-only `node scripts/dogfood-record.mjs house-01 --status` reports core chain incomplete and zero shadow comparisons. The started record is verified-by-inspection, not a fresh query of the operational project. The reporter uses file presence for chain completeness; even a future COMPLETE must be checked for content, provenance and acceptance, not inferred solely from files. `git grep -nE 'realCutAllowed"?\s*[:=]\s*true' 5dc57e10457641cacddf9d776800b0bc704b209a -- docs/evidence` returns 0 lines; the only value present is `"realCutAllowed": false` in `house-01/started.json` (checked by Claude, 2026-09-29T13:12Z).
 
 ## 11. S17 Status
 
@@ -163,7 +170,7 @@ S17-3: `docs/governance/ct-dec-002-signoff-checklist.en.md` records three roles 
 
 Software machine profiles/post-processors: **PASS for existence only**, with presets in `src/cnc/machine/presets`, post dialects and `server/src/post/machineProfiles.ts`. Physical calibration: **NOT FOUND in primary evidence tree**. Accepted production authority: **BLOCKED**.
 
-`docs/governance/adr-070-machine-onboarding.en.md` references KDT KN-2409LP source evidence on another historical governance commit and explicitly says NOT_ASSESSED / MANUFACTURING RELEASE PROHIBITED / machine_verification_pending. `git ls-tree origin/main docs/evidence/` lists four directories (ci, dogfood, hosted, interop); `docs/evidence/machines` exists only on branch `governance/s17-control-pack`, not yet merged into main (checked by Claude, 2026-09-29). No dimensional First Article, witnessed air-cut, calibration record, signed factory acceptance or machine-instance activation was established. Simulator/unit/golden fixtures are software evidence only. ADR-070 requires identity/controller/tool/WCS/envelope checks, known-good job, simulation, dry-run, First Article and human acceptance per machine.
+`docs/governance/adr-070-machine-onboarding.en.md` references KDT KN-2409LP source evidence on another historical governance commit and explicitly says NOT_ASSESSED / MANUFACTURING RELEASE PROHIBITED / machine_verification_pending. `git ls-tree 5dc57e10457641cacddf9d776800b0bc704b209a docs/evidence/` lists four directories (ci, dogfood, hosted, interop). `docs/evidence/machines` exists on branch `governance/s17-control-pack` @ `d5a9ce5ecd4472cb16a34106faf256630241603b`; `git merge-base --is-ancestor` confirms that commit is not in the pinned main (checked by Claude, 2026-09-29T13:12Z). No dimensional First Article, witnessed air-cut, calibration record, signed factory acceptance or machine-instance activation was established. Simulator/unit/golden fixtures are software evidence only. ADR-070 requires identity/controller/tool/WCS/envelope checks, known-good job, simulation, dry-run, First Article and human acceptance per machine.
 
 ## 14. D1 Blockers
 
@@ -186,6 +193,8 @@ Four real-cut requirements: (A) S17-1..5 closure **PARTIAL**, combined gate BLOC
 DEFERRED: Phase 15 Predictive Maintenance, IoT Edge fleet, full warehouse, advanced BI, external SaaS billing, enterprise infrastructure, Phase 15 PPTX, full 123-MCP completeness and Real-Cut authority. No new CNC machine, KMS real-cut ceremony, certification program or physical calibration spend is included in the D1 estimate. Actual existing factory work continues under its current approved process.
 
 ## 17. Cost to D0
+
+> **v0.1.1 note:** the current planning estimate is in the [v0.2 plan](2026-09-29-daph-d1-shadow-pilot-plan-v0.2.en.md): **52,250–146,750 THB** (15.75–25.75 engineer-days). Sections 17–20 keep the v0.1 figures for traceability.
 
 **Conditional planning allowance, not a quote or spending approval.** Assume one tenant, 3–5 staff, one pilot house, existing computers/machine/factory process and an approved Supabase-compatible environment. Do not inherit the historical 8,000–20,000 THB figure. Existing subscriptions/in-house salaries are unknown; distinguish cash from effort.
 
@@ -265,14 +274,16 @@ Inspection/planning delivered. No production or cutting authority granted.
 
 ## Revision history
 
-**v0.1 → v0.1.1** (Claude, 29 September 2026). Imported into the repo with owner approval. **No verdict, status, figure or recommendation from v0.1 was changed.** The only edits were to pass `tools/lint_claims.py` and `tools/lint_certifications.py`. Most flagged lines were in the Thai file: Thai prose has no ". " sentence breaks, so whole paragraphs and table rows read as one sentence. The edits fall into four groups:
+**v0.1** was inspected and written by Codex on the pinned main `5dc57e10`. **v0.1.1** was edited by Claude on 29 September 2026 and imported into the repo with owner approval. No verdict, status, figure or recommendation from v0.1 was changed. The edits make the wording pass `tools/lint_claims.py` and `tools/lint_certifications.py` and keep every claim within its evidence.
 
-1. **Sentences split, or subjects made explicit.** The negation referred to evidence or a run not yet performed. The linter attached it to an existing file named in the same sentence or table row. Example: "no current deployment proof" became "current deployment proof not yet collected". In some places a ` · ` separator was inserted instead.
-2. **Absences replaced by positive, checkable facts.**
-   - `docs/evidence/machines`: `git ls-tree origin/main docs/evidence/` lists ci, dogfood, hosted and interop. The machines directory exists on the unmerged branch `governance/s17-control-pack`. This is more precise than the original.
-   - `realCutAllowed=true`: the `git grep` command is cited, with its 0-line result.
+1. **Split sentences or made the subject explicit (13 places).** Thai prose has no ". " sentence breaks, so the linter read whole paragraphs and table rows as one sentence. It then attached a negation about evidence or a run to an existing file named nearby. Negations about evidence now say that the thing was *not confirmed by the inspected evidence*, not that it never happened. Example: "no current deployment proof" became "current deployment proof not confirmed from the inspected evidence".
+2. **Absences replaced by checkable facts, with commands pinned to SHAs.**
+   - `git ls-tree 5dc57e10… docs/evidence/` lists ci, dogfood, hosted and interop.
+   - `docs/evidence/machines` exists on `governance/s17-control-pack` @ `d5a9ce5e…`. `git merge-base --is-ancestor` shows that commit is not in the pinned main.
+   - The `realCutAllowed=true` search returns 0 lines at `5dc57e10…`.
    - `tools/verify_absence.py` does not fit these cases. It is a text search, and it finds the strings in documents and git history.
-3. **"missing" replaced by reporter output.** House-01 acceptance now cites `dogfood-record.mjs --status`, which shows PENDING.
-4. **A certification Claude cannot re-check.** "clean status" is now attributed to the inspector, because that checkout is on the inspector's machine.
+3. **"missing" replaced by reporter output.** House-01 acceptance now cites `dogfood-record.mjs --status`.
+4. **The empty `git status` claim is attributed to Codex and re-checked.** Claude re-ran it on the same machine at 2026-09-29T13:12Z. The commands and output are in section 2.
+5. **Budget pointer.** Sections 17–20 keep the v0.1 figures. The current planning estimate is in the v0.2 plan (52,250–146,750 THB).
 
-**`evidence.json`:** the file-name listing for `agent-artifacts-zip_9c76194a…zip` was removed, because it names Daph business documents and this repo is public. The archive name, SHA-256 and entry count (695) are kept. The `oriverse_vs_monolith_analysis.zip` listing is unchanged. The HTML files were regenerated with `tools/render_docs.py`.
+**`evidence.json`:** the file-name listing for `agent-artifacts-zip_9c76194a…zip` was removed, because it names Daph business documents and this repo is public. The name, SHA-256 and entry count (695) are kept. The HTML files were regenerated with `tools/render_docs.py`.

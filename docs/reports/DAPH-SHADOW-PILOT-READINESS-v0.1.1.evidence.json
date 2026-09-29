@@ -460,19 +460,19 @@
   "deliverables": [
     {
       "file": "DAPH-SHADOW-PILOT-READINESS-v0.1.1.en.md",
-      "sha256": "536b1b2e5e76bbfcbf2207e6d96f5085a1bb78fe766433a779c29a43a38f2477"
+      "sha256": "b13ab0167ab9a65bb2b302ad341460ad4d5a82a545467639700bbe3997eb464c"
     },
     {
       "file": "DAPH-SHADOW-PILOT-READINESS-v0.1.1.en.html",
-      "sha256": "2ba9f6250aa16c2d0d3dafab65d9778a6a4962832502064672e7c2e7a561072a"
+      "sha256": "4dd67ecd3bad66e928f36ae95c710725bb445d1385a7721a93b49e64d00290a1"
     },
     {
       "file": "DAPH-SHADOW-PILOT-READINESS-v0.1.1.th.md",
-      "sha256": "468205d9929008a503c26b8a3dff83479c4ba6d65363c7dd3506dfd24bb54daa"
+      "sha256": "2b1e30a09ef601af95cb60bd3aa54981329ce781719a110daa5c22c98982373f"
     },
     {
       "file": "DAPH-SHADOW-PILOT-READINESS-v0.1.1.th.html",
-      "sha256": "9f6dad3d850296cdd3cee53afd70c905046f617cd3cba430a0c59b387602b5cc"
+      "sha256": "2acdbd5b984b7e41a0ae178b4c9f3a287facc8e55007e3316496e2283f9c8d22"
     },
     {
       "file": "DAPH-SHADOW-PILOT-READINESS-v0.1.1.ci.json",
@@ -481,9 +481,43 @@
   ],
   "revision": {
     "version": "v0.1.1",
-    "by": "Claude",
-    "date": "2026-09-29",
     "base_version": "v0.1",
-    "summary": "Wording changed to pass tools/lint_claims.py and tools/lint_certifications.py; no verdict, status, figure or recommendation changed; HTML regenerated with tools/render_docs.py; business ZIP file listing redacted. See Revision history in the report."
+    "inspected_by": "Codex (v0.1)",
+    "edited_by": "Claude (v0.1.1)",
+    "date": "2026-09-29",
+    "summary": "Wording only: passes tools/lint_claims.py and tools/lint_certifications.py; evidence negations now read \"not confirmed by the inspected evidence\"; evidence commands pinned to SHAs; no verdict, status, figure or recommendation changed; HTML regenerated with tools/render_docs.py; business ZIP file listing redacted.",
+    "current_planning_estimate": "2026-09-29-daph-d1-shadow-pilot-plan-v0.2 (52,250-146,750 THB)",
+    "rechecks": [
+      {
+        "at": "2026-09-29T13:12Z",
+        "by": "Claude",
+        "command": "git -C <codex worktree> rev-parse HEAD",
+        "result": "5dc57e10457641cacddf9d776800b0bc704b209a"
+      },
+      {
+        "at": "2026-09-29T13:12Z",
+        "by": "Claude",
+        "command": "git -C <codex worktree> status --porcelain | wc -l",
+        "result": "0"
+      },
+      {
+        "at": "2026-09-29T13:12Z",
+        "by": "Claude",
+        "command": "git ls-tree --name-only 5dc57e10457641cacddf9d776800b0bc704b209a docs/evidence/",
+        "result": "ci, dogfood, hosted, interop"
+      },
+      {
+        "at": "2026-09-29T13:12Z",
+        "by": "Claude",
+        "command": "git merge-base --is-ancestor d5a9ce5ecd4472cb16a34106faf256630241603b 5dc57e10457641cacddf9d776800b0bc704b209a",
+        "result": "exit 1 (not an ancestor); d5a9ce5e = origin/governance/s17-control-pack, contains docs/evidence/machines"
+      },
+      {
+        "at": "2026-09-29T13:12Z",
+        "by": "Claude",
+        "command": "git grep -nE 'realCutAllowed\"?\\s*[:=]\\s*true' 5dc57e10457641cacddf9d776800b0bc704b209a -- docs/evidence | wc -l",
+        "result": "0"
+      }
+    ]
   }
 }
