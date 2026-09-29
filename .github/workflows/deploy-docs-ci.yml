@@ -19,19 +19,6 @@ on:
   pull_request:
     branches:
       - main
-    paths:
-      - '.github/chapter-cache.json'
-      - 'docs/manufacturing-os-site/**'
-      - 'docs/chapters/**'
-      - 'scripts/docs/**'
-      - 'tests/docs/**'
-      - '.github/workflows/*docs*.yml'
-      - '.github/workflows/*chapter*.yml'
-      - '.github/workflows/generate-site-data.yml'
-      - '.github/workflows/lighthouse-audit.yml'
-      - '.github/workflows/notify-slack-deploy.yml'
-      - '.github/workflows/auto-update-changelog.yml'
-      - '.github/workflows/auto-deploy-scispace.yml'
   workflow_dispatch:
 
 jobs:

@@ -1,0 +1,40 @@
+name: LINE group acknowledgement contract
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+      - 'scripts/line-group-plain-ack/**'
+      - '.github/workflows/line-group-ack-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: contract-only
+          POSTGRES_DB: line_ack_contract
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Preserve baseline handler contract
+        run: node --test scripts/line-group-plain-ack/migration-contract.check.mjs
+      - name: Test SQL behavior in isolated fixture
+        env:
+          PGPASSWORD: contract-only
+        run: |
+          cat scripts/line-group-plain-ack/fixture.sql \
+              supabase/migrations/20270328_line_group_plain_ack.sql \
+              scripts/line-group-plain-ack/behavior.sql |
+            psql -h localhost -U postgres -d line_ack_contract -v ON_ERROR_STOP=1
