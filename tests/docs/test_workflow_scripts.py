@@ -86,5 +86,36 @@ class AllDocumentationShellTests(unittest.TestCase):
                         result=subprocess.run([BASH,'-n'],input=step['run'],text=True,encoding='utf-8',capture_output=True)
                         self.assertEqual(result.returncode,0,result.stderr)
 
+# Required status checks on main (branch protection, read 2026-09-29). The list
+# lives in GitHub settings, not in the repo, so keep it in step with them.
+REQUIRED_CHECKS = {
+    'TypeScript Type Check',
+    'Unit Tests (people + culture)',
+    'Storybook Build (CI verify)',
+    'Chromatic — Visual Regression (People & Culture)',
+    'Validate Site Files',
+}
+
+class RequiredCheckTriggerTests(unittest.TestCase):
+    def test_required_checks_run_on_every_pull_request(self):
+        # A path-filtered pull_request trigger never starts the job for PRs outside
+        # the paths, so a required check waits for ever and the PR needs a bypass.
+        # docs-only PRs were blocked on "Validate Site Files" this way.
+        found = set()
+        for path in sorted(WORKFLOWS.glob('*.yml')):
+            workflow = yaml.load(path.read_text(encoding='utf-8'), Loader=yaml.BaseLoader)
+            names = {job.get('name', key) for key, job in (workflow.get('jobs') or {}).items()}
+            required = names & REQUIRED_CHECKS
+            if not required:
+                continue
+            found |= required
+            trigger = workflow.get('on', {}).get('pull_request')
+            with self.subTest(workflow=path.name):
+                self.assertIsInstance(trigger, dict, 'required check must run on pull_request')
+                self.assertNotIn('paths', trigger)
+                self.assertNotIn('paths-ignore', trigger)
+                self.assertIn('main', trigger.get('branches', ['main']))
+        self.assertEqual(found, REQUIRED_CHECKS, 'every required check must come from a workflow in this repo')
+
 if __name__ == '__main__':
     unittest.main()
