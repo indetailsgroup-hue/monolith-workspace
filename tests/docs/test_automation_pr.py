@@ -59,7 +59,12 @@ class AutomationPRTests(unittest.TestCase):
             self.assertIn('a'*40,path.read_text(encoding='utf-8'));self.assertIn('b'*40,path.read_text(encoding='utf-8'))
 
     def test_cache_only_pr_runs_required_docs_check(self):
-        w=workflow('deploy-docs-ci.yml')
-        self.assertIn('.github/chapter-cache.json',w['on']['pull_request']['paths'])
+        # The required docs check now runs on every PR to main (no paths filter),
+        # which covers a PR touching only .github/chapter-cache.json. If a filter
+        # is ever reintroduced, it must still include the cache file.
+        pr=workflow('deploy-docs-ci.yml')['on']['pull_request']
+        self.assertIn('main',pr['branches'])
+        if 'paths' in pr:
+            self.assertIn('.github/chapter-cache.json',pr['paths'])
 
 if __name__=='__main__':unittest.main()
