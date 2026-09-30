@@ -13,7 +13,6 @@ on:
       - '.github/workflows/*chapter*.yml'
       - '.github/workflows/generate-site-data.yml'
       - '.github/workflows/lighthouse-audit.yml'
-      - '.github/workflows/notify-slack-deploy.yml'
       - '.github/workflows/auto-update-changelog.yml'
       - '.github/workflows/field-app-pages.yml'
   # No paths filter on pull_request, on purpose. "Validate Site Files" is a
