@@ -40,3 +40,13 @@ Non-response remains UNKNOWN. A claim of absence needs defined system/environmen
 | Push and actual CI | NOT APPROVED | Owner authorization after reviewed local changes; actual Actions conclusion required |
 
 No grant, migration, ref, branch integration, deployment or external message is performed by creating this register. The E1/E2/E3 evidence acceptance does not decide these questions.
+
+## Handoff ready — recipients pending
+
+Manufacturing/integration owner: UNASSIGNED. Ops coordinator: UNASSIGNED. The owner has been asked for both names; no message has been sent to an unidentified recipient.
+
+Manufacturing request: review 0170 versus 0191 on the chosen integration base; return the proposed migration order, final effective EXECUTE for every overload, edge compatibility and complete-suite acceptance plan. Do not merge or change factory code under this request.
+
+Ops request: complete RPC-01 through RPC-12 per environment, including additional external/manual callers. Return named accountable owners, exact signatures, authentication classes and redacted evidence references. Do not send keys, tokens or customer payloads. UNKNOWN remains valid when unsupported; absence requires stated inventory coverage.
+
+Return format: owner; environment; RPC/signature; caller or chain; active/last use; authentication class; retain/retire recommendation; redacted evidence reference; unresolved questions. After both replies, prepare the exact B12 permission matrix and integration decision for approval. No external system access is authorized by this handoff.
