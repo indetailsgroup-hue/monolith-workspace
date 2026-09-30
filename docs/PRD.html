@@ -827,6 +827,9 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 <p><strong>ภาพรวม LINE ทั้งระบบ:</strong> ดูเอกสารรวม <code>docs/LINE-Architecture-System-Complete.md</code> (+<code>.html</code>) — รวมทุก touchpoint (OA Commerce, customer approval, capture ผ่าน LINE, workflow, installation groups) พร้อม status matrix + guardrails</p>
 </blockquote>
 <h3>6.6 โมดูล LINE OA Commerce</h3>
+<blockquote>
+<p>⚠️ <strong>สถานะในหัวข้อนี้ถูกแทนที่แล้ว</strong> — การ verify จากโค้ดจริง (26 ก.ค. + 1 ส.ค. 2026) พบว่า "✅ เสร็จ" ด้านล่างไม่ตรง live path หลายรายการ (ตัวส่งลูกค้ามีบั๊ก B1–B9, autonomy gate/order/forecast ไม่มี caller) — <strong>ให้ยึด PRD ของ LINE เป็นสถานะจริง:</strong> <code>docs/PRD-LINE-OA.th.md</code> (ไทย) / <code>docs/PRD-LINE-OA.en.md</code> (อังกฤษ)</p>
+</blockquote>
 <p><strong>ไฟล์หลัก:</strong> <code>supabase/functions/line-webhook</code>, <code>line-outbound-sender</code>, migrations <code>00000000000000–62</code> — ✅ เสร็จ (13 req, 31 properties ผ่าน PBT)</p>
 <p><strong>[P0] ทั้งหมด ✅</strong></p>
 <ul>

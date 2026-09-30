@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PRD — The Complete LINE OA Communication System</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>PRD — The Complete LINE OA Communication System (MONOLITH Repair Intelligence)</h1>
+<blockquote><p><strong>Language:</strong> English · Thai edition: <code>docs/PRD-LINE-OA.th.md</code> · HTML: <code>docs/PRD-LINE-OA.en.html</code> / <code>docs/PRD-LINE-OA.th.html</code></p><p><strong>Edition:</strong> 1.2 · 30 September 2026 (1.1 = 1 Aug 2026 · 1.0 = 26 Jul 2026)</p><p><strong>What changed in 1.2:</strong> added §0 implementation status after Phase A, added a status column to the §6 P0 table, corrected the guard evidence filename in §2.1, marked the B1 evidence as pre-fix code, added the amendment information to question 7 — the original §2 findings are kept intact as the verification record</p><p><strong>Document status:</strong> awaiting the owner's (Dave's) decisions on the open questions in §8 before Phases B–D</p><p><strong>Writing rule:</strong> every row separates &quot;actually working / code present but not wired / spec only&quot; and cites file:line — status verified against real code on 26 Jul and 1 Aug 2026 unless marked &quot;from the earlier audit&quot;</p><p><strong>Truth note:</strong> older documents (<code>docs/LINE-Architecture-System-Complete.md:40</code>, <code>docs/PRD.md:512</code>) claim &quot;LINE OA Commerce ✅ 20/20&quot;, which is overstated for the live path — this document is the more truthful status record</p></blockquote>
+<hr>
+<h2>0. Implementation status (edition 1.2)</h2>
+<p><strong>Phase A (P0-1 to P0-6) is built and has passed cross-vendor review — but only on a branch: not pushed and not deployed</strong></p>
+<ul><li><strong>Branch:</strong> <code>codex/repair-intelligence-phase0-trust</code> · accepted commit: <code>46a203a6</code> (1 Aug 2026)</li><li><strong>Migrations:</strong> <code>0193_line_outbound_claim_and_record.sql</code>, <code>0194_line_outbound_retry_and_claim_fencing.sql</code>, <code>0195_line_outbound_timezone_safe_backoff.sql</code>, <code>0196_line_outbound_timezone_safe_sent_at.sql</code> plus changes to <code>supabase/functions/line-outbound-sender/index.ts</code></li><li><strong>Cross-vendor review:</strong> rounds A1, A2 and A3 were rejected (each with file:line evidence) → round A4 received <code>SOL VERDICT: ACCEPT PHASE A4</code></li><li><strong>Evidence run by the acceptance gate itself:</strong> pgTAP 70/70 in a rollback wrapper (0193→0196, including tests executed under the <code>Asia/Bangkok</code> timezone) · vitest 18 files / 73 tests · no leakage into the shared stack · no <code>cron.schedule</code> in 0193–0196</li><li><strong>Effect on real environments:</strong> because nothing is deployed, every environment running the old code still has defects B1–B6</li></ul>
+<div class="table-wrap"><table><thead><tr>
+<th>Defect</th>
+<th>Status as of edition 1.2</th>
+</tr></thead><tbody>
+<tr>
+<td>B1 queue pickup without a lock</td>
+<td>✅ fixed on the branch — the sender calls <code>rpc_claim_line_outbound_batch</code> (<code>index.ts:676-687</code>), <code>FOR UPDATE SKIP LOCKED</code>, timeout-based reclaim, <code>claim_token</code> fencing</td>
+</tr>
+<tr>
+<td>B2 service role cannot record results</td>
+<td>✅ fixed on the branch — service context is detected from the SQL role (<code>current_setting('role')</code>), not the JWT; user checks are not relaxed</td>
+</tr>
+<tr>
+<td>B3 group rows cannot record results</td>
+<td>✅ fixed on the branch — LEFT JOIN + vertical from <code>line_groups</code> + the 0097 <code>monolith</code> fallback</td>
+</tr>
+<tr>
+<td>B4 no transition guard</td>
+<td>✅ fixed on the branch — only still-<code>pending</code> rows can be recorded; finished rows return <code>recorded=false</code> with no duplicate audit</td>
+</tr>
+<tr>
+<td>B5 one failure is permanently terminal</td>
+<td>✅ fixed on the branch — transient/permanent split + exponential backoff (1 second × 2^n, capped at 5 minutes) + a 5-attempt bound</td>
+</tr>
+<tr>
+<td>B6 no cron</td>
+<td>⏸ deliberately not added — Phase C work awaiting §8 questions 1, 2, 4</td>
+</tr>
+<tr>
+<td>B7 blind tests</td>
+<td>✅ new tests hit real Postgres (pgTAP) plus tests proving the sender is wired to the RPC</td>
+</tr>
+<tr>
+<td>B8 <code>handler_error</code> counted as success</td>
+<td>🔴 not fixed — P0-9 has not been built</td>
+</tr>
+<tr>
+<td>B9 <code>line-login</code> without state/nonce</td>
+<td>🔴 not fixed — in P1</td>
+</tr>
+</tbody></table></div>
+<p><strong>Not yet proven (do not overstate):</strong> Python property suites were never executed (the machine used has no python) · the two-client claim race test was skipped because it requires an explicitly designated ephemeral stack DSN · no CI run, real Edge Function run or real LINE API run has happened · <code>X-Line-Retry-Key</code> behaviour on the LINE side is an external guarantee — the database fence alone does not stop two lease-expired workers from both reaching LINE</p>
+<p><strong>Additional defects found and fixed during Phase A:</strong> <code>next_attempt_at</code> and <code>sent_at</code> were assigned <code>timezone('utc', now())</code> (a timestamp without time zone) into <code>timestamptz</code> columns, so in Thailand the backoff collapsed to zero and send times were recorded ~7 hours early — fixed in 0195/0196 with tests under <code>Asia/Bangkok</code></p>
+<hr>
+<h2>1. Problem Statement</h2>
+<p>MONOLITH uses LINE as its main channel to customers and field technicians (Thai customers live on LINE). The inbound side (webhook, groups, acceptance cards) is fully wired with strong guards, but the outbound side to customers cannot yet be switched on: the sender (<code>line-outbound-sender</code>) has serious defects that would, if run for real, resend every message to customers in an endless loop, and nothing in the repo schedules it (no cron), while several nightly sweeps enqueue customer messages every day. If these gaps are not closed before customer messaging expands, the risk is spamming customer groups and immediate damage to brand trust.</p>
+<hr>
+<h2>2. Verified Status Matrix</h2>
+<blockquote><p>This section is the audit record from 26 Jul and 1 Aug 2026 (before Phase A) — for post-fix status see §0</p></blockquote>
+<h3>2.1 ✅ Actually working — fully wired, with callers on the live path</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Capability</th>
+<th>Evidence</th>
+<th>Verification</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>Inbound:</strong> <code>line-webhook</code> → <code>rpc_ingest_line_webhook</code> verifies HMAC, deduplicates via <code>webhook_event_id</code> UNIQUE, separates group / 1:1</td>
+<td><code>supabase/functions/line-webhook/index.ts:87-127</code>, <code>00000000000022_line_oa_ingest_webhook.sql</code>, HMAC <code>00000000000010</code></td>
+<td>confirmed 1 Aug 2026</td>
+</tr>
+<tr>
+<td><strong>Group flows:</strong> router <code>fn_line_handle_group_event</code> — <code>#ผูก</code> (bind), <code>#ปัญหา</code> (issue), photos → capture, Flex acceptance card</td>
+<td><code>0097_line_group_bot_flows.sql:101</code></td>
+<td>earlier audit + insert paths confirmed 26 Jul</td>
+</tr>
+<tr>
+<td><strong>Customer-group guard:</strong> <code>fn_line_guard_customer_group</code> fails closed — templates not marked <code>audience='customer'</code> cannot enter a customer group</td>
+<td><code>0095_line_groups_identity.sql:102,145</code> + re-wire <code>0101_scrutiny3_fixes.sql:16</code></td>
+<td>confirmed 1 Aug 2026</td>
+</tr>
+<tr>
+<td><strong>Staff notifications:</strong> <code>notification-retry-worker</code> + 1-minute cron, <code>FOR UPDATE SKIP LOCKED</code> claim, 5-step exponential backoff, dead-letter</td>
+<td>cron <code>0089_cron_schedules.sql:87</code>, claim v3 <code>0084</code></td>
+<td>cron confirmed 26 Jul</td>
+</tr>
+<tr>
+<td><strong>Staff LINE Login + binding + consent:</strong> <code>line-login</code> → <code>rpc_line_login_upsert</code> stores <code>consent_at</code> at binding</td>
+<td><code>0105_staff_bind_login.sql:86-92</code></td>
+<td>confirmed 26 Jul</td>
+</tr>
+<tr>
+<td><strong>Token rotation:</strong> cron <code>wf-line-token-refresh</code> three times a month</td>
+<td><code>0154_line_token_rotation.sql:77</code></td>
+<td>confirmed 26 Jul</td>
+</tr>
+<tr>
+<td><strong>Enqueueing of outbound messages</strong> (from webhook flows + nightly sweeps) — ~60 direct insert sites</td>
+<td><code>0097:140</code>, <code>0098:93</code>, <code>0100:513</code>, <code>0101</code>, <code>0107</code>, <code>0111</code>, <code>0114:94</code>, <code>0127</code>, <code>0134</code>, <code>0136</code>, <code>0143</code></td>
+<td>confirmed 26 Jul</td>
+</tr>
+</tbody></table></div>
+<h3>2.2 🔴 Code present and tests passing, but not usable for real (verified defects)</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>#</th>
+<th>Defect</th>
+<th>Evidence</th>
+</tr></thead><tbody>
+<tr>
+<td>B1</td>
+<td><strong>Queue pickup without a lock</strong> — <code>claimPending</code> was a plain <code>SELECT ... status='pending' ... limit</code> with no <code>FOR UPDATE SKIP LOCKED</code> and no claim marker → overlapping runs send duplicates</td>
+<td><code>line-outbound-sender/index.ts:589-602</code> (pre-fix code — replaced on the branch)</td>
+</tr>
+<tr>
+<td>B2</td>
+<td><strong>Result recording rejected for every row</strong> — the sender calls <code>rpc_record_line_send_result</code> with the service role, but the RPC checks <code>is_governance_role() or has_site_access()</code>, which reads roles from JWT <code>app_metadata</code> (absent for the service role → <code>[]</code>), and EXECUTE is granted only to <code>authenticated</code> → the send succeeds on LINE but cannot be recorded → the row stays <code>pending</code> → <strong>every row is resent in an endless loop</strong></td>
+<td><code>00000000000041:162</code>, <code>00000000000000_c12_foundation.sql:36</code>, <code>00000000000041:253-258</code>, sender side <code>index.ts:576-584, 664-669</code> (pre-fix)</td>
+</tr>
+<tr>
+<td>B3</td>
+<td><strong>Group rows can never record a result</strong> — the RPC INNER JOINs <code>line_oa_conversations</code>, but group rows (from 0097 onward) have a NULL <code>conversation_id</code> → always &quot;not found&quot;</td>
+<td><code>00000000000041:143-148</code> versus <code>0097:140</code></td>
+</tr>
+<tr>
+<td>B4</td>
+<td><strong>No transition guard</strong> — <code>v_current_status</code> is loaded and locked but never checked → a <code>sent</code> row can be flipped to <code>failed</code>, recorded twice, audited twice</td>
+<td><code>00000000000041:143</code> (load), <code>:194-210</code> (unchecked update)</td>
+</tr>
+<tr>
+<td>B5</td>
+<td><strong>A single failed send is permanently terminal</strong> — <code>failed</code> is a final state and no migration ever moves it back to <code>pending</code></td>
+<td><code>00000000000041:179-199</code> + grep across migrations</td>
+</tr>
+<tr>
+<td>B6</td>
+<td><strong>No cron in the repo invokes the customer sender</strong> — the crons that exist are notification-retry/sla/digest (<code>0089:87-96</code>), media-fetch (<code>0099:140</code>), token refresh (<code>0154:77</code>) → customer messages from nightly sweeps (<code>0114</code>, <code>0116</code>, <code>0140</code>) pile up in the queue</td>
+<td>grep <code>cron.schedule</code> across migrations</td>
+</tr>
+<tr>
+<td>B7</td>
+<td><strong>Tests blind to B1–B4</strong> — the integration test injects a fully fake dependency set and never touches real Postgres or real permissions</td>
+<td><code>tests/line-oa-commerce/ts/senderClaimAndRecord.integration.test.ts:43</code></td>
+</tr>
+<tr>
+<td>B8</td>
+<td><strong>A failed handler is counted as processed and the event is lost forever</strong> — <code>fn_line_handle_group_event</code> catches the exception and returns <code>'handler_error:...'</code>, but the ingest skip list does not include that prefix → the inbound row, audit entry and <code>events_processed</code> count are written as normal, and because the inbound row now exists, a LINE redelivery is dropped as a duplicate → the failed event disappears permanently while being reported as success (first found in the product repo's 31 Jul 2026 research, confirmed in this repo on 1 Aug)</td>
+<td><code>0097:281</code> (return), <code>0097:437-438</code> (skip list), <code>0097:454</code> (counts processed), <code>0097:429-433</code> (dedupe)</td>
+</tr>
+<tr>
+<td>B9</td>
+<td><strong>Staff login uses no OAuth state / OIDC nonce</strong> — <code>line-login</code> accepts only <code>{code, redirect_uri, bind_token?}</code> → callback swap / replay risk (first-time binding is mitigated by an office-issued <code>bind_token</code>, but later logins have no such check)</td>
+<td><code>supabase/functions/line-login/index.ts:2,9</code></td>
+</tr>
+</tbody></table></div>
+<h3>2.3 ⚫ Complete code with passing tests but zero callers (fully dead) — keep-or-remove decision pending</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Subsystem</th>
+<th>Defined at</th>
+<th>Caller check</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>Autonomy gate + ≤200-character brand voice</strong> (<code>rpc_send_line_outbound</code>)</td>
+<td><code>00000000000040:131</code></td>
+<td><strong>0 callers</strong> — referenced only in tests / spec / comments; every real send path inserts directly into the queue, so it has never governed a single real message</td>
+</tr>
+<tr>
+<td><strong>Ordering</strong> (<code>rpc_create_line_order</code>, <code>line_oa_orders</code>)</td>
+<td><code>00000000000050:397</code></td>
+<td>0 callers outside tests/spec</td>
+</tr>
+<tr>
+<td><strong>Forecast sync</strong> (<code>rpc_sync_line_forecast</code>)</td>
+<td><code>00000000000060:88</code></td>
+<td>0 callers outside tests/spec</td>
+</tr>
+<tr>
+<td><strong>R-03 identity merge</strong> (<code>rpc_evaluate_identity_merge_candidate</code>)</td>
+<td><code>00000000000021:96</code></td>
+<td>0 callers outside tests/spec</td>
+</tr>
+<tr>
+<td><strong>24-hour auto-close</strong> (session timeout sweep)</td>
+<td><code>00000000000061:50</code></td>
+<td>the <code>cron.schedule</code> sits inside a comment — never actually scheduled</td>
+</tr>
+<tr>
+<td><strong>TCCK vertical</strong> (multi-vertical food)</td>
+<td>spread across the schema (<code>vertical_context</code>)</td>
+<td>no TCCK-side flow is wired (from the earlier audit)</td>
+</tr>
+</tbody></table></div>
+<h3>2.4 📝 Spec only — no code yet</h3>
+<ul><li><strong>Customer consent (PDPA):</strong> customers have no consent field at all, and no send path checks consent before sending</li><li><strong>The consent that exists is staff-only:</strong> <code>identity_binding.consent_at</code> (<code>0088:10</code>), deliberately left as &quot;Phase 1.8 — never backfill consent that never happened&quot; (<code>0088:14-15</code>)</li><li><strong>Template admin UI:</strong> templates are currently seeded by migration only</li><li><strong>Parts of guardrails G4/G5/G7/G12:</strong> see <code>docs/LINE-Architecture-System-Complete.md</code> §6</li></ul>
+<hr>
+<h2>3. Goals</h2>
+<ol><li><strong>Zero duplicate messages:</strong> switch on the customer sender only after proving with tests against real Postgres that overlapping runs or mid-run failures cause no duplicate sends</li><li><strong>Every message reaches an outcome:</strong> every queue row ends as <code>sent</code> or <code>failed</code> with a reason — nothing stays <code>pending</code> beyond SLA, and transient failures are retried</li><li><strong>Spec matches reality:</strong> every subsystem in <code>.kiro/specs/line-oa-commerce/tasks.md</code> is marked with its real status (live / dead / removed) — no &quot;✅ 20/20&quot; that does not hold for the live path</li><li><strong>PDPA has an owner:</strong> a written owner decision on whether a customer consent gate is required before expansion, or the temporary risk is accepted</li><li><strong>Ops can verify:</strong> a clear list of the crons and deployments that must exist in the real environment (building on <code>docs/OPS-RUNBOOK-Wave2.md</code>)</li></ol>
+<h2>4. Non-Goals</h2>
+<ol><li><strong>No free-text / LLM replies to customers</strong> — the template-only iron rule stays (fix the wiring, never relax the criteria)</li><li><strong>No revival of ordering/forecast/TCCK in this phase</strong> — awaiting the keep-or-remove decision (§8 question 5); no silent wiring</li><li><strong>No template admin UI in this phase</strong> — awaiting a decision (§8 question 6)</li><li><strong>No changes to the manufacturing OS repo</strong> — a separate system</li><li><strong>No relaxation of user-level RLS or permissions</strong> — fixing B2 means teaching the system to recognise the service context, not removing human checks</li></ol>
+<hr>
+<h2>5. User Stories</h2>
+<p><strong>Customer (message recipient):</strong></p>
+<ul><li>As a customer, I receive each repair-status message once per event, so I do not feel spammed</li><li>As a customer, I receive only messages appropriate for the customer group, with no internal messages leaking — already in place (guard 0095)</li></ul>
+<p><strong>Technician / team lead (internal group):</strong></p>
+<ul><li>As a technician, when I post a photo or <code>#ปัญหา</code> (issue) in the group, the system captures it as capture/issue — already in place (0097)</li></ul>
+<p><strong>Office staff:</strong></p>
+<ul><li>As a staff member, I receive work notifications over LINE with correct backoff — already in place (0084/0089)</li></ul>
+<p><strong>Owner (Dave):</strong></p>
+<ul><li>As the owner, I know how every customer message row ended (sent/failed + reason + audit) and can trust that nothing was sent twice</li><li>As the owner, I see the system's real status, not the status claimed by documents that say it is finished</li></ul>
+<hr>
+<h2>6. Requirements</h2>
+<h3>P0 — required before switching on real customer messaging (fixes B1–B8)</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Req</th>
+<th>Description</th>
+<th>Acceptance criteria (tests against real Postgres, RED first)</th>
+<th>Status (1.2)</th>
+</tr></thead><tbody>
+<tr>
+<td>P0-1</td>
+<td><strong>Atomic queue claim:</strong> add <code>claimed_at/claimed_by</code> + <code>rpc_claim_line_outbound_batch</code> — <code>UPDATE ... WHERE id IN (SELECT ... FOR UPDATE SKIP LOCKED) RETURNING</code> (no new enum value, to avoid the <code>ALTER TYPE</code> limitation and the impact on status readers)</td>
+<td>Two clients claiming at once → no duplicated rows; a claim stuck past the timeout → re-claimable</td>
+<td>✅ on the branch (0193 + sender wiring) — the two-client test has not been run</td>
+</tr>
+<tr>
+<td>P0-2</td>
+<td><strong>Service context can record results:</strong> grant + teach <code>rpc_record_line_send_result</code> to recognise the service role as a system actor without relaxing user role checks</td>
+<td>Called with the service role → recorded; a user without a role → rejected as before</td>
+<td>✅ on the branch (0193)</td>
+</tr>
+<tr>
+<td>P0-3</td>
+<td><strong>Group rows can record results:</strong> LEFT JOIN + take vertical/audit data from <code>line_groups</code> when <code>conversation_id</code> is NULL</td>
+<td>A group row → recordResult succeeds with a complete audit</td>
+<td>✅ on the branch (0193 + 0196 fallback)</td>
+</tr>
+<tr>
+<td>P0-4</td>
+<td><strong>Transition guard:</strong> results can be recorded only for rows still <code>pending</code>; finished rows → <code>recorded=false</code> no-op</td>
+<td>Duplicate recording / a <code>sent</code>→<code>failed</code> flip → rejected, no duplicate audit</td>
+<td>✅ on the branch (0193 + 0194 fencing)</td>
+</tr>
+<tr>
+<td>P0-5</td>
+<td><strong>LINE-level dedupe:</strong> set <code>X-Line-Retry-Key</code> = outbound id on push</td>
+<td>Closes the duplicate-send window across a timeout (sent but recording failed)</td>
+<td>✅ on the branch — LINE-side behaviour not yet proven</td>
+</tr>
+<tr>
+<td>P0-6</td>
+<td><strong>Bounded retry for transient failures</strong> (following the 0084 claim v3 pattern) + dead-letter</td>
+<td>LINE answers 5xx → retried with backoff; over the bound → <code>failed</code> with a reason</td>
+<td>✅ on the branch (0194–0196)</td>
+</tr>
+<tr>
+<td>P0-7</td>
+<td><strong>Decide on the autonomy gate (§8 question 3) and act on it:</strong> wire it live or remove it + correct <code>tasks.md:157</code></td>
+<td>No code left that claims to govern but does not</td>
+<td>⏸ awaiting decision 3</td>
+</tr>
+<tr>
+<td>P0-8</td>
+<td><strong>Written decisions on cron + consent (§8 questions 1, 2, 4)</strong> before switching on real sending</td>
+<td>The runbook lists the required crons; the consent decision is documented</td>
+<td>⏸ awaiting decisions 1, 2, 4</td>
+</tr>
+<tr>
+<td>P0-9</td>
+<td><strong>A failed handler must not count as processed (B8):</strong> for <code>handler_error</code>, events whose handler failed need our own retry state (retry rows + a sweep like the 0084 claim v3) — never rely on LINE redelivery, which LINE does not guarantee — not counted as processed and never dropped by dedupe</td>
+<td>Simulate a handler failure → the event enters an internal retry queue and is reprocessed until success or the bound → dead-letter + audit; no false success</td>
+<td>🔴 not built</td>
+</tr>
+</tbody></table></div>
+<h3>P1 — should follow soon</h3>
+<ul><li><strong>B9 — make staff login use state and nonce:</strong> change <code>line-login</code> to bind a server-issued state, single use, short expiry — AC: replayed <code>code</code> or callback swap is rejected, normal login passes (P1 rather than P0 because it is the staff login path, not the customer send path, but it blocks the trustworthiness of identity/audit and must be done soon)</li><li><strong>Customer consent gate before sending</strong> (if §8 question 4 = required): a customer-side consent field + a check in claim/send</li><li><strong>Human approval before sending to customers</strong> (if §8 question 2 = required)</li><li><strong>Metrics/alerts:</strong> <code>pending</code> rows beyond SLA, <code>failed</code> rate, dead-letter</li><li><strong>LINE quota/cost awareness:</strong> push/multicast consume quota (reply does not) — a monthly counter plus an alert before hitting the cap</li></ul>
+<blockquote><p><strong>Interim SLA definition (until ops sets the real one):</strong> a <code>pending</code> row must be picked up within 15 minutes of the cron being enabled — wherever this document says &quot;SLA&quot;, use this value for now</p></blockquote>
+<h3>P2 — future (not before a decision)</h3>
+<ul><li>Revive or remove ordering / forecast / R-03 / auto-close / TCCK (§8 question 5)</li><li>Template admin UI (§8 question 6)</li></ul>
+<hr>
+<h2>7. Success Metrics</h2>
+<ul><li><strong>Leading (immediate):</strong> duplicate-send rate = 0 in a concurrent-claim load test; 100% of queue rows end <code>sent/failed</code> within SLA; RED→GREEN tests for every AC</li><li><strong>Lagging (30–90 days):</strong> no customer reports of duplicate messages; dead-letter rows below 1% per week; spec-versus-reality mismatches = 0</li></ul>
+<hr>
+<h2>8. Open questions — awaiting Dave's decision (never to be assumed)</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>#</th>
+<th>Question</th>
+<th>Type</th>
+<th>Blocks</th>
+</tr></thead><tbody>
+<tr>
+<td>1</td>
+<td>Does the real environment have a cron invoking <code>line-outbound-sender</code>? (The repo definitely has none — only ops can confirm)</td>
+<td>Ops</td>
+<td>P0-8; if one exists, defects B1–B5 are live right now, because the fixes are not deployed</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Is human approval required before sending to real customers?</td>
+<td>Business</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Autonomy gate + brand voice: wire it live or formally retire it + correct <code>tasks.md</code></td>
+<td>Business/architecture</td>
+<td>P0-7</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Is sending to customers without a consent gate acceptable temporarily, or is it required before expansion (PDPA)?</td>
+<td>Legal/business</td>
+<td>P0-8, P1</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Fully dead subsystems (§2.3): keep for later wiring, or remove + correct the spec</td>
+<td>Business</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Is an admin UI needed so staff can manage templates themselves?</td>
+<td>Business</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>7</td>
+<td><strong>Two-repo coordination:</strong> the LINE code in this repo and in the product repo (<code>determined-williams</code>, worktree <code>line-trust-wave1-main</code>) share one lineage (defects match line-for-line, e.g. <code>0097:281</code>) — which repo is authoritative for the LINE subsystem: fix here and port, wait for the Trust Kernel, or keep them independent?</td>
+<td>Architecture/business</td>
+<td>Does not block Phase A, but blocks merging or adopting the work across repos</td>
+</tr>
+</tbody></table></div>
+<p><strong>Additional information for question 7:</strong> the product repo's amendment plan (26 Jul 2026, <code>docs/superpowers/plans/2026-07-26-line-trust-kernel-wave-1-amendment.th.md</code>) confirms that the product repo owns the LINE Trust Kernel roadmap — it allocates <code>0171</code>–<code>0174</code> to Wave 1 and reserves <code>0175</code>–<code>0179</code>, where <code>0178</code> = atomic outbox, which overlaps our P0-1. Phase A work in this repo therefore uses numbers <code>0193</code>–<code>0196</code> (outside the reserved band) and is built as clean per-defect patches so it can be ported.</p>
+<hr>
+<h2>9. Phasing</h2>
+<ol><li><strong>Phase A — ✅ built on the branch except P0-9:</strong> P0-1 to P0-6 have passed cross-vendor review (§0); P0-9 remains — built as portable patches (migration + a clean diff per defect) so no work is wasted if decision 7 makes the product repo authoritative</li><li><strong>Phase B (after decision 3):</strong> P0-7 — wire or remove the autonomy gate + correct the spec</li><li><strong>Phase C (after decisions 1, 2, 4):</strong> push + deploy the Phase A work, register the real cron, add the consent gate and human approval if decided → switch on customer messaging</li><li><strong>Phase D (after decisions 5, 6):</strong> clean up the dead subsystems + admin UI</li></ol>
+<p><strong>Exit conditions for every phase:</strong> real test output attached, no claims accepted on assertion; never log tokens; never relax security rules to make something pass; every wave passes cross-vendor review before acceptance</p>
+</main>
+</body>
+</html>

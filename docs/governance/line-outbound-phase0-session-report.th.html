@@ -38,7 +38,7 @@
 <p>ข้อค้นพบสำคัญของรอบนี้: <strong>การรีวิวข้ามค่ายจับของจริงได้ทุกครั้ง</strong> — จาก 7 wave ที่ส่งรีวิว Sol ปฏิเสธ 5 ครั้ง และทุกครั้งมีหลักฐาน <code>file:line</code> ที่ตรวจสอบได้ ไม่มีการปฏิเสธลอย ๆ</p>
 <hr>
 <h2>2. ส่วนที่ 1 — ตรวจสถานะจริงของระบบ LINE OA ทั้งหมด</h2>
-<p>ผลตรวจถูกบันทึกเป็น PRD ฉบับใหม่: **<code>docs/PRD-LINE-OA.md</code>** (ฉบับ 1.1)</p>
+<p>ผลตรวจถูกบันทึกเป็น PRD ฉบับใหม่ — ไทย <code>docs/PRD-LINE-OA.th.md</code> · อังกฤษ <code>docs/PRD-LINE-OA.en.md</code> (ปัจจุบันเป็นฉบับ 1.2 ซึ่งเพิ่มสถานะหลัง Phase A)</p>
 <h3>2.1 ✅ ทำงานจริง (ต่อสายครบ มีผู้เรียกบน live path)</h3>
 <div class="table-wrap"><table><thead><tr>
 <th>ความสามารถ</th>
@@ -110,7 +110,7 @@
 </tr>
 <tr>
 <td>B6</td>
-<td>**ไม่มี cron เรียก <code>line-outbound-sender</code>** ในเรโป</td>
+<td><strong>ไม่มี cron เรียกตัวส่งลูกค้า</strong> (<code>line-outbound-sender</code>) ในเรโป</td>
 <td>grep <code>cron.schedule</code> ทั้ง migrations</td>
 </tr>
 <tr>
@@ -120,7 +120,7 @@
 </tr>
 <tr>
 <td>B8</td>
-<td>**<code>handler_error</code> ถูกนับว่าสำเร็จ + เหตุการณ์หายถาวร**</td>
+<td><strong>Handler ที่ล้มถูกนับว่าสำเร็จ + เหตุการณ์หายถาวร</strong> (<code>handler_error</code>)</td>
 <td><code>0097:281</code> (คืนค่า), <code>0097:437-438</code> (skip list ไม่ครอบ), <code>0097:454</code> (นับ processed), <code>0097:429-433</code> (dedupe)</td>
 </tr>
 <tr>
@@ -170,7 +170,7 @@
 <h3>2.4 📝 อยู่แค่ spec</h3>
 <ul><li><strong>Consent ฝั่งลูกค้า</strong> — ไม่มีช่องเก็บเลย และไม่มีด่านเช็คก่อนส่ง (พนักงานมี <code>identity_binding.consent_at</code>, <code>0088:10</code>)</li><li>หน้า admin จัดการ template (ตอนนี้ seed ผ่าน migration เท่านั้น)</li></ul>
 <h3>2.5 การแก้บันทึกที่เคยเกินจริง</h3>
-<p>เอกสารเดิม <code>docs/PRD.md:512</code> และ <code>docs/LINE-Architecture-System-Complete.md:40</code> ระบุ &quot;LINE OA Commerce ✅ เสร็จ 20/20&quot; ซึ่ง<strong>ไม่ตรง live path</strong> — ได้ใส่ banner ⚠️ ชี้ไป <code>docs/PRD-LINE-OA.md</code> ในทั้งสองไฟล์แล้ว</p>
+<p>เอกสารเดิม <code>docs/PRD.md:512</code> และ <code>docs/LINE-Architecture-System-Complete.md:40</code> ระบุ &quot;LINE OA Commerce ✅ เสร็จ 20/20&quot; ซึ่ง<strong>ไม่ตรง live path</strong> — ได้ใส่ banner ⚠️ ชี้ไป <code>docs/PRD-LINE-OA.th.md</code> / <code>docs/PRD-LINE-OA.en.md</code> ในทั้งสองไฟล์ (ทั้ง Markdown และ HTML) แล้ว</p>
 <hr>
 <h2>3. ส่วนที่ 2 — LINE Phase A: แก้บั๊กขาออก (อนุมัติโดยเจ้าของ)</h2>
 <h3>3.1 ลำดับการทำงานและผลรีวิว</h3>
@@ -208,9 +208,9 @@
 <h3>3.2 สิ่งที่แก้จบแล้วบนเส้นทางที่รันจริง</h3>
 <ul><li><strong>B1 ส่งซ้ำ</strong> — <code>claimPending</code> เรียก <code>rpc_claim_line_outbound_batch</code> จริง (<code>index.ts:676-687</code>); claim แบบ <code>FOR UPDATE SKIP LOCKED</code> + reclaim ตาม timeout + <code>claim_token</code> fencing กันคนถือ lease ค้างเขียนทับ</li><li><strong>B2 service role</strong> — ตรวจ service context จาก <strong>SQL role</strong> (<code>current_setting('role')</code>) ไม่ใช่ JWT → ปลอม claim ใน JWT ไม่ผ่าน; ด่านของมนุษย์ (governance/site) ไม่ถูกผ่อนเลย</li><li><strong>B3 แถวกลุ่ม</strong> — LEFT JOIN + vertical จาก <code>line_groups</code> + fallback <code>monolith</code> ตาม 0097 + audit site เป็น NULL</li><li><strong>B4 transition guard</strong> — บันทึกได้เฉพาะแถวที่ยัง <code>pending</code>; แถวจบแล้ว → <code>recorded=false</code> ไม่มี audit ซ้ำ</li><li><strong>B5/P0-6 retry</strong> — แยก transient (network/timeout/5xx/429/408/ลูกอัป lookup error) กับ permanent (config ที่ไม่มีจริง/template ปิด/slot ไม่ตรง/4xx อื่น) + exponential backoff + เพดาน 5 ครั้ง</li><li><strong>P0-5</strong> — <code>X-Line-Retry-Key = outbound row id</code> บน push ทุกชนิด (text/flex/image); reply ไม่ใส่ (reply token ใช้ครั้งเดียวอยู่แล้ว)</li><li><strong>บั๊ก timezone 2 จุดที่ถ้าไม่เจอจะร้าย</strong> — <code>next_attempt_at</code> และ <code>sent_at</code> เคยรับค่า <code>timezone('utc', now())</code> (timestamp ไม่มี tz) ใส่คอลัมน์ <code>timestamptz</code> → ในไทย backoff กลายเป็นศูนย์ และเวลาส่งเพี้ยน ~7 ชั่วโมง (ผมรีโปรดิวซ์เองยืนยันก่อนแก้)</li></ul>
 <h3>3.3 หลักฐาน (gate รันเองแยกจาก builder)</h3>
-<ul><li><strong>pgTAP 70/70</strong> ผ่าน ใน rollback wrapper <code>BEGIN; 0193; 0194; 0195; 0196; suite; ROLLBACK</code> — รวมเทสต์ regression ที่รันใต้ <code>set local timezone='Asia/Bangkok'</code> ทั้ง backoff และ <code>sent_at</code></li><li><strong>vitest 18 ไฟล์ / 73 เทสต์</strong> ผ่าน</li><li><strong>ไม่มี leak บน stack ที่แชร์</strong> (ตรวจคอลัมน์หลังรัน = 0)</li><li>**ไม่มี <code>cron.schedule</code>** ใน 0193–0196 และไม่มีการ activate การส่งจริง</li></ul>
+<ul><li><strong>pgTAP 70/70</strong> ผ่าน ใน rollback wrapper <code>BEGIN; 0193; 0194; 0195; 0196; suite; ROLLBACK</code> — รวมเทสต์ regression ที่รันใต้ <code>set local timezone='Asia/Bangkok'</code> ทั้ง backoff และ <code>sent_at</code></li><li><strong>vitest 18 ไฟล์ / 73 เทสต์</strong> ผ่าน</li><li><strong>ไม่มี leak บน stack ที่แชร์</strong> (ตรวจคอลัมน์หลังรัน = 0)</li><li><strong>ไม่มี cron</strong> (<code>cron.schedule</code>) ใน 0193–0196 และไม่มีการ activate การส่งจริง</li></ul>
 <h3>3.4 สิ่งที่ยัง <strong>ไม่ได้</strong> พิสูจน์ (Sol ระบุเอง — ห้ามพูดเกิน)</h3>
-<ul><li>Python property suites <strong>ไม่เคยรัน</strong> (เครื่องนี้ไม่มี python ติดตั้ง)</li><li>เทสต์ claim แข่งกัน 2 client <strong>ข้ามไป</strong> เพราะต้องมี DSN ของ stack ชั่วคราวโดยเฉพาะ</li><li><strong>ยังไม่มีการรัน CI / Edge Function จริง / LINE API จริง</strong> สักครั้ง</li><li>พฤติกรรม retry key ฝั่ง LINE เป็นการรับประกันภายนอก — ด่านใน DB อย่างเดียวไม่กัน worker 2 ตัวที่ lease หมดอายุยิงถึง LINE พร้อมกัน</li><li>**P0-9 (B8 — <code>handler_error</code>) ยังไม่ได้สร้าง** ทั้งที่อยู่ในขอบเขต Phase A ที่อนุมัติแล้ว</li></ul>
+<ul><li>Python property suites <strong>ไม่เคยรัน</strong> (เครื่องนี้ไม่มี python ติดตั้ง)</li><li>เทสต์ claim แข่งกัน 2 client <strong>ข้ามไป</strong> เพราะต้องมี DSN ของ stack ชั่วคราวโดยเฉพาะ</li><li><strong>ยังไม่มีการรัน CI / Edge Function จริง / LINE API จริง</strong> สักครั้ง</li><li>พฤติกรรม retry key ฝั่ง LINE เป็นการรับประกันภายนอก — ด่านใน DB อย่างเดียวไม่กัน worker 2 ตัวที่ lease หมดอายุยิงถึง LINE พร้อมกัน</li><li><strong>P0-9 (B8) ยังไม่ได้สร้าง</strong> (<code>handler_error</code>) ทั้งที่อยู่ในขอบเขต Phase A ที่อนุมัติแล้ว</li></ul>
 <hr>
 <h2>4. ส่วนที่ 3 — Repair Phase 0: Wave 3 → 3.4</h2>
 <div class="table-wrap"><table><thead><tr>
@@ -252,8 +252,8 @@
 <th>หน้าที่</th>
 </tr></thead><tbody>
 <tr>
-<td><code>docs/PRD-LINE-OA.md</code></td>
-<td><strong>PRD ระบบ LINE ทั้งหมด</strong> ฉบับ 1.1 — สถานะจริง 4 ระดับ + requirements + คำถามรอเจ้าของ</td>
+<td><code>docs/PRD-LINE-OA.th.md</code> / <code>docs/PRD-LINE-OA.en.md</code> (+ HTML ทั้งสองภาษา)</td>
+<td><strong>PRD ระบบ LINE ทั้งหมด</strong> ฉบับ 1.2 — สถานะจริง 4 ระดับ + สถานะหลัง Phase A + requirements + คำถามรอเจ้าของ</td>
 </tr>
 <tr>
 <td><code>supabase/migrations/0193_line_outbound_claim_and_record.sql</code></td>
@@ -349,7 +349,7 @@
 <ol><li><strong>P0-9 (B8)</strong> — <code>handler_error</code> ต้องไม่ถูกนับว่าสำเร็จ และต้องมี <strong>retry state ของเราเอง</strong> (ห้ามพึ่ง LINE redelivery เพราะ LINE ไม่รับประกัน)</li><li><strong>Wave 3.5</strong> — issuer ต้อง re-derive ผล pass/fail จากไบต์ report จริง + pin ตัวเอง/โมดูล integrity + บังคับ tracked tree สะอาด</li><li><strong>Phase C (ต้องรอคำตอบข้อ 1, 2, 4)</strong> — ตั้ง cron จริง + consent gate + human-approval ก่อนเปิดส่งลูกค้า</li><li><strong>Phase D (รอคำตอบข้อ 5, 6)</strong> — เก็บกวาด subsystem ที่ตาย + admin UI</li></ol>
 <hr>
 <h2>8. บทเรียนที่จดไว้ใช้ต่อ</h2>
-<ol><li><strong>&quot;batch DB layer&quot; ไม่พอ</strong> — RPC ที่ถูกต้องแต่ไม่มีใครเรียก = ไม่ได้แก้อะไร (Sol จับได้ที่ A1) ต่อไปนี้ทุก batch ต้องตรวจ consumer ด้วย</li><li><strong>การแก้ที่ระวังเกินไปก็อันตราย</strong> — A3 ทำให้ flow onboarding ตายถาวรเพราะตีความ &quot;ไม่มีแถว&quot; ว่าเป็นความล้มเหลว</li><li><strong>Session ของ builder ไม่ตายพร้อม timeout</strong> — MCP ตัดที่ 30 นาทีแต่ process ยังเขียนไฟล์ต่อ เคยทำให้เกิด import ซ้ำและแก้ไฟล์ทับกับ gate → ตอนนี้ builder ต้องเขียน sentinel file ตอนจบ และ gate รอ tree นิ่งก่อน commit</li><li>**Sandbox ของ builder เขียน <code>.git/worktrees</code> ไม่ได้** → builder ไม่ commit, gate commit แทน และระบุไว้ใน commit message ทุกครั้ง</li></ol>
+<ol><li><strong>&quot;batch DB layer&quot; ไม่พอ</strong> — RPC ที่ถูกต้องแต่ไม่มีใครเรียก = ไม่ได้แก้อะไร (Sol จับได้ที่ A1) ต่อไปนี้ทุก batch ต้องตรวจ consumer ด้วย</li><li><strong>การแก้ที่ระวังเกินไปก็อันตราย</strong> — A3 ทำให้ flow onboarding ตายถาวรเพราะตีความ &quot;ไม่มีแถว&quot; ว่าเป็นความล้มเหลว</li><li><strong>Session ของ builder ไม่ตายพร้อม timeout</strong> — MCP ตัดที่ 30 นาทีแต่ process ยังเขียนไฟล์ต่อ เคยทำให้เกิด import ซ้ำและแก้ไฟล์ทับกับ gate → ตอนนี้ builder ต้องเขียน sentinel file ตอนจบ และ gate รอ tree นิ่งก่อน commit</li><li><strong>Sandbox ของ builder เขียน metadata ของ git worktree ไม่ได้</strong> (<code>.git/worktrees</code>) → builder ไม่ commit, gate commit แทน และระบุไว้ใน commit message ทุกครั้ง</li></ol>
 </main>
 </body>
 </html>

@@ -73,6 +73,7 @@
 <blockquote>
 <p>เอกสารฉบับเดียวรวม <strong>ทุก touchpoint ของ LINE ในระบบ MONOLITH</strong> — ตั้งแต่ LINE OA Commerce ที่ทำเสร็จแล้ว, การอนุมัติแบบ/งานผ่าน Flex, การส่งเอกสาร/รูปเข้า capture, การแจ้งเตือน workflow, จนถึงกลุ่ม LINE ของงานติดตั้ง
 <strong>ป้ายสถานะ:</strong> ✅ = implemented (มีในโค้ด) · 🔵 = in-progress · 📝 = ข้อเสนอ (spec/ร่าง) · ⏸ = รอ dependency
+⚠️ <strong>หมายเหตุ 1 ส.ค. 2026:</strong> ป้าย ✅ ในเอกสารนี้แปลว่า "มีในโค้ด" เท่านั้น — การ verify live path พบว่า outbound sender มีบั๊กที่ทำให้เปิดใช้จริงไม่ได้ (B1–B9) และหลาย RPC ไม่มี caller — <strong>สถานะจริงให้ยึด PRD ของ LINE:</strong> <code>docs/PRD-LINE-OA.th.md</code> (ไทย) / <code>docs/PRD-LINE-OA.en.md</code> (อังกฤษ)
 <strong>แหล่ง:</strong> <code>supabase/migrations/00000000000001–62_line_oa_*</code>, <code>supabase/functions/{line-webhook,line-outbound-sender,approval-postback,capture-ingest,field-capture}</code>, PRD §6.5–6.6, ADR-033, <code>.kiro/specs/installation-pm/line-architecture-v0.1.md</code></p>
 </blockquote>
 <hr>

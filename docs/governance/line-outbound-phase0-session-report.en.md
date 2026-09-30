@@ -28,7 +28,7 @@ Key observation this round: **cross-vendor review caught something real every si
 
 ## 2. Part 1 — Verifying the real state of the LINE OA system
 
-The findings were recorded as a new PRD: **`docs/PRD-LINE-OA.md`** (edition 1.1).
+The findings were recorded as a new PRD — Thai `docs/PRD-LINE-OA.th.md` · English `docs/PRD-LINE-OA.en.md` (now at edition 1.2, which adds the post-Phase-A status).
 
 ### 2.1 ✅ Actually working (wired, with callers on the live path)
 
@@ -52,9 +52,9 @@ The findings were recorded as a new PRD: **`docs/PRD-LINE-OA.md`** (edition 1.1)
 | B3 | Group rows could never record a result (INNER JOIN against conversations) | `00000000000041:143-148` vs `0097:140` |
 | B4 | No transition guard → `sent`→`failed` flips and duplicate audit rows possible | `00000000000041:143,194-210` |
 | B5 | A single send failure was permanently terminal | `00000000000041:179-199` |
-| B6 | **No cron invokes `line-outbound-sender`** anywhere in the repo | grep `cron.schedule` across migrations |
+| B6 | **No cron invokes the customer sender** (`line-outbound-sender`) anywhere in the repo | grep `cron.schedule` across migrations |
 | B7 | Existing tests were blind to B1–B4 (all dependencies faked) | `tests/line-oa-commerce/ts/senderClaimAndRecord.integration.test.ts:43` |
-| B8 | **`handler_error` counted as processed + the event is lost permanently** | `0097:281` (return), `0097:437-438` (skip list misses the prefix), `0097:454` (counts processed), `0097:429-433` (dedupe swallows redelivery) |
+| B8 | **A failed handler is counted as processed + the event is lost permanently** (`handler_error`) | `0097:281` (return), `0097:437-438` (skip list misses the prefix), `0097:454` (counts processed), `0097:429-433` (dedupe swallows redelivery) |
 | B9 | `line-login` consumes no OAuth `state` / OIDC `nonce` | `supabase/functions/line-login/index.ts:2,9` |
 
 > B8 and B9 surfaced first in the product repo's 31 July 2026 research document and were then confirmed present here as well — the defects match line-for-line, so both repos carry the same code lineage.
@@ -77,7 +77,7 @@ The findings were recorded as a new PRD: **`docs/PRD-LINE-OA.md`** (edition 1.1)
 
 ### 2.5 Correcting previously overstated records
 
-`docs/PRD.md:512` and `docs/LINE-Architecture-System-Complete.md:40` claimed "LINE OA Commerce ✅ complete 20/20", which **does not hold for the live path**. Both files now carry a ⚠️ banner pointing to `docs/PRD-LINE-OA.md`.
+`docs/PRD.md:512` and `docs/LINE-Architecture-System-Complete.md:40` claimed "LINE OA Commerce ✅ complete 20/20", which **does not hold for the live path**. Both files (Markdown and HTML) now carry a ⚠️ banner pointing to `docs/PRD-LINE-OA.th.md` / `docs/PRD-LINE-OA.en.md`.
 
 ---
 
@@ -107,7 +107,7 @@ The findings were recorded as a new PRD: **`docs/PRD-LINE-OA.md`** (edition 1.1)
 - **pgTAP 70/70** under the rollback wrapper `BEGIN; 0193; 0194; 0195; 0196; suite; ROLLBACK` — including regressions executed under `set local timezone='Asia/Bangkok'` for both backoff and `sent_at`
 - **vitest: 18 files / 73 tests** passing
 - **No leaks on the shared stack** (post-run column check = 0)
-- **No `cron.schedule`** in 0193–0196 and no activation of live sending
+- **No cron** (`cron.schedule`) in 0193–0196 and no activation of live sending
 
 ### 3.4 What is **not** proven (stated by Sol — do not overstate)
 
@@ -115,7 +115,7 @@ The findings were recorded as a new PRD: **`docs/PRD-LINE-OA.md`** (edition 1.1)
 - The two-client claim-race harness **skips** because it requires an explicitly designated ephemeral DSN
 - **No CI run, no real Edge Function run, no real LINE API run** has happened
 - LINE-side retry-key behaviour is an external guarantee — the database fence alone does not stop two lease-expired workers from both reaching LINE
-- **P0-9 (B8 — `handler_error`) has not been built**, although it is inside the approved Phase A scope
+- **P0-9 (B8) has not been built** (`handler_error`), although it is inside the approved Phase A scope
 
 ---
 
@@ -137,7 +137,7 @@ The findings were recorded as a new PRD: **`docs/PRD-LINE-OA.md`** (edition 1.1)
 
 | File | Purpose |
 |---|---|
-| `docs/PRD-LINE-OA.md` | **PRD for the whole LINE system**, edition 1.1 — four-tier real status + requirements + owner decisions |
+| `docs/PRD-LINE-OA.th.md` / `docs/PRD-LINE-OA.en.md` (+ HTML in both languages) | **PRD for the whole LINE system**, edition 1.2 — four-tier real status + post-Phase-A status + requirements + owner decisions |
 | `supabase/migrations/0193_line_outbound_claim_and_record.sql` | Claim RPC + replacement record RPC |
 | `supabase/migrations/0194_line_outbound_retry_and_claim_fencing.sql` | `next_attempt_at`, `p_failure_class`, `claim_token` |
 | `supabase/migrations/0195_line_outbound_timezone_safe_backoff.sql` | Timezone-safe backoff |
@@ -182,4 +182,4 @@ The findings were recorded as a new PRD: **`docs/PRD-LINE-OA.md`** (edition 1.1)
 1. **"DB-layer batch" is not enough** — a correct RPC with no caller fixes nothing (Sol caught this at A1). Every batch must now verify its consumer.
 2. **Over-cautious fixes are also dangerous** — A3 permanently killed the onboarding flow by treating "no row found" as a failure.
 3. **A builder session does not die with its timeout** — the MCP call aborts at 30 minutes while the process keeps writing files, which once produced a duplicated import and edits racing the gate. Builders now write a completion sentinel and the gate waits for a stable tree before committing.
-4. **The builder sandbox cannot write `.git/worktrees`** → builders do not commit; the gate commits on their behalf and says so in every commit message.
+4. **The builder sandbox cannot write git worktree metadata** (`.git/worktrees`) → builders do not commit; the gate commits on their behalf and says so in every commit message.

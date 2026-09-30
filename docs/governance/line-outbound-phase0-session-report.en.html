@@ -38,7 +38,7 @@
 <p>Key observation this round: <strong>cross-vendor review caught something real every single time.</strong> Of 7 waves submitted, Sol rejected 5, and every rejection carried verifiable <code>file:line</code> evidence — no vague objections.</p>
 <hr>
 <h2>2. Part 1 — Verifying the real state of the LINE OA system</h2>
-<p>The findings were recorded as a new PRD: **<code>docs/PRD-LINE-OA.md</code>** (edition 1.1).</p>
+<p>The findings were recorded as a new PRD — Thai <code>docs/PRD-LINE-OA.th.md</code> · English <code>docs/PRD-LINE-OA.en.md</code> (now at edition 1.2, which adds the post-Phase-A status).</p>
 <h3>2.1 ✅ Actually working (wired, with callers on the live path)</h3>
 <div class="table-wrap"><table><thead><tr>
 <th>Capability</th>
@@ -110,7 +110,7 @@
 </tr>
 <tr>
 <td>B6</td>
-<td>**No cron invokes <code>line-outbound-sender</code>** anywhere in the repo</td>
+<td><strong>No cron invokes the customer sender</strong> (<code>line-outbound-sender</code>) anywhere in the repo</td>
 <td>grep <code>cron.schedule</code> across migrations</td>
 </tr>
 <tr>
@@ -120,7 +120,7 @@
 </tr>
 <tr>
 <td>B8</td>
-<td>**<code>handler_error</code> counted as processed + the event is lost permanently**</td>
+<td><strong>A failed handler is counted as processed + the event is lost permanently</strong> (<code>handler_error</code>)</td>
 <td><code>0097:281</code> (return), <code>0097:437-438</code> (skip list misses the prefix), <code>0097:454</code> (counts processed), <code>0097:429-433</code> (dedupe swallows redelivery)</td>
 </tr>
 <tr>
@@ -170,7 +170,7 @@
 <h3>2.4 📝 Spec only</h3>
 <ul><li><strong>Customer-side consent</strong> — no column exists at all, and no pre-send consent check anywhere (staff have <code>identity_binding.consent_at</code>, <code>0088:10</code>)</li><li>Admin UI for message templates (today templates are seeded by migration only)</li></ul>
 <h3>2.5 Correcting previously overstated records</h3>
-<p><code>docs/PRD.md:512</code> and <code>docs/LINE-Architecture-System-Complete.md:40</code> claimed &quot;LINE OA Commerce ✅ complete 20/20&quot;, which <strong>does not hold for the live path</strong>. Both files now carry a ⚠️ banner pointing to <code>docs/PRD-LINE-OA.md</code>.</p>
+<p><code>docs/PRD.md:512</code> and <code>docs/LINE-Architecture-System-Complete.md:40</code> claimed &quot;LINE OA Commerce ✅ complete 20/20&quot;, which <strong>does not hold for the live path</strong>. Both files (Markdown and HTML) now carry a ⚠️ banner pointing to <code>docs/PRD-LINE-OA.th.md</code> / <code>docs/PRD-LINE-OA.en.md</code>.</p>
 <hr>
 <h2>3. Part 2 — LINE Phase A: fixing the outbound path (owner-approved)</h2>
 <h3>3.1 Sequence and review outcomes</h3>
@@ -208,9 +208,9 @@
 <h3>3.2 What is fixed on the executable path</h3>
 <ul><li><strong>B1 duplicate sends</strong> — <code>claimPending</code> now calls <code>rpc_claim_line_outbound_batch</code> (<code>index.ts:676-687</code>); claims use <code>FOR UPDATE SKIP LOCKED</code> with timeout-based reclaim plus <code>claim_token</code> fencing so a stale lease holder cannot overwrite the current claimant.</li><li><strong>B2 service role</strong> — service context is detected from the <strong>SQL role</strong> (<code>current_setting('role')</code>), not the JWT, so forged JWT claims fail; the human path (governance/site access) is not relaxed at all.</li><li><strong>B3 group rows</strong> — LEFT JOIN, vertical from <code>line_groups</code> with the 0097 <code>monolith</code> fallback, NULL site in the audit row.</li><li><strong>B4 transition guard</strong> — only a still-<code>pending</code> row can be recorded; a finished row returns <code>recorded=false</code> with no duplicate audit.</li><li><strong>B5 / P0-6 retry</strong> — transient (network/timeout/5xx/429/408/lookup errors) is separated from permanent (genuinely absent config, inactive template, slot mismatch, other 4xx), with exponential backoff and a 5-attempt bound.</li><li><strong>P0-5</strong> — <code>X-Line-Retry-Key = outbound row id</code> on every push type (text/flex/image); reply is untouched because reply tokens are single-use.</li><li><strong>Two timezone defects that would have been severe</strong> — <code>next_attempt_at</code> and <code>sent_at</code> were assigned <code>timezone('utc', now())</code> (a timestamp WITHOUT time zone) into <code>timestamptz</code> columns, so east of UTC the backoff collapsed to zero and send times were stamped ~7 hours early. Both were reproduced by the gate before fixing.</li></ul>
 <h3>3.3 Evidence (run independently by the gate, not the builder)</h3>
-<ul><li><strong>pgTAP 70/70</strong> under the rollback wrapper <code>BEGIN; 0193; 0194; 0195; 0196; suite; ROLLBACK</code> — including regressions executed under <code>set local timezone='Asia/Bangkok'</code> for both backoff and <code>sent_at</code></li><li><strong>vitest: 18 files / 73 tests</strong> passing</li><li><strong>No leaks on the shared stack</strong> (post-run column check = 0)</li><li>**No <code>cron.schedule</code>** in 0193–0196 and no activation of live sending</li></ul>
+<ul><li><strong>pgTAP 70/70</strong> under the rollback wrapper <code>BEGIN; 0193; 0194; 0195; 0196; suite; ROLLBACK</code> — including regressions executed under <code>set local timezone='Asia/Bangkok'</code> for both backoff and <code>sent_at</code></li><li><strong>vitest: 18 files / 73 tests</strong> passing</li><li><strong>No leaks on the shared stack</strong> (post-run column check = 0)</li><li><strong>No cron</strong> (<code>cron.schedule</code>) in 0193–0196 and no activation of live sending</li></ul>
 <h3>3.4 What is <strong>not</strong> proven (stated by Sol — do not overstate)</h3>
-<ul><li>Python property suites were <strong>never executed</strong> (python is not installed on this machine)</li><li>The two-client claim-race harness <strong>skips</strong> because it requires an explicitly designated ephemeral DSN</li><li><strong>No CI run, no real Edge Function run, no real LINE API run</strong> has happened</li><li>LINE-side retry-key behaviour is an external guarantee — the database fence alone does not stop two lease-expired workers from both reaching LINE</li><li>**P0-9 (B8 — <code>handler_error</code>) has not been built**, although it is inside the approved Phase A scope</li></ul>
+<ul><li>Python property suites were <strong>never executed</strong> (python is not installed on this machine)</li><li>The two-client claim-race harness <strong>skips</strong> because it requires an explicitly designated ephemeral DSN</li><li><strong>No CI run, no real Edge Function run, no real LINE API run</strong> has happened</li><li>LINE-side retry-key behaviour is an external guarantee — the database fence alone does not stop two lease-expired workers from both reaching LINE</li><li><strong>P0-9 (B8) has not been built</strong> (<code>handler_error</code>), although it is inside the approved Phase A scope</li></ul>
 <hr>
 <h2>4. Part 3 — Repair Phase 0: Wave 3 → 3.4</h2>
 <div class="table-wrap"><table><thead><tr>
@@ -252,8 +252,8 @@
 <th>Purpose</th>
 </tr></thead><tbody>
 <tr>
-<td><code>docs/PRD-LINE-OA.md</code></td>
-<td><strong>PRD for the whole LINE system</strong>, edition 1.1 — four-tier real status + requirements + owner decisions</td>
+<td><code>docs/PRD-LINE-OA.th.md</code> / <code>docs/PRD-LINE-OA.en.md</code> (+ HTML in both languages)</td>
+<td><strong>PRD for the whole LINE system</strong>, edition 1.2 — four-tier real status + post-Phase-A status + requirements + owner decisions</td>
 </tr>
 <tr>
 <td><code>supabase/migrations/0193_line_outbound_claim_and_record.sql</code></td>
@@ -349,7 +349,7 @@
 <ol><li><strong>P0-9 (B8)</strong> — <code>handler_error</code> must not count as processed, and needs <strong>its own retry state</strong> (LINE redelivery is not guaranteed and must not be relied upon)</li><li><strong>Wave 3.5</strong> — the issuer must re-derive pass/fail from real report bytes, pin itself and the integrity module, and require a clean tracked tree</li><li><strong>Phase C (needs answers to #1, #2, #4)</strong> — register the real cron + consent gate + human approval before enabling customer sends</li><li><strong>Phase D (needs answers to #5, #6)</strong> — retire or wire the dead subsystems + admin UI</li></ol>
 <hr>
 <h2>8. Lessons recorded for future rounds</h2>
-<ol><li><strong>&quot;DB-layer batch&quot; is not enough</strong> — a correct RPC with no caller fixes nothing (Sol caught this at A1). Every batch must now verify its consumer.</li><li><strong>Over-cautious fixes are also dangerous</strong> — A3 permanently killed the onboarding flow by treating &quot;no row found&quot; as a failure.</li><li><strong>A builder session does not die with its timeout</strong> — the MCP call aborts at 30 minutes while the process keeps writing files, which once produced a duplicated import and edits racing the gate. Builders now write a completion sentinel and the gate waits for a stable tree before committing.</li><li>**The builder sandbox cannot write <code>.git/worktrees</code>** → builders do not commit; the gate commits on their behalf and says so in every commit message.</li></ol>
+<ol><li><strong>&quot;DB-layer batch&quot; is not enough</strong> — a correct RPC with no caller fixes nothing (Sol caught this at A1). Every batch must now verify its consumer.</li><li><strong>Over-cautious fixes are also dangerous</strong> — A3 permanently killed the onboarding flow by treating &quot;no row found&quot; as a failure.</li><li><strong>A builder session does not die with its timeout</strong> — the MCP call aborts at 30 minutes while the process keeps writing files, which once produced a duplicated import and edits racing the gate. Builders now write a completion sentinel and the gate waits for a stable tree before committing.</li><li><strong>The builder sandbox cannot write git worktree metadata</strong> (<code>.git/worktrees</code>) → builders do not commit; the gate commits on their behalf and says so in every commit message.</li></ol>
 </main>
 </body>
 </html>

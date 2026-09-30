@@ -28,7 +28,7 @@
 
 ## 2. ส่วนที่ 1 — ตรวจสถานะจริงของระบบ LINE OA ทั้งหมด
 
-ผลตรวจถูกบันทึกเป็น PRD ฉบับใหม่: **`docs/PRD-LINE-OA.md`** (ฉบับ 1.1)
+ผลตรวจถูกบันทึกเป็น PRD ฉบับใหม่ — ไทย `docs/PRD-LINE-OA.th.md` · อังกฤษ `docs/PRD-LINE-OA.en.md` (ปัจจุบันเป็นฉบับ 1.2 ซึ่งเพิ่มสถานะหลัง Phase A)
 
 ### 2.1 ✅ ทำงานจริง (ต่อสายครบ มีผู้เรียกบน live path)
 
@@ -52,9 +52,9 @@
 | B3 | แถวกลุ่มบันทึกผลไม่ได้ถาวร (INNER JOIN กับ conversations) | `00000000000041:143-148` vs `0097:140` |
 | B4 | ไม่มี transition guard → flip `sent`→`failed` / audit ซ้ำได้ | `00000000000041:143,194-210` |
 | B5 | ส่งพลาดครั้งเดียว = ตายถาวร | `00000000000041:179-199` |
-| B6 | **ไม่มี cron เรียก `line-outbound-sender`** ในเรโป | grep `cron.schedule` ทั้ง migrations |
+| B6 | **ไม่มี cron เรียกตัวส่งลูกค้า** (`line-outbound-sender`) ในเรโป | grep `cron.schedule` ทั้ง migrations |
 | B7 | เทสต์เดิมตาบอดต่อ B1–B4 (ฉีด deps ปลอมทั้งชุด) | `tests/line-oa-commerce/ts/senderClaimAndRecord.integration.test.ts:43` |
-| B8 | **`handler_error` ถูกนับว่าสำเร็จ + เหตุการณ์หายถาวร** | `0097:281` (คืนค่า), `0097:437-438` (skip list ไม่ครอบ), `0097:454` (นับ processed), `0097:429-433` (dedupe) |
+| B8 | **Handler ที่ล้มถูกนับว่าสำเร็จ + เหตุการณ์หายถาวร** (`handler_error`) | `0097:281` (คืนค่า), `0097:437-438` (skip list ไม่ครอบ), `0097:454` (นับ processed), `0097:429-433` (dedupe) |
 | B9 | `line-login` ไม่ consume OAuth `state`/OIDC `nonce` | `supabase/functions/line-login/index.ts:2,9` |
 
 > B8 และ B9 พบครั้งแรกจากเอกสาร research 31 ก.ค. 2026 ของเรโป product แล้วยืนยันว่ามีในเรโปนี้ด้วย (บั๊กตรงกันถึงระดับเลขบรรทัด — โค้ดสายพันธุ์เดียวกัน)
@@ -77,7 +77,7 @@
 
 ### 2.5 การแก้บันทึกที่เคยเกินจริง
 
-เอกสารเดิม `docs/PRD.md:512` และ `docs/LINE-Architecture-System-Complete.md:40` ระบุ "LINE OA Commerce ✅ เสร็จ 20/20" ซึ่ง**ไม่ตรง live path** — ได้ใส่ banner ⚠️ ชี้ไป `docs/PRD-LINE-OA.md` ในทั้งสองไฟล์แล้ว
+เอกสารเดิม `docs/PRD.md:512` และ `docs/LINE-Architecture-System-Complete.md:40` ระบุ "LINE OA Commerce ✅ เสร็จ 20/20" ซึ่ง**ไม่ตรง live path** — ได้ใส่ banner ⚠️ ชี้ไป `docs/PRD-LINE-OA.th.md` / `docs/PRD-LINE-OA.en.md` ในทั้งสองไฟล์ (ทั้ง Markdown และ HTML) แล้ว
 
 ---
 
@@ -107,7 +107,7 @@
 - **pgTAP 70/70** ผ่าน ใน rollback wrapper `BEGIN; 0193; 0194; 0195; 0196; suite; ROLLBACK` — รวมเทสต์ regression ที่รันใต้ `set local timezone='Asia/Bangkok'` ทั้ง backoff และ `sent_at`
 - **vitest 18 ไฟล์ / 73 เทสต์** ผ่าน
 - **ไม่มี leak บน stack ที่แชร์** (ตรวจคอลัมน์หลังรัน = 0)
-- **ไม่มี `cron.schedule`** ใน 0193–0196 และไม่มีการ activate การส่งจริง
+- **ไม่มี cron** (`cron.schedule`) ใน 0193–0196 และไม่มีการ activate การส่งจริง
 
 ### 3.4 สิ่งที่ยัง **ไม่ได้** พิสูจน์ (Sol ระบุเอง — ห้ามพูดเกิน)
 
@@ -115,7 +115,7 @@
 - เทสต์ claim แข่งกัน 2 client **ข้ามไป** เพราะต้องมี DSN ของ stack ชั่วคราวโดยเฉพาะ
 - **ยังไม่มีการรัน CI / Edge Function จริง / LINE API จริง** สักครั้ง
 - พฤติกรรม retry key ฝั่ง LINE เป็นการรับประกันภายนอก — ด่านใน DB อย่างเดียวไม่กัน worker 2 ตัวที่ lease หมดอายุยิงถึง LINE พร้อมกัน
-- **P0-9 (B8 — `handler_error`) ยังไม่ได้สร้าง** ทั้งที่อยู่ในขอบเขต Phase A ที่อนุมัติแล้ว
+- **P0-9 (B8) ยังไม่ได้สร้าง** (`handler_error`) ทั้งที่อยู่ในขอบเขต Phase A ที่อนุมัติแล้ว
 
 ---
 
@@ -137,7 +137,7 @@
 
 | ไฟล์ | หน้าที่ |
 |---|---|
-| `docs/PRD-LINE-OA.md` | **PRD ระบบ LINE ทั้งหมด** ฉบับ 1.1 — สถานะจริง 4 ระดับ + requirements + คำถามรอเจ้าของ |
+| `docs/PRD-LINE-OA.th.md` / `docs/PRD-LINE-OA.en.md` (+ HTML ทั้งสองภาษา) | **PRD ระบบ LINE ทั้งหมด** ฉบับ 1.2 — สถานะจริง 4 ระดับ + สถานะหลัง Phase A + requirements + คำถามรอเจ้าของ |
 | `supabase/migrations/0193_line_outbound_claim_and_record.sql` | claim RPC + record RPC ใหม่ |
 | `supabase/migrations/0194_line_outbound_retry_and_claim_fencing.sql` | `next_attempt_at`, `p_failure_class`, `claim_token` |
 | `supabase/migrations/0195_line_outbound_timezone_safe_backoff.sql` | backoff timezone-safe |
@@ -182,4 +182,4 @@
 1. **"batch DB layer" ไม่พอ** — RPC ที่ถูกต้องแต่ไม่มีใครเรียก = ไม่ได้แก้อะไร (Sol จับได้ที่ A1) ต่อไปนี้ทุก batch ต้องตรวจ consumer ด้วย
 2. **การแก้ที่ระวังเกินไปก็อันตราย** — A3 ทำให้ flow onboarding ตายถาวรเพราะตีความ "ไม่มีแถว" ว่าเป็นความล้มเหลว
 3. **Session ของ builder ไม่ตายพร้อม timeout** — MCP ตัดที่ 30 นาทีแต่ process ยังเขียนไฟล์ต่อ เคยทำให้เกิด import ซ้ำและแก้ไฟล์ทับกับ gate → ตอนนี้ builder ต้องเขียน sentinel file ตอนจบ และ gate รอ tree นิ่งก่อน commit
-4. **Sandbox ของ builder เขียน `.git/worktrees` ไม่ได้** → builder ไม่ commit, gate commit แทน และระบุไว้ใน commit message ทุกครั้ง
+4. **Sandbox ของ builder เขียน metadata ของ git worktree ไม่ได้** (`.git/worktrees`) → builder ไม่ commit, gate commit แทน และระบุไว้ใน commit message ทุกครั้ง
