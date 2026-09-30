@@ -1,0 +1,218 @@
+written_utc: 2026-09-30T15:19:45Z
+base: 3bdd6f3e5217f3252292cd11c858be151c01f977
+gated_tree: f1d1035bc8afccca96b20309f5c9d80c8e01719f
+wrapper_staged_sha256: 0457ab4ba72104aa9397a1e1cb609d235c367829f5212f549abb907212414f55
+gate_staged_sha256: 96404dba4870c254851c9b555bb6647807d80ec552b9f4e04bcbb1631afcdc1c
+PASS: expected base HEAD
+PASS: exact authorized change set
+PASS: 0198 remains unchanged
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30: complete checksums
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30: Git and disk checksum match
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30: fresh evidence verification
+PASS: tested source manifest format
+PASS: entire tested source manifest matches Git
+PASS: raw run unchanged: *.gitattributes
+PASS: raw run unchanged: *00-context.txt
+PASS: raw run unchanged: *01b-service-bootstrap-output.txt
+PASS: raw run unchanged: *01b-service-bootstrap.sql
+PASS: raw run unchanged: *02-migrations-applied.txt
+PASS: raw run unchanged: *03-baseline-after-migrations.txt
+PASS: raw run unchanged: *04a-fail-closed-vs-0198.tap
+PASS: raw run unchanged: *04b-pgtap-p010.tap
+PASS: raw run unchanged: *04c-pgtap-original.tap
+PASS: raw run unchanged: *05-claim-race-output.txt
+PASS: raw run unchanged: *06-pytest-junit.xml
+PASS: raw run unchanged: *06-pytest-output.txt
+PASS: raw run unchanged: *07-ci-local/full/ci-step-1.log
+PASS: raw run unchanged: *07-ci-local/full/ci-step-1.sh
+PASS: raw run unchanged: *07-ci-local/full/ci-step-2.log
+PASS: raw run unchanged: *07-ci-local/full/ci-step-2.sh
+PASS: raw run unchanged: *07-ci-local/full/ci-step-3.log
+PASS: raw run unchanged: *07-ci-local/full/ci-step-3.sh
+PASS: raw run unchanged: *07-ci-local/full/ci-step-4.log
+PASS: raw run unchanged: *07-ci-local/full/ci-step-4.sh
+PASS: raw run unchanged: *07-ci-local/full/ci-step-5.log
+PASS: raw run unchanged: *07-ci-local/full/ci-step-5.sh
+PASS: raw run unchanged: *07-ci-local/full/db-verify-evidence.json
+PASS: raw run unchanged: *07-ci-local/full/summary.txt
+PASS: raw run unchanged: *07-ci-local/full/tap/line_oa_client_write_revoke.result.json
+PASS: raw run unchanged: *07-ci-local/full/tap/line_oa_client_write_revoke.stderr
+PASS: raw run unchanged: *07-ci-local/full/tap/line_oa_client_write_revoke.tap
+PASS: raw run unchanged: *07-ci-local/full/tap/line_oa_client_write_revoke_fail_closed.result.json
+PASS: raw run unchanged: *07-ci-local/full/tap/line_oa_client_write_revoke_fail_closed.stderr
+PASS: raw run unchanged: *07-ci-local/full/tap/line_oa_client_write_revoke_fail_closed.tap
+PASS: raw run unchanged: *07-ci-local/full/tap/line_outbound_claim_record.result.json
+PASS: raw run unchanged: *07-ci-local/full/tap/line_outbound_claim_record.stderr
+PASS: raw run unchanged: *07-ci-local/full/tap/line_outbound_claim_record.tap
+PASS: raw run unchanged: *07-ci-local/full/tap/repair_phase0_containment.result.json
+PASS: raw run unchanged: *07-ci-local/full/tap/repair_phase0_containment.stderr
+PASS: raw run unchanged: *07-ci-local/full/tap/repair_phase0_containment.tap
+PASS: raw run unchanged: *07-ci-local/full/tap/repair_phase0_organization.result.json
+PASS: raw run unchanged: *07-ci-local/full/tap/repair_phase0_organization.stderr
+PASS: raw run unchanged: *07-ci-local/full/tap/repair_phase0_organization.tap
+PASS: raw run unchanged: *07-ci-local/full/tap/trust_kernel_bundles.result.json
+PASS: raw run unchanged: *07-ci-local/full/tap/trust_kernel_bundles.stderr
+PASS: raw run unchanged: *07-ci-local/full/tap/trust_kernel_bundles.tap
+PASS: raw run unchanged: *07-ci-local/full/tap/trust_kernel_containment.result.json
+PASS: raw run unchanged: *07-ci-local/full/tap/trust_kernel_containment.stderr
+PASS: raw run unchanged: *07-ci-local/full/tap/trust_kernel_containment.tap
+PASS: raw run unchanged: *07-ci-local/full/tap/trust_kernel_governance.result.json
+PASS: raw run unchanged: *07-ci-local/full/tap/trust_kernel_governance.stderr
+PASS: raw run unchanged: *07-ci-local/full/tap/trust_kernel_governance.tap
+PASS: raw run unchanged: *07-ci-local/full/tap/trust_kernel_release.result.json
+PASS: raw run unchanged: *07-ci-local/full/tap/trust_kernel_release.stderr
+PASS: raw run unchanged: *07-ci-local/full/tap/trust_kernel_release.tap
+PASS: raw run unchanged: *07-ci-local/full/tap/trust_kernel_safety.result.json
+PASS: raw run unchanged: *07-ci-local/full/tap/trust_kernel_safety.stderr
+PASS: raw run unchanged: *07-ci-local/full/tap/trust_kernel_safety.tap
+PASS: raw run unchanged: *07-ci-local/full/tap/trust_kernel_tenancy.result.json
+PASS: raw run unchanged: *07-ci-local/full/tap/trust_kernel_tenancy.stderr
+PASS: raw run unchanged: *07-ci-local/full/tap/trust_kernel_tenancy.tap
+PASS: raw run unchanged: *07-ci-local/full/tap/workflow_db_invariants.result.json
+PASS: raw run unchanged: *07-ci-local/full/tap/workflow_db_invariants.stderr
+PASS: raw run unchanged: *07-ci-local/full/tap/workflow_db_invariants.tap
+PASS: raw run unchanged: *08-baseline-after-tests.txt
+PASS: raw run unchanged: *09-teardown.txt
+PASS: raw run unchanged: *10a-credential-scan.txt
+PASS: raw run unchanged: *10b-verification.txt
+PASS: raw run unchanged: *capture-source-manifest.py
+PASS: raw run unchanged: *ci-replica.py
+PASS: raw run unchanged: *logs-line-p010meta-auth.txt
+PASS: raw run unchanged: *logs-line-p010meta-db.txt
+PASS: raw run unchanged: *logs-line-p010meta-storage.txt
+PASS: raw run unchanged: *migrations_applied.txt
+PASS: raw run unchanged: *run-p010-failclosed.sh
+PASS: raw run unchanged: *source-0198_line_oa_revoke_client_write_grants.sql
+PASS: raw run unchanged: *source-db-verify.diff
+PASS: raw run unchanged: *source-db-verify.yml
+PASS: raw run unchanged: *source-line-ci-tap.mjs
+PASS: raw run unchanged: *source-line_oa_client_write_revoke_fail_closed.sql
+PASS: raw run unchanged: *source-run-line-db-suites.sh
+PASS: raw run unchanged: *source-tap-evidence.test.mjs
+PASS: raw run unchanged: *tested-source-manifest.json
+PASS: raw run unchanged: *verify-p010-failclosed.py
+PASS: scripts/line-ci-tap.mjs: source identity
+PASS: tests/line-oa-commerce/ci/tap-evidence.test.mjs: source identity
+PASS: docs/PRD-LINE-OA.en.md: source identity
+PASS: docs/PRD-LINE-OA.en.html: source identity
+PASS: docs/PRD-LINE-OA.th.md: source identity
+PASS: docs/PRD-LINE-OA.th.html: source identity
+PASS: docs/governance/line-p010-integration-b12-followup.en.md: source identity
+PASS: docs/governance/line-p010-integration-b12-followup.en.html: source identity
+PASS: docs/governance/line-p010-integration-b12-followup.th.md: source identity
+PASS: docs/governance/line-p010-integration-b12-followup.th.html: source identity
+PASS: scripts/line-ci-tap.mjs: identical to tested docs/governance/evidence/line-p010-evidence-followup-2026-09-30
+PASS: tests/line-oa-commerce/ci/tap-evidence.test.mjs: identical to tested docs/governance/evidence/line-p010-evidence-followup-2026-09-30
+PASS: fresh TAP validator tests
+PASS: docs/PRD-LINE-OA.en.html: renderer matches
+PASS: docs/governance/line-p010-integration-b12-followup.en.html: renderer matches
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/REPORT.en.html: renderer matches
+PASS: docs/PRD-LINE-OA.th.html: renderer matches
+PASS: docs/governance/line-p010-integration-b12-followup.th.html: renderer matches
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/REPORT.th.html: renderer matches
+PASS: secret scanner positive controls
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/ci-step-1.log: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/tested-source-manifest.json: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/input-manifest.json: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/trust_kernel_release.stderr: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/workflow_db_invariants.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/10a-credential-scan.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/ci-step-5.sh: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/source-line-ci-tap.mjs: credential-shaped scan
+PASS: tests/line-oa-commerce/ci/tap-evidence.test.mjs: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/trust_kernel_bundles.result.json: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/trust_kernel_bundles.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/verify-p010-failclosed.py: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/unit-green.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/trust_kernel_tenancy.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/trust_kernel_containment.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/commit-evidence-followup.sh: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/trust_kernel_safety.stderr: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/ci-step-1.sh: credential-shaped scan
+PASS: docs/PRD-LINE-OA.th.html: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/04a-fail-closed-vs-0198.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/run-p010-failclosed.sh: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/trust_kernel_containment.result.json: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/repair_phase0_containment.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/logs-line-p010meta-auth.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/source-db-verify.yml: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/.gitattributes: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/workflow_db_invariants.result.json: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/ci-step-4.log: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/REPORT.th.md: credential-shaped scan
+PASS: docs/governance/line-p010-integration-b12-followup.en.md: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/01b-service-bootstrap.sql: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/source-run-line-db-suites.sh: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/line_outbound_claim_record.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/source-line_oa_client_write_revoke_fail_closed.sql: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/migrations_applied.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/source-0198_line_oa_revoke_client_write_grants.sql: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/SHA256SUMS: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/ci-step-3.sh: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/08-baseline-after-tests.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/trust_kernel_release.result.json: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/trust_kernel_bundles.stderr: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/02-migrations-applied.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/ci-step-2.log: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/trust_kernel_containment.stderr: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/unit-red.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/line_oa_client_write_revoke_fail_closed.result.json: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/db-verify-evidence.json: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/ci-step-5.log: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/line_outbound_claim_record.stderr: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/logs-line-p010meta-storage.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/00-context.txt: credential-shaped scan
+PASS: docs/PRD-LINE-OA.en.md: credential-shaped scan
+PASS: docs/PRD-LINE-OA.th.md: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/REPORT.en.md: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/06-pytest-output.txt: credential-shaped scan
+PASS: docs/governance/line-p010-integration-b12-followup.th.html: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/repair_phase0_organization.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/REVIEW-NOTES.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/repair_phase0_containment.result.json: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/trust_kernel_governance.result.json: credential-shaped scan
+PASS: docs/governance/line-p010-integration-b12-followup.th.md: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/trust_kernel_safety.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/trust_kernel_safety.result.json: credential-shaped scan
+PASS: scripts/line-ci-tap.mjs: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/REPORT.en.html: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/SHA256SUMS.run: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/trust_kernel_governance.stderr: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/10b-verification.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/gate-evidence-followup.py: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/source-tap-evidence.test.mjs: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/line_oa_client_write_revoke.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/04b-pgtap-p010.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/06-pytest-junit.xml: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/AUTHORSHIP.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/line_oa_client_write_revoke.result.json: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/09-teardown.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/04c-pgtap-original.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/summary.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/ci-step-2.sh: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/05-claim-race-output.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/line_outbound_claim_record.result.json: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/01b-service-bootstrap-output.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/ci-replica.py: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/trust_kernel_release.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/03-baseline-after-migrations.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/trust_kernel_tenancy.result.json: credential-shaped scan
+PASS: docs/PRD-LINE-OA.en.html: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/line_oa_client_write_revoke_fail_closed.stderr: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/repair_phase0_organization.stderr: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/ci-step-3.log: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/line_oa_client_write_revoke.stderr: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/ci-step-4.sh: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/trust_kernel_tenancy.stderr: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/REPORT.th.html: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/repair_phase0_containment.stderr: credential-shaped scan
+PASS: docs/governance/line-p010-integration-b12-followup.en.html: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/line_oa_client_write_revoke_fail_closed.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/REPLAY.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/repair_phase0_organization.result.json: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/workflow_db_invariants.stderr: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/capture-source-manifest.py: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/07-ci-local/full/tap/trust_kernel_governance.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/logs-line-p010meta-db.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/source-db-verify.diff: credential-shaped scan
+RESULT: GATE PASS (local evidence; full CI remains separately reported)

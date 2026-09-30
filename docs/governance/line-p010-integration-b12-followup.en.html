@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>P0-10 integration and B12 decision packet</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>P0-10 integration and B12 decision packet</h1>
+<p>30 September 2026. Read-only analysis at product commit <code>3bdd6f3e5217f3252292cd11c858be151c01f977</code>. This packet proposes work; it does not authorize a merge, manufacturing change, 0199, production access or deployment.</p>
+<h2>Containment: verified cause and handoff</h2>
+<p>The current <code>supabase/tests/repair_phase0_containment.sql:70–74</code> tests the 12-argument <code>rpc_factory_job_record_packet(text,text,text,text,text,text[],text[],text,text,text,text,integer)</code>. This branch's latest definition, <code>0162_factory_server_identity_released_only.sql:173</code>, has ten arguments.</p>
+<p>Local ref <code>origin/main</code> at <code>57b69513ba0a5f0624ea3a40f9b5cea0b04992fb</code> and line-trust at <code>69c879304cc2d6c4fcdcf4070105e5a8fc4e25cd</code> contain <code>0170_factory_jobs_list_real_fields.sql</code>. These are local refs, not freshly fetched remote state. 0170 drops the old function, adds p_job_name/p_piece_count and table fields, updates jobs-list behavior and grants the new writer to service_role. Its introduction is e04855f444806c49245741eb9122c89f1a4e840a, with later update edc6ca94db3ef1a5e73a2df1593b5b4982dd9929.</p>
+<p><strong>Ordering risk:</strong> 0191 revokes service execution from all overloads existing when it runs (<code>0191_repair_phase0_revoke_legacy_mutation_authority.sql:27–38</code>). Applying 0170 later may recreate a service-executable writer. This is not a missing test fixture that LINE work may silently stub out.</p>
+<p><strong>Proposed owner action:</strong> the repository decision-maker names a manufacturing/integration owner under PRD section 8 question 7. That owner defines the migration/edge compatibility order and tests the integrated schema, including effective EXECUTE on all writer overloads after the final chain. Keep containment failed until authorized integration or a separately justified test correction passes. Do not weaken the assertion or treat LINE-only results as full CI.</p>
+<p>A read-only all-ref query encountered invalid ref <code>refs/heads/codex/repair-intelligence-phase0-trust (1)</code>; explicit valid-ref queries succeeded. Do not assume the owner has already removed duplicate refs. No ref was deleted.</p>
+<h2>B12: proposed bounded scope</h2>
+<p>Existing catalog/survey evidence reports EXECUTE on twenty writer identities: anon 18, authenticated 19, service_role 20. These reconstructed-stack facts do not establish production API exposure. Do not generalize the table-write attestation from ops into an assertion about external RPC callers.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Proposed role change</th>
+<th>Proposed targets</th>
+<th>Required retained behavior</th>
+</tr></thead><tbody>
+<tr>
+<td>Deny anon EXECUTE</td>
+<td>Its eighteen executable writers in the catalog/survey</td>
+<td>Required signed/service and authenticated business paths still work</td>
+</tr>
+<tr>
+<td>Deny authenticated EXECUTE on internal/service paths</td>
+<td>fn_prod_curated, fn_line_handle_group_event, fn_welcome_on_group_bind, fn_lead_followup_sweep, rpc_sweep_line_session_timeouts, line_oa_resolve_customer_identity, rpc_ingest_line_webhook</td>
+<td>Field-app RPCs retain their approved guarded access</td>
+</tr>
+<tr>
+<td>Deny direct service_role EXECUTE on internal helpers</td>
+<td>fn_prod_curated, fn_line_handle_group_event, fn_welcome_on_group_bind</td>
+<td>Owner-executed DEFINER chains and trigger path still work</td>
+</tr>
+<tr>
+<td>Remove conflicting PUBLIC grants</td>
+<td>Exact identities in the approved matrix, including welcome trigger function</td>
+<td>Resolve effective access, including inherited grants, without changing unrelated routines</td>
+</tr>
+</tbody></table></div>
+<p>Before SQL, approve exact signatures and role matrix, confirm external/manual RPC callers with ops, and coordinate factory-dependent helpers. Proposed number 0199 must be checked again on the chosen integration base. No grant is changed by this packet.</p>
+<p><strong>Additional boundary decision:</strong> authenticated can execute <code>rpc_record_line_send_result(uuid,text,text,text,uuid)</code> in the catalog (<code>line-p010-catalog-2026-09-30/08-analysis.txt:167–169</code>). This routine is outside the survey's eighteen anon-callable targets. Decide its intended caller boundary explicitly; the proposal must not claim a universal service-only writer boundary while leaving this unexamined.</p>
+<h2>Current definitions and tests to use</h2>
+<p>Use final definitions, not only original creation migrations: lead follow-up sweep is in 0130:332; customer acceptance 0114:22; close lead 0130:280; shop drawing 0143:266; photo send 0134:19; lead source 0151:145. Service edge callers are line-webhook:200–201 and customer-design-view:78,102. Frontend callers are in packages/field-app: LeadPanel.tsx:43, SaleHome.tsx:34,42, PhotoSendCard.tsx:33 and DesignerToolsPanel.tsx:69.</p>
+<p>Acceptance proposal: inventory all twenty exact catalog identities and owners; assert effective privileges across named roles, PUBLIC and inheritance; prove actual forbidden ordinary-function calls fail with 42501 for function permission; validate trigger-only routines through the trigger path and ACL checks rather than treating an invalid direct trigger invocation as a permission test; preserve authorized field-app calls with claims, signed/service ingress, identity lookup, owner cron and welcome trigger, manufacturing helper chain, LINE claim/record and direct-write denial. Test the full integrated suite. No real customer messages or cron activation.</p>
+<h2>Separate policy and architecture decisions</h2>
+<p>Default ACLs give direct role grants for routines created by postgres/supabase_admin; revoking PUBLIC alone is insufficient. A bounded existing-function migration does not govern future new/recreated functions. Decide future default-ACL policy separately and do not change REFERENCES, TRIGGER or MAINTAIN under P0-10.</p>
+<p>Production catalog must be reviewed separately before deployment. Function/table owners and effective rights can differ from the temporary stack; service-role behavior alone does not prove owner execution will survive.</p>
+<p>Before P0-9, select canonical tenancy/service authority, one owner for outbound versus reserved 0178, ingress retries versus 0175 and staff login versus 0176; agree migration ordering and manufacturing conflict resolver. P0-9 must demonstrate failed handlers are not counted/deduplicated as success, enter bounded internal retries and eventually succeed or dead-letter with audit. RED must first reproduce false success; the design must not rely on LINE redelivery and must pass independent review. These remain proposed criteria, not implementation evidence.</p>
+<h2>Caller survey requested by the owner</h2>
+<p>Owner response on 30 September: external RPC callers are not yet confirmed; survey first. The read-only inventory searched the twenty catalog names in tracked source, workflows, migrations and relevant docs, excluding credentials. No production or external integration was queried.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>Caller class</th>
+<th>Observed writer calls / evidence</th>
+<th>Access to preserve or confirm</th>
+</tr></thead><tbody>
+<tr>
+<td>Service ingress</td>
+<td>rpc_ingest_line_webhook; supabase/functions/line-webhook/index.ts:200–206</td>
+<td>Service client</td>
+</tr>
+<tr>
+<td>Service identity</td>
+<td>line_oa_resolve_customer_identity; customer-design-view/index.ts:78–82,102</td>
+<td>Service client and owner call chains</td>
+</tr>
+<tr>
+<td>Sender worker</td>
+<td>rpc_claim_line_outbound_batch and rpc_record_line_send_result; line-outbound-sender/index.ts:744,871,959–964</td>
+<td>Service EXECUTE; authenticated recorder scope still needs decision</td>
+</tr>
+<tr>
+<td>Field user</td>
+<td>rpc_request_customer_acceptance; packages/field-app/src/screens/LeadPanel.tsx:43</td>
+<td>Authenticated claims/guards, not an assumption of a deployed logged-in user</td>
+</tr>
+<tr>
+<td>Field user</td>
+<td>rpc_field_close_lead and rpc_field_set_lead_source; SaleHome.tsx:34,42</td>
+<td>Approved authenticated path</td>
+</tr>
+<tr>
+<td>Field user</td>
+<td>rpc_field_send_photo_to_customer; PhotoSendCard.tsx:33</td>
+<td>Approved authenticated path</td>
+</tr>
+<tr>
+<td>Field user</td>
+<td>rpc_field_shop_drawing_revision; DesignerToolsPanel.tsx:69</td>
+<td>Approved authenticated path</td>
+</tr>
+<tr>
+<td>Internal owner chains</td>
+<td>fn_line_handle_group_event at 0097:435; fn_prod_curated at 0107:89,133,135, 0124:149,151 and 0143:122</td>
+<td>Owner authority; coordinate manufacturing</td>
+</tr>
+<tr>
+<td>Trigger / scheduled DB</td>
+<td>fn_welcome_on_group_bind at 0136:185–186; fn_lead_followup_sweep registration at 0116:192</td>
+<td>Trigger/cron principal; deployed principal unknown</td>
+</tr>
+<tr>
+<td>Documented manual path</td>
+<td>rpc_create_line_order; docs/dogfood/first-house-runbook.md:25–35</td>
+<td>Field Operator is a documented role; actual usage/credential class unknown</td>
+</tr>
+<tr>
+<td>No executable caller found in this scan</td>
+<td>rpc_send_line_outbound, rpc_evaluate_identity_merge_candidate, rpc_resolve_conversation_site, rpc_sync_line_forecast, rpc_sweep_line_session_timeouts, rpc_field_assign_lead</td>
+<td>Absence not established; owner/ops confirmation required</td>
+</tr>
+</tbody></table></div>
+<p>Mentions in autonomyGate.ts, brand-voice.ts, templates.ts and order-adapter.ts can be comments rather than calls; evidence harnesses are not deployed callers. No n8n, Make.com or Zapier reference matched the bounded scan, and no exact writer name matched searched workflows. Dynamic calls, external automation and manual tools remain UNKNOWN. postgres is a database owner, not an identified accountable human.</p>
+<p>Ops should supply a redacted per-environment register: application/job name and accountable person; active/disabled status and last use; exact RPC/signature or endpoint path; invocation chain and schedule; authentication class only (user JWT/service/database role); required business access and proposed retain/retire decision. Include redacted config/log evidence with timestamp and outcome. Specifically cover hosted automation, backend services, dashboards/admin/BI scripts, SQL tools, sender/sweeps and the manual dogfood runbook. Do not supply tokens, keys, authorization headers, credential-bearing URLs, customer identifiers or request bodies. Missing replies remain unknown; this request does not authorize accessing those systems.</p>
+<h2>Review provenance</h2>
+<p>A separate Codex read-only agent checked the preceding commit's immutable blobs, RED/GREEN checksums and gated tree; it reported only known E1/E2/E3 evidence gaps. Another read-only agent traced the dependencies summarized here. Neither reran databases or supplied cross-vendor acceptance. User authorization covers evidence follow-up and preparation of these decisions; it does not choose their architectural answers.</p>
+</main>
+</body>
+</html>

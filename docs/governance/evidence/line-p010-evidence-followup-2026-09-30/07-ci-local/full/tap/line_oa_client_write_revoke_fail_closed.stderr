@@ -1,0 +1,10 @@
+psql:C:/Users/thai3/AppData/Local/Temp/line-p010-ci-workdir.IZOwWc/supabase/migrations/0198_line_oa_revoke_client_write_grants.sql:65: ERROR:  P0-10: write privileges remain after revoke: anon:line_oa_orders
+CONTEXT:  PL/pgSQL function inline_code_block line 36 at RAISE
+psql:C:/Users/thai3/AppData/Local/Temp/line-p010-ci-workdir.IZOwWc/supabase/migrations/0198_line_oa_revoke_client_write_grants.sql:65: ERROR:  P0-10: write privileges remain after revoke: anon:line_oa_message_templates
+CONTEXT:  PL/pgSQL function inline_code_block line 36 at RAISE
+psql:C:/Users/thai3/AppData/Local/Temp/line-p010-ci-workdir.IZOwWc/supabase/migrations/0198_line_oa_revoke_client_write_grants.sql:65: ERROR:  P0-10: write privileges remain after revoke: authenticated:line_oa_orders
+CONTEXT:  PL/pgSQL function inline_code_block line 36 at RAISE
+psql:C:/Users/thai3/AppData/Local/Temp/line-p010-ci-workdir.IZOwWc/supabase/migrations/0198_line_oa_revoke_client_write_grants.sql:65: ERROR:  P0-10: write privileges remain after revoke: service_role:line_oa_orders
+CONTEXT:  PL/pgSQL function inline_code_block line 36 at RAISE
+psql:C:/Users/thai3/AppData/Local/Temp/line-p010-ci-workdir.IZOwWc/supabase/migrations/0198_line_oa_revoke_client_write_grants.sql:65: ERROR:  P0-10: write privileges remain after revoke: anon:line_oa_message_templates
+CONTEXT:  PL/pgSQL function inline_code_block line 36 at RAISE

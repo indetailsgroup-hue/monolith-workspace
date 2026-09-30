@@ -1,0 +1,4 @@
+Reported review by separate Codex read-only agents; this is a recorded report, not raw execution output.
+Prior commit: 89 GREEN and 28 RED checksum entries checked from immutable Git blobs; gated tree c017d016f5880a8204055bcc4652f280ce5d7223 confirmed; only E1/E2/E3 findings. No database rerun.
+Follow-up source: no blockers. E1 stderr name/presence/hash checked; E2 provenance separately reported; E3 pgTAP-only scope explicit. Caveats retained: provenance fields are supplied, Actions lacks source digest, source manifest is captured after direct tests and scratch copying. Final gate must compare manifest and copied changed sources with Git; stable single-writer source is assumed, not an external execution attestation.
+Dependency packet: reviewed for factual accuracy; P0-9 RED/redelivery/independent review conditions restored following reviewer comment.

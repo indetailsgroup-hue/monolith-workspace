@@ -1,0 +1,5 @@
+Patch author: Claude Opus 5.5 via Claude CLI, modelUsage key claude-opus-5-5; exit 0.
+Only three selected source files listed in input-manifest.json were sent, after credential-shaped scanning. Tools/MCP disabled, no secret files supplied.
+Request sha256: 121eb3af3ed385dfb5e91a851bf2c9c2fd6ba1ddb9adb93c7ce25060c9c0af5c
+Codex applied tests first (RED: 22 pass / 11 fail), then implementation (GREEN: 33 pass). No candidate source edit was required after generation. Codex authored orchestration, documentation and gates.
+Independent Codex review of source is not a DB rerun or cross-vendor acceptance.

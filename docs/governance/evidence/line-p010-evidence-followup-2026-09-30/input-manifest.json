@@ -1,0 +1,14 @@
+[
+  {
+    "path": "scripts/line-ci-tap.mjs",
+    "sha256": "27aa8aa77fe1edb19d6fe6ffec952cdeeeb5e4fc185b0c2435e0dd59f8de2759"
+  },
+  {
+    "path": "tests/line-oa-commerce/ci/tap-evidence.test.mjs",
+    "sha256": "966d33132ae2cbb6825456846cf59286b1bdd36c240cc83434900a68088f05bd"
+  },
+  {
+    "path": "scripts/run-line-db-suites.sh",
+    "sha256": "8e55400693499046cb5db2ccc23db402cbd3ff7665aa5ce20602a8a05e2062b1"
+  }
+]

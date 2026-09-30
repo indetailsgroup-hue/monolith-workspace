@@ -1,0 +1,23 @@
+{
+  "suite": "line_oa_client_write_revoke",
+  "stdout": "tap/line_oa_client_write_revoke.tap",
+  "stderr": "tap/line_oa_client_write_revoke.stderr",
+  "tapSha256": "187f94ec8fbb67dc57169c03e75f53622aebeacdcf7b586459eade41c1486767",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "runId": "p010-evidence-20260930T151424Z-138896",
+  "origin": "local",
+  "checkedAt": "2026-09-30T15:14:27.392Z",
+  "pass": true,
+  "exitCode": 0,
+  "plan": 133,
+  "planLines": 1,
+  "results": 133,
+  "ok": 133,
+  "notOk": 0,
+  "skip": 0,
+  "todo": 0,
+  "bailOut": false,
+  "sqlErrorLines": 0,
+  "finishDiagnostics": [],
+  "failures": []
+}

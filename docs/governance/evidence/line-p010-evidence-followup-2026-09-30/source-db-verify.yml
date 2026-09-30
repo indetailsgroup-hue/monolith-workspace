@@ -1,0 +1,110 @@
+# AB-DB-01: CI DB testing = E0 evidence for RLS/constraint/invariant suite.
+# Spins up a faithful Supabase local Postgres (auth schema, extensions, roles),
+# applies the migration chain, runs the pgTAP DB-invariant suite, uploads evidence.
+# This is an ephemeral CI container â€” NOT hosted/prod infra (ADR-066 does not apply).
+name: MONOLITH DB Verify
+
+on:
+  push:
+    branches: [main, "fix/**", "s17/**", "codex/**", "repair-intelligence/**"]
+    paths:
+      - "supabase/migrations/**"
+      - "supabase/tests/**"
+      - "tests/line-oa-commerce/concurrency/**"
+      - "tests/line-oa-commerce/ci/**"
+      - "scripts/line-ci-tap.mjs"
+      - "scripts/run-line-db-suites.sh"
+      - ".github/workflows/db-verify.yml"
+  pull_request:
+    paths:
+      - "supabase/migrations/**"
+      - "supabase/tests/**"
+      - "tests/line-oa-commerce/concurrency/**"
+      - "tests/line-oa-commerce/ci/**"
+      - "scripts/line-ci-tap.mjs"
+      - "scripts/run-line-db-suites.sh"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  db-verify:
+    name: apply migrations + pgTAP invariants
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local Supabase (applies migration chain)
+        # Full stack for first validation â€” migrations reference auth.users (gotrue).
+        # Optimize with -x once green.
+        run: supabase start
+
+      - name: Capture DB URL + applied migrations
+        id: db
+        run: |
+          echo "DB_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres" >> "$GITHUB_OUTPUT"
+          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -tAc \
+            "select count(*) from supabase_migrations.schema_migrations" > migrations_applied.txt || true
+          echo "migrations applied: $(cat migrations_applied.txt)"
+
+      - name: Test TAP evidence validation
+        run: node --test tests/line-oa-commerce/ci/tap-evidence.test.mjs
+
+      - name: Run pgTAP suites (workflow + trust-kernel + Repair Phase 0)
+        if: ${{ always() && steps.db.outcome == 'success' }}
+        env:
+          LINE_DB_TEST_DSN: ${{ steps.db.outputs.DB_URL }}
+        run: bash scripts/run-line-db-suites.sh
+
+      - name: Prove LINE outbound claims do not overlap across two clients
+        if: ${{ always() && steps.db.outcome == 'success' }}
+        env:
+          LINE_CLAIM_RACE_DSN: ${{ steps.db.outputs.DB_URL }}
+          LINE_CLAIM_RACE_EPHEMERAL: "1"
+        run: node tests/line-oa-commerce/concurrency/claim-race.mjs
+
+      - name: Confirm migration chain reaches 0192
+        if: ${{ always() && steps.db.outcome == 'success' }}
+        run: |
+          test -f supabase/migrations/0189_repair_phase0_organization_scope.sql
+          test -f supabase/migrations/0190_repair_phase0_legacy_containment.sql
+          test -f supabase/migrations/0191_repair_phase0_revoke_legacy_mutation_authority.sql
+          test -f supabase/migrations/0192_repair_phase0_consume_org_recheck.sql
+          psql "${{ steps.db.outputs.DB_URL }}" -tAc "select 1 from pg_tables where schemaname='public' and tablename='monolith_organization'" | grep -q 1
+          # The legacy state-transition authority must not be executable by service_role.
+          psql "${{ steps.db.outputs.DB_URL }}" -tAc "select has_function_privilege('service_role','public.rpc_factory_job_transition(text,text,text,text[],text[],text,text,text,text,text)','EXECUTE')" | grep -qx f
+
+      - name: Confirm 0198 removed direct client writes on LINE tables
+        if: ${{ always() && steps.db.outcome == 'success' }}
+        run: |
+          test -f supabase/migrations/0198_line_oa_revoke_client_write_grants.sql
+          # Require the entire target scope, not only an empty set of violations.
+          psql "${{ steps.db.outputs.DB_URL }}" -X -v ON_ERROR_STOP=1 -tAc "with targets as (select c.oid from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r' and c.relname in ('line_oa_channels','line_oa_conversations','line_oa_inbound_messages','line_oa_outbound_messages','line_oa_customer_identity','line_oa_message_templates','line_oa_orders','line_oa_audit_log')), clients as (select oid from pg_roles where rolname in ('anon','authenticated','service_role')) select (select count(*)=8 from targets) and (select count(*)=3 from clients) and not exists (select 1 from targets t cross join clients r where has_table_privilege(r.oid,t.oid,'INSERT') or has_table_privilege(r.oid,t.oid,'UPDATE') or has_table_privilege(r.oid,t.oid,'DELETE') or has_table_privilege(r.oid,t.oid,'TRUNCATE') or has_any_column_privilege(r.oid,t.oid,'INSERT') or has_any_column_privilege(r.oid,t.oid,'UPDATE'))" | grep -qx t
+
+      - name: Assemble evidence
+        if: always()
+        run: node scripts/line-ci-tap.mjs assemble tap db-verify-evidence.json
+
+      - name: Upload DB evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-verify-evidence-${{ github.sha }}
+          path: |
+            db-verify-evidence.json
+            tap/*.tap
+            tap/*.stderr
+            tap/*.result.json
+          retention-days: 90
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop --no-backup || true

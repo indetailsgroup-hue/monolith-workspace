@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>P0-10 งานติดตามหลักฐาน — รายงานส่งมอบ</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>P0-10 งานติดตามหลักฐาน — รายงานส่งมอบ</h1>
+<p>30 กันยายน 2026 ฐาน <code>3bdd6f3e5217f3252292cd11c858be151c01f977</code> Phase A ยังเป็น <code>EVIDENCE_INCOMPLETE</code></p>
+<h2>สิ่งที่ส่งมอบ</h2>
+<p>E1: check/assemble บังคับให้ stderr มีจริง ชื่อตรง suite และ SHA256 ตรงที่บันทึก ไฟล์หาย ถูกลบ ถูกแทนที่หรือชื่อผิดไม่ผ่าน ส่วนไฟล์ว่างและ SQL error ที่ negative test ตั้งใจสร้างยังใช้ได้</p>
+<p>E2: replica local รอบใหม่ส่ง base SHA, ref, run ID เดียวกัน, migration 193 ไฟล์ และ digest ของ tested-source manifest ครบ สรุป provenanceComplete=true ไม่มี field ขาด หมายถึงข้อมูลครบ ไม่ใช่รับรองการรันจากภายนอก Base SHA กับ source digest ใช้ระบุ patch ที่ทดสอบก่อน commit</p>
+<p>E3: เพิ่ม fullPgTapPass และ verdictScope=pgtap-only ระบุขอบเขตผล ส่วน workflowPass=null หมายถึงยังไม่ได้ประเมิน คง pass/fullPass เป็น alias ของผล pgTAP เต็มเพื่อความเข้ากันได้ ไม่อนุมานว่าทั้ง workflow ผ่าน</p>
+<p>Source ที่ทำงานจริงของ product เปลี่ยนเพียงตัวตรวจและ unit tests ไม่แก้ 0198, SQL suites หรือ workflow PRD เป็น 1.11 และมีเอกสารสองภาษาสำหรับตัดสินใจ integration/B12 โดยไม่สร้าง 0199 เปลี่ยน grant หรือแก้ conflict manufacturing</p>
+<h2>หลักฐานทดสอบ</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>รายการ</th>
+<th>ผล</th>
+</tr></thead><tbody>
+<tr>
+<td>RED ทดสอบก่อนแก้ implementation</td>
+<td>ผ่าน 22 / ล้ม 11 รันครบ 33</td>
+</tr>
+<tr>
+<td>GREEN ตัวตรวจ</td>
+<td>33/33 ไม่มี skip</td>
+</tr>
+<tr>
+<td>Migration บน stack ชั่วคราวใหม่</td>
+<td>193/193 จากศูนย์</td>
+</tr>
+<tr>
+<td>Fail-closed SQL</td>
+<td>28/28</td>
+</tr>
+<tr>
+<td>LINE suites เดิม</td>
+<td>107/107 และ 133/133</td>
+</tr>
+<tr>
+<td>Python 12 ไฟล์</td>
+<td>72/72 ไม่มี fail/skip</td>
+</tr>
+<tr>
+<td>Claim race</td>
+<td>10+10 ซ้ำศูนย์</td>
+</tr>
+<tr>
+<td>pgTAP เต็ม</td>
+<td>รันครบ 12 ผ่าน 11 ส่วน containment 6/8 exit 3</td>
+</tr>
+<tr>
+<td>Replica ในเครื่อง</td>
+<td>Exit 1 คงผลเต็มไม่ผ่าน ส่วน verifier exit 0</td>
+</tr>
+<tr>
+<td>เก็บกวาด</td>
+<td>ไม่เหลือ container/network/CI directory ของรอบนี้ cron ไม่ได้รัน</td>
+</tr>
+</tbody></table></div>
+<p>การขาดฟังก์ชัน factory แบบ 12 arguments ยังเป็น failure เดียวของ suite เต็ม ไม่ใช้ผลกรองมาแทน ยังไม่ได้ทดสอบ GitHub Actions หรือ production ในรอบนี้</p>
+<h2>การตรวจและข้อจำกัดหลักฐาน</h2>
+<p>Opus 5.5 สร้าง patch สองไฟล์จาก packet source สามไฟล์ที่สแกนแล้วและปิดเครื่องมือ Codex รัน RED/GREEN กับ stack ชั่วคราว จัดเอกสารและ gate มี Codex agent แยกตรวจ commit เดิมและ diff ใหม่ ไม่พบ blocker เพิ่ม แต่ไม่ได้รันฐานข้อมูลหรือรับรองข้ามค่าย บันทึกคำรายงานไว้ใน REVIEW-NOTES.txt</p>
+<p>สำเนาไฟล์ที่เปลี่ยนถูกเก็บก่อนทดสอบ ส่วน manifest ของ source ทั้งหมดสร้างหลัง direct tests และคัดลอก scratch โดย final gate เทียบแต่ละรายการกับ Git วิธีนี้อาศัย source คงที่และผู้เขียนคนเดียว ไม่ใช่หลักฐานป้องกันการเปลี่ยนไฟล์ชั่วคราวจากผู้เขียนอื่น ไม่แก้หลักฐานเก่า</p>
+<p>Actions workflow ที่ไม่แก้ยังไม่ส่ง testedSourceSha256 จึงจะรายงาน provenance ว่าไม่ครบตามจริง งานนี้แก้รอบ local และเปิดเผย field ที่ขาด ไม่อ้างว่า runner ทุกตัวส่งครบ การตรวจข้อมูลลับใช้ pattern พร้อม positive controls ไม่รับประกันตรวจได้ทุกรูปแบบ</p>
+<h2>เรื่องที่เตรียมให้เจ้าของตัดสิน</h2>
+<p>เอกสาร integration/B12 ระบุความเสี่ยง grant กลับมาหากลง 0170 หลัง 0191, invalid ref ที่ยังค้าง, ผู้เรียก RPC ภายนอกที่ยังไม่ยืนยัน และขอบเขต authenticated บน rpc_record_line_send_result พร้อมเสนอเทสต์และเส้นทางที่ต้องรักษา ต้องระบุเจ้าของ manufacturing/integration ส่วน tenant และเจ้าของงานทับซ้อนยังรอมติ ไม่อนุมัติเลข migration หรือ role matrix แทนผู้ใช้</p>
+<p>ยังรอการตรวจรับอิสระ งานรวม containment แยก และ CI จริงผ่านหลังอนุมัติ push ส่วน B12/0199, default ACL, production catalog และ G-C1 ที่ส่ง LINE จริงเป็นด่านแยก ไม่ได้ push/deploy/ส่งข้อความจริง/ต่อ shared-production</p>
+</main>
+</body>
+</html>

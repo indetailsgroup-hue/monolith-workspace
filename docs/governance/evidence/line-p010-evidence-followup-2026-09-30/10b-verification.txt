@@ -1,0 +1,34 @@
+PASS: 193 migrations from zero including the real 0198 as the last, none failed (193)
+PASS: the mutant is not part of the applied migration chain
+PASS: the real 0198 on disk is identical to the committed file
+PASS: cron scheduler disabled
+PASS: no cron job ran
+PASS: schema/ACL/ownership/membership fingerprint unchanged by the tests
+PASS: no throwaway p010 role left after the tests
+PASS: 04a-fail-closed-vs-0198.tap: plan 1..28 with 28 ordered results and no plan mismatch
+PASS: GREEN: all 28 fail-closed assertions pass against the real 0198
+PASS: GREEN: exactly the five targeted residual-privilege errors
+PASS: 04b-pgtap-p010.tap: plan 1..133 with 133 ordered results and no plan mismatch
+PASS: GREEN: P0-10 suite 133/133
+PASS: 04c-pgtap-original.tap: plan 1..107 with 107 ordered results and no plan mismatch
+PASS: GREEN: original suite 107/107
+PASS: GREEN: all direct runs exit 0
+PASS: GREEN: claim race zero overlap
+PASS: GREEN: 12 required Python files 72/72, none skipped (72 cases, 0 not passing)
+PASS: full local steps have exact expected statuses (known containment failure remains)
+PASS: local provenance includes exact base, ref, run id and 193 migrations
+PASS: summary binds tested-source manifest hash
+PASS: explicit pgTAP scope does not claim whole-workflow success
+PASS: all twelve suites ran and have evidence
+PASS: LINE passes separately; full pgTAP remains FAILED, never masked
+PASS: only the known containment suite fails: SQL exit3, six of eight, zero not-ok
+PASS: known failure is pinned to exact file, line and missing signature; no new SQL failure allowed
+PASS: line_outbound_claim_record: full-loop result is complete and passes
+PASS: line_oa_client_write_revoke: full-loop result is complete and passes
+PASS: line_oa_client_write_revoke_fail_closed: full-loop result is complete and passes
+PASS: local metadata cannot claim a GitHub Actions run
+PASS: full local CI result remains nonzero and is explicitly reported
+PASS: owned containers, network and CI work directory removed
+PASS: in-run credential scan passed
+RESULT: P0-10 follow-up GREEN expectations met
+Scope: local throwaway stack only; not GitHub Actions and not production. Phase A remains EVIDENCE_INCOMPLETE.

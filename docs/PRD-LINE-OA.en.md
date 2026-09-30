@@ -1,15 +1,15 @@
 # PRD — The Complete LINE OA Communication System (MONOLITH Repair Intelligence)
 
 > **Language:** English · Thai edition: `docs/PRD-LINE-OA.th.md` · HTML: `docs/PRD-LINE-OA.en.html` / `docs/PRD-LINE-OA.th.html`
-> **Edition:** 1.10 · 30 September 2026 (1.9, 1.8, 1.7, 1.6, 1.5, 1.4, 1.3 and 1.2 = 30 Sep 2026 · 1.1 = 1 Aug 2026 · 1.0 = 26 Jul 2026)
-> **What changed in 1.10:** owner-approved CI evidence hardening. All twelve pgTAP suites now run even when one fails; strict plan/exit-code checks prevent incomplete TAP from passing. Fail-closed coverage grows to 28 assertions with explicit inheritance, DELETE/TRUNCATE and column INSERT cases. Local LINE results pass; the existing containment failure remains visible and full CI is not passed. No change to 0198; no push or deploy.
+> **Edition:** 1.11 · 30 September 2026 (1.10, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4, 1.3 and 1.2 = 30 Sep 2026 · 1.1 = 1 Aug 2026 · 1.0 = 26 Jul 2026)
+> **What changed in 1.11:** E1/E2/E3 evidence follow-up: stderr presence/name/hash verified; explicit local base/ref/run ID/migration count/tested-source digest with a separate provenance verdict; pgTAP-only verdict labelled clearly. No change to 0198, workflow or SQL tests. Integration/B12 decision packet added; no architectural decision or EXECUTE change.
 > **Document status:** awaiting the owner's (Dave's) decisions on the open questions in §8 — no step proposed in §9 enables cron or sends messages to real customers
 > **Writing rule:** every row separates "actually working / code present but not wired / spec only" and cites file:line, and separates evidence that is "reproducible (raw output in the repo)" from evidence that is "reported (no raw output in the repo)"
 > **Truth note:** older documents (`docs/LINE-Architecture-System-Complete.md:41`, `docs/PRD.md:514`) claim "LINE OA Commerce ✅ 20/20", which is overstated for the live path — this document is the more truthful status record
 
 ---
 
-## 0. Implementation status (edition 1.10)
+## 0. Implementation status (edition 1.11)
 
 **The earlier P0-1 to P0-6 implementation passed cross-vendor review; P0-11 at 00651a6cd has also passed independent cross-vendor acceptance; P0-10 (0198) passed independent code-and-evidence review at 87930836a (no reviewer rerun), and its follow-up awaits review — Phase A is not closed**
 
@@ -65,7 +65,7 @@
 - **B12 is open:** client roles can still EXECUTE SECURITY DEFINER writers; 0198 does not close that path (read-only survey: `docs/governance/line-p010-execute-survey.en.md`)
 - **CI is not passed:** all twelve suites now run locally, including all three LINE suites. The known containment failure is retained as failed, not scored as passed. Resolving its dependency needs the branch-integration decision or a separately scoped fix; no manufacturing source is changed here.
 
-| Defect | Status as of edition 1.10 |
+| Defect | Status as of edition 1.11 |
 |---|---|
 | B1 queue pickup without a lock | ✅ implemented on the branch — the sender calls `rpc_claim_line_outbound_batch` (`index.ts:740-744`), `FOR UPDATE SKIP LOCKED`, timeout-based reclaim, `claim_token` fencing — the two-client test passes on the throwaway stack (attempts 2 and 3: 10+10 rows, 0 overlap); no CI result yet |
 | B2 service role cannot record results | ✅ implemented on the branch — service context is detected from the SQL role (`current_setting('role')`), not the JWT; user checks are not relaxed |
@@ -87,6 +87,8 @@
 **Additional defects found and fixed during Phase A:** `next_attempt_at` and `sent_at` were assigned `timezone('utc', now())` (a timestamp without time zone) into `timestamptz` columns, so in Thailand the backoff collapsed to zero and send times were recorded ~7 hours early — fixed in 0195/0196 with tests under `Asia/Bangkok`
 
 ---
+
+**Evidence follow-up (30 September 2026, base 3bdd6f3e):** the new validator tests first gave 22 pass / 11 fail against the old implementation, then 33/33 with the fix. `docs/governance/evidence/line-p010-evidence-followup-2026-09-30/` records the new local run; old bundles are immutable. `fullPgTapPass` is explicitly pgTAP-only; compatibility aliases `fullPass/pass` have the same scope, and `workflowPass=null` means not evaluated. `provenanceComplete` checks supplied field formats, not external authenticity. The local runner supplies provenance; the unchanged Actions workflow does not yet supply a source digest. A separate Codex agent reported code/evidence review of 3bdd6f3e and the follow-up patch; this is not a database rerun or cross-vendor acceptance. The decision packet `docs/governance/line-p010-integration-b12-followup.en.md` records the 0170-after-0191 grant risk and B12 caller decisions. Neither containment nor B12 is fixed by this delivery.
 
 ## 1. Problem Statement
 
@@ -193,7 +195,7 @@ MONOLITH uses LINE as its main channel to customers and field technicians (Thai 
 
 ### P0 — required before switching on real customer messaging (fixes B1–B8, B10, B11; B12 proposed)
 
-| Req | Description | Acceptance criteria (tests against real Postgres, RED first) | Status (1.10) |
+| Req | Description | Acceptance criteria (tests against real Postgres, RED first) | Status (1.11) |
 |---|---|---|---|
 | P0-1 | **Atomic queue claim:** add `claimed_at/claimed_by` + `rpc_claim_line_outbound_batch` — `UPDATE ... WHERE id IN (SELECT ... FOR UPDATE SKIP LOCKED) RETURNING` (no new enum value, to avoid the `ALTER TYPE` limitation and the impact on status readers) | Two clients claiming at once → no duplicated rows; a claim stuck past the timeout → re-claimable | ✅ implemented (0193 + sender wiring) + two-client evidence on an ephemeral stack (attempts 2–3); CI awaits step 5 |
 | P0-2 | **Service context can record results:** grant + teach `rpc_record_line_send_result` to recognise the service role as a system actor without relaxing user role checks | Called with the service role → recorded; a user without a role → rejected as before | ✅ implemented + pgTAP evidence (0193) |
@@ -296,7 +298,7 @@ MONOLITH uses LINE as its main channel to customers and field technicians (Thai 
 
 #### Step 1 — close the outstanding test evidence for P0-1 to P0-6 (can start now, independent of the decisions)
 
-- **Status (1.10):** local LINE pgTAP 107/133/28 and Python 72/72 pass, with claim race 10+10 and zero overlap. All twelve suites ran; full pgTAP remains failed because containment is incomplete. No GitHub Actions result exists. Step 1 is not closed.
+- **Status (1.11):** local LINE pgTAP 107/133/28 and Python 72/72 pass, with claim race 10+10 and zero overlap. All twelve suites ran; full pgTAP remains failed because containment is incomplete. No GitHub Actions result exists. Step 1 is not closed.
 
 - Run `tests/line-oa-commerce/concurrency/claim-race.mjs` against an ephemeral Postgres created from zero, not the shared stack
 - **Acceptance criteria:** two connections claim the same set of pending rows at once → overlapping rows = 0 and the union of claimed rows = the total row count; fixture cleanup verifies zero remaining outbound rows and conversations created by this harness; this does not certify the whole database
@@ -344,7 +346,7 @@ MONOLITH uses LINE as its main channel to customers and field technicians (Thai 
 
 #### Step 5 — close Phase A
 
-- **Status (1.10):** the full local loop runs all twelve suites and preserves the containment failure while the LINE suites pass. No filtered run is substituted for full CI. GitHub Actions has not run; push remains unapproved.
+- **Status (1.11):** the full local loop runs all twelve suites and preserves the containment failure while the LINE suites pass. No filtered run is substituted for full CI. GitHub Actions has not run; push remains unapproved.
 - **Acceptance criteria:** steps 1, 1b and 2–4 pass with no required test failed or skipped; after the owner approves a push, CI (`db-verify.yml` including the `line_outbound_claim_record` suite) actually runs green; only then can the evidence status leave `EVIDENCE_INCOMPLETE` — the LINE-side behaviour of P0-5 is not a Phase A closure criterion (it is gate G-C1 in §9.2); no cron and no customer messages
 
 ### 9.2 Gates before real sending (Phase C)

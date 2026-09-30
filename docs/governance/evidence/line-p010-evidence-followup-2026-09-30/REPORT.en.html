@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>P0-10 evidence follow-up — delivery report</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>P0-10 evidence follow-up — delivery report</h1>
+<p>30 September 2026. Base <code>3bdd6f3e5217f3252292cd11c858be151c01f977</code>. Phase A remains <code>EVIDENCE_INCOMPLETE</code>.</p>
+<h2>Delivered changes</h2>
+<p>E1: check/assemble require stderr to exist, match its suite name and recorded SHA256. Missing, deleted, replaced or misnamed files fail; empty stderr and expected negative-test SQL errors remain valid.</p>
+<p>E2: the new local replica supplies base SHA, ref, one run ID, 193 applied migrations and the digest of a tested-source manifest. The summary reports provenanceComplete=true with no missing fields. This describes field completeness, not independently authenticated execution. The base SHA plus source digest identifies the uncommitted tested patch.</p>
+<p>E3: fullPgTapPass and verdictScope=pgtap-only make the outcome scope explicit. workflowPass=null means unevaluated. pass/fullPass are retained as compatibility aliases of the full pgTAP verdict. No successful workflow result is inferred.</p>
+<p>Only the validator and its unit tests change executable product source. Migration 0198, SQL suites and workflow are unchanged. PRD is 1.11. A separate bilingual integration/B12 packet proposes decisions without implementing 0199, changing grants or resolving manufacturing conflicts.</p>
+<h2>Test evidence</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Check</th>
+<th>Result</th>
+</tr></thead><tbody>
+<tr>
+<td>Tests-first RED, old implementation</td>
+<td>22 pass / 11 fail; 33 executed</td>
+</tr>
+<tr>
+<td>GREEN validator</td>
+<td>33/33; no skip</td>
+</tr>
+<tr>
+<td>New temporary stack migrations</td>
+<td>193/193 from zero</td>
+</tr>
+<tr>
+<td>Fail-closed SQL</td>
+<td>28/28</td>
+</tr>
+<tr>
+<td>Existing LINE suites</td>
+<td>107/107 and 133/133</td>
+</tr>
+<tr>
+<td>Python twelve files</td>
+<td>72/72; no fail/skip</td>
+</tr>
+<tr>
+<td>Claim race</td>
+<td>10+10; zero overlap</td>
+</tr>
+<tr>
+<td>Full pgTAP</td>
+<td>Twelve suites executed; eleven pass; containment 6/8 exit 3</td>
+</tr>
+<tr>
+<td>Local replica</td>
+<td>Exit 1, preserving full failure; evidence verifier exit 0</td>
+</tr>
+<tr>
+<td>Cleanup</td>
+<td>No owned containers/network/CI directory left; no cron execution</td>
+</tr>
+</tbody></table></div>
+<p>The missing 12-argument factory function remains the sole recorded full-suite failure. No filtered pass substitutes for it. GitHub Actions and production have not been tested here.</p>
+<h2>Review and provenance limits</h2>
+<p>Opus 5.5 authored the two-file patch from a scanned three-source-file packet with tools disabled. Codex ran RED/GREEN and the temporary stack, prepared documentation and commit controls. A separate Codex agent reviewed both the prior commit and new diff with no new blockers; it did not rerun a database or provide cross-vendor acceptance. REVIEW-NOTES.txt records its report.</p>
+<p>Source copies for the changed files were taken before tests. The complete source manifest was generated after direct tests and scratch copying; its rows are checked against Git by the final gate. This relies on source stability under a single writer and is not proof against a transient concurrent rewrite. Old evidence is immutable.</p>
+<p>The unchanged Actions workflow does not yet provide testedSourceSha256, so future Actions will honestly report incomplete provenance. This follow-up repairs the local run and exposes missing fields; it does not claim every possible runner supplies them. Credential scanning is pattern-based with positive controls, not a guarantee of detecting every format.</p>
+<h2>Decisions ready for the owner</h2>
+<p>The integration/B12 packet identifies the 0170-after-0191 grant recreation risk, an unresolved invalid ref, external RPC-caller uncertainty and the authenticated rpc_record_line_send_result boundary. It proposes tests and retained paths. A manufacturing/integration owner must be named; tenant and overlapping-work decisions remain open. No migration number or role matrix is silently approved.</p>
+<p>Independent acceptance, separate containment integration and actual green CI after authorized push remain outstanding. B12/0199, default ACL policy, production catalog and real LINE G-C1 testing remain separate. No push, deploy, real message or shared/production access occurred.</p>
+</main>
+</body>
+</html>

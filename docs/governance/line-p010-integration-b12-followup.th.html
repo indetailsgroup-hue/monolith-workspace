@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>P0-10: ข้อมูลส่งต่องานรวม branch และขอบเขต B12</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>P0-10: ข้อมูลส่งต่องานรวม branch และขอบเขต B12</h1>
+<p>30 กันยายน 2026 วิเคราะห์แบบอ่านอย่างเดียวจาก product commit <code>3bdd6f3e5217f3252292cd11c858be151c01f977</code> เอกสารนี้เป็นข้อเสนองาน ไม่ใช่การอนุมัติ merge แก้ manufacturing สร้าง 0199 ต่อ production หรือ deploy</p>
+<h2>Containment: สาเหตุที่ยืนยันและงานส่งต่อ</h2>
+<p><code>supabase/tests/repair_phase0_containment.sql:70–74</code> ตรวจ <code>rpc_factory_job_record_packet(text,text,text,text,text,text[],text[],text,text,text,text,integer)</code> แบบ 12 arguments แต่ definition ล่าสุดใน branch นี้ที่ <code>0162_factory_server_identity_released_only.sql:173</code> มีสิบ arguments</p>
+<p>Local ref <code>origin/main</code> ที่ <code>57b69513ba0a5f0624ea3a40f9b5cea0b04992fb</code> และ line-trust ที่ <code>69c879304cc2d6c4fcdcf4070105e5a8fc4e25cd</code> มี <code>0170_factory_jobs_list_real_fields.sql</code> เป็น ref ในเครื่อง ไม่ได้ fetch สถานะ remote ใหม่ 0170 ลบฟังก์ชันเก่า เพิ่ม p_job_name/p_piece_count และคอลัมน์ ปรับ jobs-list และให้ EXECUTE writer ใหม่แก่ service_role เริ่มใน e04855f444806c49245741eb9122c89f1a4e840a และปรับอีกครั้งใน edc6ca94db3ef1a5e73a2df1593b5b4982dd9929</p>
+<p><strong>ความเสี่ยงเรื่องลำดับ:</strong> 0191 ถอนสิทธิ์ service จาก overload ที่มีอยู่ ณ เวลารัน (<code>0191_repair_phase0_revoke_legacy_mutation_authority.sql:27–38</code>) ถ้าลง 0170 ภายหลังอาจสร้าง writer ที่ service เรียกได้กลับมา จึงไม่ใช่ fixture ที่งาน LINE ควรสร้างแทนเงียบ ๆ</p>
+<p><strong>ข้อเสนอให้เจ้าของตัดสิน:</strong> ผู้ตัดสินใจ repo ระบุเจ้าของ manufacturing/integration ตาม PRD ส่วน 8 ข้อ 7 ให้เจ้าของนั้นกำหนดลำดับ migration/edge และทดสอบ schema รวม พร้อมตรวจ EXECUTE ที่มีผลจริงของ writer ทุก overload หลัง chain สุดท้าย รักษา containment ว่าไม่ผ่านจนกว่าจะรวมตามอนุมัติหรือแก้เทสต์อย่างมีเหตุผลในขอบเขตแยกแล้วผ่าน ห้ามลด assertion หรือใช้ LINE-only แทน CI เต็ม</p>
+<p>การอ่านทุก ref พบ invalid ref <code>refs/heads/codex/repair-intelligence-phase0-trust (1)</code> ส่วน query ที่ระบุ valid ref ทำงานได้ จึงห้ามถือว่าเจ้าของลบ ref ซ้ำแล้ว ไม่มีการลบ ref ในงานนี้</p>
+<h2>B12: ขอบเขตจำกัดที่เสนอ</h2>
+<p>Catalog/survey เดิมรายงาน EXECUTE ของ writer ยี่สิบ identity: anon 18, authenticated 19, service_role 20 เป็นข้อเท็จจริงบน stack ที่สร้างใหม่ ไม่ได้ยืนยันการเปิด production API และห้ามใช้คำยืนยัน ops เรื่องผู้เขียนตารางตรงมาแทนคำยืนยันผู้เรียก RPC ภายนอก</p>
+<div class="table-wrap"><table><thead><tr>
+<th>การเปลี่ยน role ที่เสนอ</th>
+<th>เป้าหมายที่เสนอ</th>
+<th>เส้นทางที่ต้องทำงานต่อ</th>
+</tr></thead><tbody>
+<tr>
+<td>ถอน EXECUTE ของ anon</td>
+<td>สิบแปด writer ที่ catalog/survey พบว่าเรียกได้</td>
+<td>เส้นทาง signed/service และธุรกิจ authenticated ที่จำเป็นยังทำงาน</td>
+</tr>
+<tr>
+<td>ถอน authenticated บนงานภายใน/service</td>
+<td>fn_prod_curated, fn_line_handle_group_event, fn_welcome_on_group_bind, fn_lead_followup_sweep, rpc_sweep_line_session_timeouts, line_oa_resolve_customer_identity, rpc_ingest_line_webhook</td>
+<td>Field-app RPCs ยังคงสิทธิ์ที่มี guard ตามอนุมัติ</td>
+</tr>
+<tr>
+<td>ถอน service_role ที่เรียก helper ภายในโดยตรง</td>
+<td>fn_prod_curated, fn_line_handle_group_event, fn_welcome_on_group_bind</td>
+<td>DEFINER chain ที่รันด้วย owner และ trigger ยังทำงาน</td>
+</tr>
+<tr>
+<td>ถอน PUBLIC grants ที่ขัดกับขอบเขต</td>
+<td>identity ตรงตาม matrix ที่อนุมัติ รวม welcome trigger function</td>
+<td>ตรวจสิทธิ์ที่มีผลจริงและ inherited grants โดยไม่แตะ routine อื่น</td>
+</tr>
+</tbody></table></div>
+<p>ก่อนเขียน SQL ต้องอนุมัติ signature/role matrix ตรงตัว ยืนยันผู้เรียก RPC จากเครื่องมือภายนอก/การใช้งานมือกับ ops และประสาน helper ที่ factory ใช้ เลข 0199 ยังเป็นข้อเสนอ ต้องตรวจบนฐานที่จะรวมอีกครั้ง เอกสารนี้ไม่เปลี่ยน grant</p>
+<p><strong>ขอบเขตเพิ่มที่ต้องตัดสิน:</strong> catalog ให้ authenticated เรียก <code>rpc_record_line_send_result(uuid,text,text,text,uuid)</code> ได้ (<code>line-p010-catalog-2026-09-30/08-analysis.txt:167–169</code>) ซึ่งอยู่นอกสิบแปดตัวที่ anon เรียกได้ใน survey ต้องตัดสินผู้เรียกที่ตั้งใจให้ใช้ ห้ามอ้างว่าทุก writer เป็น service-only ขณะที่ยังไม่ตรวจจุดนี้</p>
+<h2>Definition และเทสต์ที่ต้องใช้</h2>
+<p>อ้าง definition สุดท้าย ไม่ใช่แค่ migration ตอนสร้าง: lead follow-up sweep อยู่ 0130:332; customer acceptance 0114:22; close lead 0130:280; shop drawing 0143:266; photo send 0134:19; lead source 0151:145 ผู้เรียก service edge อยู่ line-webhook:200–201 และ customer-design-view:78,102 ฝั่ง frontend อยู่ packages/field-app: LeadPanel.tsx:43, SaleHome.tsx:34,42, PhotoSendCard.tsx:33 และ DesignerToolsPanel.tsx:69</p>
+<p>เกณฑ์รับงานที่เสนอ: เก็บ catalog identity/owner ครบยี่สิบตัว ตรวจสิทธิ์จริงของ role ที่ระบุ PUBLIC และ inheritance ลองเรียกฟังก์ชันปกติที่ห้ามจริงแล้วต้องได้ 42501 จาก function permission สำหรับ trigger-only ให้ตรวจผ่าน trigger path และ ACL ไม่ใช้ error จากการเรียก trigger ผิดวิธีแทนเทสต์สิทธิ์ เส้นทาง field-app พร้อม claims, signed/service ingress, identity lookup, owner cron, welcome trigger, manufacturing helper, LINE claim/record และการห้ามเขียนตรงยังต้องทำงาน ทดสอบ suite รวมครบ โดยไม่ส่งข้อความจริงหรือเปิด cron</p>
+<h2>นโยบายและสถาปัตยกรรมที่ตัดสินแยก</h2>
+<p>Default ACL ให้ grant โดยตรงกับ role เมื่อ postgres/supabase_admin สร้าง routine การถอน PUBLIC อย่างเดียวไม่พอ Migration จำกัดฟังก์ชันที่มีอยู่ไม่ครอบคลุมฟังก์ชันใหม่/สร้างใหม่ในอนาคต ต้องตัดสินนโยบาย default ACL แยก และไม่เปลี่ยน REFERENCES, TRIGGER หรือ MAINTAIN ภายใต้ P0-10</p>
+<p>Production catalog ต้องตรวจแยกก่อน deploy เพราะ owner และสิทธิ์จริงอาจต่างจาก stack ชั่วคราว พฤติกรรม service-role อย่างเดียวไม่พิสูจน์ว่าการรันด้วย owner จะยังทำงาน</p>
+<p>ก่อน P0-9 ต้องเลือก tenancy/service authority หลัก เจ้าของ outbound เทียบเลขจอง 0178, ingress retry เทียบ 0175 และ staff login เทียบ 0176 พร้อมลำดับ migration และคนแก้ conflict manufacturing เกณฑ์ P0-9 คือ handler ที่ล้มไม่ถูกนับ/dedupe เป็นสำเร็จ ต้องเข้าคิว retry ภายในที่มีเพดานจนสำเร็จหรือ dead-letter พร้อม audit ต้องมี RED ที่แสดง false success ก่อน ห้ามพึ่ง LINE redelivery และต้องผ่านผู้ตรวจอิสระ ทั้งหมดเป็นเกณฑ์เสนอ ไม่ใช่หลักฐานว่า implementation มีแล้ว</p>
+<h2>สำรวจผู้เรียกตามคำสั่งเจ้าของ</h2>
+<p>เจ้าของตอบวันที่ 30 กันยายนว่ายังไม่ยืนยันผู้เรียก RPC ภายนอก ให้สำรวจก่อน จึงค้นชื่อยี่สิบตัวจาก catalog ใน tracked source, workflows, migrations และเอกสารที่เกี่ยวข้องแบบอ่านอย่างเดียว ไม่อ่าน credentials ไม่ต่อ production หรือระบบภายนอก</p>
+<div class="table-wrap"><table><thead><tr>
+<th>ประเภทผู้เรียก</th>
+<th>Calls ที่พบ / หลักฐาน</th>
+<th>สิทธิ์ที่ต้องรักษาหรือยืนยัน</th>
+</tr></thead><tbody>
+<tr>
+<td>Service ingress</td>
+<td>rpc_ingest_line_webhook; supabase/functions/line-webhook/index.ts:200–206</td>
+<td>Service client</td>
+</tr>
+<tr>
+<td>Service identity</td>
+<td>line_oa_resolve_customer_identity; customer-design-view/index.ts:78–82,102</td>
+<td>Service client และ owner call chains</td>
+</tr>
+<tr>
+<td>Sender worker</td>
+<td>rpc_claim_line_outbound_batch และ rpc_record_line_send_result; line-outbound-sender/index.ts:744,871,959–964</td>
+<td>Service EXECUTE ส่วน authenticated recorder ยังต้องตัดสิน</td>
+</tr>
+<tr>
+<td>Field user</td>
+<td>rpc_request_customer_acceptance; packages/field-app/src/screens/LeadPanel.tsx:43</td>
+<td>Authenticated claims/guards ไม่ใช่ยืนยันว่า production login แล้ว</td>
+</tr>
+<tr>
+<td>Field user</td>
+<td>rpc_field_close_lead และ rpc_field_set_lead_source; SaleHome.tsx:34,42</td>
+<td>เส้นทาง authenticated ที่อนุมัติ</td>
+</tr>
+<tr>
+<td>Field user</td>
+<td>rpc_field_send_photo_to_customer; PhotoSendCard.tsx:33</td>
+<td>เส้นทาง authenticated ที่อนุมัติ</td>
+</tr>
+<tr>
+<td>Field user</td>
+<td>rpc_field_shop_drawing_revision; DesignerToolsPanel.tsx:69</td>
+<td>เส้นทาง authenticated ที่อนุมัติ</td>
+</tr>
+<tr>
+<td>Owner chain ภายใน</td>
+<td>fn_line_handle_group_event ที่ 0097:435; fn_prod_curated ที่ 0107:89,133,135, 0124:149,151 และ 0143:122</td>
+<td>สิทธิ์ owner และประสาน manufacturing</td>
+</tr>
+<tr>
+<td>Trigger / DB schedule</td>
+<td>fn_welcome_on_group_bind ที่ 0136:185–186; ลงทะเบียน fn_lead_followup_sweep ที่ 0116:192</td>
+<td>Principal ของ trigger/cron; ตัวที่ deploy จริงยังไม่ทราบ</td>
+</tr>
+<tr>
+<td>เส้นทางใช้งานมือในเอกสาร</td>
+<td>rpc_create_line_order; docs/dogfood/first-house-runbook.md:25–35</td>
+<td>มีบทบาท Field Operator ในเอกสาร การใช้งานจริงและ credential class ยังไม่ทราบ</td>
+</tr>
+<tr>
+<td>ไม่พบ executable caller ในการค้นนี้</td>
+<td>rpc_send_line_outbound, rpc_evaluate_identity_merge_candidate, rpc_resolve_conversation_site, rpc_sync_line_forecast, rpc_sweep_line_session_timeouts, rpc_field_assign_lead</td>
+<td>ไม่ได้พิสูจน์ว่าไม่มี ต้องยืนยันกับเจ้าของ/ops</td>
+</tr>
+</tbody></table></div>
+<p>ข้อความใน autonomyGate.ts, brand-voice.ts, templates.ts และ order-adapter.ts บางจุดเป็น comment ไม่ใช่ calls และ evidence harness ไม่ใช่ผู้เรียกที่ deploy ไม่พบชื่อ n8n, Make.com หรือ Zapier ในขอบเขตที่ค้น และไม่พบชื่อ writer ตรงตัวใน workflows ที่ค้น แต่ dynamic calls, automation ภายนอกและเครื่องมือใช้งานมือยังเป็น UNKNOWN ส่วน postgres เป็นเจ้าของฐานข้อมูล ไม่ใช่ชื่อผู้รับผิดชอบที่ยืนยันแล้ว</p>
+<p>ให้ ops จัด register แบบปิดข้อมูลลับแยก environment: ชื่อแอป/job และผู้รับผิดชอบ; สถานะใช้งาน/ปิดและเวลาใช้ล่าสุด; RPC/signature หรือ endpoint path; chain และ schedule; ประเภท authentication เท่านั้น (user JWT/service/database role); สิทธิ์ที่ธุรกิจต้องใช้และข้อเสนอคง/เลิก พร้อม config/log ที่ปิดข้อมูลลับซึ่งมีเวลาและผล ครอบคลุม hosted automation, backend, dashboard/admin/BI scripts, SQL tools, sender/sweeps และ dogfood ที่ทำด้วยมือ ห้ามส่ง token, key, authorization header, URL ที่มีรหัสผ่าน, ตัวระบุลูกค้าหรือ request body หากไม่ตอบให้คง unknown คำขอนี้ไม่อนุมัติให้เข้าระบบเหล่านั้น</p>
+<h2>ที่มาของการตรวจ</h2>
+<p>Codex agent แยกตรวจ immutable blobs ของ commit ก่อนหน้า checksum RED/GREEN และ gated tree แบบอ่านอย่างเดียว พบเฉพาะช่องว่าง E1/E2/E3 ที่ทราบ อีก agent ไล่ dependency ตามเอกสารนี้ ทั้งสองไม่ได้รันฐานข้อมูลหรือรับรองข้ามค่าย อนุมัติของผู้ใช้ครอบคลุมงานหลักฐานและการเตรียมการตัดสินใจ ไม่ใช่เลือกคำตอบทางสถาปัตยกรรมแทน</p>
+</main>
+</body>
+</html>

@@ -1,0 +1,12 @@
+Base: 3bdd6f3e5217f3252292cd11c858be151c01f977, branch codex/repair-intelligence-phase0-trust.
+Run from product worktree. Dependencies: Git Bash, Node, Python with pytest/hypothesis/psycopg/PyYAML, psql, Docker with the pinned cached images.
+Runner files are adjacent: run-p010-failclosed.sh, ci-replica.py, capture-source-manifest.py, verify-p010-failclosed.py. Set PYTHON_BIN/PSQL_BIN to local installed binaries if needed.
+P010_MODE=green P010_OUT=<new-directory> P010_RED_BUNDLE=docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30 bash <bundle>/run-p010-failclosed.sh
+Use the reviewed source patch at this base; the runner refuses a different HEAD/branch, dirty out-of-scope source, pre-existing output, occupied port or pre-existing named resources. Replay after commit requires a separately reviewed explicit checkout/base adjustment, not blind removal of guards.
+Port 55452, own line-p010meta network/containers, loopback binding, cron off. Password generated transiently, not stored. All owned resources torn down.
+Direct database suites unchanged from prior accepted source. The new RED proof concerns the evidence validator, in unit-red.txt; the old SQL mutant bundle is referenced only to prove unchanged SQL test identity.
+Raw run files in SHA256SUMS.run remain unchanged; final SHA256SUMS also covers post-run reports, review notes, unit evidence and gate files.
+Local full CI exit=1 is intentionally retained for the exact containment failure. Verifier exit=0 verifies these expected results, not full CI success.
+Source manifest hashes LF-normalized files. Base SHA plus manifest identifies the tested uncommitted patch. Captured after direct tests and scratch copying; source stability relies on single writer plus before-run changed-source copies and final full-manifest Git comparison.
+The unchanged Actions workflow does not supply testedSourceSha256; it will report provenanceComplete=false until wired separately. fullPass/pass remain compatibility aliases of fullPgTapPass, not workflow outcomes.
+On Windows use per-process git core.longpaths=true for full-SHA gate verification if needed; do not rewrite repository configuration.
