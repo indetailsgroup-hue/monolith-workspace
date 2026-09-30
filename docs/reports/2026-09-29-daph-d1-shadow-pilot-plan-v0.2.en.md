@@ -3,9 +3,10 @@
 - **Date:** 29 September 2026
 - **Status:** A draft for planning and quotes. It is not a quotation or a spending approval.
 - **Code checked:** `main` @ `5dc57e10`
+- **Pages/Designer status updated:** 30 September 2026, `main` @ `12ef2dc6`, after PR #127 and PR #130 were deployed. Only section 2 (the Pages rows), WP0 0.2 and WP1 1.2 changed; everything else is still as checked at `5dc57e10`.
 - **Scope:** Daph uses Monolith to track one real house, with data stored on the server. The factory still cuts from its existing work orders (`SHADOW_MODE_NOT_FOR_PRODUCTION = true`; the packet verifier can only return `NO_CUT`).
 
-> This plan builds on [DAPH-SHADOW-PILOT-READINESS-v0.1.1](DAPH-SHADOW-PILOT-READINESS-v0.1.1.en.md) ([TH](DAPH-SHADOW-PILOT-READINESS-v0.1.1.th.md)), in the same PR. v0.1.1 only rewords v0.1 to pass the repo guardrails; its substance is unchanged.
+> This plan builds on [DAPH-SHADOW-PILOT-READINESS-v0.1.1](DAPH-SHADOW-PILOT-READINESS-v0.1.1.en.md) ([TH](DAPH-SHADOW-PILOT-READINESS-v0.1.1.th.md)), in the same PR. v0.1.1 only rewords v0.1 to pass the repo guardrails; its substance is unchanged. That report is a retrospective at baseline `5dc57e10` and is not updated; the Pages/Designer status after that baseline is recorded here.
 
 ## 1. How to use this plan
 
@@ -25,7 +26,8 @@
 | `jobs` was removed from realtime on purpose, to stop cross-organisation leaks | `supabase/migrations/0173_rls_isolation_hardening.sql`, section F6 |
 | `useCreateJobSubmit.ts` posts to `/rest/v1/job` with the anon key as the Bearer token, and in source only `src/jobs/index.ts` references the hook | `src/jobs/useCreateJobSubmit.ts:133–139`; searched with `git grep useCreateJobSubmit -- src` |
 | Three `0190` migrations share a number; CI merges duplicates before testing | `scripts/prepare_supabase_migrations_ci.sh --merge-duplicates` in `pgtap-tests.yml` and `db-verify.yml` |
-| Three workflows deployed GitHub Pages over one another, so `/designer/` and the Field PWA return 404 | `github-pages` deployment history (Deployments API): last field-app deploy 2026-09-13 [run 34731453999](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34731453999) at `13de5d1b`; docs deploy on top of it 2026-09-21 [run 35594892612](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/35594892612) at `62651733`. Live check 2026-09-29T12:59Z: `/` = 200 (docs site v2.0.0 title), `/designer/` = 404, `/manifest.webmanifest` = 404. Commands: `gh api repos/indetailsgroup-hue/monolith-workspace/deployments?environment=github-pages` and `curl -s -o /dev/null -w %{http_code}` per URL. Code fix in PR #127 |
+| At `5dc57e10`: three workflows deployed GitHub Pages over one another, so `/designer/` and the Field PWA returned 404 (fixed since; see the next row) | `github-pages` deployment history (Deployments API): last field-app deploy 2026-09-13 [run 34731453999](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34731453999) at `13de5d1b`; docs deploy on top of it 2026-09-21 [run 35594892612](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/35594892612) at `62651733`. Live check 2026-09-29T12:59Z: `/` = 200 (docs site v2.0.0 title), `/designer/` = 404, `/manifest.webmanifest` = 404. Commands: `gh api repos/indetailsgroup-hue/monolith-workspace/deployments?environment=github-pages` and `curl -s -o /dev/null -w %{http_code}` per URL. Code fix in PR #127 |
+| Since 30 Sep: one workflow deploys the Field PWA, the Designer and the docs together (PR #127), and the Designer works under the Pages sub-path (PR #130) | [PR #127](https://github.com/indetailsgroup-hue/monolith-workspace/pull/127) merged 2026-09-30T01:25Z as `c8e5380c`; deploy [run 36655069520](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/36655069520) succeeded (deployment 6749271888). Live check 01:32Z: `/designer/` answered 200 but rendered the app's own "Page not found", because the router had no basename. [PR #130](https://github.com/indetailsgroup-hue/monolith-workspace/pull/130) merged 03:20Z as `12ef2dc6`; deploy [run 36663972596](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/36663972596) succeeded (deployment 6750700437). GitHub reports `verified=true` for both merge commits and both PR heads (`293a2b20`, `1472311d`). Live check 2026-09-30T03:54:55Z: `/`, `/designer/`, `/docs/` and `/manifest.webmanifest` = 200; a Designer deep link such as `/designer/jobs` = 404 on the first request, and the site's `404.html` sends it back into the Designer. Rendered at 03:55:10Z: `/` shows the Field PWA login, `/designer/` the workspace with its 3D canvas, `/designer/jobs?view=list#top` the job board with the URL kept, `/docs/` chapter 1. Commands: `gh run view <run id>`, `gh api repos/indetailsgroup-hue/monolith-workspace/deployments?environment=github-pages`, `curl -s -o /dev/null -w %{http_code}` per URL, and the page title and text read in a browser |
 | Real-cut gates: 0/4 | `node scripts/readiness-status.mjs --json`, run 29 Sep |
 
 **Not yet confirmed:** whether the Supabase project we will use has every migration applied, whether server-side RLS behaves as the source says, and whether the data relationships and revisions are enough for the pilot. So "the database is ready" is not yet established.
@@ -35,7 +37,7 @@
 | # | Decision | Why |
 |---|---|---|
 | 0.1 | Which Supabase project to use | Source references two projects |
-| 0.2 | Confirm where each site lives | Per PR #127: Field PWA at `/`, Designer at `/designer/`, docs at `/docs/` |
+| 0.2 | Confirm where each site lives | Live since 30 Sep (PR #127, PR #130): Field PWA at `/`, Designer at `/designer/`, docs at `/docs/`. The owner still confirms this layout for the pilot |
 | 0.3 | Which house is the pilot | Continue house-01 or start a new one |
 | 0.4 | The 3–5 users and reviewers | Sales, designer, factory, finance |
 | 0.5 | Policy for real customer data (PII) | What may be stored on the server |
@@ -46,7 +48,7 @@
 | Task | Days | Done when |
 |---|---|---|
 | 1.1 Compare the server's applied migrations with source and name the owner of each secret, **without renumbering files** | 1–1.5 | Migration and secret-owner lists match reality |
-| 1.2 Fix the Pages collision | Code fixed in PR #127, **awaiting merge and deploy**; then check the URLs, 0.25 | `/`, `/designer/` and `/docs/` all load |
+| 1.2 Fix the Pages collision | **Done 30 Sep:** PR #127 merged and deployed; the in-app 404 on `/designer/` it exposed was fixed in PR #130, also deployed; URLs checked 03:55Z (section 2). 0.25, kept in the WP1 total as effort spent | `/`, `/designer/` and `/docs/` all load: met on 30 Sep |
 | 1.3 Configure auth redirects, TLS and the pilot env | 0.5 | Login and logout work from another machine |
 | 1.4 Rehearse backup and restore for both the DB and storage objects | 1–1.5 | A successful restore is recorded |
 
@@ -139,3 +141,9 @@ Real cutting and machine calibration, ADR-064 sign-off, S17 closure, inventory, 
 1. 1.2 changed from "Done" to "Code fixed in PR #127, awaiting merge and deploy", because the live system has not changed yet.
 2. The Pages 404 fact now cites run links, the deployed SHAs and a timestamped live check instead of a narrative.
 3. References to the v0.1 report (outside the repo) now link to v0.1.1 in the same PR.
+
+**v0.2 third revision** (30 Sep, after PR #127 and PR #130 were deployed)
+1. 1.2 changed from "awaiting merge and deploy" to done, with the merge, deploy-run and live-check evidence in section 2.
+2. Section 2 keeps the `5dc57e10` Pages fact as history and adds a row for the fix; WP0 0.2 now records the layout that is live.
+3. The readiness report v0.1.1 is unchanged. It stays a retrospective at baseline `5dc57e10`, and its evidence hashes still match that commit.
+4. No figure changed: the 0.25 day for 1.2 stays in the WP1 total and the one-off total is still 52,250–146,750 THB.

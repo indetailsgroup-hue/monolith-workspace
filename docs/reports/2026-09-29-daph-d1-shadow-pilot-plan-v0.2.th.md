@@ -3,9 +3,10 @@
 - **วันที่:** 29 กันยายน 2026
 - **สถานะ:** ร่างสำหรับวางแผนและขอราคา ยังไม่ใช่ใบเสนอราคาหรือการอนุมัติจ่าย
 - **ฐานโค้ดที่ตรวจ:** `main` @ `5dc57e10`
+- **อัปเดตสถานะ Pages/Designer:** 30 กันยายน 2026 ที่ `main` @ `12ef2dc6` หลัง PR #127 และ PR #130 deploy แล้ว แก้เฉพาะแถว Pages ในหัวข้อ 2, WP0 ข้อ 0.2 และ WP1 ข้อ 1.2 ส่วนอื่นยังเป็นผลตรวจที่ `5dc57e10`
 - **ขอบเขต:** Daph ใช้ Monolith ติดตามบ้านจริง 1 หลัง ข้อมูลเก็บบน server ส่วนโรงงานยังตัดตามใบสั่งเดิม (`SHADOW_MODE_NOT_FOR_PRODUCTION = true`, packet ออกผลได้เฉพาะ `NO_CUT`)
 
-> แผนนี้ต่อยอดจากรายงาน [DAPH-SHADOW-PILOT-READINESS-v0.1.1](DAPH-SHADOW-PILOT-READINESS-v0.1.1.th.md) ([EN](DAPH-SHADOW-PILOT-READINESS-v0.1.1.en.md)) ซึ่งอยู่ใน PR เดียวกัน v0.1.1 ปรับเฉพาะถ้อยคำจาก v0.1 ให้ผ่าน guardrail ของ repo เนื้อหาเดิมไม่เปลี่ยน
+> แผนนี้ต่อยอดจากรายงาน [DAPH-SHADOW-PILOT-READINESS-v0.1.1](DAPH-SHADOW-PILOT-READINESS-v0.1.1.th.md) ([EN](DAPH-SHADOW-PILOT-READINESS-v0.1.1.en.md)) ซึ่งอยู่ใน PR เดียวกัน v0.1.1 ปรับเฉพาะถ้อยคำจาก v0.1 ให้ผ่าน guardrail ของ repo เนื้อหาเดิมไม่เปลี่ยน รายงานนั้นเป็นการตรวจย้อนหลังที่ baseline `5dc57e10` และไม่ได้แก้ไข สถานะ Pages/Designer หลัง baseline นั้นบันทึกไว้ในแผนนี้
 
 ## 1. ใช้แผนนี้อย่างไร
 
@@ -25,7 +26,8 @@
 | `jobs` ถูกถอดออกจาก realtime โดยตั้งใจ เพื่อกันข้อมูลรั่วข้ามองค์กร | `supabase/migrations/0173_rls_isolation_hardening.sql` หัวข้อ F6 |
 | `useCreateJobSubmit.ts` ส่งไป `/rest/v1/job` โดยใช้ anon key เป็น Bearer และ source อ้างถึง hook นี้เฉพาะใน `src/jobs/index.ts` | `src/jobs/useCreateJobSubmit.ts:133–139`; ค้นด้วย `git grep useCreateJobSubmit -- src` |
 | migration `0190` ซ้ำ 3 ไฟล์ และ CI รวมไฟล์ซ้ำให้ก่อนทดสอบ | `scripts/prepare_supabase_migrations_ci.sh --merge-duplicates` ใน `pgtap-tests.yml` และ `db-verify.yml` |
-| มี workflow 3 ตัว deploy GitHub Pages ทับกัน ทำให้ `/designer/` และ Field PWA ขึ้น 404 | ประวัติ deploy ของ environment `github-pages` (Deployments API): field-app ครั้งสุดท้าย 2026-09-13 [run 34731453999](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34731453999) บน `13de5d1b`; เว็บเอกสาร deploy ทับ 2026-09-21 [run 35594892612](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/35594892612) บน `62651733`. ตรวจหน้าเว็บ 2026-09-29T12:59Z: `/` = 200 (title เว็บเอกสาร v2.0.0), `/designer/` = 404, `/manifest.webmanifest` = 404. คำสั่ง: `gh api repos/indetailsgroup-hue/monolith-workspace/deployments?environment=github-pages` และ `curl -s -o /dev/null -w %{http_code}` ต่อ URL — แก้โค้ดใน PR #127 |
+| ที่ `5dc57e10`: มี workflow 3 ตัว deploy GitHub Pages ทับกัน ทำให้ `/designer/` และ Field PWA ขึ้น 404 (แก้แล้ว ดูแถวถัดไป) | ประวัติ deploy ของ environment `github-pages` (Deployments API): field-app ครั้งสุดท้าย 2026-09-13 [run 34731453999](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34731453999) บน `13de5d1b`; เว็บเอกสาร deploy ทับ 2026-09-21 [run 35594892612](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/35594892612) บน `62651733`. ตรวจหน้าเว็บ 2026-09-29T12:59Z: `/` = 200 (title เว็บเอกสาร v2.0.0), `/designer/` = 404, `/manifest.webmanifest` = 404. คำสั่ง: `gh api repos/indetailsgroup-hue/monolith-workspace/deployments?environment=github-pages` และ `curl -s -o /dev/null -w %{http_code}` ต่อ URL — แก้โค้ดใน PR #127 |
+| ตั้งแต่ 30 ก.ย.: workflow ตัวเดียว deploy Field PWA, แอปออกแบบ และเอกสารพร้อมกัน (PR #127) และแอปออกแบบทำงานได้ใต้ sub-path ของ Pages (PR #130) | [PR #127](https://github.com/indetailsgroup-hue/monolith-workspace/pull/127) merge เมื่อ 2026-09-30T01:25Z เป็น `c8e5380c`; deploy [run 36655069520](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/36655069520) สำเร็จ (deployment 6749271888). ตรวจหน้าเว็บ 01:32Z: `/designer/` ตอบ 200 แต่แสดงหน้า "Page not found" ของแอปเอง เพราะ router ไม่มี basename. [PR #130](https://github.com/indetailsgroup-hue/monolith-workspace/pull/130) merge เมื่อ 03:20Z เป็น `12ef2dc6`; deploy [run 36663972596](https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/36663972596) สำเร็จ (deployment 6750700437). GitHub แสดง `verified=true` ทั้ง merge commit สองตัวและ HEAD ของทั้งสอง PR (`293a2b20`, `1472311d`). ตรวจหน้าเว็บ 2026-09-30T03:54:55Z: `/`, `/designer/`, `/docs/` และ `/manifest.webmanifest` = 200; deep link ของแอปออกแบบ เช่น `/designer/jobs` = 404 ในคำขอแรก แล้ว `404.html` ของเว็บส่งกลับเข้าแอปออกแบบ. ผลที่แสดงบนเบราว์เซอร์ 03:55:10Z: `/` เป็นหน้า login ของ Field PWA, `/designer/` เป็น workspace พร้อม canvas 3D, `/designer/jobs?view=list#top` เป็น job board และ URL คงเดิม, `/docs/` เป็นบทที่ 1. คำสั่ง: `gh run view <run id>`, `gh api repos/indetailsgroup-hue/monolith-workspace/deployments?environment=github-pages`, `curl -s -o /dev/null -w %{http_code}` ต่อ URL และอ่าน title กับข้อความของหน้าในเบราว์เซอร์ |
 | ด่านอนุญาตตัดจริง 0/4 | `node scripts/readiness-status.mjs --json` รันเมื่อ 29 ก.ย. |
 
 **สิ่งที่ยังไม่ได้ยืนยัน:** Supabase ที่จะใช้จริงลง migration ครบหรือไม่, RLS บน server ทำงานตรงกับ source หรือไม่, และความสัมพันธ์ของข้อมูลกับ revision พอสำหรับ pilot หรือไม่ จึงยังสรุปไม่ได้ว่า "ฐานข้อมูลพร้อมแล้ว"
@@ -35,7 +37,7 @@
 | # | เรื่อง | เหตุผล |
 |---|---|---|
 | 0.1 | ใช้ Supabase project ไหน | source อ้างถึง 2 project |
-| 0.2 | ยืนยันที่อยู่ของแต่ละส่วน | ตามแผนใน PR #127: Field PWA ที่ `/`, แอปออกแบบที่ `/designer/`, เอกสารที่ `/docs/` |
+| 0.2 | ยืนยันที่อยู่ของแต่ละส่วน | ใช้งานจริงตั้งแต่ 30 ก.ย. (PR #127, PR #130): Field PWA ที่ `/`, แอปออกแบบที่ `/designer/`, เอกสารที่ `/docs/` เจ้าของยังต้องยืนยันการจัดวางนี้สำหรับ pilot |
 | 0.3 | ใช้บ้านหลังไหนเป็นบ้านทดลอง | ต่อจาก house-01 หรือเริ่มหลังใหม่ |
 | 0.4 | ผู้ใช้ 3–5 คนและผู้ตรวจ | ขาย, designer, โรงงาน, การเงิน |
 | 0.5 | นโยบายข้อมูลลูกค้าจริง (PII) | เก็บบน server ได้แค่ไหน |
@@ -46,7 +48,7 @@
 | งาน | วัน | เสร็จเมื่อ |
 |---|---|---|
 | 1.1 ตรวจรายการ migration บน server เทียบกับ source และระบุผู้ถือ secret แต่ละตัว **โดยไม่เปลี่ยนเลขไฟล์** | 1–1.5 | มีรายการ migration และ secret owner ที่ตรงกับของจริง |
-| 1.2 แก้ Pages ทับกัน | แก้โค้ดแล้วใน PR #127 **รอ merge และ deploy** แล้วตรวจ URL 0.25 | `/`, `/designer/`, `/docs/` เปิดได้ทั้งสาม |
+| 1.2 แก้ Pages ทับกัน | **เสร็จ 30 ก.ย.:** PR #127 merge และ deploy แล้ว ส่วน 404 ภายในแอปที่ `/designer/` ซึ่งพบหลังจากนั้นแก้ใน PR #130 และ deploy แล้วเช่นกัน ตรวจ URL เมื่อ 03:55Z (หัวข้อ 2) 0.25 วัน คงไว้ในยอด WP1 เป็นงานที่ใช้ไปแล้ว | `/`, `/designer/`, `/docs/` เปิดได้ทั้งสาม: ผ่านเมื่อ 30 ก.ย. |
 | 1.3 ตั้งค่า auth redirect, TLS และ env ของ pilot | 0.5 | login และ logout ได้จากเครื่องอื่น |
 | 1.4 ซ้อม backup และ restore ทั้ง DB และไฟล์ใน storage | 1–1.5 | มีบันทึกการกู้คืนที่สำเร็จ |
 
@@ -139,3 +141,9 @@
 1. 1.2 เปลี่ยนจาก "ทำแล้ว" เป็น "แก้โค้ดแล้วใน PR #127 รอ merge และ deploy" เพราะระบบจริงยังไม่เปลี่ยน
 2. แนบหลักฐาน Pages 404 เป็นลิงก์ run, SHA ที่ deploy และผลตรวจหน้าเว็บพร้อมเวลา แทนข้อความเล่าประวัติ
 3. เปลี่ยนการอ้างอิงรายงาน v0.1 (ซึ่งอยู่นอก repo) เป็นลิงก์ไปที่ v0.1.1 ใน PR เดียวกัน
+
+**v0.2 แก้ไขรอบ 3** (30 ก.ย. หลัง PR #127 และ PR #130 deploy แล้ว)
+1. 1.2 เปลี่ยนจาก "รอ merge และ deploy" เป็นเสร็จ พร้อมหลักฐาน merge, run ของ deploy และผลตรวจหน้าเว็บในหัวข้อ 2
+2. หัวข้อ 2 เก็บข้อเท็จจริงเรื่อง Pages ที่ `5dc57e10` ไว้เป็นประวัติ และเพิ่มแถวผลการแก้ ส่วน WP0 ข้อ 0.2 บันทึกการจัดวางที่ใช้งานจริง
+3. ไม่ได้แก้รายงาน readiness v0.1.1 รายงานนั้นยังเป็นการตรวจย้อนหลังที่ baseline `5dc57e10` และ hash ในหลักฐานยังตรงกับ commit นั้น
+4. ไม่มีตัวเลขเปลี่ยน: 0.25 วันของ 1.2 ยังอยู่ในยอด WP1 และยอดรวมครั้งเดียวยังเป็น 52,250–146,750 บาท

@@ -58,9 +58,10 @@ ul,ol{padding-left:1.5em}li{margin:.3em 0}
 <li><strong>Date:</strong> 29 September 2026</li>
 <li><strong>Status:</strong> A draft for planning and quotes. It is not a quotation or a spending approval.</li>
 <li><strong>Code checked:</strong> <code>main</code> @ <code>5dc57e10</code></li>
+<li><strong>Pages/Designer status updated:</strong> 30 September 2026, <code>main</code> @ <code>12ef2dc6</code>, after PR #127 and PR #130 were deployed. Only section 2 (the Pages rows), WP0 0.2 and WP1 1.2 changed; everything else is still as checked at <code>5dc57e10</code>.</li>
 <li><strong>Scope:</strong> Daph uses Monolith to track one real house, with data stored on the server. The factory still cuts from its existing work orders (<code>SHADOW_MODE_NOT_FOR_PRODUCTION = true</code>; the packet verifier can only return <code>NO_CUT</code>).</li>
 </ul>
-<blockquote><p>This plan builds on <a href="DAPH-SHADOW-PILOT-READINESS-v0.1.1.en.html">DAPH-SHADOW-PILOT-READINESS-v0.1.1</a> (<a href="DAPH-SHADOW-PILOT-READINESS-v0.1.1.th.html">TH</a>), in the same PR. v0.1.1 only rewords v0.1 to pass the repo guardrails; its substance is unchanged.</p></blockquote>
+<blockquote><p>This plan builds on <a href="DAPH-SHADOW-PILOT-READINESS-v0.1.1.en.html">DAPH-SHADOW-PILOT-READINESS-v0.1.1</a> (<a href="DAPH-SHADOW-PILOT-READINESS-v0.1.1.th.html">TH</a>), in the same PR. v0.1.1 only rewords v0.1 to pass the repo guardrails; its substance is unchanged. That report is a retrospective at baseline <code>5dc57e10</code> and is not updated; the Pages/Designer status after that baseline is recorded here.</p></blockquote>
 <h2>1. How to use this plan</h2>
 <ul>
 <li>It frames investigation and pilot preparation. It does not commit to scope or budget.</li>
@@ -77,14 +78,15 @@ ul,ol{padding-left:1.5em}li{margin:.3em 0}
 <tr><td><code>jobs</code> was removed from realtime on purpose, to stop cross-organisation leaks</td><td><code>supabase/migrations/0173_rls_isolation_hardening.sql</code>, section F6</td></tr>
 <tr><td><code>useCreateJobSubmit.ts</code> posts to <code>/rest/v1/job</code> with the anon key as the Bearer token, and in source only <code>src/jobs/index.ts</code> references the hook</td><td><code>src/jobs/useCreateJobSubmit.ts:133–139</code>; searched with <code>git grep useCreateJobSubmit -- src</code></td></tr>
 <tr><td>Three <code>0190</code> migrations share a number; CI merges duplicates before testing</td><td><code>scripts/prepare_supabase_migrations_ci.sh --merge-duplicates</code> in <code>pgtap-tests.yml</code> and <code>db-verify.yml</code></td></tr>
-<tr><td>Three workflows deployed GitHub Pages over one another, so <code>/designer/</code> and the Field PWA return 404</td><td><code>github-pages</code> deployment history (Deployments API): last field-app deploy 2026-09-13 <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34731453999" target="_blank" rel="noopener">run 34731453999</a> at <code>13de5d1b</code>; docs deploy on top of it 2026-09-21 <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/35594892612" target="_blank" rel="noopener">run 35594892612</a> at <code>62651733</code>. Live check 2026-09-29T12:59Z: <code>/</code> = 200 (docs site v2.0.0 title), <code>/designer/</code> = 404, <code>/manifest.webmanifest</code> = 404. Commands: <code>gh api repos/indetailsgroup-hue/monolith-workspace/deployments?environment=github-pages</code> and <code>curl -s -o /dev/null -w %{http_code}</code> per URL. Code fix in PR #127</td></tr>
+<tr><td>At <code>5dc57e10</code>: three workflows deployed GitHub Pages over one another, so <code>/designer/</code> and the Field PWA returned 404 (fixed since; see the next row)</td><td><code>github-pages</code> deployment history (Deployments API): last field-app deploy 2026-09-13 <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34731453999" target="_blank" rel="noopener">run 34731453999</a> at <code>13de5d1b</code>; docs deploy on top of it 2026-09-21 <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/35594892612" target="_blank" rel="noopener">run 35594892612</a> at <code>62651733</code>. Live check 2026-09-29T12:59Z: <code>/</code> = 200 (docs site v2.0.0 title), <code>/designer/</code> = 404, <code>/manifest.webmanifest</code> = 404. Commands: <code>gh api repos/indetailsgroup-hue/monolith-workspace/deployments?environment=github-pages</code> and <code>curl -s -o /dev/null -w %{http_code}</code> per URL. Code fix in PR #127</td></tr>
+<tr><td>Since 30 Sep: one workflow deploys the Field PWA, the Designer and the docs together (PR #127), and the Designer works under the Pages sub-path (PR #130)</td><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/pull/127" target="_blank" rel="noopener">PR #127</a> merged 2026-09-30T01:25Z as <code>c8e5380c</code>; deploy <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/36655069520" target="_blank" rel="noopener">run 36655069520</a> succeeded (deployment 6749271888). Live check 01:32Z: <code>/designer/</code> answered 200 but rendered the app's own "Page not found", because the router had no basename. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/pull/130" target="_blank" rel="noopener">PR #130</a> merged 03:20Z as <code>12ef2dc6</code>; deploy <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/36663972596" target="_blank" rel="noopener">run 36663972596</a> succeeded (deployment 6750700437). GitHub reports <code>verified=true</code> for both merge commits and both PR heads (<code>293a2b20</code>, <code>1472311d</code>). Live check 2026-09-30T03:54:55Z: <code>/</code>, <code>/designer/</code>, <code>/docs/</code> and <code>/manifest.webmanifest</code> = 200; a Designer deep link such as <code>/designer/jobs</code> = 404 on the first request, and the site's <code>404.html</code> sends it back into the Designer. Rendered at 03:55:10Z: <code>/</code> shows the Field PWA login, <code>/designer/</code> the workspace with its 3D canvas, <code>/designer/jobs?view=list#top</code> the job board with the URL kept, <code>/docs/</code> chapter 1. Commands: <code>gh run view &lt;run id&gt;</code>, <code>gh api repos/indetailsgroup-hue/monolith-workspace/deployments?environment=github-pages</code>, <code>curl -s -o /dev/null -w %{http_code}</code> per URL, and the page title and text read in a browser</td></tr>
 <tr><td>Real-cut gates: 0/4</td><td><code>node scripts/readiness-status.mjs --json</code>, run 29 Sep</td></tr>
 </tbody></table></div>
 <p><strong>Not yet confirmed:</strong> whether the Supabase project we will use has every migration applied, whether server-side RLS behaves as the source says, and whether the data relationships and revisions are enough for the pilot. So "the database is ready" is not yet established.</p>
 <h2>3. WP0 — Owner decisions first</h2>
 <div class="tablewrap"><table><thead><tr><th>#</th><th>Decision</th><th>Why</th></tr></thead><tbody>
 <tr><td>0.1</td><td>Which Supabase project to use</td><td>Source references two projects</td></tr>
-<tr><td>0.2</td><td>Confirm where each site lives</td><td>Per PR #127: Field PWA at <code>/</code>, Designer at <code>/designer/</code>, docs at <code>/docs/</code></td></tr>
+<tr><td>0.2</td><td>Confirm where each site lives</td><td>Live since 30 Sep (PR #127, PR #130): Field PWA at <code>/</code>, Designer at <code>/designer/</code>, docs at <code>/docs/</code>. The owner still confirms this layout for the pilot</td></tr>
 <tr><td>0.3</td><td>Which house is the pilot</td><td>Continue house-01 or start a new one</td></tr>
 <tr><td>0.4</td><td>The 3–5 users and reviewers</td><td>Sales, designer, factory, finance</td></tr>
 <tr><td>0.5</td><td>Policy for real customer data (PII)</td><td>What may be stored on the server</td></tr>
@@ -93,7 +95,7 @@ ul,ol{padding-left:1.5em}li{margin:.3em 0}
 <h2>4. WP1 — Environment and deploy (2.75–3.75 engineer-days)</h2>
 <div class="tablewrap"><table><thead><tr><th>Task</th><th>Days</th><th>Done when</th></tr></thead><tbody>
 <tr><td>1.1 Compare the server's applied migrations with source and name the owner of each secret, <strong>without renumbering files</strong></td><td>1–1.5</td><td>Migration and secret-owner lists match reality</td></tr>
-<tr><td>1.2 Fix the Pages collision</td><td>Code fixed in PR #127, <strong>awaiting merge and deploy</strong>; then check the URLs, 0.25</td><td><code>/</code>, <code>/designer/</code> and <code>/docs/</code> all load</td></tr>
+<tr><td>1.2 Fix the Pages collision</td><td><strong>Done 30 Sep:</strong> PR #127 merged and deployed; the in-app 404 on <code>/designer/</code> it exposed was fixed in PR #130, also deployed; URLs checked 03:55Z (section 2). 0.25, kept in the WP1 total as effort spent</td><td><code>/</code>, <code>/designer/</code> and <code>/docs/</code> all load: met on 30 Sep</td></tr>
 <tr><td>1.3 Configure auth redirects, TLS and the pilot env</td><td>0.5</td><td>Login and logout work from another machine</td></tr>
 <tr><td>1.4 Rehearse backup and restore for both the DB and storage objects</td><td>1–1.5</td><td>A successful restore is recorded</td></tr>
 </tbody></table></div>
@@ -175,6 +177,13 @@ ul,ol{padding-left:1.5em}li{margin:.3em 0}
 <li>1.2 changed from "Done" to "Code fixed in PR #127, awaiting merge and deploy", because the live system has not changed yet.</li>
 <li>The Pages 404 fact now cites run links, the deployed SHAs and a timestamped live check instead of a narrative.</li>
 <li>References to the v0.1 report (outside the repo) now link to v0.1.1 in the same PR.</li>
+</ol>
+<p><strong>v0.2 third revision</strong> (30 Sep, after PR #127 and PR #130 were deployed)</p>
+<ol>
+<li>1.2 changed from "awaiting merge and deploy" to done, with the merge, deploy-run and live-check evidence in section 2.</li>
+<li>Section 2 keeps the <code>5dc57e10</code> Pages fact as history and adds a row for the fix; WP0 0.2 now records the layout that is live.</li>
+<li>The readiness report v0.1.1 is unchanged. It stays a retrospective at baseline <code>5dc57e10</code>, and its evidence hashes still match that commit.</li>
+<li>No figure changed: the 0.25 day for 1.2 stays in the WP1 total and the one-off total is still 52,250–146,750 THB.</li>
 </ol>
 </main></body>
 </html>
