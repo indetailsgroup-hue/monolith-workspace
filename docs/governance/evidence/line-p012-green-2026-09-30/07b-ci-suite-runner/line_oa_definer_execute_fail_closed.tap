@@ -1,0 +1,77 @@
+BEGIN
+# migration under test: C:/Users/thai3/determined-williams (2)/MONOLITH Repair Intelligence/.worktrees/repair-intelligence-phase0-trust/supabase/migrations/0199_line_oa_restrict_definer_execute.sql
+CREATE EXTENSION
+1..23
+CREATE TABLE
+INSERT 0 20
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+ok 1 - scope guard: the twenty identities exist and already match the matrix (0199 applied)
+SAVEPOINT
+CREATE ROLE
+GRANT
+GRANT ROLE
+GRANT
+SAVEPOINT
+ROLLBACK
+ROLLBACK
+RELEASE
+ok 2 - case A precondition: anon can execute fn_prod_curated only through role membership, and holds a direct EXECUTE on rpc_sync_line_forecast
+ok 3 - case A: the migration raises SQLSTATE 42501 when an inherited EXECUTE survives
+ok 4 - case A: the message starts with "B12: EXECUTE matrix not met after revoke" and names anon:fn_prod_curated
+ok 5 - case A: after the error every function ACL and membership is exactly as before
+ok 6 - case A: the direct EXECUTE that 0199 revoked on rpc_sync_line_forecast is back after the error
+SAVEPOINT
+CREATE ROLE
+GRANT ROLE
+GRANT
+GRANT
+SET
+GRANT
+RESET
+GRANT
+SAVEPOINT
+ROLLBACK
+ROLLBACK
+RELEASE
+ok 7 - case B precondition: authenticated holds EXECUTE on fn_line_handle_group_event from another grantor, and anon a direct EXECUTE on rpc_sync_line_forecast
+ok 8 - case B: the migration raises SQLSTATE 42501 when another grantor's EXECUTE survives
+ok 9 - case B: the message starts with "B12: EXECUTE matrix not met after revoke" and names authenticated:fn_line_handle_group_event
+ok 10 - case B: after the error every function ACL and membership is exactly as before
+ok 11 - case B: the direct EXECUTE that 0199 revoked on rpc_sync_line_forecast is back after the error
+SAVEPOINT
+REVOKE
+GRANT
+GRANT
+SAVEPOINT
+ROLLBACK
+ROLLBACK
+RELEASE
+ok 12 - case C precondition: authenticated can execute rpc_create_line_order only through PUBLIC, and anon holds a direct EXECUTE on rpc_sync_line_forecast
+ok 13 - case C: the migration raises SQLSTATE 42501 when a kept right would be lost
+ok 14 - case C: the message names authenticated:rpc_create_line_order want t, and nothing is granted in its place
+ok 15 - case C: after the error every function ACL and membership is exactly as before
+ok 16 - case C: the direct EXECUTE that 0199 revoked on rpc_sync_line_forecast is back after the error
+SAVEPOINT
+CREATE FUNCTION
+GRANT
+SAVEPOINT
+ROLLBACK
+ROLLBACK
+RELEASE
+ok 17 - case D precondition: an extra overload fn_prod_curated(text) exists, and anon holds a direct EXECUTE on rpc_sync_line_forecast
+ok 18 - case D: the migration raises SQLSTATE 55000 for an unclassified overload
+ok 19 - case D: the message starts with "B12: unclassified overload" and names fn_prod_curated(text)
+ok 20 - case D: after the error every function ACL and membership is exactly as before
+ok 21 - case D: the direct anon EXECUTE on rpc_sync_line_forecast is untouched
+SAVEPOINT
+GRANT
+GRANT
+SAVEPOINT
+DO
+ROLLBACK
+RELEASE
+ok 22 - case E: with nothing blocking, the migration completes without error
+ok 23 - case E: the direct anon EXECUTE and the PUBLIC EXECUTE are revoked and every identity matches the matrix
+ROLLBACK

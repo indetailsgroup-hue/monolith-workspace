@@ -1,0 +1,50 @@
+BEGIN
+CREATE EXTENSION
+1..27
+INSERT 0 1
+INSERT 0 2
+INSERT 0 3
+INSERT 0 3
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 2
+INSERT 0 2
+INSERT 0 2
+INSERT 0 2
+INSERT 0 1
+INSERT 0 2
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ok 1 - trust_authority_key RLS enabled
+ok 2 - trust_key_revocation RLS enabled
+ok 3 - trust_profile_attestation_revocation RLS enabled
+ok 4 - trust_warning_grant_revocation RLS enabled
+ok 5 - trust_bundle_publication RLS enabled
+ok 6 - no bundle table exposes a client write policy
+ok 7 - no bundle table uses a using(true) product-data policy
+ok 8 - the trust-bundle signing key can never be stored as a trusted (downstream) key
+ok 9 - a downstream-purpose trusted key is accepted
+ok 10 - first TRUST bundle for the scope takes sequence 1
+ok 11 - the next TRUST bundle takes sequence 2 (monotonic)
+ok 12 - RELEASE_STATUS has an INDEPENDENT sequence starting at 1
+ok 13 - a duplicate (tenant,bundleType,sequence) is rejected by the unique index
+ok 14 - commit publishes the allocated bundle
+ok 15 - re-committing the same canonical hash is idempotent
+ok 16 - a published sequence is immutable: a different canonical hash conflicts
+ok 17 - the status snapshot contains the REVOKED revision id
+ok 18 - the status snapshot excludes the ACTIVE revision
+ok 19 - revokedReleaseRevisionIds is a JSON array
+ok 20 - tenant 001 status snapshot excludes tenant 002 revoked revisions
+ok 21 - the TRUST snapshot carries the key revocation with its explicit mode
+ok 22 - a profile-attestation revocation stores id + effectiveAt + reason
+ok 23 - a warning-grant revocation stores id + effectiveAt + reason
+ok 24 - an authenticated user cannot allocate a bundle sequence
+ok 25 - an authenticated user cannot commit a bundle publication
+ok 26 - tenant 002 RELEASE_STATUS sequence is independent and starts at 1
+SET
+RESET
+ok 27 - RLS: same-tenant membership without the organization grant cannot read an org-X site
+ROLLBACK

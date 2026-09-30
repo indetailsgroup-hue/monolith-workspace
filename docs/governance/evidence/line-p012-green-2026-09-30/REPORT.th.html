@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>หลักฐาน B12 migration 0199</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>B12 / P0-12: migration 0199 และหลักฐาน</h1>
+<p>วันที่: 30 กันยายน 2026 ฐาน: 5119396a7c66c3f0d33547b57902ddefa2aefe07 บน codex/repair-intelligence-phase0-trust สถานะ: สร้างแล้ว รอผู้ตรวจอิสระ ผลทั้งหมดเป็นผลรันในเครื่อง ไม่ใช่ผล GitHub Actions หรือ production ไม่ได้ push หรือ deploy และห้าม deploy จนกว่าจะได้ caller register ของ ops และการยืนยันจากเจ้าของ manufacturing เรื่อง fn_prod_curated</p>
+<h2>สิ่งที่เปลี่ยน</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>ไฟล์</th>
+<th>การเปลี่ยนแปลง</th>
+</tr></thead><tbody>
+<tr>
+<td>supabase/migrations/0199_line_oa_restrict_definer_execute.sql</td>
+<td>revoke EXECUTE บน 20 identity ตาม matrix โดยไม่ grant เพิ่ม หยุดเมื่อไม่พบ identity หรือพบ overload ที่ไม่ได้จัดประเภท (55000) และ raise 42501 พร้อม rollback หากหลัง revoke สิทธิ์ที่มีผลจริงต่างจากเป้าหมาย หรือ PUBLIC ยังมี EXECUTE</td>
+</tr>
+<tr>
+<td>supabase/tests/line_oa_definer_execute_matrix.sql</td>
+<td>ใหม่ 82 assertion: matrix และ PUBLIC, การเรียกจริง 29 ครั้งที่ต้องถูกปฏิเสธที่ ACL ของฟังก์ชัน, ไม่มีผลข้างเคียง, RPC ที่คงไว้ยังเรียกได้ และตรวจเส้นทางที่คงไว้จากข้อมูลจริง</td>
+</tr>
+<tr>
+<td>supabase/tests/line_oa_definer_execute_fail_closed.sql</td>
+<td>ใหม่ 23 assertion: สิทธิ์สืบทอด, grantor อื่น, สิทธิ์ที่ต้องคงหายไปเพราะมาจาก PUBLIC, overload ที่ไม่ได้จัดประเภท และการรันปกติ</td>
+</tr>
+<tr>
+<td>supabase/tests/line_outbound_claim_record.sql</td>
+<td>assertion 23 เปลี่ยนเป็นตรวจว่า authenticated ไม่มี EXECUTE บน recorder แล้ว (มติเจ้าของ: service-only)</td>
+</tr>
+<tr>
+<td>supabase/tests/line_oa_client_write_revoke.sql</td>
+<td>assertion 131 เรียก fn_prod_curated ผ่าน rpc_field_create_appointment แทนการเรียกตรงด้วย service_role</td>
+</tr>
+<tr>
+<td>scripts/run-line-db-suites.sh, scripts/line-ci-tap.mjs, tests/line-oa-commerce/ci/tap-evidence.test.mjs</td>
+<td>ลงทะเบียน 2 suite ใหม่ (รวม 14 suite, LINE 5 suite) ให้ suite fail-closed ใช้ path ของ 0199 จริง และปรับเทสต์ของ harness</td>
+</tr>
+</tbody></table></div>
+<h2>เส้นทางที่คงไว้ ตรวจจากข้อมูลจริง</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>เส้นทาง</th>
+<th>ผลใน GREEN</th>
+</tr></thead><tbody>
+<tr>
+<td>Ingress 1:1 ที่ลงลายเซ็น และ group join ที่ลงลายเซ็น (ผ่าน fn_line_handle_group_event) ด้วย service_role</td>
+<td>เขียน inbound, identity และ bind prompt</td>
+</tr>
+<tr>
+<td>line_oa_resolve_customer_identity ด้วย service_role</td>
+<td>สร้าง identity</td>
+</tr>
+<tr>
+<td>Trigger welcome เมื่อ service_role ผูกกลุ่มลูกค้า และ owner สร้าง trigger ใหม่</td>
+<td>welcome pack เข้าคิว และสร้าง trigger ใหม่ได้</td>
+</tr>
+<tr>
+<td>fn_prod_curated ผ่าน rpc_field_create_appointment (ผู้ใช้ของ site) และ rpc_factory_report_station (ผู้ใช้ governance)</td>
+<td>tpl_appointment และ tpl_prod_started เข้าคิว</td>
+</tr>
+<tr>
+<td>fn_lead_followup_sweep ด้วย service_role และด้วย owner (principal ของ cron) รวมถึง rpc_sweep_line_session_timeouts</td>
+<td>ทำงานทั้งหมด</td>
+</tr>
+<tr>
+<td>Claim และ record ด้วย service_role</td>
+<td>claim แล้วบันทึกเป็น sent</td>
+</tr>
+<tr>
+<td>RPC ของ field-app 5 ตัว: ผู้ใช้ที่มีสิทธิ์ และผู้ใช้ของ site อื่น</td>
+<td>สำเร็จ 4 ตัวโดยตรวจจากข้อมูล ส่วน drawing revision ผ่าน guard ได้ การเรียกจาก site อื่นถูกปฏิเสธโดย guard ในเนื้อฟังก์ชันทุกตัว</td>
+</tr>
+</tbody></table></div>
+<h2>ผลลัพธ์</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>การตรวจ</th>
+<th>RED-A (ไม่มี 0199)</th>
+<th>RED-B (mutant)</th>
+<th>GREEN (0199)</th>
+</tr></thead><tbody>
+<tr>
+<td>Migrate จากศูนย์</td>
+<td>193</td>
+<td>194</td>
+<td>194</td>
+</tr>
+<tr>
+<td>Suite matrix</td>
+<td>ผ่าน 36 ล้มตรง 46</td>
+<td>ไม่ได้รัน</td>
+<td>82/82</td>
+</tr>
+<tr>
+<td>Fail-closed ของ 0199</td>
+<td>ไม่ได้รัน</td>
+<td>ล้มตรง 12 (กรณี A-C)</td>
+<td>23/23</td>
+</tr>
+<tr>
+<td>Suite เดิม / P0-10 / fail-closed ของ 0198</td>
+<td>ล้มเฉพาะข้อ 23 / 133 / 28</td>
+<td>ไม่ได้รัน</td>
+<td>107 / 133 / 28</td>
+</tr>
+<tr>
+<td>Python / claim race</td>
+<td>72/72 / ซ้ำ 0</td>
+<td>ไม่ได้รัน</td>
+<td>72/72 / ซ้ำ 0</td>
+</tr>
+<tr>
+<td>CI harness / CI suite runner ในเครื่อง</td>
+<td>ไม่ได้รัน</td>
+<td>ไม่ได้รัน</td>
+<td>ผ่าน / ล้มเฉพาะ suite containment เดิม</td>
+</tr>
+</tbody></table></div>
+<h2>สิ่งที่ยังไม่ยืนยัน</h2>
+<ul><li>caller register ของ ops (ผู้เรียกภายนอกหรือเรียกด้วยมือ, principal ของ cron, เจ้าหน้าที่ที่บันทึกผลเอง) และความเห็นของเจ้าของ manufacturing เรื่อง fn_prod_curated ทั้งสองยังเป็นสมมติฐานจนกว่าจะได้คำตอบ</li><li>Production: ยังไม่ทราบ grant, grantor, owner และการเปิดผ่าน PostgREST การตรวจ production catalog แบบอ่านอย่างเดียวยังเป็นด่านแยก</li><li>GitHub Actions: ยังไม่ได้ push และ suite containment จะยังล้มที่นั่น</li><li>ฟังก์ชันที่สร้างใหม่หรือสร้างซ้ำภายหลังยังได้ EXECUTE ตาม default ซึ่งเป็นการตัดสินนโยบายแยก</li></ul>
+<h2>ไฟล์</h2>
+<p>ผลดิบของแต่ละรอบอยู่ใน SHA256SUMS.run และ REPLAY.txt ระบุคำสั่งที่รันจริง gate-p012.py และ commit-p012.sh คือ gate และ wrapper ที่ใช้ commit ส่วน transcript อยู่ใน docs/governance/evidence/line-p012-commit-2026-09-30/</p>
+</main>
+</body>
+</html>

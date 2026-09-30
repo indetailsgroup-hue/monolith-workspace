@@ -1,6 +1,14 @@
 # ตารางสิทธิ์ B12 ราย identity และแผนตรวจรับ
 
-30 กันยายน 2026 ฐาน source c4c76717b9d64a51ad1c0b4421148587be7ba285 สถานะ DESIGN / ยังไม่เปลี่ยนสิทธิ์ อนุมัติให้เตรียมแล้ว แต่สิทธิ์รายตัวยังขึ้นกับข้อมูล caller และมติรวมระบบ ยังไม่สร้าง 0199
+30 กันยายน 2026 ฐาน source c4c76717b9d64a51ad1c0b4421148587be7ba285 สถานะ สร้างในเครื่องแล้วใน 0199 รอผู้ตรวจอิสระ ยังไม่ deploy เรื่อง recorder ตัดสินแล้ว (service-only) แต่ caller register และคำตอบฝั่ง manufacturing ยังไม่มา และขวางการ deploy
+
+## มติของเจ้าของและการสร้าง (30 กันยายน 2026)
+
+- Recorder: `rpc_record_line_send_result` เป็น service-only ตามมติของเจ้าของ แถว B12-15 ของ authenticated จึงเป็น DENY
+- การสร้าง: เจ้าของอนุมัติให้สร้างทั้ง matrix ในรอบเดียวก่อนที่ caller register ของ ops และการยืนยันจากเจ้าของ manufacturing จะมาถึง การปฏิเสธ authenticated ในแถว SERVICE และการปฏิเสธ service_role บน `fn_prod_curated` จึงสร้างตามสมมติฐาน และห้าม deploy จนกว่าจะได้คำตอบเหล่านั้น
+- Implementation: `supabase/migrations/0199_line_oa_restrict_definer_execute.sql` revoke EXECUTE อย่างเดียว ไม่ grant เพิ่ม หยุด (55000) เมื่อไม่พบ identity หรือพบ overload ที่ไม่ได้จัดประเภท และ raise 42501 พร้อม rollback หากหลัง revoke สิทธิ์ที่มีผลจริงต่างจากเป้าหมาย หรือ PUBLIC ยังมี EXECUTE
+- เทสต์: `supabase/tests/line_oa_definer_execute_matrix.sql` (82 assertion) และ `supabase/tests/line_oa_definer_execute_fail_closed.sql` (23 assertion) เทสต์เดิมเปลี่ยนตามนโยบาย 2 จุด คือ suite เดิมตรวจว่า authenticated ไม่มี EXECUTE บน recorder แล้ว และ suite ของ P0-10 เรียก `fn_prod_curated` ผ่าน `rpc_field_create_appointment` แทนการเรียกตรงด้วย service_role
+- หลักฐาน: `evidence/line-p012-red-a-2026-09-30/`, `evidence/line-p012-red-b-2026-09-30/` และ `evidence/line-p012-green-2026-09-30/` เป็นผลรันในเครื่องที่รอผู้ตรวจอิสระ ไม่ใช่ผล CI หรือ production
 
 ## ทางเลือกและข้อเสนอ
 
@@ -26,7 +34,7 @@ Current A/U/S คือ EXECUTE ที่มีผลจริงของ anon/
 | B12-12 | `rpc_field_set_lead_source(uuid,text)` | t/t/t | DENY | KEEP | KEEP | FIELD |
 | B12-13 | `rpc_field_shop_drawing_revision(uuid,text,text,boolean,boolean)` | t/t/t | DENY | KEEP | KEEP | FIELD |
 | B12-14 | `rpc_ingest_line_webhook(text,text,text)` | t/t/t | DENY | DENY | KEEP | SERVICE |
-| B12-15 | `rpc_record_line_send_result(uuid,text,text,text,uuid)` | f/t/t | DENY | DECIDE | KEEP | SENDER |
+| B12-15 | `rpc_record_line_send_result(uuid,text,text,text,uuid)` | f/t/t | DENY | DENY (มติเจ้าของ) | KEEP | SENDER |
 | B12-16 | `rpc_request_customer_acceptance(uuid,text)` | t/t/t | DENY | KEEP | KEEP | FIELD |
 | B12-17 | `rpc_resolve_conversation_site(uuid,text,text)` | t/t/t | DENY | KEEP | KEEP | CALLER-UNKNOWN |
 | B12-18 | `rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean)` | t/t/t | DENY | KEEP | KEEP | CALLER-UNKNOWN |
@@ -43,7 +51,7 @@ SENDER: claim คง service-only ส่วน recorder ปัจจุบัน
 
 ทุกแถวต้องอ้างทะเบียน ops หรือระบุ unresolved การอนุมัติต้องระบุ signature จริง มติ recorder ผู้เรียก service ที่คงไว้ principal ของ trigger/cron และการประสาน factory ตรวจ overload และเลข 0199 ใหม่บนฐานรวมก่อนเขียน SQL
 
-## แผนตรวจรับ — ยังไม่ได้รัน
+## แผนตรวจรับ — รันในเครื่องแล้วในหลักฐานของ 0199
 
 | การตรวจ | หลักฐานที่ต้องได้ |
 | --- | --- |
@@ -57,7 +65,7 @@ SENDER: claim คง service-only ส่วน recorder ปัจจุบัน
 | Integration | migration chain และ suite ครบ Python 12 ไฟล์ race กับการห้ามเขียนตรงของ 0198 containment ต้องคงเป็นล้มจนแก้จริง |
 | หลักฐาน | ชุดใหม่ไม่ทับเดิม ระบุ source คำสั่ง UTC exit ผลดิบ checksum secret scan และ cleanup ตรวจอิสระ และ CI จริงหลังอนุมัติ push แยก |
 
-ข้อมูล fixture และ role ชั่วคราวอยู่เฉพาะ stack ใหม่แยก ปิด cron ไม่ใช้ credential จริง เทสต์ลบต้องไม่รัน outbound worker จริง rollback ผลข้อมูลหรือถอด stack ทิ้ง เอกสารนี้ไม่อ้างว่าทดสอบผ่านแล้ว
+ข้อมูล fixture และ role ชั่วคราวอยู่เฉพาะ stack ใหม่แยก ปิด cron ไม่ใช้ credential จริง เทสต์ลบต้องไม่รัน outbound worker จริง rollback ผลข้อมูลหรือถอด stack ทิ้ง ผลในเครื่องอยู่ในชุดหลักฐาน line-p012 และไม่อ้างผล CI หรือ production
 
 ## ขอบเขตรวมระบบและ deploy
 

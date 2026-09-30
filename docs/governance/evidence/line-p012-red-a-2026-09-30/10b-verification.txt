@@ -1,0 +1,22 @@
+PASS: 193 migrations applied from zero, none failed
+PASS: 0199 applied as the last migration only when it exists (mode red-a)
+PASS: no mutant in the migration chain
+PASS: cron scheduler disabled
+PASS: no cron job ran
+PASS: schema/ACL/owner/trigger/membership fingerprint unchanged by the tests
+PASS: no throwaway p01x role left
+PASS: 04a-matrix.tap: plan 1..82 with 82 ordered results and no plan mismatch
+PASS: RED-A: exactly the 46 matrix, PUBLIC and denial assertions fail ([] differ)
+PASS: RED-A: side-effect, retained-RPC, owner-chain, sender, sweep and field-app assertions already pass
+PASS: 04c-original.tap: plan 1..107 with 107 ordered results and no plan mismatch
+PASS: original suite: failures [23] (expected [23]: the service-only recorder check needs 0199)
+PASS: 04d-p010.tap: plan 1..133 with 133 ordered results and no plan mismatch
+PASS: P0-10 suite 133/133 (fn_prod_curated reached through an owner chain)
+PASS: 04e-fc0198.tap: plan 1..28 with 28 ordered results and no plan mismatch
+PASS: 0198 fail-closed suite passes
+PASS: claim race zero overlap
+PASS: 12 required Python files 72/72, none skipped (72 cases, 0 not passing)
+PASS: owned containers and network removed
+PASS: in-run credential scan passed
+RESULT: P0-12 RED-A expectations met
+Scope: local throwaway stack only; not GitHub Actions and not production. Phase A remains EVIDENCE_INCOMPLETE.

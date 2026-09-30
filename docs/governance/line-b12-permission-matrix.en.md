@@ -1,6 +1,14 @@
 # B12 exact-identity permission matrix and acceptance plan
 
-30 September 2026. Source base c4c76717b9d64a51ad1c0b4421148587be7ba285. DESIGN / NOT APPLIED. Preparation is approved; exact grant choices remain conditional on caller and integration decisions. No 0199 is created.
+30 September 2026. Source base c4c76717b9d64a51ad1c0b4421148587be7ba285. IMPLEMENTED LOCALLY in 0199, awaiting independent review; not deployed. The recorder choice is decided (service-only). Caller-register and manufacturing answers are still missing and block deployment.
+
+## Owner decisions and implementation (30 September 2026)
+
+- Recorder: `rpc_record_line_send_result` is service-only (owner decision). B12-15 authenticated is DENY.
+- Build: the owner approved building the whole matrix in one step before the ops caller register and the manufacturing sign-off arrived. The SERVICE-row authenticated denials and the `fn_prod_curated` service_role denial are therefore implemented on assumption, and deployment stays blocked until those answers exist.
+- Implementation: `supabase/migrations/0199_line_oa_restrict_definer_execute.sql` revokes EXECUTE only and grants nothing. It stops (55000) on a missing identity or an unclassified overload, and it raises 42501 and rolls back if any effective right differs from the target afterwards or PUBLIC still holds EXECUTE.
+- Tests: `supabase/tests/line_oa_definer_execute_matrix.sql` (82 assertions) and `supabase/tests/line_oa_definer_execute_fail_closed.sql` (23). Two existing tests changed with the policy. The original suite's recorder check now expects no authenticated EXECUTE, and the P0-10 suite reaches `fn_prod_curated` through `rpc_field_create_appointment` instead of calling it as service_role.
+- Evidence: `evidence/line-p012-red-a-2026-09-30/`, `evidence/line-p012-red-b-2026-09-30/` and `evidence/line-p012-green-2026-09-30/`. These are local runs, awaiting independent review; they are not CI or production results.
 
 ## Alternatives and recommendation
 
@@ -26,7 +34,7 @@ Current A/U/S means effective EXECUTE for anon/authenticated/service_role, t=yes
 | B12-12 | `rpc_field_set_lead_source(uuid,text)` | t/t/t | DENY | KEEP | KEEP | FIELD |
 | B12-13 | `rpc_field_shop_drawing_revision(uuid,text,text,boolean,boolean)` | t/t/t | DENY | KEEP | KEEP | FIELD |
 | B12-14 | `rpc_ingest_line_webhook(text,text,text)` | t/t/t | DENY | DENY | KEEP | SERVICE |
-| B12-15 | `rpc_record_line_send_result(uuid,text,text,text,uuid)` | f/t/t | DENY | DECIDE | KEEP | SENDER |
+| B12-15 | `rpc_record_line_send_result(uuid,text,text,text,uuid)` | f/t/t | DENY | DENY (owner decision) | KEEP | SENDER |
 | B12-16 | `rpc_request_customer_acceptance(uuid,text)` | t/t/t | DENY | KEEP | KEEP | FIELD |
 | B12-17 | `rpc_resolve_conversation_site(uuid,text,text)` | t/t/t | DENY | KEEP | KEEP | CALLER-UNKNOWN |
 | B12-18 | `rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean)` | t/t/t | DENY | KEEP | KEEP | CALLER-UNKNOWN |
@@ -43,7 +51,7 @@ SENDER: claim remains service-only. The recorder currently permits authenticated
 
 Every row needs an ops register reference or an explicit unresolved entry. Approval must identify exact signatures, recorder choice, retained service callers, trigger/cron principal and factory coordination. Recheck overloads and 0199 availability on the chosen integration base immediately before SQL.
 
-## Acceptance plan — not yet executed
+## Acceptance plan — executed locally in 0199 evidence
 
 | Check | Required evidence |
 | --- | --- |
@@ -57,7 +65,7 @@ Every row needs an ops register reference or an explicit unresolved entry. Appro
 | Integration | Complete migration chain and full suites, Python twelve files, race and 0198 direct-write denial; containment remains a real failure until resolved |
 | Evidence | New immutable bundle, source identities, commands/UTC/exit, raw results, checksums, secret scan and stack cleanup; independent review; actual CI after separate push approval |
 
-Fixture rows and temporary roles are confined to a fresh isolated stack with cron off and no live credentials. Negative tests must not execute a live outbound worker. Test data effects are rolled back or the isolated stack is removed. No test result is claimed in this design.
+Fixture rows and temporary roles are confined to a fresh isolated stack with cron off and no live credentials. Negative tests must not execute a live outbound worker. Test data effects are rolled back or the isolated stack is removed. Local results are in the line-p012 bundles; no CI or production result is claimed.
 
 ## Integration and deployment boundaries
 

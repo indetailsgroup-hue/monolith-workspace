@@ -1,0 +1,17 @@
+PASS: 194 migrations applied from zero, none failed
+PASS: 0199 applied as the last migration only when it exists (mode red-b)
+PASS: no mutant in the migration chain
+PASS: cron scheduler disabled
+PASS: no cron job ran
+PASS: schema/ACL/owner/trigger/membership fingerprint unchanged by the tests
+PASS: no throwaway p01x role left
+PASS: mutant diff only removes lines, including the post-revoke verification and its raise (23 lines)
+PASS: 04-fc0199-vs-mutant.tap: plan 1..23 with 23 ordered results and no plan mismatch
+PASS: RED-B: exactly the 12 rejection/rollback assertions of cases A-C fail ([3, 4, 5, 6, 8, 9, 10, 11, 13, 14, 15, 16])
+PASS: RED-B: the three expected rejections show SQLSTATE 00000 (the mutant completed instead of refusing)
+PASS: RED-B: case D (overload guard kept in the mutant) and case E pass, so the mutant applies cleanly
+PASS: RED-B: psql exit 0
+PASS: owned containers and network removed
+PASS: in-run credential scan passed
+RESULT: P0-12 RED-B expectations met
+Scope: local throwaway stack only; not GitHub Actions and not production. Phase A remains EVIDENCE_INCOMPLETE.

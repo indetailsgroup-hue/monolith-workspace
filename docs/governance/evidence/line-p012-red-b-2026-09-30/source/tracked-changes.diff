@@ -1,0 +1,198 @@
+diff --git a/scripts/line-ci-tap.mjs b/scripts/line-ci-tap.mjs
+index fcd28c5db..f446ad58d 100644
+--- a/scripts/line-ci-tap.mjs
++++ b/scripts/line-ci-tap.mjs
+@@ -11,11 +11,11 @@
+ // Its content is not judged: an expected SQL ERROR in it is not a failure.
+ // It always writes the result JSON and exits 1 when the suite fails.
+ // assemble: needs <suite>.result.json and the unchanged <suite>.tap and
+-// <suite>.stderr for each of the twelve suites. It always writes the artifact
++// <suite>.stderr for each of the fourteen suites. It always writes the artifact
+ // and exits 1 unless all pass.
+ //
+ // The verdict covers pgTAP only (verdictScope 'pgtap-only'). fullPgTapPass is
+-// the twelve-suite verdict; pass and fullPass are kept as aliases of it.
++// the fourteen-suite verdict; pass and fullPass are kept as aliases of it.
+ // workflowPass is always null: the rest of the workflow is not evaluated here.
+ // provenanceComplete / missingProvenance report traceability separately and
+ // never change the pgTAP verdict or the exit code.
+@@ -30,11 +30,13 @@ export const SUITES = Object.freeze([
+   'trust_kernel_release', 'trust_kernel_bundles', 'trust_kernel_containment',
+   'trust_kernel_safety', 'repair_phase0_organization', 'repair_phase0_containment',
+   'line_outbound_claim_record', 'line_oa_client_write_revoke',
+-  'line_oa_client_write_revoke_fail_closed',
++  'line_oa_client_write_revoke_fail_closed', 'line_oa_definer_execute_matrix',
++  'line_oa_definer_execute_fail_closed',
+ ]);
+ export const LINE_SUITES = Object.freeze([
+   'line_outbound_claim_record', 'line_oa_client_write_revoke',
+-  'line_oa_client_write_revoke_fail_closed',
++  'line_oa_client_write_revoke_fail_closed', 'line_oa_definer_execute_matrix',
++  'line_oa_definer_execute_fail_closed',
+ ]);
+ 
+ // Whole-line matches only: a plan quoted in a comment, an indented line, a data
+@@ -344,7 +346,7 @@ function checkCommand([tapFile, exitText, suite, resultFile, stderrFile]) {
+   const tap = readTap(tapFile);
+   const analysis = analyzeTap(tap.text, exitCode);
+   if (!SUITES.includes(suite)) {
+-    analysis.failures.push({ code: 'unknown-suite', detail: `${suite} is not one of the twelve db-verify suites` });
++    analysis.failures.push({ code: 'unknown-suite', detail: `${suite} is not one of the fourteen db-verify suites` });
+   }
+   if (baseName(tapFile) !== `${suite}.tap`) {
+     analysis.failures.push({ code: 'suite-file-mismatch', detail: `${tapFile} is not ${suite}.tap` });
+diff --git a/scripts/run-line-db-suites.sh b/scripts/run-line-db-suites.sh
+index 549e8df4e..34decb592 100644
+--- a/scripts/run-line-db-suites.sh
++++ b/scripts/run-line-db-suites.sh
+@@ -1,5 +1,5 @@
+ #!/usr/bin/env bash
+-# Run the twelve db-verify pgTAP suites, each in its own psql process, and check
++# Run the fourteen db-verify pgTAP suites, each in its own psql process, and check
+ # every TAP output with scripts/line-ci-tap.mjs. A failing suite never stops the
+ # ones after it; the script exits 1 if any suite failed, was incomplete, was
+ # skipped or left no result file.
+@@ -30,13 +30,15 @@ fi
+ PARSER="$ROOT/scripts/line-ci-tap.mjs"
+ # The real migration, by absolute path. The fail-closed suite only reads it.
+ P010_MIGRATION="$ROOT/supabase/migrations/0198_line_oa_revoke_client_write_grants.sql"
++P012_MIGRATION="$ROOT/supabase/migrations/0199_line_oa_restrict_definer_execute.sql"
+ 
+ SUITES=(
+   workflow_db_invariants trust_kernel_tenancy trust_kernel_governance
+   trust_kernel_release trust_kernel_bundles trust_kernel_containment
+   trust_kernel_safety repair_phase0_organization repair_phase0_containment
+   line_outbound_claim_record line_oa_client_write_revoke
+-  line_oa_client_write_revoke_fail_closed
++  line_oa_client_write_revoke_fail_closed line_oa_definer_execute_matrix
++  line_oa_definer_execute_fail_closed
+ )
+ 
+ mkdir -p "$TAP_DIR" || exit 2
+@@ -57,7 +59,7 @@ for suite in "${SUITES[@]}"; do
+ 
+   args=(-X -tA -v ON_ERROR_STOP=1)
+   case "$suite" in
+-    line_outbound_claim_record|line_oa_client_write_revoke)
++    line_outbound_claim_record|line_oa_client_write_revoke|line_oa_definer_execute_matrix)
+       # These suites own only ROLLBACK; open their transaction in the same psql
+       # session so fixtures, audit rows, throwaway roles and grants can never
+       # autocommit.
+@@ -65,6 +67,9 @@ for suite in "${SUITES[@]}"; do
+     line_oa_client_write_revoke_fail_closed)
+       # Same wrapper; the suite re-runs the real 0198 via \ir.
+       args+=(-v "p010_migration=$P010_MIGRATION" -c "begin;") ;;
++    line_oa_definer_execute_fail_closed)
++      # Same wrapper; the suite re-runs the real 0199 via \ir.
++      args+=(-v "p012_migration=$P012_MIGRATION" -c "begin;") ;;
+   esac
+   args+=(-f "$ROOT/supabase/tests/${suite}.sql")
+ 
+diff --git a/supabase/tests/line_oa_client_write_revoke.sql b/supabase/tests/line_oa_client_write_revoke.sql
+index a98d68ba3..ddce42d5b 100644
+--- a/supabase/tests/line_oa_client_write_revoke.sql
++++ b/supabase/tests/line_oa_client_write_revoke.sql
+@@ -313,24 +313,28 @@ select ok(
+ );
+ 
+ -- ---------------------------------------------------------------------------
+--- 131: fn_prod_curated (DEFINER) queues a curated push as service_role.
++-- 131: fn_prod_curated (DEFINER) queues a curated push through an owner chain.
++-- Since B12 / 0199 no client role may call fn_prod_curated directly, so the
++-- write path is exercised as production does: rpc_field_create_appointment
++-- (a governance user) calls fn_prod_curated, which runs as the table owner.
+ -- ---------------------------------------------------------------------------
+ insert into p010_ctx
+-select 'curated', pg_temp.p010_call_as('service_role', '{"role":"service_role"}'::jsonb,
+-  $q$select to_jsonb(public.fn_prod_curated('b0100000-0000-0000-0000-0000000000f2', 'tpl_prod_started',
+-       '{"project_name":"P010 fixture project","p010":"curated"}'::jsonb)::text)$q$);
++select 'curated', pg_temp.p010_call_as('authenticated',
++  '{"role":"authenticated","sub":"b0100000-0000-0000-0000-00000000aa01","app_metadata":{"roles":["admin"],"site_codes":[]}}'::jsonb,
++  $q$select public.rpc_field_create_appointment('b0100000-0000-0000-0000-0000000000f2', 'survey',
++       timezone('utc', now()) + interval '2 days', 'p010 curated')$q$);
+ 
+ insert into p010_ctx
+ select 'curated_row', to_jsonb(o.id)
+ from public.line_oa_outbound_messages o
+-where o.target_type = 'group' and o.target_id = 'C-P010-CUSTOMER' and o.template_key = 'tpl_prod_started';
++where o.target_type = 'group' and o.target_id = 'C-P010-CUSTOMER' and o.template_key = 'tpl_appointment';
+ 
+ select ok(
+   (select (v->>'ok')::boolean from p010_ctx where k = 'curated')
+   and (select count(*) from public.line_oa_outbound_messages o
+-        where o.target_type = 'group' and o.target_id = 'C-P010-CUSTOMER' and o.template_key = 'tpl_prod_started'
+-          and o.status = 'pending' and o.slot_values->>'p010' = 'curated') = 1,
+-  'fn_prod_curated as service_role queues exactly one pending tpl_prod_started push for the bound group'
++        where o.target_type = 'group' and o.target_id = 'C-P010-CUSTOMER' and o.template_key = 'tpl_appointment'
++          and o.status = 'pending' and o.slot_values->>'project_name' = 'P010 fixture project') = 1,
++  'fn_prod_curated queues exactly one pending push for the bound group through the rpc_field_create_appointment owner chain'
+ );
+ 
+ -- ---------------------------------------------------------------------------
+diff --git a/supabase/tests/line_outbound_claim_record.sql b/supabase/tests/line_outbound_claim_record.sql
+index 3eb304f4e..50674fc77 100644
+--- a/supabase/tests/line_outbound_claim_record.sql
++++ b/supabase/tests/line_outbound_claim_record.sql
+@@ -423,10 +423,13 @@ select ok(
+     'service_role', to_regprocedure('public.rpc_record_line_send_result(uuid,text,text,text,uuid)'), 'EXECUTE'), false),
+   'service_role can execute record-result RPC'
+ );
++-- Owner decision (30 Sep 2026, B12 / 0199): recording is service-only. The
++-- earlier guarded human path (authenticated EXECUTE) is withdrawn; the denial
++-- checks further below still expect 42501 and no state change.
+ select ok(
+-  coalesce(has_function_privilege(
+-    'authenticated', to_regprocedure('public.rpc_record_line_send_result(uuid,text,text,text,uuid)'), 'EXECUTE'), false),
+-  'authenticated retains record-result EXECUTE for the guarded human path'
++  not coalesce(has_function_privilege(
++    'authenticated', to_regprocedure('public.rpc_record_line_send_result(uuid,text,text,text,uuid)'), 'EXECUTE'), true),
++  'authenticated no longer executes record-result: recording is service-only (owner decision, 0199)'
+ );
+ select ok(
+   not coalesce(has_function_privilege(
+diff --git a/tests/line-oa-commerce/ci/tap-evidence.test.mjs b/tests/line-oa-commerce/ci/tap-evidence.test.mjs
+index 5762fb461..aa3bc860e 100644
+--- a/tests/line-oa-commerce/ci/tap-evidence.test.mjs
++++ b/tests/line-oa-commerce/ci/tap-evidence.test.mjs
+@@ -49,13 +49,14 @@ const EXPECTED_ERRORS = [
+   'CONTEXT:  PL/pgSQL function inline_code_block line 36 at RAISE',
+ ];
+ 
+-test('suite list is the twelve db-verify suites with the three LINE suites last', () => {
++test('suite list is the fourteen db-verify suites with the five LINE suites last', () => {
+   assert.deepEqual([...SUITES], [
+     'workflow_db_invariants', 'trust_kernel_tenancy', 'trust_kernel_governance',
+     'trust_kernel_release', 'trust_kernel_bundles', 'trust_kernel_containment',
+     'trust_kernel_safety', 'repair_phase0_organization', 'repair_phase0_containment',
+     'line_outbound_claim_record', 'line_oa_client_write_revoke',
+-    'line_oa_client_write_revoke_fail_closed',
++    'line_oa_client_write_revoke_fail_closed', 'line_oa_definer_execute_matrix',
++    'line_oa_definer_execute_fail_closed',
+   ]);
+   assert.deepEqual([...LINE_SUITES], SUITES.slice(9));
+ });
+@@ -188,7 +189,7 @@ const evidence = (suite, text = fullTap(3), exitCode = 0) => ({
+ const allPassing = () => SUITES.map((suite) => evidence(suite));
+ const entry = (summary, suite) => summary.pgtap.suites.find((s) => s.suite === suite);
+ 
+-test('summary passes only when all twelve suites have passing evidence', () => {
++test('summary passes only when all fourteen suites have passing evidence', () => {
+   const s = summarize(allPassing(), {});
+   assert.equal(s.pass, true);
+   assert.equal(s.fullPass, true);
+@@ -573,13 +574,13 @@ test('CLI assemble writes the artifact even when suites fail or are missing', (t
+   assert.equal(summary.fullPass, false);
+   assert.equal(summary.linePass, false);
+   assert.equal(summary.origin, 'local');
+-  assert.equal(summary.missingSuites.length, 10);
++  assert.equal(summary.missingSuites.length, 12);
+   assert.equal(entry(summary, 'repair_phase0_containment').exitCode, 3);
+   assert.equal(entry(summary, 'repair_phase0_containment').pass, false);
+   assert.equal(entry(summary, 'line_outbound_claim_record').pass, true);
+ });
+ 
+-test('CLI assemble passes only with twelve fresh passing results', (t) => {
++test('CLI assemble passes only with fourteen fresh passing results', (t) => {
+   const dir = sandbox(t);
+   for (const suite of SUITES) assert.equal(checkSuite(dir, suite, fullTap(3), 0).status, 0);
+ 

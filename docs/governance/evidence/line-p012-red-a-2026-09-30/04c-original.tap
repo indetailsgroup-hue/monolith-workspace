@@ -1,0 +1,182 @@
+BEGIN
+CREATE EXTENSION
+1..107
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE TABLE
+ok 1 - outbound messages have nullable claimed_at
+ok 2 - outbound messages have nullable claimed_by
+ok 3 - outbound messages have attempt_count
+ok 4 - claimed_at is nullable
+ok 5 - claimed_by is nullable
+ok 6 - attempt_count is NOT NULL
+ok 7 - attempt_count defaults to zero
+ok 8 - outbound messages have nullable next_attempt_at
+ok 9 - next_attempt_at is nullable
+ok 10 - next_attempt_at defaults to NULL
+ok 11 - outbound messages have nullable claim_token
+ok 12 - claim_token is nullable
+ok 13 - claim_token defaults to NULL
+ok 14 - claim RPC has the required (int, int) signature
+ok 15 - claim RPC is SECURITY DEFINER
+ok 16 - only claim timeout has a default
+ok 17 - service_role can execute claim RPC
+ok 18 - authenticated cannot execute claim RPC
+ok 19 - anon cannot execute claim RPC
+ok 20 - PUBLIC cannot execute claim RPC
+ok 21 - record-result RPC remains SECURITY DEFINER
+ok 22 - service_role can execute record-result RPC
+not ok 23 - authenticated no longer executes record-result: recording is service-only (owner decision, 0199)
+# Failed test 23: "authenticated no longer executes record-result: recording is service-only (owner decision, 0199)"
+ok 24 - anon and PUBLIC cannot execute record-result RPC
+INSERT 0 1
+ok 25 - claim RPC rejects NULL and non-positive batch limits
+INSERT 0 1
+ok 26 - claim RPC rejects NULL and non-positive lease timeouts
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ok 27 - first service claim returns the pending row exactly once
+ok 28 - claim result returns every column the sender needs
+ok 29 - claim stamps claimed_at and resolve_actor() as claimed_by
+INSERT 0 1
+ok 30 - second claim in the same session returns zero while the first claim is live
+INSERT 0 1
+ok 31 - an expired claim is reclaimable and receives fresh claim ownership
+INSERT 0 2
+INSERT 0 1
+ok 32 - sent and failed rows are never claimed
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ok 33 - group outbound rows participate in the atomic claim RPC
+INSERT 0 1
+ok 34 - service role with absent JWT claims records a group send successfully
+ok 35 - successful recording sends once and clears both claim fields
+ok 36 - group result audit uses line_groups vertical, NULL site, and system sender actor
+INSERT 0 1
+ok 37 - already-sent row returns recorded=false
+ok 38 - duplicate result cannot flip status or write a second audit row
+INSERT 0 1
+INSERT 0 1
+ok 39 - service context records an unbound-group prompt row
+ok 40 - unbound group audit uses the 0097 monolith fallback and NULL site
+INSERT 0 1
+INSERT 0 1
+ok 41 - authenticated user without governance role or site access is still denied
+ok 42 - denied user call changes no state and writes no audit
+INSERT 0 2
+INSERT 0 1
+ok 43 - authenticated caller cannot forge service_role through request JWT claims
+INSERT 0 1
+ok 44 - NULL result status is rejected without state or audit change
+INSERT 0 1
+INSERT 0 1
+ok 45 - retry fixture is claimed before its first delivery attempt
+INSERT 0 1
+ok 46 - first transient failure is recorded but returned to pending
+ok 47 - transient failure increments attempt_count, clears claim, and stores error detail
+ok 48 - first transient failure writes one result audit
+INSERT 0 4
+ok 49 - fifth failure is recorded as terminal failed
+ok 50 - terminal failure keeps attempt_count=5, no sent timestamp, and the last scrubbed error
+ok 51 - each of five recorded failures writes exactly one audit row
+INSERT 0 1
+ok 52 - terminal failed row rejects failed-to-sent flip without state or audit change
+INSERT 0 1
+INSERT 0 1
+ok 53 - claim excludes pending rows whose next_attempt_at is in the future
+INSERT 0 1
+ok 54 - claim includes pending rows once next_attempt_at is due
+INSERT 0 1
+INSERT 0 1
+ok 55 - explicit transient failure returns to pending below the five-attempt bound
+ok 56 - first transient failure schedules the notification-style one-second backoff
+INSERT 0 1
+ok 57 - a transiently failed row cannot be reclaimed before its backoff is due
+t
+INSERT 0 1
+INSERT 0 1
+ok 58 - second transient failure doubles backoff to two seconds
+INSERT 0 1
+INSERT 0 1
+ok 59 - permanent failure is terminal immediately regardless of remaining attempts
+ok 60 - permanent failure has no retry due-time and writes exactly one audit
+INSERT 0 1
+INSERT 0 1
+ok 61 - unsupported failure class is rejected without state or audit change
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ok 62 - reclaim replaces the stale claim token and returns the fresh stored token
+INSERT 0 1
+ok 63 - stale claim token returns recorded=false
+ok 64 - stale claim token changes no state and writes no audit
+INSERT 0 1
+ok 65 - matching claim token records the result and clears claim ownership
+INSERT 0 1
+INSERT 0 1
+ok 66 - null-token legacy call still works when the row has no claim token
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ok 67 - a non-null stale token cannot replay after a transient result clears the fence
+SET
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ok 68 - non-UTC session cannot immediately reclaim a just-failed transient row
+t
+INSERT 0 1
+ok 69 - non-UTC session can reclaim the transient row after backoff elapses
+INSERT 0 1
+INSERT 0 1
+ok 70 - non-UTC successful send stamps sent_at within five seconds of now()
+CREATE FUNCTION
+ok 71 - P0-11 whitespace U+0009
+ok 72 - P0-11 whitespace U+000A
+ok 73 - P0-11 whitespace U+000B
+ok 74 - P0-11 whitespace U+000C
+ok 75 - P0-11 whitespace U+000D
+ok 76 - P0-11 whitespace U+001C
+ok 77 - P0-11 whitespace U+001D
+ok 78 - P0-11 whitespace U+001E
+ok 79 - P0-11 whitespace U+001F
+ok 80 - P0-11 whitespace U+0020
+ok 81 - P0-11 whitespace U+0085
+ok 82 - P0-11 whitespace U+00A0
+ok 83 - P0-11 whitespace U+1680
+ok 84 - P0-11 whitespace U+2000
+ok 85 - P0-11 whitespace U+2001
+ok 86 - P0-11 whitespace U+2002
+ok 87 - P0-11 whitespace U+2003
+ok 88 - P0-11 whitespace U+2004
+ok 89 - P0-11 whitespace U+2005
+ok 90 - P0-11 whitespace U+2006
+ok 91 - P0-11 whitespace U+2007
+ok 92 - P0-11 whitespace U+2008
+ok 93 - P0-11 whitespace U+2009
+ok 94 - P0-11 whitespace U+200A
+ok 95 - P0-11 whitespace U+2028
+ok 96 - P0-11 whitespace U+2029
+ok 97 - P0-11 whitespace U+202F
+ok 98 - P0-11 whitespace U+205F
+ok 99 - P0-11 whitespace U+3000
+ok 100 - P0-11 null
+ok 101 - P0-11 empty
+ok 102 - P0-11 all whitespace
+ok 103 - P0-11 trim edges
+ok 104 - P0-11 internal whitespace
+ok 105 - P0-11 zero width space
+ok 106 - P0-11 BOM
+ok 107 - P0-11 token scrub
+# Looks like you failed 1 test of 107
+ROLLBACK

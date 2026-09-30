@@ -1,0 +1,23 @@
+{
+  "suite": "line_outbound_claim_record",
+  "stdout": "docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/line_outbound_claim_record.tap",
+  "stderr": "docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/line_outbound_claim_record.stderr",
+  "tapSha256": "73ccdce5fa080ab5646ba78298e942e2f83d06b0cece066dced8b25ba06d3f48",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "runId": "p012-green-local",
+  "origin": "local",
+  "checkedAt": "2026-09-30T16:53:23.762Z",
+  "pass": true,
+  "exitCode": 0,
+  "plan": 107,
+  "planLines": 1,
+  "results": 107,
+  "ok": 107,
+  "notOk": 0,
+  "skip": 0,
+  "todo": 0,
+  "bailOut": false,
+  "sqlErrorLines": 0,
+  "finishDiagnostics": [],
+  "failures": []
+}

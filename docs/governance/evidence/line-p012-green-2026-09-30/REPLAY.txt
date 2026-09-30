@@ -1,0 +1,14 @@
+B12 / 0199 GREEN - real 0199, every suite, Python, claim race, CI harness and the CI suite runner, locally
+
+Executed command (Git Bash, repository root, started 2026-09-30T16:51:24Z, after the port's TIME_WAIT sockets from RED-B cleared):
+P012_MODE=green P012_OUT=docs/governance/evidence/line-p012-green-2026-09-30 P012_RED_BUNDLE=docs/governance/evidence/line-p012-red-a-2026-09-30 bash <scratchpad>/p012-run/run-p012.sh
+Expected and observed (10b-verification.txt): 194 migrations; matrix 82/82; 0199 fail-closed 23/23 (cases A-C refused with the matrix error, case D with the overload error); original 107/107; P0-10 133/133; 0198 fail-closed 28/28; Python 72/72; claim race zero overlap; CI harness tests pass with the fourteen-suite list.
+07b-ci-suite-runner: scripts/run-line-db-suites.sh run locally against this stack (NOT GitHub Actions). All 14 suites ran; the only failing suite is the existing repair_phase0_containment (it needs the 12-argument rpc_factory_job_record_packet from origin/main 0170, which this branch lacks); the five LINE suites pass the strict TAP check.
+Re-check without a database: py verify-p012.py docs/governance/evidence/line-p012-green-2026-09-30 green
+
+Runner: run-p012.sh and verify-p012.py in this bundle are the exact executed files (sha256 in 00-context.txt; identical across the three bundles).
+Base: 5119396a7c66c3f0d33547b57902ddefa2aefe07. The changed and new sources used by the run are copied under source/ with tracked-changes.diff.
+Isolation: throwaway stack line-p012-* on a dedicated network, DB published on 127.0.0.1:55448 only, cron.launch_active_jobs=off, no edge runtime, synthetic data rolled back.
+Runner-time files are covered by SHA256SUMS.run. REPLAY.txt (and in GREEN the REPORT files, gate and wrapper) were added afterwards; SHA256SUMS covers every file except itself.
+Replay needs a checkout of the base with the source/ copies applied and a NEW P012_OUT; the runner's HEAD and branch checks need that commit on that branch name, or a reviewed copy with only the branch check removed.
+Development runs on a separate throwaway stack (line-p010dev-*, port 55445) preceded these runs and are not evidence.

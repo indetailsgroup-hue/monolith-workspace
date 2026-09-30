@@ -1,0 +1,28 @@
+PASS: 194 migrations applied from zero, none failed
+PASS: 0199 applied as the last migration only when it exists (mode green)
+PASS: no mutant in the migration chain
+PASS: cron scheduler disabled
+PASS: no cron job ran
+PASS: schema/ACL/owner/trigger/membership fingerprint unchanged by the tests
+PASS: no throwaway p01x role left
+PASS: 04a-matrix.tap: plan 1..82 with 82 ordered results and no plan mismatch
+PASS: GREEN: matrix suite 82/82 ([])
+PASS: 04c-original.tap: plan 1..107 with 107 ordered results and no plan mismatch
+PASS: original suite: failures [] (expected []: the service-only recorder check needs 0199)
+PASS: 04d-p010.tap: plan 1..133 with 133 ordered results and no plan mismatch
+PASS: P0-10 suite 133/133 (fn_prod_curated reached through an owner chain)
+PASS: 04e-fc0198.tap: plan 1..28 with 28 ordered results and no plan mismatch
+PASS: 0198 fail-closed suite passes
+PASS: 04b-fc0199.tap: plan 1..23 with 23 ordered results and no plan mismatch
+PASS: GREEN: 0199 fail-closed suite 23/23 against the real 0199
+PASS: GREEN: the real 0199 refused cases A-C with the matrix error and case D with the overload error
+PASS: claim race zero overlap
+PASS: 12 required Python files 72/72, none skipped (72 cases, 0 not passing)
+PASS: CI harness tests (TAP/source evidence) pass with the fourteen-suite list
+OBSERVED: CI suite runner: FAILED: 1 of 14 suites: repair_phase0_containment
+PASS: CI suite runner (local): all 14 suites ran; the only failing suite is the existing repair_phase0_containment
+PASS: CI suite runner (local): the five LINE suites pass the strict TAP check ([])
+PASS: owned containers and network removed
+PASS: in-run credential scan passed
+RESULT: P0-12 GREEN expectations met
+Scope: local throwaway stack only; not GitHub Actions and not production. Phase A remains EVIDENCE_INCOMPLETE.

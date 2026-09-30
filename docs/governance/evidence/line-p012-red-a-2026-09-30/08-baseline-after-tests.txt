@@ -1,0 +1,4 @@
+captured_utc: 2026-09-30T16:44:34Z
+catalog_fingerprint_md5 (relations+owners+ACLs, column ACLs, functions+source hashes+owners+ACLs, triggers, roles, memberships): c5e36cb5c7c31b53a87bedf7a12e9c4f
+roles_named_p01x: 0
+cron_job_run_details_rows: 0

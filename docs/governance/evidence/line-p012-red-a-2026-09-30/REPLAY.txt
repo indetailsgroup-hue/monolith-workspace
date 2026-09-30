@@ -1,0 +1,13 @@
+B12 / 0199 RED-A - base without 0199 (the migration file did not exist yet)
+
+Executed command (Git Bash, repository root, started 2026-09-30T16:42:38Z):
+P012_MODE=red-a P012_OUT=docs/governance/evidence/line-p012-red-a-2026-09-30 bash <scratchpad>/p012-run/run-p012.sh
+Expected and observed (10b-verification.txt): 193 migrations; the new matrix suite fails exactly its 46 matrix, PUBLIC and denial assertions and passes the 36 others (side effects, retained RPCs, owner chains, sender, sweeps, field-app); the original suite fails only assertion 23, the new service-only recorder check; P0-10 133/133; 0198 fail-closed 28/28; Python 72/72; claim race zero overlap.
+Re-check without a database: py verify-p012.py docs/governance/evidence/line-p012-red-a-2026-09-30 red-a
+
+Runner: run-p012.sh and verify-p012.py in this bundle are the exact executed files (sha256 in 00-context.txt; identical across the three bundles).
+Base: 5119396a7c66c3f0d33547b57902ddefa2aefe07. The changed and new sources used by the run are copied under source/ with tracked-changes.diff.
+Isolation: throwaway stack line-p012-* on a dedicated network, DB published on 127.0.0.1:55448 only, cron.launch_active_jobs=off, no edge runtime, synthetic data rolled back.
+Runner-time files are covered by SHA256SUMS.run. REPLAY.txt (and in GREEN the REPORT files, gate and wrapper) were added afterwards; SHA256SUMS covers every file except itself.
+Replay needs a checkout of the base with the source/ copies applied and a NEW P012_OUT; the runner's HEAD and branch checks need that commit on that branch name, or a reviewed copy with only the branch check removed.
+Development runs on a separate throwaway stack (line-p010dev-*, port 55445) preceded these runs and are not evidence.

@@ -9,7 +9,9 @@
 <body>
 <main>
 <h1>ตารางสิทธิ์ B12 ราย identity และแผนตรวจรับ</h1>
-<p>30 กันยายน 2026 ฐาน source c4c76717b9d64a51ad1c0b4421148587be7ba285 สถานะ DESIGN / ยังไม่เปลี่ยนสิทธิ์ อนุมัติให้เตรียมแล้ว แต่สิทธิ์รายตัวยังขึ้นกับข้อมูล caller และมติรวมระบบ ยังไม่สร้าง 0199</p>
+<p>30 กันยายน 2026 ฐาน source c4c76717b9d64a51ad1c0b4421148587be7ba285 สถานะ สร้างในเครื่องแล้วใน 0199 รอผู้ตรวจอิสระ ยังไม่ deploy เรื่อง recorder ตัดสินแล้ว (service-only) แต่ caller register และคำตอบฝั่ง manufacturing ยังไม่มา และขวางการ deploy</p>
+<h2>มติของเจ้าของและการสร้าง (30 กันยายน 2026)</h2>
+<ul><li>Recorder: <code>rpc_record_line_send_result</code> เป็น service-only ตามมติของเจ้าของ แถว B12-15 ของ authenticated จึงเป็น DENY</li><li>การสร้าง: เจ้าของอนุมัติให้สร้างทั้ง matrix ในรอบเดียวก่อนที่ caller register ของ ops และการยืนยันจากเจ้าของ manufacturing จะมาถึง การปฏิเสธ authenticated ในแถว SERVICE และการปฏิเสธ service_role บน <code>fn_prod_curated</code> จึงสร้างตามสมมติฐาน และห้าม deploy จนกว่าจะได้คำตอบเหล่านั้น</li><li>Implementation: <code>supabase/migrations/0199_line_oa_restrict_definer_execute.sql</code> revoke EXECUTE อย่างเดียว ไม่ grant เพิ่ม หยุด (55000) เมื่อไม่พบ identity หรือพบ overload ที่ไม่ได้จัดประเภท และ raise 42501 พร้อม rollback หากหลัง revoke สิทธิ์ที่มีผลจริงต่างจากเป้าหมาย หรือ PUBLIC ยังมี EXECUTE</li><li>เทสต์: <code>supabase/tests/line_oa_definer_execute_matrix.sql</code> (82 assertion) และ <code>supabase/tests/line_oa_definer_execute_fail_closed.sql</code> (23 assertion) เทสต์เดิมเปลี่ยนตามนโยบาย 2 จุด คือ suite เดิมตรวจว่า authenticated ไม่มี EXECUTE บน recorder แล้ว และ suite ของ P0-10 เรียก <code>fn_prod_curated</code> ผ่าน <code>rpc_field_create_appointment</code> แทนการเรียกตรงด้วย service_role</li><li>หลักฐาน: <code>evidence/line-p012-red-a-2026-09-30/</code>, <code>evidence/line-p012-red-b-2026-09-30/</code> และ <code>evidence/line-p012-green-2026-09-30/</code> เป็นผลรันในเครื่องที่รอผู้ตรวจอิสระ ไม่ใช่ผล CI หรือ production</li></ul>
 <h2>ทางเลือกและข้อเสนอ</h2>
 <p>คงสิทธิ์เดิมลดผลกระทบแต่ B12 ยังเปิด ถอนทั้งหมดเสี่ยงทำ ingress, sender และ field-app พัง แนะนำถอนราย identity โดยคงผู้เรียกธุรกิจที่อนุมัติและเส้นทาง owner ไว้ การไม่มีหลักฐาน caller ไม่ใช่หลักฐานว่าไม่ได้ใช้</p>
 <h2>ตารางราย identity</h2>
@@ -154,7 +156,7 @@
 <td><code>rpc_record_line_send_result(uuid,text,text,text,uuid)</code></td>
 <td>f/t/t</td>
 <td>DENY</td>
-<td>DECIDE</td>
+<td>DENY (มติเจ้าของ)</td>
 <td>KEEP</td>
 <td>SENDER</td>
 </tr>
@@ -209,7 +211,7 @@
 <p>INTERNAL: ถอนการเรียกตรงของ role หลังพิสูจน์ว่า owner chain และ trigger ที่ติดตั้งยังทำงาน fn_prod_curated ต้องประสาน manufacturing กลุ่ม SERVICE: คงทางเข้า service และยืนยัน principal ของ cron จริงโดยไม่เปิด cron กลุ่ม FIELD: คงงานผู้ใช้ที่มีสิทธิ์และทดสอบปฏิเสธข้าม site กลุ่ม CALLER-UNKNOWN: คง authenticated/service รอ inventory การไม่พบ caller ในโค้ดไม่ให้สิทธิ์ถอนเพิ่ม และ dogfood runbook ระบุ rpc_create_line_order ไว้จริง</p>
 <p>SENDER: claim คง service-only ส่วน recorder ปัจจุบันให้ authenticated เรียกและตรวจ governance/site ใน 0197:122–129 แนะนำให้เป็น service-only ถ้า ops และเจ้าของยืนยันว่าไม่มีขั้นตอนบันทึกผลโดยผู้ใช้ หากยังต้องใช้ ให้คงเส้นทางผู้ใช้พร้อมทดสอบ guard โดยตรง ห้ามเลือกแทนโดยเงียบ</p>
 <p>ทุกแถวต้องอ้างทะเบียน ops หรือระบุ unresolved การอนุมัติต้องระบุ signature จริง มติ recorder ผู้เรียก service ที่คงไว้ principal ของ trigger/cron และการประสาน factory ตรวจ overload และเลข 0199 ใหม่บนฐานรวมก่อนเขียน SQL</p>
-<h2>แผนตรวจรับ — ยังไม่ได้รัน</h2>
+<h2>แผนตรวจรับ — รันในเครื่องแล้วในหลักฐานของ 0199</h2>
 <div class="table-wrap"><table><thead><tr>
 <th>การตรวจ</th>
 <th>หลักฐานที่ต้องได้</th>
@@ -251,7 +253,7 @@
 <td>ชุดใหม่ไม่ทับเดิม ระบุ source คำสั่ง UTC exit ผลดิบ checksum secret scan และ cleanup ตรวจอิสระ และ CI จริงหลังอนุมัติ push แยก</td>
 </tr>
 </tbody></table></div>
-<p>ข้อมูล fixture และ role ชั่วคราวอยู่เฉพาะ stack ใหม่แยก ปิด cron ไม่ใช้ credential จริง เทสต์ลบต้องไม่รัน outbound worker จริง rollback ผลข้อมูลหรือถอด stack ทิ้ง เอกสารนี้ไม่อ้างว่าทดสอบผ่านแล้ว</p>
+<p>ข้อมูล fixture และ role ชั่วคราวอยู่เฉพาะ stack ใหม่แยก ปิด cron ไม่ใช้ credential จริง เทสต์ลบต้องไม่รัน outbound worker จริง rollback ผลข้อมูลหรือถอด stack ทิ้ง ผลในเครื่องอยู่ในชุดหลักฐาน line-p012 และไม่อ้างผล CI หรือ production</p>
 <h2>ขอบเขตรวมระบบและ deploy</h2>
 <p>เจ้าของ manufacturing ต้องพิจารณาลำดับ 0170/0191 และสิทธิ์ overload สุดท้าย ห้ามคัดลอกฟังก์ชันที่ขาดมาเป็น shim เทสต์ P0-9 ยังต้องมีมติ branch/tenant นโยบาย default grant สำหรับฟังก์ชันใหม่หรือสร้างซ้ำเป็นมติแยก แผนนี้ครอบคลุมเพียง 20 identity เดิม ห้ามเรียกว่าปิดความปลอดภัยทั้งระบบ</p>
 <p>ก่อน deploy ต้องอนุมัติตรวจ production catalog แยกเพื่อเทียบ owner, ACL, caller ภายนอก/ทำมือ และ API exposure แผนนี้ไม่อนุญาตเข้า production, merge, push, ส่งลูกค้า หรือเปิด cron</p>

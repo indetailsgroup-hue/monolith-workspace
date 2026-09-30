@@ -1,0 +1,3 @@
+removed_utc: 2026-09-30T16:44:37Z
+containers_present_after_removal: [] (empty = removed)
+network_present_after_removal: [] (empty = removed)

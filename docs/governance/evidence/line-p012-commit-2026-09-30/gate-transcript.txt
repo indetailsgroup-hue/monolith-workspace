@@ -1,0 +1,229 @@
+B12 / 0199 commit gate transcript (written by commit-p012.sh only after the gate exited 0)
+written_utc: 2026-09-30T16:58:24Z
+base_head: 5119396a7c66c3f0d33547b57902ddefa2aefe07
+wrapper: docs/governance/evidence/line-p012-green-2026-09-30/commit-p012.sh sha256 b5027b502fe318e25a2e89990a2769c97367b611cdcbf27b20835bb62db7ef03
+gate: docs/governance/evidence/line-p012-green-2026-09-30/gate-p012.py sha256 ddbf820ccaad6f50d0d05a618e2bf35d0d1e65472752150b9540c4210e952ca5
+gate_exit: 0
+gated_tree: 5387f34239a61125d15234137f42e7e3ee3a80c1
+check: the commit tree without docs/governance/evidence/line-p012-commit-2026-09-30 must equal gated_tree (command in the wrapper header)
+staged_changes:
+  M	docs/PRD-LINE-OA.en.html
+  M	docs/PRD-LINE-OA.en.md
+  M	docs/PRD-LINE-OA.th.html
+  M	docs/PRD-LINE-OA.th.md
+  A	docs/governance/evidence/line-p012-green-2026-09-30/.gitattributes
+  A	docs/governance/evidence/line-p012-green-2026-09-30/00-context.txt
+  A	docs/governance/evidence/line-p012-green-2026-09-30/01b-service-bootstrap-output.txt
+  A	docs/governance/evidence/line-p012-green-2026-09-30/01b-service-bootstrap.sql
+  A	docs/governance/evidence/line-p012-green-2026-09-30/02-migrations-applied.txt
+  A	docs/governance/evidence/line-p012-green-2026-09-30/03-baseline-after-migrations.txt
+  A	docs/governance/evidence/line-p012-green-2026-09-30/04a-matrix.tap
+  A	docs/governance/evidence/line-p012-green-2026-09-30/04b-fc0199.tap
+  A	docs/governance/evidence/line-p012-green-2026-09-30/04c-original.tap
+  A	docs/governance/evidence/line-p012-green-2026-09-30/04d-p010.tap
+  A	docs/governance/evidence/line-p012-green-2026-09-30/04e-fc0198.tap
+  A	docs/governance/evidence/line-p012-green-2026-09-30/05-claim-race-output.txt
+  A	docs/governance/evidence/line-p012-green-2026-09-30/06-pytest-junit.xml
+  A	docs/governance/evidence/line-p012-green-2026-09-30/06-pytest-output.txt
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07a-ci-harness-tests.txt
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner.txt
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/line_oa_client_write_revoke.result.json
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/line_oa_client_write_revoke.stderr
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/line_oa_client_write_revoke.tap
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/line_oa_client_write_revoke_fail_closed.result.json
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/line_oa_client_write_revoke_fail_closed.stderr
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/line_oa_client_write_revoke_fail_closed.tap
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/line_oa_definer_execute_fail_closed.result.json
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/line_oa_definer_execute_fail_closed.stderr
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/line_oa_definer_execute_fail_closed.tap
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/line_oa_definer_execute_matrix.result.json
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/line_oa_definer_execute_matrix.stderr
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/line_oa_definer_execute_matrix.tap
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/line_outbound_claim_record.result.json
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/line_outbound_claim_record.stderr
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/line_outbound_claim_record.tap
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/repair_phase0_containment.result.json
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/repair_phase0_containment.stderr
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/repair_phase0_containment.tap
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/repair_phase0_organization.result.json
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/repair_phase0_organization.stderr
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/repair_phase0_organization.tap
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/trust_kernel_bundles.result.json
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/trust_kernel_bundles.stderr
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/trust_kernel_bundles.tap
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/trust_kernel_containment.result.json
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/trust_kernel_containment.stderr
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/trust_kernel_containment.tap
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/trust_kernel_governance.result.json
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/trust_kernel_governance.stderr
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/trust_kernel_governance.tap
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/trust_kernel_release.result.json
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/trust_kernel_release.stderr
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/trust_kernel_release.tap
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/trust_kernel_safety.result.json
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/trust_kernel_safety.stderr
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/trust_kernel_safety.tap
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/trust_kernel_tenancy.result.json
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/trust_kernel_tenancy.stderr
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/trust_kernel_tenancy.tap
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/workflow_db_invariants.result.json
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/workflow_db_invariants.stderr
+  A	docs/governance/evidence/line-p012-green-2026-09-30/07b-ci-suite-runner/workflow_db_invariants.tap
+  A	docs/governance/evidence/line-p012-green-2026-09-30/08-baseline-after-tests.txt
+  A	docs/governance/evidence/line-p012-green-2026-09-30/09-teardown.txt
+  A	docs/governance/evidence/line-p012-green-2026-09-30/10a-credential-scan.txt
+  A	docs/governance/evidence/line-p012-green-2026-09-30/10b-verification.txt
+  A	docs/governance/evidence/line-p012-green-2026-09-30/REPLAY.txt
+  A	docs/governance/evidence/line-p012-green-2026-09-30/REPORT.en.html
+  A	docs/governance/evidence/line-p012-green-2026-09-30/REPORT.en.md
+  A	docs/governance/evidence/line-p012-green-2026-09-30/REPORT.th.html
+  A	docs/governance/evidence/line-p012-green-2026-09-30/REPORT.th.md
+  A	docs/governance/evidence/line-p012-green-2026-09-30/SHA256SUMS
+  A	docs/governance/evidence/line-p012-green-2026-09-30/SHA256SUMS.run
+  A	docs/governance/evidence/line-p012-green-2026-09-30/commit-p012.sh
+  A	docs/governance/evidence/line-p012-green-2026-09-30/gate-p012.py
+  A	docs/governance/evidence/line-p012-green-2026-09-30/logs-line-p012-auth.txt
+  A	docs/governance/evidence/line-p012-green-2026-09-30/logs-line-p012-db.txt
+  A	docs/governance/evidence/line-p012-green-2026-09-30/logs-line-p012-storage.txt
+  A	docs/governance/evidence/line-p012-green-2026-09-30/run-p012.sh
+  A	docs/governance/evidence/line-p012-green-2026-09-30/source/scripts/line-ci-tap.mjs
+  A	docs/governance/evidence/line-p012-green-2026-09-30/source/scripts/run-line-db-suites.sh
+  A	docs/governance/evidence/line-p012-green-2026-09-30/source/supabase/migrations/0199_line_oa_restrict_definer_execute.sql
+  A	docs/governance/evidence/line-p012-green-2026-09-30/source/supabase/tests/line_oa_client_write_revoke.sql
+  A	docs/governance/evidence/line-p012-green-2026-09-30/source/supabase/tests/line_oa_definer_execute_fail_closed.sql
+  A	docs/governance/evidence/line-p012-green-2026-09-30/source/supabase/tests/line_oa_definer_execute_matrix.sql
+  A	docs/governance/evidence/line-p012-green-2026-09-30/source/supabase/tests/line_outbound_claim_record.sql
+  A	docs/governance/evidence/line-p012-green-2026-09-30/source/tests/line-oa-commerce/ci/tap-evidence.test.mjs
+  A	docs/governance/evidence/line-p012-green-2026-09-30/source/tracked-changes.diff
+  A	docs/governance/evidence/line-p012-green-2026-09-30/verify-p012.py
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/.gitattributes
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/00-context.txt
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/01b-service-bootstrap-output.txt
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/01b-service-bootstrap.sql
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/02-migrations-applied.txt
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/03-baseline-after-migrations.txt
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/04a-matrix.tap
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/04c-original.tap
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/04d-p010.tap
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/04e-fc0198.tap
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/05-claim-race-output.txt
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/06-pytest-junit.xml
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/06-pytest-output.txt
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/08-baseline-after-tests.txt
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/09-teardown.txt
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/10a-credential-scan.txt
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/10b-verification.txt
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/REPLAY.txt
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/SHA256SUMS
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/SHA256SUMS.run
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/logs-line-p012-auth.txt
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/logs-line-p012-db.txt
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/logs-line-p012-storage.txt
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/run-p012.sh
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/source/scripts/line-ci-tap.mjs
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/source/scripts/run-line-db-suites.sh
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/source/supabase/tests/line_oa_client_write_revoke.sql
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/source/supabase/tests/line_oa_definer_execute_fail_closed.sql
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/source/supabase/tests/line_oa_definer_execute_matrix.sql
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/source/supabase/tests/line_outbound_claim_record.sql
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/source/tests/line-oa-commerce/ci/tap-evidence.test.mjs
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/source/tracked-changes.diff
+  A	docs/governance/evidence/line-p012-red-a-2026-09-30/verify-p012.py
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/.gitattributes
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/00-context.txt
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/01b-service-bootstrap-output.txt
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/01b-service-bootstrap.sql
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/02-migrations-applied.txt
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/03-baseline-after-migrations.txt
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/04-fc0199-vs-mutant.tap
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/08-baseline-after-tests.txt
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/09-teardown.txt
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/10a-credential-scan.txt
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/10b-verification.txt
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/REPLAY.txt
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/SHA256SUMS
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/SHA256SUMS.run
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/logs-line-p012-auth.txt
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/logs-line-p012-db.txt
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/logs-line-p012-storage.txt
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/mutant-0199-no-matrix-verification.sql
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/mutant-vs-0199.diff
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/run-p012.sh
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/source/scripts/line-ci-tap.mjs
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/source/scripts/run-line-db-suites.sh
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/source/supabase/migrations/0199_line_oa_restrict_definer_execute.sql
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/source/supabase/tests/line_oa_client_write_revoke.sql
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/source/supabase/tests/line_oa_definer_execute_fail_closed.sql
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/source/supabase/tests/line_oa_definer_execute_matrix.sql
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/source/supabase/tests/line_outbound_claim_record.sql
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/source/tests/line-oa-commerce/ci/tap-evidence.test.mjs
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/source/tracked-changes.diff
+  A	docs/governance/evidence/line-p012-red-b-2026-09-30/verify-p012.py
+  M	docs/governance/line-b12-permission-matrix.en.html
+  M	docs/governance/line-b12-permission-matrix.en.md
+  M	docs/governance/line-b12-permission-matrix.th.html
+  M	docs/governance/line-b12-permission-matrix.th.md
+  M	scripts/line-ci-tap.mjs
+  M	scripts/run-line-db-suites.sh
+  A	supabase/migrations/0199_line_oa_restrict_definer_execute.sql
+  M	supabase/tests/line_oa_client_write_revoke.sql
+  A	supabase/tests/line_oa_definer_execute_fail_closed.sql
+  A	supabase/tests/line_oa_definer_execute_matrix.sql
+  M	supabase/tests/line_outbound_claim_record.sql
+  M	tests/line-oa-commerce/ci/tap-evidence.test.mjs
+gate_output:
+  PASS: HEAD is the accepted base 5119396a7
+  PASS: change set is exactly the approved 164 paths (unexpected=[], missing=[])
+  PASS: only additions, plus modifications of the listed sources and documents ({})
+  PASS: no migration other than 0199 is added or changed
+  PASS: docs/governance/evidence/line-p012-red-a-2026-09-30: SHA256SUMS lists every file except itself (32)
+  PASS: docs/governance/evidence/line-p012-red-a-2026-09-30: SHA256SUMS matches working-tree bytes ([])
+  PASS: docs/governance/evidence/line-p012-red-a-2026-09-30: SHA256SUMS matches staged Git blobs byte-for-byte ([])
+  PASS: docs/governance/evidence/line-p012-red-a-2026-09-30: 30 raw run outputs unchanged since the runner ([])
+  PASS: docs/governance/evidence/line-p012-red-a-2026-09-30: in-run credential scan passed
+  PASS: docs/governance/evidence/line-p012-red-a-2026-09-30: verifier re-run over the captured files exits 0 (red-a)
+  PASS: scripts/line-ci-tap.mjs equals the copy used by line-p012-red-a-2026-09-30
+  PASS: scripts/run-line-db-suites.sh equals the copy used by line-p012-red-a-2026-09-30
+  PASS: supabase/tests/line_oa_client_write_revoke.sql equals the copy used by line-p012-red-a-2026-09-30
+  PASS: supabase/tests/line_outbound_claim_record.sql equals the copy used by line-p012-red-a-2026-09-30
+  PASS: supabase/tests/line_oa_definer_execute_fail_closed.sql equals the copy used by line-p012-red-a-2026-09-30
+  PASS: supabase/tests/line_oa_definer_execute_matrix.sql equals the copy used by line-p012-red-a-2026-09-30
+  PASS: tests/line-oa-commerce/ci/tap-evidence.test.mjs equals the copy used by line-p012-red-a-2026-09-30
+  PASS: docs/governance/evidence/line-p012-red-b-2026-09-30: SHA256SUMS lists every file except itself (29)
+  PASS: docs/governance/evidence/line-p012-red-b-2026-09-30: SHA256SUMS matches working-tree bytes ([])
+  PASS: docs/governance/evidence/line-p012-red-b-2026-09-30: SHA256SUMS matches staged Git blobs byte-for-byte ([])
+  PASS: docs/governance/evidence/line-p012-red-b-2026-09-30: 27 raw run outputs unchanged since the runner ([])
+  PASS: docs/governance/evidence/line-p012-red-b-2026-09-30: in-run credential scan passed
+  PASS: docs/governance/evidence/line-p012-red-b-2026-09-30: verifier re-run over the captured files exits 0 (red-b)
+  PASS: scripts/line-ci-tap.mjs equals the copy used by line-p012-red-b-2026-09-30
+  PASS: scripts/run-line-db-suites.sh equals the copy used by line-p012-red-b-2026-09-30
+  PASS: supabase/tests/line_oa_client_write_revoke.sql equals the copy used by line-p012-red-b-2026-09-30
+  PASS: supabase/tests/line_outbound_claim_record.sql equals the copy used by line-p012-red-b-2026-09-30
+  PASS: supabase/tests/line_oa_definer_execute_fail_closed.sql equals the copy used by line-p012-red-b-2026-09-30
+  PASS: supabase/tests/line_oa_definer_execute_matrix.sql equals the copy used by line-p012-red-b-2026-09-30
+  PASS: tests/line-oa-commerce/ci/tap-evidence.test.mjs equals the copy used by line-p012-red-b-2026-09-30
+  PASS: supabase/migrations/0199_line_oa_restrict_definer_execute.sql equals the copy used by line-p012-red-b-2026-09-30
+  PASS: docs/governance/evidence/line-p012-green-2026-09-30: SHA256SUMS lists every file except itself (84)
+  PASS: docs/governance/evidence/line-p012-green-2026-09-30: SHA256SUMS matches working-tree bytes ([])
+  PASS: docs/governance/evidence/line-p012-green-2026-09-30: SHA256SUMS matches staged Git blobs byte-for-byte ([])
+  PASS: docs/governance/evidence/line-p012-green-2026-09-30: 76 raw run outputs unchanged since the runner ([])
+  PASS: docs/governance/evidence/line-p012-green-2026-09-30: in-run credential scan passed
+  PASS: docs/governance/evidence/line-p012-green-2026-09-30: verifier re-run over the captured files exits 0 (green)
+  PASS: scripts/line-ci-tap.mjs equals the copy used by line-p012-green-2026-09-30
+  PASS: scripts/run-line-db-suites.sh equals the copy used by line-p012-green-2026-09-30
+  PASS: supabase/tests/line_oa_client_write_revoke.sql equals the copy used by line-p012-green-2026-09-30
+  PASS: supabase/tests/line_outbound_claim_record.sql equals the copy used by line-p012-green-2026-09-30
+  PASS: supabase/tests/line_oa_definer_execute_fail_closed.sql equals the copy used by line-p012-green-2026-09-30
+  PASS: supabase/tests/line_oa_definer_execute_matrix.sql equals the copy used by line-p012-green-2026-09-30
+  PASS: tests/line-oa-commerce/ci/tap-evidence.test.mjs equals the copy used by line-p012-green-2026-09-30
+  PASS: supabase/migrations/0199_line_oa_restrict_definer_execute.sql equals the copy used by line-p012-green-2026-09-30
+  PASS: Git blobs of the non-bundle files equal the working tree ([])
+  PASS: docs/PRD-LINE-OA.en.html equals the renderer output of its Markdown
+  PASS: docs/PRD-LINE-OA.th.html equals the renderer output of its Markdown
+  PASS: docs/governance/line-b12-permission-matrix.en.html equals the renderer output of its Markdown
+  PASS: docs/governance/line-b12-permission-matrix.th.html equals the renderer output of its Markdown
+  PASS: docs/governance/evidence/line-p012-green-2026-09-30/REPORT.en.html equals the renderer output of its Markdown
+  PASS: docs/governance/evidence/line-p012-green-2026-09-30/REPORT.th.html equals the renderer output of its Markdown
+  PASS: pattern scanner positive controls all detected
+  PASS: no credential-shaped value in 164 Git blobs ({})
+  RESULT: GATE PASS
