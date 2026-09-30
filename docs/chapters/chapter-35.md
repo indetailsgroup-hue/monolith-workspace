@@ -227,7 +227,7 @@ Type | Parameters | Description
 
 Action Type | Target | Description  
 ---|---|---  
-`notify` | Channel ID | Send notification to Slack/Teams/LINE  
+`notify` | Channel ID | Proposed delivery through LINE OA (Messaging API); recipient authorization and delivery evidence required before activation.
 `auto_scale` | Service name | Trigger auto-scaling  
 `create_incident` | Template ID | Create incident ticket  
 `webhook` | URL | Call external webhook  
