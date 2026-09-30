@@ -1,0 +1,99 @@
+{
+  "evidenceTier": "E0",
+  "workflow": "db-verify",
+  "commit": "local",
+  "ref": "local",
+  "runUrl": "local/local/actions/runs/local",
+  "environment": "ubuntu-latest / supabase local (ephemeral)",
+  "timestamp": "2026-09-30T13:31:26.081Z",
+  "migrationsApplied": "unknown",
+  "pgtap": {
+    "suites": [
+      {
+        "suite": "workflow_db_invariants.sql",
+        "tap": "tap/workflow_db_invariants.tap",
+        "ok": 11,
+        "notOk": 0,
+        "pass": true
+      },
+      {
+        "suite": "trust_kernel_tenancy.sql",
+        "tap": "tap/trust_kernel_tenancy.tap",
+        "ok": 29,
+        "notOk": 0,
+        "pass": true
+      },
+      {
+        "suite": "trust_kernel_governance.sql",
+        "tap": "tap/trust_kernel_governance.tap",
+        "ok": 27,
+        "notOk": 0,
+        "pass": true
+      },
+      {
+        "suite": "trust_kernel_release.sql",
+        "tap": "tap/trust_kernel_release.tap",
+        "ok": 59,
+        "notOk": 0,
+        "pass": true
+      },
+      {
+        "suite": "trust_kernel_bundles.sql",
+        "tap": "tap/trust_kernel_bundles.tap",
+        "ok": 27,
+        "notOk": 0,
+        "pass": true
+      },
+      {
+        "suite": "trust_kernel_containment.sql",
+        "tap": "tap/trust_kernel_containment.tap",
+        "ok": 16,
+        "notOk": 0,
+        "pass": true
+      },
+      {
+        "suite": "trust_kernel_safety.sql",
+        "tap": "tap/trust_kernel_safety.tap",
+        "ok": 68,
+        "notOk": 0,
+        "pass": true
+      },
+      {
+        "suite": "repair_phase0_organization.sql",
+        "tap": "tap/repair_phase0_organization.tap",
+        "ok": 21,
+        "notOk": 0,
+        "pass": true
+      },
+      {
+        "suite": "repair_phase0_containment.sql",
+        "tap": "tap/repair_phase0_containment.tap",
+        "ok": 6,
+        "notOk": 0,
+        "pass": true
+      },
+      {
+        "suite": "line_outbound_claim_record.sql",
+        "tap": "tap/line_outbound_claim_record.tap",
+        "ok": 0,
+        "notOk": 0,
+        "pass": false
+      },
+      {
+        "suite": "line_oa_client_write_revoke.sql",
+        "tap": "tap/line_oa_client_write_revoke.tap",
+        "ok": 0,
+        "notOk": 0,
+        "pass": false
+      },
+      {
+        "suite": "line_oa_client_write_revoke_fail_closed.sql",
+        "tap": "tap/line_oa_client_write_revoke_fail_closed.tap",
+        "ok": 0,
+        "notOk": 0,
+        "pass": false
+      }
+    ],
+    "pass": false
+  }
+}

@@ -1,19 +1,19 @@
 # PRD — The Complete LINE OA Communication System (MONOLITH Repair Intelligence)
 
 > **Language:** English · Thai edition: `docs/PRD-LINE-OA.th.md` · HTML: `docs/PRD-LINE-OA.en.html` / `docs/PRD-LINE-OA.th.html`
-> **Edition:** 1.8 · 30 September 2026 (1.7, 1.6, 1.5, 1.4, 1.3 and 1.2 = 30 Sep 2026 · 1.1 = 1 Aug 2026 · 1.0 = 26 Jul 2026)
-> **What changed in 1.8:** the P0-10 catalog capture (da252d18a) was independently reviewed as a basis for proposing 0198. The owner then approved the 0198 scope including `service_role`, and 0198 was built with RED/GREEN evidence; it awaits independent acceptance, so P0-10 is not marked passed. A new finding, B12 (client roles can EXECUTE SECURITY DEFINER writers), is recorded separately from 0198 with a read-only survey. Phase A remains `EVIDENCE_INCOMPLETE`.
+> **Edition:** 1.9 · 30 September 2026 (1.8, 1.7, 1.6, 1.5, 1.4, 1.3 and 1.2 = 30 Sep 2026 · 1.1 = 1 Aug 2026 · 1.0 = 26 Jul 2026)
+> **What changed in 1.9:** the independent reviewer passed P0-10 at 87930836a on code and evidence without rerunning the database, and asked for two follow-ups. Both were built and await independent review. The first is a fail-closed test of 0198, with RED against a mutant and GREEN against the real file. The second registers the new suites in `db-verify.yml`. A local run of the workflow's database steps shows the existing `repair_phase0_containment` suite stops the pgTAP step before the LINE suites. P0-10 is not marked fully closed; Phase A remains `EVIDENCE_INCOMPLETE`.
 > **Document status:** awaiting the owner's (Dave's) decisions on the open questions in §8 — no step proposed in §9 enables cron or sends messages to real customers
 > **Writing rule:** every row separates "actually working / code present but not wired / spec only" and cites file:line, and separates evidence that is "reproducible (raw output in the repo)" from evidence that is "reported (no raw output in the repo)"
 > **Truth note:** older documents (`docs/LINE-Architecture-System-Complete.md:41`, `docs/PRD.md:514`) claim "LINE OA Commerce ✅ 20/20", which is overstated for the live path — this document is the more truthful status record
 
 ---
 
-## 0. Implementation status (edition 1.8)
+## 0. Implementation status (edition 1.9)
 
-**The earlier P0-1 to P0-6 implementation passed cross-vendor review; P0-11 at 00651a6cd has also passed independent cross-vendor acceptance; P0-10 (0198) has local RED/GREEN evidence and awaits independent acceptance — Phase A is not closed**
+**The earlier P0-1 to P0-6 implementation passed cross-vendor review; P0-11 at 00651a6cd has also passed independent cross-vendor acceptance; P0-10 (0198) passed independent code-and-evidence review at 87930836a (no reviewer rerun), and its follow-up awaits review — Phase A is not closed**
 
-**Phase A evidence status:** `EVIDENCE_INCOMPLETE` — the 12 required Python files pass (72/72, none skipped) only on the 0198 GREEN run, which is builder evidence awaiting independent acceptance; P0-9, CI and the remaining §9.1 gates are outstanding; B12 is open. P0-11 has local evidence and cross-vendor acceptance at 00651a6cd; the reviewer rerun remains reported evidence.
+**Phase A evidence status:** `EVIDENCE_INCOMPLETE` — the 12 required Python files pass (72/72, none skipped) on local runs with 0198. No GitHub Actions run exists; locally the workflow's pgTAP step stops at an existing suite before the LINE suites. P0-9 and the remaining §9.1 gates are outstanding, and B12 is open. P0-11 has local evidence and cross-vendor acceptance at 00651a6cd; the reviewer rerun remains reported evidence.
 
 - **Branch:** `codex/repair-intelligence-phase0-trust` · accepted commit: `46a203a6` (1 Aug 2026) · not pushed and not deployed
 - **Migrations:** `0193_line_outbound_claim_and_record.sql`, `0194_line_outbound_retry_and_claim_fencing.sql`, `0195_line_outbound_timezone_safe_backoff.sql`, `0196_line_outbound_timezone_safe_sent_at.sql` plus changes to `supabase/functions/line-outbound-sender/index.ts`
@@ -52,14 +52,18 @@
 
 **P0-10 implementation evidence (30 September 2026, awaiting independent acceptance):** the owner approved 0198 with `service_role` in scope. `docs/governance/evidence/line-p010-red-2026-09-30/` (base da252d18a without 0198) shows 192 migrations, original pgTAP 107/107, new P0-10 pgTAP 19 pass and exactly the 114 write-privilege assertions fail, claim race zero overlap, Python 64 passed / 8 B10 failures / 0 skipped. `docs/governance/evidence/line-p010-green-2026-09-30/` (the same base plus 0198, identical test bytes) shows 193 migrations, pgTAP 107/107 and 133/133, claim race zero overlap, Python 72/72 with none skipped, and a catalog with zero write privilege for the three roles on 8/8 tables while the owner keeps full rights and EXECUTE is unchanged. Each run's verifier exits 0, the in-run credential scan passes and the containers and network are removed. The builder does not accept its own work; P0-10 stays open until independent acceptance.
 
+**Independent review of 87930836a — reported (30 September 2026):** the owner supplied the reviewer's result. The commit passed code and evidence review with no finding that blocks acceptance within the 0198 scope. The reviewer confirmed the 27 gate checks, the Git-blob checksums including the transcript, the gated tree `021e96f6…`, the migration and test identity between RED and GREEN, the raw results, the catalog (zero client writes, owner rights kept, function bodies, EXECUTE, membership and default ACLs unchanged), and the HTML/renderer match. The reviewer did not rerun the database. Two follow-ups were requested: prove the fail-closed path, and register the new suite in CI.
+
+**P0-10 follow-up evidence (30 September 2026, local, awaiting independent review):** `docs/governance/evidence/line-p010-failclosed-red-2026-09-30/` runs the new suite `supabase/tests/line_oa_client_write_revoke_fail_closed.sql` against a mutant copy of 0198 that lacks only the residual check. It fails exactly the eight rejection and rollback assertions, with SQLSTATE 00000 where 42501 was expected. `docs/governance/evidence/line-p010-failclosed-green-2026-09-30/` runs the same suite against the real 0198 and gets 13/13. That run also gets P0-10 pgTAP 133/133, original 107/107, claim race zero overlap and Python 72/72 with none skipped; 0198 itself is unchanged. The run includes the database steps of the modified `db-verify.yml`, run locally. The pgTAP step stops at `repair_phase0_containment.sql:74`, which checks a 12-argument `rpc_factory_job_record_packet` that only `0170_factory_jobs_list_real_fields.sql` on origin/main creates. The same loop body run with only the three LINE suites passes (107, 133 and 13). These are local results, not GitHub Actions results.
+
 **Why Phase A is not closed:**
 
 - **P0-9 (B8) has not been built** — and it may overlap `0175` unified ingress planned by branch `codex/line-trust-wave1-main` (still a reservation, no code), so ownership must be decided first (§8 question 7)
-- **The required Python suites pass only with 0198:** without it, 64 pass and 8 B10 grant checks fail; with it (GREEN), 72/72 pass with none skipped — 0198 awaits independent acceptance
+- **The required Python suites pass only with 0198:** without it, 64 pass and 8 B10 grant checks fail; with it, 72/72 pass with none skipped (local runs)
 - **B12 is open:** client roles can still EXECUTE SECURITY DEFINER writers; 0198 does not close that path (read-only survey: `docs/governance/line-p010-execute-survey.en.md`)
-- **No CI run has happened** including the `line_outbound_claim_record` suite
+- **No CI run has happened, and CI would currently stop early:** locally, the workflow's pgTAP loop stops at the existing `repair_phase0_containment` suite, because this branch lacks main's `0170`; the LINE suites would not run. The "Assemble evidence" script also scores that stopped suite as passing, because it does not compare results with the plan. Both need a decision: §8 question 7, or a separately approved fix.
 
-| Defect | Status as of edition 1.8 |
+| Defect | Status as of edition 1.9 |
 |---|---|
 | B1 queue pickup without a lock | ✅ implemented on the branch — the sender calls `rpc_claim_line_outbound_batch` (`index.ts:740-744`), `FOR UPDATE SKIP LOCKED`, timeout-based reclaim, `claim_token` fencing — the two-client test passes on the throwaway stack (attempts 2 and 3: 10+10 rows, 0 overlap); no CI result yet |
 | B2 service role cannot record results | ✅ implemented on the branch — service context is detected from the SQL role (`current_setting('role')`), not the JWT; user checks are not relaxed |
@@ -70,7 +74,7 @@
 | B7 blind tests | ✅ new tests hit real Postgres (pgTAP) plus tests proving the sender is wired to the RPC |
 | B8 `handler_error` counted as success | 🔴 not fixed — P0-9 has not been built; may overlap line-trust's reserved `0175` |
 | B9 `line-login` without state/nonce | 🔴 not fixed — in P1; may overlap line-trust's reserved `0176` |
-| B10 client roles hold write and TRUNCATE privileges on LINE tables | 🟡 built on the branch in 0198 — local RED/GREEN passes; awaiting independent acceptance; not deployed |
+| B10 client roles hold write and TRUNCATE privileges on LINE tables | 🟡 fixed on the branch in 0198 — independent code-and-evidence review passed at 87930836a (no reviewer rerun); fail-closed test and CI registration built, awaiting review; CI not run; not deployed |
 | B11 failures recorded with a whitespace-only error detail | ✅ implemented in 0197; local RED/GREEN passes; cross-vendor acceptance passed at 00651a6cd |
 | B12 client roles can EXECUTE SECURITY DEFINER writers | 🔴 not fixed — read-only survey done; remediation proposal (proposed 0199) awaits approval; production exposure unknown |
 
@@ -187,7 +191,7 @@ MONOLITH uses LINE as its main channel to customers and field technicians (Thai 
 
 ### P0 — required before switching on real customer messaging (fixes B1–B8, B10, B11; B12 proposed)
 
-| Req | Description | Acceptance criteria (tests against real Postgres, RED first) | Status (1.8) |
+| Req | Description | Acceptance criteria (tests against real Postgres, RED first) | Status (1.9) |
 |---|---|---|---|
 | P0-1 | **Atomic queue claim:** add `claimed_at/claimed_by` + `rpc_claim_line_outbound_batch` — `UPDATE ... WHERE id IN (SELECT ... FOR UPDATE SKIP LOCKED) RETURNING` (no new enum value, to avoid the `ALTER TYPE` limitation and the impact on status readers) | Two clients claiming at once → no duplicated rows; a claim stuck past the timeout → re-claimable | ✅ implemented (0193 + sender wiring) + two-client evidence on an ephemeral stack (attempts 2–3); CI awaits step 5 |
 | P0-2 | **Service context can record results:** grant + teach `rpc_record_line_send_result` to recognise the service role as a system actor without relaxing user role checks | Called with the service role → recorded; a user without a role → rejected as before | ✅ implemented + pgTAP evidence (0193) |
@@ -198,7 +202,7 @@ MONOLITH uses LINE as its main channel to customers and field technicians (Thai 
 | P0-7 | **Decide on the autonomy gate (§8 question 3) and act on it:** wire it live or remove it + correct `tasks.md:157` | No code left that claims to govern but does not | ⏸ awaiting decision 3 |
 | P0-8 | **Written decisions on cron + consent (§8 questions 1, 2, 4)** before switching on real sending | The runbook lists the required crons; the consent decision is documented | ⏸ awaiting decisions 1, 2, 4 |
 | P0-9 | **A failed handler must not count as processed (B8):** for `handler_error`, events whose handler failed need our own retry state (retry rows + a sweep like the 0084 claim v3) — never rely on LINE redelivery, which LINE does not guarantee — not counted as processed and never dropped by dedupe | Simulate a handler failure → the event enters an internal retry queue and is reprocessed until success or the bound → dead-letter + audit; no false success | 🔴 not built — may overlap line-trust's reserved `0175`, awaiting decision 7 |
-| P0-10 | **Close direct-write grants (B10):** revoke INSERT, UPDATE, DELETE and TRUNCATE on the eight `line_oa_*` tables from `anon`, `authenticated` and `service_role` (owner-approved scope; PUBLIC holds no such grant); preserve SELECT, EXECUTE and every other privilege | Criteria in §9.1 step 1b | 🟡 built in 0198 with RED/GREEN evidence; awaiting independent acceptance |
+| P0-10 | **Close direct-write grants (B10):** revoke INSERT, UPDATE, DELETE and TRUNCATE on the eight `line_oa_*` tables from `anon`, `authenticated` and `service_role` (owner-approved scope; PUBLIC holds no such grant); preserve SELECT, EXECUTE and every other privilege | Criteria in §9.1 step 1b | 🟡 0198 passed independent code-and-evidence review at 87930836a (no reviewer rerun); follow-up awaiting review; CI not run |
 | P0-11 | **Failures need a nonblank reason (B11):** use the existing placeholder for Python-whitespace-only details | Unchanged failure property passes; 29 whitespace codepoints, mixed input, readable text and token scrubbing covered by 37 added pgTAP cases | ✅ implemented in 0197; cross-vendor acceptance passed at 00651a6cd |
 | P0-12 | **Restrict EXECUTE on SECURITY DEFINER writers (B12)** — proposed, not approved | Plan in `docs/governance/line-p010-execute-survey.en.md`: `anon` gets 42501 on every writer; field-app, edge, cron and trigger paths still work | ⏸ proposed, awaiting approval; nothing revoked |
 
@@ -286,18 +290,18 @@ MONOLITH uses LINE as its main channel to customers and field technicians (Thai 
 >
 > **Independently re-runnable (added after the 2026-09-30 bundle):** the wrapper and every command run from the repository root with relative paths (for example `\ir` in psql), with no absolute path from the machine that ran them; record the database baseline before testing — the applied migrations (`supabase_migrations.schema_migrations`) and a schema fingerprint (sha256 of `pg_dump --schema-only`) — or build the database from zero with the migration chain of the SHA under test; record the before/after checks stating exactly what was checked, and claim results only within the scope checked
 
-> **Secret-scan gate:** before committing evidence, check output files for passwords, JWTs and password-bearing DSNs. Findings or scanner errors must stop the commit; printing a result is insufficient. The P0-10 bundles carry their gate scripts; the P0-10 implementation commit also carries a wrapper that runs the gate before committing and a transcript of that run. That the commit was actually conditional on the gate remains reported evidence of execution; the wrapper code and the recorded gated tree can be checked independently.
+> **Secret-scan gate:** before committing evidence, check output files for passwords, JWTs and password-bearing DSNs. Findings or scanner errors must stop the commit; printing a result is insufficient. The P0-10 bundles carry their gate scripts; the P0-10 implementation commit also carries a wrapper that runs the gate before committing and a transcript of that run. That the commit was actually conditional on the gate remains reported evidence of execution; the wrapper code and the recorded gated tree can be checked independently. The follow-up gate allows exactly one known non-secret value: the Supabase CLI's documented local default DSN already present in `db-verify.yml`.
 
 #### Step 1 — close the outstanding test evidence for P0-1 to P0-6 (can start now, independent of the decisions)
 
-- **Status (1.8):** latest run is the P0-10 GREEN (base da252d18a plus 0198): pgTAP 107/107, claim race 10+10 with zero overlap, Python 72/72 with none skipped. This counts only after 0198 passes independent acceptance, and CI is still outstanding. Step 1 has not passed.
+- **Status (1.9):** the latest local run is the P0-10 follow-up GREEN at 87930836a: pgTAP 107/107, claim race 10+10 with zero overlap, Python 72/72 with none skipped. There is no GitHub Actions result; locally, the workflow's pgTAP step stops before the LINE suites (§0). Step 1 has not passed.
 
 - Run `tests/line-oa-commerce/concurrency/claim-race.mjs` against an ephemeral Postgres created from zero, not the shared stack
 - **Acceptance criteria:** two connections claim the same set of pending rows at once → overlapping rows = 0 and the union of claimed rows = the total row count; fixture cleanup verifies zero remaining outbound rows and conversations created by this harness; this does not certify the whole database
 - **Required Python suites:** every file in `tests/line-oa-commerce/py/` that references `rpc_record_line_send_result`, `rpc_claim_line_outbound_batch` or `line_oa_outbound_messages` — 12 files as checked on 30 Sep 2026: `test_access_control_config_smoke.py`, `test_ai_action_audit_property.py`, `test_failure_handling_property.py`, `test_idempotent_processing_property.py`, `test_outbound_status_recording_property.py`, `test_reply_push_fallback_property.py`, `test_rls_read_scoping_property.py`, `test_schema_structure_smoke.py`, `test_secret_non_exposure_property.py`, `test_signature_verification_property.py`, `test_strict_consistency_property.py`, `test_unauthorized_mutation_denial_property.py`
 - **Acceptance criteria:** all 12 files must actually run and pass — if a required suite is skipped for any reason (including environmental reasons), the reason may be recorded but it does not count as passing; the evidence status stays `EVIDENCE_INCOMPLETE` and step 5 cannot close
 
-#### Step 1b — close B10 and B11 (P0-10 built, awaiting acceptance; P0-11 accepted)
+#### Step 1b — close B10 and B11 (P0-10 reviewed, follow-up awaiting review; P0-11 accepted)
 
 **B10 / P0-10 — read-only impact assessment (30 Sep 2026, repository source only; kept as the pre-approval record; superseded where the catalog evidence below differs):**
 
@@ -313,7 +317,9 @@ MONOLITH uses LINE as its main channel to customers and field technicians (Thai 
 
 **Migration (built, awaiting acceptance):** `supabase/migrations/0198_line_oa_revoke_client_write_grants.sql` revokes INSERT, UPDATE, DELETE and TRUNCATE on the eight tables from `anon`, `authenticated` and `service_role` where those roles exist (0005 pattern), without CASCADE. SELECT, EXECUTE, REFERENCES, TRIGGER, MAINTAIN, ownership, membership and default privileges are unchanged. It fails closed: if any of the three roles still holds an effective table or column write privilege afterwards, it raises and rolls back.
 
-**P0-10 acceptance criteria and evidence:** the new suite `supabase/tests/line_oa_client_write_revoke.sql` (133 assertions) checks effective privileges for 3 roles × 8 tables × 4 privileges plus column level. It makes 96 real write attempts with SET LOCAL ROLE that must fail with 42501 and the exact message "permission denied for table", and checks that schema USAGE is kept, so the denial is not schema-level. It also checks service-role SELECT on the three sender tables and the DEFINER paths by their data: webhook ingress, the welcome trigger, `fn_prod_curated`, claim and record. RED and GREEN results are in §0. Still required: independent acceptance of 0198, then CI after an approved push, and a separate read-only production catalog check before any deploy. The new suite is not yet listed in `.github/workflows/db-verify.yml`; adding it is a separate approved change. P0-11 is implemented and independently accepted at 00651a6cd.
+**P0-10 acceptance criteria and evidence:** the new suite `supabase/tests/line_oa_client_write_revoke.sql` (133 assertions) checks effective privileges for 3 roles × 8 tables × 4 privileges plus column level. It makes 96 real write attempts with SET LOCAL ROLE that must fail with 42501 and the exact message "permission denied for table", and checks that schema USAGE is kept, so the denial is not schema-level. It also checks service-role SELECT on the three sender tables and the DEFINER paths by their data: webhook ingress, the welcome trigger, `fn_prod_curated`, claim and record. RED and GREEN results are in §0. 0198 passed independent code-and-evidence review at 87930836a; the reviewer did not rerun the database.
+
+**P0-10 follow-up (built, awaiting independent review):** `supabase/tests/line_oa_client_write_revoke_fail_closed.sql` (13 assertions) runs the real 0198 with `\ir` inside savepoints. Case A: anon inherits a write privilege through a throwaway role. Case B: anon holds a column UPDATE from a second grantor; a plain owner-granted column grant is not a residual, because a table-level REVOKE removes it, as case C shows. In both cases 0198 must raise 42501 with "P0-10: write privileges remain after revoke", and every table ACL, column ACL and membership must be unchanged afterwards, with the direct grant 0198 had revoked back in place. `db-verify.yml` now runs `line_oa_client_write_revoke` and the fail-closed suite inside the same begin wrapper, checks after the run that no client write privilege remains, and lists both suites in the evidence summary. Still required: independent review of the follow-up; CI after an approved push; clearing the existing `repair_phase0_containment` stop (§0), without which CI cannot run the LINE suites; and a separate read-only production catalog check before any deploy. P0-11 is implemented and independently accepted at 00651a6cd.
 
 **B11 / P0-11 implementation:** owner approved this session to build 0197. The recorder trims the 29 characters matching Python 3.14.2 `str.strip()` using an explicit Unicode set, including U+00A0 and U+3000. Signature, ACLs, guards, fencing, retry, timestamps and token scrub are unchanged. The existing Python assertion passes; only its inaccurate btrim comment changed. The original 70 pgTAP checks plus 37 regressions pass. Independent cross-vendor acceptance passed at 00651a6cd; no deployment or push is authorized.
 
@@ -336,6 +342,7 @@ MONOLITH uses LINE as its main channel to customers and field technicians (Thai 
 
 #### Step 5 — close Phase A
 
+- **Status (1.9):** `db-verify.yml` now lists the two P0-10 suites. A local run shows the pgTAP loop stops at the existing `repair_phase0_containment` suite (it needs main's `0170`), so a GitHub run on this branch would not reach the LINE suites until that is resolved.
 - **Acceptance criteria:** steps 1, 1b and 2–4 pass with no required test failed or skipped; after the owner approves a push, CI (`db-verify.yml` including the `line_outbound_claim_record` suite) actually runs green; only then can the evidence status leave `EVIDENCE_INCOMPLETE` — the LINE-side behaviour of P0-5 is not a Phase A closure criterion (it is gate G-C1 in §9.2); no cron and no customer messages
 
 ### 9.2 Gates before real sending (Phase C)

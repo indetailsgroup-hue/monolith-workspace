@@ -1,0 +1,132 @@
+P0-10 follow-up commit gate transcript (written by commit-p010-followup.sh only after the gate exited 0)
+written_utc: 2026-09-30T13:36:09Z
+base_head: 87930836a87852cac32efd80920b1d19f62b48f2
+wrapper: docs/governance/evidence/line-p010-failclosed-green-2026-09-30/commit-p010-followup.sh sha256 ca84205804e6ba3dbc8e14dcaa88f9ee89c8f536ef70b861fba64daaf770299a
+gate: docs/governance/evidence/line-p010-failclosed-green-2026-09-30/gate-p010-followup.py sha256 00dda4765ca9036837ae3c1b600178f1feb0215e50a35d05aa46f2e306e2433c
+gate_exit: 0
+gated_tree: 126f58a8b67cb584b103c8e2b369e9840b0ae32c
+check: the commit tree without docs/governance/evidence/line-p010-followup-commit-2026-09-30 must equal gated_tree (command in the wrapper header)
+staged_changes:
+  M	.github/workflows/db-verify.yml
+  M	docs/PRD-LINE-OA.en.html
+  M	docs/PRD-LINE-OA.en.md
+  M	docs/PRD-LINE-OA.th.html
+  M	docs/PRD-LINE-OA.th.md
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/.gitattributes
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/00-context.txt
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/01b-service-bootstrap-output.txt
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/01b-service-bootstrap.sql
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/02-migrations-applied.txt
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/03-baseline-after-migrations.txt
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/04a-fail-closed-vs-0198.tap
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/04b-pgtap-p010.tap
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/04c-pgtap-original.tap
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/05-claim-race-output.txt
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/06-pytest-junit.xml
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/06-pytest-output.txt
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/07-ci-local/full/ci-step-1.log
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/07-ci-local/full/ci-step-1.sh
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/07-ci-local/full/ci-step-2.log
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/07-ci-local/full/ci-step-2.sh
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/07-ci-local/full/ci-step-3.log
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/07-ci-local/full/ci-step-3.sh
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/07-ci-local/full/ci-step-4.log
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/07-ci-local/full/ci-step-4.sh
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/07-ci-local/full/ci-step-5.log
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/07-ci-local/full/ci-step-5.sh
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/07-ci-local/full/db-verify-evidence.json
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/07-ci-local/full/summary.txt
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/07-ci-local/full/tap/repair_phase0_containment.tap
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/07-ci-local/full/tap/repair_phase0_organization.tap
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/07-ci-local/full/tap/trust_kernel_bundles.tap
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/07-ci-local/full/tap/trust_kernel_containment.tap
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/07-ci-local/full/tap/trust_kernel_governance.tap
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/07-ci-local/full/tap/trust_kernel_release.tap
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/07-ci-local/full/tap/trust_kernel_safety.tap
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/07-ci-local/full/tap/trust_kernel_tenancy.tap
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/07-ci-local/full/tap/workflow_db_invariants.tap
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/07-ci-local/line-suites-only/ci-step-1-line-suites-only.log
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/07-ci-local/line-suites-only/ci-step-1-line-suites-only.sh
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/07-ci-local/line-suites-only/summary.txt
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/07-ci-local/line-suites-only/tap/line_oa_client_write_revoke.tap
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/07-ci-local/line-suites-only/tap/line_oa_client_write_revoke_fail_closed.tap
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/07-ci-local/line-suites-only/tap/line_outbound_claim_record.tap
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/08-baseline-after-tests.txt
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/09-teardown.txt
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/10a-credential-scan.txt
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/10b-verification.txt
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/REPLAY.txt
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/REPORT.en.html
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/REPORT.en.md
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/REPORT.th.html
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/REPORT.th.md
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/SHA256SUMS
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/SHA256SUMS.run
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/ci-replica.py
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/commit-p010-followup.sh
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/gate-p010-followup.py
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/logs-line-p010fc-auth.txt
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/logs-line-p010fc-db.txt
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/logs-line-p010fc-storage.txt
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/run-p010-failclosed.sh
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/source-0198_line_oa_revoke_client_write_grants.sql
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/source-db-verify.diff
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/source-db-verify.yml
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/source-line_oa_client_write_revoke_fail_closed.sql
+  A	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/verify-p010-failclosed.py
+  A	docs/governance/evidence/line-p010-failclosed-red-2026-09-30/.gitattributes
+  A	docs/governance/evidence/line-p010-failclosed-red-2026-09-30/00-context.txt
+  A	docs/governance/evidence/line-p010-failclosed-red-2026-09-30/01b-service-bootstrap-output.txt
+  A	docs/governance/evidence/line-p010-failclosed-red-2026-09-30/01b-service-bootstrap.sql
+  A	docs/governance/evidence/line-p010-failclosed-red-2026-09-30/02-migrations-applied.txt
+  A	docs/governance/evidence/line-p010-failclosed-red-2026-09-30/03-baseline-after-migrations.txt
+  A	docs/governance/evidence/line-p010-failclosed-red-2026-09-30/04-fail-closed-vs-mutant.tap
+  A	docs/governance/evidence/line-p010-failclosed-red-2026-09-30/08-baseline-after-tests.txt
+  A	docs/governance/evidence/line-p010-failclosed-red-2026-09-30/09-teardown.txt
+  A	docs/governance/evidence/line-p010-failclosed-red-2026-09-30/10a-credential-scan.txt
+  A	docs/governance/evidence/line-p010-failclosed-red-2026-09-30/10b-verification.txt
+  A	docs/governance/evidence/line-p010-failclosed-red-2026-09-30/REPLAY.txt
+  A	docs/governance/evidence/line-p010-failclosed-red-2026-09-30/SHA256SUMS
+  A	docs/governance/evidence/line-p010-failclosed-red-2026-09-30/SHA256SUMS.run
+  A	docs/governance/evidence/line-p010-failclosed-red-2026-09-30/ci-replica.py
+  A	docs/governance/evidence/line-p010-failclosed-red-2026-09-30/logs-line-p010fc-auth.txt
+  A	docs/governance/evidence/line-p010-failclosed-red-2026-09-30/logs-line-p010fc-db.txt
+  A	docs/governance/evidence/line-p010-failclosed-red-2026-09-30/logs-line-p010fc-storage.txt
+  A	docs/governance/evidence/line-p010-failclosed-red-2026-09-30/mutant-0198-no-residual-check.sql
+  A	docs/governance/evidence/line-p010-failclosed-red-2026-09-30/mutant-vs-0198.diff
+  A	docs/governance/evidence/line-p010-failclosed-red-2026-09-30/run-p010-failclosed.sh
+  A	docs/governance/evidence/line-p010-failclosed-red-2026-09-30/source-0198_line_oa_revoke_client_write_grants.sql
+  A	docs/governance/evidence/line-p010-failclosed-red-2026-09-30/source-db-verify.diff
+  A	docs/governance/evidence/line-p010-failclosed-red-2026-09-30/source-db-verify.yml
+  A	docs/governance/evidence/line-p010-failclosed-red-2026-09-30/source-line_oa_client_write_revoke_fail_closed.sql
+  A	docs/governance/evidence/line-p010-failclosed-red-2026-09-30/verify-p010-failclosed.py
+  A	supabase/tests/line_oa_client_write_revoke_fail_closed.sql
+gate_output:
+  PASS: HEAD is the accepted base 87930836a
+  PASS: change set is exactly the approved 94 paths (unexpected=[], missing=[])
+  PASS: only additions, plus modifications of the workflow and the four PRD files ({})
+  PASS: 0198 itself is unchanged
+  PASS: docs/governance/evidence/line-p010-failclosed-red-2026-09-30: SHA256SUMS lists every file except itself (25)
+  PASS: docs/governance/evidence/line-p010-failclosed-red-2026-09-30: SHA256SUMS matches working-tree bytes ([])
+  PASS: docs/governance/evidence/line-p010-failclosed-red-2026-09-30: SHA256SUMS matches staged Git blobs byte-for-byte ([])
+  PASS: docs/governance/evidence/line-p010-failclosed-red-2026-09-30: 23 raw run outputs unchanged since the runner ([])
+  PASS: docs/governance/evidence/line-p010-failclosed-red-2026-09-30: in-run credential scan passed
+  PASS: docs/governance/evidence/line-p010-failclosed-red-2026-09-30: verifier re-run over the captured files exits 0 (red)
+  PASS: supabase/tests/line_oa_client_write_revoke_fail_closed.sql equals the copy used by line-p010-failclosed-red-2026-09-30
+  PASS: .github/workflows/db-verify.yml equals the copy recorded by line-p010-failclosed-red-2026-09-30
+  PASS: docs/governance/evidence/line-p010-failclosed-green-2026-09-30: SHA256SUMS lists every file except itself (61)
+  PASS: docs/governance/evidence/line-p010-failclosed-green-2026-09-30: SHA256SUMS matches working-tree bytes ([])
+  PASS: docs/governance/evidence/line-p010-failclosed-green-2026-09-30: SHA256SUMS matches staged Git blobs byte-for-byte ([])
+  PASS: docs/governance/evidence/line-p010-failclosed-green-2026-09-30: 53 raw run outputs unchanged since the runner ([])
+  PASS: docs/governance/evidence/line-p010-failclosed-green-2026-09-30: in-run credential scan passed
+  PASS: docs/governance/evidence/line-p010-failclosed-green-2026-09-30: verifier re-run over the captured files exits 0 (green)
+  PASS: supabase/tests/line_oa_client_write_revoke_fail_closed.sql equals the copy used by line-p010-failclosed-green-2026-09-30
+  PASS: .github/workflows/db-verify.yml equals the copy recorded by line-p010-failclosed-green-2026-09-30
+  PASS: Git blobs of the non-bundle files equal the working tree ([])
+  PASS: docs/PRD-LINE-OA.en.html equals the renderer output of its Markdown
+  PASS: docs/PRD-LINE-OA.th.html equals the renderer output of its Markdown
+  PASS: docs/governance/evidence/line-p010-failclosed-green-2026-09-30/REPORT.en.html equals the renderer output of its Markdown
+  PASS: docs/governance/evidence/line-p010-failclosed-green-2026-09-30/REPORT.th.html equals the renderer output of its Markdown
+  PASS: pattern scanner positive controls all detected
+  PASS: no credential-shaped value in 94 Git blobs ({})
+  RESULT: GATE PASS

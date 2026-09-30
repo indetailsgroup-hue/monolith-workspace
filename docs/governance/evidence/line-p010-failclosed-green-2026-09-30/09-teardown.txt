@@ -1,0 +1,4 @@
+removed_utc: 2026-09-30T13:31:30Z
+containers_present_after_removal: [] (empty = removed)
+network_present_after_removal: [] (empty = removed)
+ci_workdir_present_after_removal: [] (empty = removed)

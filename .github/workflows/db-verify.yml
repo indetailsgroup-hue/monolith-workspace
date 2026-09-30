@@ -62,10 +62,13 @@ jobs:
           for suite in workflow_db_invariants trust_kernel_tenancy trust_kernel_governance \
                        trust_kernel_release trust_kernel_bundles trust_kernel_containment \
                        trust_kernel_safety repair_phase0_organization repair_phase0_containment \
-                       line_outbound_claim_record; do
-            if [[ "$suite" == "line_outbound_claim_record" ]]; then
-              # This suite owns only ROLLBACK; open its transaction in the same
-              # psql session so fixtures and audit rows can never autocommit.
+                       line_outbound_claim_record line_oa_client_write_revoke \
+                       line_oa_client_write_revoke_fail_closed; do
+            if [[ "$suite" == "line_outbound_claim_record" || "$suite" == "line_oa_client_write_revoke" \
+                  || "$suite" == "line_oa_client_write_revoke_fail_closed" ]]; then
+              # These suites own only ROLLBACK; open their transaction in the same
+              # psql session so fixtures, audit rows, throwaway roles and grants
+              # can never autocommit. The fail-closed suite re-runs 0198 via \ir.
               psql "${{ steps.db.outputs.DB_URL }}" -tA -v ON_ERROR_STOP=1 \
                 -c "begin;" -f "supabase/tests/${suite}.sql" | tee "tap/${suite}.tap"
             else
@@ -97,6 +100,12 @@ jobs:
           # The legacy state-transition authority must not be executable by service_role.
           psql "${{ steps.db.outputs.DB_URL }}" -tAc "select has_function_privilege('service_role','public.rpc_factory_job_transition(text,text,text,text[],text[],text,text,text,text,text)','EXECUTE')" | grep -qx f
 
+      - name: Confirm 0198 removed direct client writes on LINE tables
+        run: |
+          test -f supabase/migrations/0198_line_oa_revoke_client_write_grants.sql
+          # No anon/authenticated/service_role table or column write privilege may remain.
+          psql "${{ steps.db.outputs.DB_URL }}" -tAc "select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace cross join unnest(array['anon','authenticated','service_role']) r(role) where n.nspname='public' and c.relkind='r' and c.relname in ('line_oa_channels','line_oa_conversations','line_oa_inbound_messages','line_oa_outbound_messages','line_oa_customer_identity','line_oa_message_templates','line_oa_orders','line_oa_audit_log') and (has_table_privilege(r.role,c.oid,'INSERT') or has_table_privilege(r.role,c.oid,'UPDATE') or has_table_privilege(r.role,c.oid,'DELETE') or has_table_privilege(r.role,c.oid,'TRUNCATE') or has_any_column_privilege(r.role,c.oid,'INSERT') or has_any_column_privilege(r.role,c.oid,'UPDATE'))" | grep -qx 0
+
       - name: Assemble evidence
         if: always()
         run: |
@@ -112,7 +121,8 @@ jobs:
             'workflow_db_invariants', 'trust_kernel_tenancy', 'trust_kernel_governance',
             'trust_kernel_release', 'trust_kernel_bundles', 'trust_kernel_containment',
             'trust_kernel_safety', 'repair_phase0_organization', 'repair_phase0_containment',
-            'line_outbound_claim_record',
+            'line_outbound_claim_record', 'line_oa_client_write_revoke',
+            'line_oa_client_write_revoke_fail_closed',
           ].map((s) => countSuite('tap/' + s + '.tap', s + '.sql'));
           const mig = fs.existsSync('migrations_applied.txt') ? fs.readFileSync('migrations_applied.txt','utf8').trim() : 'unknown';
           const ev = {

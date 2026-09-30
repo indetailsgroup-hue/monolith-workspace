@@ -1,0 +1,39 @@
+evidence_bundle: docs/governance/evidence/line-p010-failclosed-red-2026-09-30
+mode: red
+started_utc: 2026-09-30T13:25:49Z
+command (Git Bash, repository root): P010_MODE=red P010_OUT=docs/governance/evidence/line-p010-failclosed-red-2026-09-30 bash /c/Users/thai3/AppData/Local/Temp/claude/C--Users-thai3-determined-williams--2--MONOLITH-Repair-Intelligence/ce545bd9-4134-4d24-8b4c-aac4981d3aaf/scratchpad/p010-run/run-p010-failclosed.sh
+runner_sha256: 5328f5c4451fdaf2f25c0f54e8cb3bfe9fac8169b6aa7254302373b58acf7035 (copy: run-p010-failclosed.sh)
+verifier_sha256: 737512491155eff2eb1e17e0240082a110195e15f68ddbdfac71081c2910fa99 (copy: verify-p010-failclosed.py)
+ci_replica_sha256: a2d931f345a68e78f58529e8771a3abe397852f9ab6f2b5fb4b991ec1111c248 (copy: ci-replica.py)
+branch: codex/repair-intelligence-phase0-trust
+head_sha: 87930836a87852cac32efd80920b1d19f62b48f2 (accepted base: 87930836a87852cac32efd80920b1d19f62b48f2)
+working_tree_changes (supabase, tests, scripts, .github): [ M .github/workflows/db-verify.yml
+?? supabase/tests/line_oa_client_write_revoke_fail_closed.sql]
+fail_closed_suite_sha256: e73495176b2438676b3e2d4de13e0bf51dd33bb01cecc20fe012f86a55a6a9f3
+migration_0198_sha256: 91540bfb869d70c0d24dd14fb8224c61dbcf81411b62bf86b294fc54e4569e2d · git blob at HEAD: 13d984e730e9cf0c43e0826395446212292ba80a · identical to HEAD: yes
+workflow_sha256: cd8f80f01b8da4bc61c4d8cd6f84534cc8e0c81906a64712f7efc553674a0b59 (diff vs HEAD: source-db-verify.diff)
+mutant_sha256: b9d2ed52aa11d23813c2caa582385f33dd5efd0b6055fae92414720aec163d26 (diff vs real 0198: mutant-vs-0198.diff; never in supabase/migrations)
+core.autocrlf: true
+db_image: public.ecr.aws/supabase/postgres:17.6.1.158 id=sha256:99b1729aeb0bac314445024fc149fbd39306170b61dd50800ccf180327ab3459 digests=public.ecr.aws/supabase/postgres@sha256:99b1729aeb0bac314445024fc149fbd39306170b61dd50800ccf180327ab3459
+auth_image: public.ecr.aws/supabase/gotrue:v2.195.0 id=sha256:362659ca70eaa75ba05bbaf963caa84c1c5afe5e8fbf0777e17b830dd5f0f60a digests=public.ecr.aws/supabase/gotrue@sha256:362659ca70eaa75ba05bbaf963caa84c1c5afe5e8fbf0777e17b830dd5f0f60a
+storage_image: public.ecr.aws/supabase/storage-api:v1.66.4 id=sha256:ead6d49b9873d65a030c6c44b46676f4276b234becd6d7819c254351b5400d95 digests=public.ecr.aws/supabase/storage-api@sha256:ead6d49b9873d65a030c6c44b46676f4276b234becd6d7819c254351b5400d95
+network: line-p010fc-net · containers: line-p010fc-db (127.0.0.1:55447), line-p010fc-auth, line-p010fc-storage (all throwaway; removed at the end)
+dsn: postgresql://postgres@127.0.0.1:55447/postgres (password generated per run, passed via PGPASSWORD, never written)
+node: v22.21.1
+python: Python 3.14.2 · pytest 8.4.2 · pyyaml 6.0.3
+psql_client: psql (PostgreSQL) 18.1
+docker: 29.8.0
+db_ready_utc: 2026-09-30T13:26:01Z
+db_port_binding: 127.0.0.1:55447 
+cron_launch_active_jobs: off
+db_server: PostgreSQL 17.6 on x86_64-pc-linux-gnu, compiled by gcc (GCC) 15.2.0, 64-bit
+auth_schema_ready: t · storage_schema_ready: t
+services_ready_utc: 2026-09-30T13:26:05Z
+migrations_applied_ok: 193 of 193 · failed: 0
+fail_closed_vs_mutant_exit=0
+catalog_fingerprint_unchanged_by_tests: yes
+result: COMPLETED (see exit codes above; expectations are checked by the verifier)
+credential_scan_exit=0
+verification_exit=0
+runner_exit=0
+finished_utc: 2026-09-30T13:26:34Z

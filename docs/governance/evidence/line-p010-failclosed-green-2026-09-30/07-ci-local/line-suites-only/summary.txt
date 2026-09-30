@@ -1,0 +1,1 @@
+step 1-line-suites-only exit=0 :: Run pgTAP suites (workflow + trust-kernel + Repair Phase 0)

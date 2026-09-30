@@ -1,0 +1,19 @@
+PASS: 193 migrations from zero including the real 0198 as the last, none failed (193)
+PASS: the mutant is not part of the applied migration chain
+PASS: the real 0198 on disk is identical to the committed file
+PASS: cron scheduler disabled
+PASS: no cron job ran
+PASS: schema/ACL/ownership/membership fingerprint unchanged by the tests
+PASS: no throwaway p010 role left after the tests
+PASS: mutant diff only removes lines, and the removed lines are the residual check and its raise (20 lines)
+PASS: mutant no longer contains the rejection
+PASS: 04-fail-closed-vs-mutant.tap: plan 1..13 with 13 ordered results and no plan mismatch
+PASS: RED: exactly the 8 rejection/rollback assertions fail (failed=[3, 4, 5, 6, 8, 9, 10, 11])
+PASS: RED: both expected rejections show SQLSTATE 00000 — the mutant completed instead of refusing
+PASS: RED: case C passes, so the mutant itself applies without syntax or environment error
+PASS: RED: no rejection error was produced by the mutant
+PASS: RED: psql exit 0 (failures are assertion results, not a crash)
+PASS: owned containers, network and CI work directory removed
+PASS: in-run credential scan passed
+RESULT: P0-10 follow-up RED expectations met
+Scope: local throwaway stack only; not GitHub Actions and not production. Phase A remains EVIDENCE_INCOMPLETE.

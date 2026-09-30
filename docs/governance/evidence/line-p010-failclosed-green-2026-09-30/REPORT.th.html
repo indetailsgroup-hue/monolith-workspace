@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>หลักฐานงานติดตาม P0-10</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>งานติดตาม P0-10: เทสต์ fail-closed และการลงทะเบียนใน CI</h1>
+<p>วันที่: 30 กันยายน 2026 ฐาน: 87930836a87852cac32efd80920b1d19f62b48f2 บน codex/repair-intelligence-phase0-trust สถานะ: สร้างแล้ว รอผู้ตรวจอิสระ ผลทั้งหมดเป็นผลรันในเครื่อง ไม่ใช่ผล GitHub Actions ไม่ได้ push หรือ deploy และยังไม่ปิด P0-10 หรือ Phase A</p>
+<h2>สิ่งที่เปลี่ยน</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>ไฟล์</th>
+<th>การเปลี่ยนแปลง</th>
+</tr></thead><tbody>
+<tr>
+<td>supabase/tests/line_oa_client_write_revoke_fail_closed.sql</td>
+<td>suite pgTAP ใหม่ 13 assertion รันไฟล์ 0198 ตัวจริงด้วย \ir ภายใน savepoint และตรวจเส้นทาง fail-closed โดยไม่แก้ 0198</td>
+</tr>
+<tr>
+<td>.github/workflows/db-verify.yml</td>
+<td>ลงทะเบียน line_oa_client_write_revoke และ suite ใหม่ด้วย wrapper begin แบบเดียวกับ line_outbound_claim_record เพิ่มขั้นตรวจว่า 0198 ไม่เหลือสิทธิ์เขียนของ client และเพิ่มทั้งสอง suite ในสรุปหลักฐาน การ upload ครอบคลุม tap/*.tap อยู่แล้ว</td>
+</tr>
+</tbody></table></div>
+<h2>Suite fail-closed</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Assertion</th>
+<th>สิ่งที่พิสูจน์</th>
+</tr></thead><tbody>
+<tr>
+<td>1</td>
+<td>ตรวจขอบเขต: มี 8 ตารางและ anon และ anon เริ่มต้นโดยไม่มีสิทธิ์เขียน (0198 apply แล้ว)</td>
+</tr>
+<tr>
+<td>2-6</td>
+<td>กรณี ก: anon สืบทอด INSERT/UPDATE บน line_oa_orders จาก role จำลอง และมี INSERT โดยตรงบน line_oa_channels 0198 ต้อง raise 42501 ด้วยข้อความขึ้นต้น &quot;P0-10: write privileges remain after revoke&quot; และระบุ anon:line_oa_orders หลัง error ACL ระดับตาราง ACL ระดับคอลัมน์ และ membership ทั้งหมดต้องเท่ากับก่อนรัน และ INSERT โดยตรงต้องกลับมา</td>
+</tr>
+<tr>
+<td>7-11</td>
+<td>กรณี ข: anon มี UPDATE ระดับคอลัมน์บน line_oa_message_templates.body ที่ grantor อีกคนให้ พร้อม INSERT โดยตรงแบบเดียวกัน ตรวจ 4 ข้อเหมือนกรณี ก โดยระบุ anon:line_oa_message_templates</td>
+</tr>
+<tr>
+<td>12-13</td>
+<td>กรณี ค: เมื่อไม่มีสิทธิ์ใดเหลือ 0198 ทำงานจนจบ และถอนทั้ง INSERT โดยตรงและ UPDATE ระดับคอลัมน์ที่ owner ให้</td>
+</tr>
+</tbody></table></div>
+<p>กรณี ข ต้องใช้ grantor คนที่สอง เพราะ REVOKE ระดับตารางจะถอนสิทธิ์ระดับคอลัมน์ที่ grantor คนเดียวกันให้ไปด้วย ตามที่กรณี ค แสดง ข้อมูลของแต่ละกรณีเก็บไว้ในตัวแปร psql ก่อน แล้ว assertion จึงรันหลัง rollback savepoint ของกรณีนั้น บันทึกของ pgTAP จึงไม่ถูกย้อนกลับ role และ grant จำลอง rollback ทั้งหมด หลังรันไม่เหลือ role p010 และ fingerprint ของ catalog ไม่เปลี่ยน</p>
+<h2>ผลลัพธ์</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>การตรวจ</th>
+<th>RED (mutant)</th>
+<th>GREEN (0198 จริง)</th>
+</tr></thead><tbody>
+<tr>
+<td>Migrate จากศูนย์</td>
+<td>193/193 โดย 0198 จริงอยู่ท้ายสุด</td>
+<td>193/193 โดย 0198 จริงอยู่ท้ายสุด</td>
+</tr>
+<tr>
+<td>Suite fail-closed</td>
+<td>ผ่าน 5 ล้มตรงข้อ 3-6 และ 8-11 การปฏิเสธทั้งสองจุดได้ SQLSTATE 00000</td>
+<td>13/13</td>
+</tr>
+<tr>
+<td>Suite P0-10 / suite เดิม</td>
+<td>ไม่ได้รัน</td>
+<td>133/133 / 107/107</td>
+</tr>
+<tr>
+<td>Claim race / Python 12 ไฟล์</td>
+<td>ไม่ได้รัน</td>
+<td>ซ้ำ 0 / ผ่าน 72 จาก 72 ไม่มี skip</td>
+</tr>
+<tr>
+<td>จำนวน cron ที่รัน, fingerprint, teardown, credential scan, ตัวตรวจ</td>
+<td>0; ไม่เปลี่ยน; สะอาด; ผ่าน; exit 0</td>
+<td>0; ไม่เปลี่ยน; สะอาด; ผ่าน; exit 0</td>
+</tr>
+</tbody></table></div>
+<p>Mutant คือ 0198 ที่ตัดเฉพาะ loop ตรวจสิทธิ์คงเหลือและ RAISE ของมัน diff มีบรรทัดที่ลบ 20 บรรทัดและไม่มีบรรทัดที่เพิ่ม และไม่เคยอยู่ใน migration chain</p>
+<h2>การรันขั้นฐานข้อมูลของ workflow ในเครื่อง</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>ขั้น</th>
+<th>Exit</th>
+<th>หมายเหตุ</th>
+</tr></thead><tbody>
+<tr>
+<td>pgTAP suites (ตามที่เขียน)</td>
+<td>3</td>
+<td>หยุดที่ repair_phase0_containment.sql:74 ส่วน 8 suite ก่อนหน้ารายงาน all ok</td>
+</tr>
+<tr>
+<td>Claim race</td>
+<td>0</td>
+<td>ซ้ำ 0</td>
+</tr>
+<tr>
+<td>ตรวจว่า chain ถึง 0192</td>
+<td>0</td>
+<td></td>
+</tr>
+<tr>
+<td>ตรวจว่า 0198 ถอนสิทธิ์เขียนของ client (ขั้นใหม่)</td>
+<td>0</td>
+<td></td>
+</tr>
+<tr>
+<td>Assemble evidence</td>
+<td>0</td>
+<td>pgtap.pass = false เพราะ loop หยุดก่อน จึงไม่มี TAP ของ 3 suite LINE</td>
+</tr>
+<tr>
+<td>ตัว loop ของ pgTAP ที่รันเฉพาะ 3 suite LINE</td>
+<td>0</td>
+<td>all ok 107, 133 และ 13 assertion</td>
+</tr>
+</tbody></table></div>
+<p>พบปัญหาเดิม 2 เรื่องที่ไม่ได้แก้ในรอบนี้:</p>
+<ol><li>repair_phase0_containment.sql ตรวจ rpc_factory_job_record_packet แบบ 12 argument ซึ่งมีเฉพาะใน 0170_factory_jobs_list_real_fields.sql บน origin/main และ branch นี้ไม่มี migration นั้น บน GitHub Actions ขั้น pgTAP จะหยุดที่ suite นี้ จึงไม่ได้รัน suite LINE และอีก 3 ขั้นถัดไปจะถูกข้าม CI จึงยังใช้เป็นหลักฐานปิด P0-10 ไม่ได้ เรื่องนี้ต้องแก้ผ่านมติรวม branch (PRD §8 ข้อ 7) หรือการแก้ที่อนุมัติแยก</li><li>สคริปต์ &quot;Assemble evidence&quot; นับ suite ที่หยุดกลางทางว่าผ่าน (ok 6, not ok 0, plan 8) เพราะไม่ได้เทียบผลกับ plan</li></ol>
+<h2>สิ่งที่ยังไม่ยืนยัน</h2>
+<ul><li>ผล GitHub Actions: ยังไม่ได้ push</li><li>Grant, grantor และ owner ของ production: การตรวจ production catalog แบบอ่านอย่างเดียวก่อน deploy ยังเป็นด่านแยก</li><li>B12 (EXECUTE) และ 0199 ยังเป็นงานแยกที่ยังไม่อนุมัติ</li></ul>
+<h2>ไฟล์</h2>
+<p>ผลดิบอยู่ใน SHA256SUMS.run ของแต่ละชุด และ REPLAY.txt ระบุคำสั่งที่รันจริง gate-p010-followup.py และ commit-p010-followup.sh คือ gate และ wrapper ที่ใช้ commit ส่วน transcript อยู่ใน docs/governance/evidence/line-p010-followup-commit-2026-09-30/ gate อนุญาตค่าที่ไม่ใช่ความลับเพียงค่าเดียว คือ DSN ค่าเริ่มต้นสำหรับเครื่อง local ตามเอกสารของ Supabase CLI ใน db-verify.yml และสำเนาที่บันทึกไว้</p>
+</main>
+</body>
+</html>

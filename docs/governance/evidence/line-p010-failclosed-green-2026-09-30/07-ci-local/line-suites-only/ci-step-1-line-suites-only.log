@@ -1,0 +1,399 @@
+BEGIN
+CREATE EXTENSION
+1..107
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE TABLE
+ok 1 - outbound messages have nullable claimed_at
+ok 2 - outbound messages have nullable claimed_by
+ok 3 - outbound messages have attempt_count
+ok 4 - claimed_at is nullable
+ok 5 - claimed_by is nullable
+ok 6 - attempt_count is NOT NULL
+ok 7 - attempt_count defaults to zero
+ok 8 - outbound messages have nullable next_attempt_at
+ok 9 - next_attempt_at is nullable
+ok 10 - next_attempt_at defaults to NULL
+ok 11 - outbound messages have nullable claim_token
+ok 12 - claim_token is nullable
+ok 13 - claim_token defaults to NULL
+ok 14 - claim RPC has the required (int, int) signature
+ok 15 - claim RPC is SECURITY DEFINER
+ok 16 - only claim timeout has a default
+ok 17 - service_role can execute claim RPC
+ok 18 - authenticated cannot execute claim RPC
+ok 19 - anon cannot execute claim RPC
+ok 20 - PUBLIC cannot execute claim RPC
+ok 21 - record-result RPC remains SECURITY DEFINER
+ok 22 - service_role can execute record-result RPC
+ok 23 - authenticated retains record-result EXECUTE for the guarded human path
+ok 24 - anon and PUBLIC cannot execute record-result RPC
+INSERT 0 1
+ok 25 - claim RPC rejects NULL and non-positive batch limits
+INSERT 0 1
+ok 26 - claim RPC rejects NULL and non-positive lease timeouts
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ok 27 - first service claim returns the pending row exactly once
+ok 28 - claim result returns every column the sender needs
+ok 29 - claim stamps claimed_at and resolve_actor() as claimed_by
+INSERT 0 1
+ok 30 - second claim in the same session returns zero while the first claim is live
+INSERT 0 1
+ok 31 - an expired claim is reclaimable and receives fresh claim ownership
+INSERT 0 2
+INSERT 0 1
+ok 32 - sent and failed rows are never claimed
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ok 33 - group outbound rows participate in the atomic claim RPC
+INSERT 0 1
+ok 34 - service role with absent JWT claims records a group send successfully
+ok 35 - successful recording sends once and clears both claim fields
+ok 36 - group result audit uses line_groups vertical, NULL site, and system sender actor
+INSERT 0 1
+ok 37 - already-sent row returns recorded=false
+ok 38 - duplicate result cannot flip status or write a second audit row
+INSERT 0 1
+INSERT 0 1
+ok 39 - service context records an unbound-group prompt row
+ok 40 - unbound group audit uses the 0097 monolith fallback and NULL site
+INSERT 0 1
+INSERT 0 1
+ok 41 - authenticated user without governance role or site access is still denied
+ok 42 - denied user call changes no state and writes no audit
+INSERT 0 2
+INSERT 0 1
+ok 43 - authenticated caller cannot forge service_role through request JWT claims
+INSERT 0 1
+ok 44 - NULL result status is rejected without state or audit change
+INSERT 0 1
+INSERT 0 1
+ok 45 - retry fixture is claimed before its first delivery attempt
+INSERT 0 1
+ok 46 - first transient failure is recorded but returned to pending
+ok 47 - transient failure increments attempt_count, clears claim, and stores error detail
+ok 48 - first transient failure writes one result audit
+INSERT 0 4
+ok 49 - fifth failure is recorded as terminal failed
+ok 50 - terminal failure keeps attempt_count=5, no sent timestamp, and the last scrubbed error
+ok 51 - each of five recorded failures writes exactly one audit row
+INSERT 0 1
+ok 52 - terminal failed row rejects failed-to-sent flip without state or audit change
+INSERT 0 1
+INSERT 0 1
+ok 53 - claim excludes pending rows whose next_attempt_at is in the future
+INSERT 0 1
+ok 54 - claim includes pending rows once next_attempt_at is due
+INSERT 0 1
+INSERT 0 1
+ok 55 - explicit transient failure returns to pending below the five-attempt bound
+ok 56 - first transient failure schedules the notification-style one-second backoff
+INSERT 0 1
+ok 57 - a transiently failed row cannot be reclaimed before its backoff is due
+t
+INSERT 0 1
+INSERT 0 1
+ok 58 - second transient failure doubles backoff to two seconds
+INSERT 0 1
+INSERT 0 1
+ok 59 - permanent failure is terminal immediately regardless of remaining attempts
+ok 60 - permanent failure has no retry due-time and writes exactly one audit
+INSERT 0 1
+INSERT 0 1
+ok 61 - unsupported failure class is rejected without state or audit change
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ok 62 - reclaim replaces the stale claim token and returns the fresh stored token
+INSERT 0 1
+ok 63 - stale claim token returns recorded=false
+ok 64 - stale claim token changes no state and writes no audit
+INSERT 0 1
+ok 65 - matching claim token records the result and clears claim ownership
+INSERT 0 1
+INSERT 0 1
+ok 66 - null-token legacy call still works when the row has no claim token
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ok 67 - a non-null stale token cannot replay after a transient result clears the fence
+SET
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ok 68 - non-UTC session cannot immediately reclaim a just-failed transient row
+t
+INSERT 0 1
+ok 69 - non-UTC session can reclaim the transient row after backoff elapses
+INSERT 0 1
+INSERT 0 1
+ok 70 - non-UTC successful send stamps sent_at within five seconds of now()
+CREATE FUNCTION
+ok 71 - P0-11 whitespace U+0009
+ok 72 - P0-11 whitespace U+000A
+ok 73 - P0-11 whitespace U+000B
+ok 74 - P0-11 whitespace U+000C
+ok 75 - P0-11 whitespace U+000D
+ok 76 - P0-11 whitespace U+001C
+ok 77 - P0-11 whitespace U+001D
+ok 78 - P0-11 whitespace U+001E
+ok 79 - P0-11 whitespace U+001F
+ok 80 - P0-11 whitespace U+0020
+ok 81 - P0-11 whitespace U+0085
+ok 82 - P0-11 whitespace U+00A0
+ok 83 - P0-11 whitespace U+1680
+ok 84 - P0-11 whitespace U+2000
+ok 85 - P0-11 whitespace U+2001
+ok 86 - P0-11 whitespace U+2002
+ok 87 - P0-11 whitespace U+2003
+ok 88 - P0-11 whitespace U+2004
+ok 89 - P0-11 whitespace U+2005
+ok 90 - P0-11 whitespace U+2006
+ok 91 - P0-11 whitespace U+2007
+ok 92 - P0-11 whitespace U+2008
+ok 93 - P0-11 whitespace U+2009
+ok 94 - P0-11 whitespace U+200A
+ok 95 - P0-11 whitespace U+2028
+ok 96 - P0-11 whitespace U+2029
+ok 97 - P0-11 whitespace U+202F
+ok 98 - P0-11 whitespace U+205F
+ok 99 - P0-11 whitespace U+3000
+ok 100 - P0-11 null
+ok 101 - P0-11 empty
+ok 102 - P0-11 all whitespace
+ok 103 - P0-11 trim edges
+ok 104 - P0-11 internal whitespace
+ok 105 - P0-11 zero width space
+ok 106 - P0-11 BOM
+ok 107 - P0-11 token scrub
+ROLLBACK
+line_outbound_claim_record: all ok (107 assertions)
+BEGIN
+CREATE EXTENSION
+1..133
+CREATE TABLE
+INSERT 0 3
+CREATE TABLE
+INSERT 0 8
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+315c9687-1f62-4339-b83a-9bbb2542487f
+INSERT 0 1
+INSERT 0 2
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+CREATE TABLE
+INSERT 0 32
+ok 1 - scope guard: 8 target tables, 3 roles and 32 write statements exist (no vacuous pass)
+ok 2 - anon, authenticated and service_role keep USAGE on schema public, so denials are not schema-level
+ok 3 - PUBLIC holds no INSERT/UPDATE/DELETE/TRUNCATE grant on the eight tables
+ok 4 - each table owner (the SECURITY DEFINER owner) keeps INSERT/UPDATE/DELETE/TRUNCATE
+ok 5 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_channels
+ok 6 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_conversations
+ok 7 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_inbound_messages
+ok 8 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_outbound_messages
+ok 9 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_customer_identity
+ok 10 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_message_templates
+ok 11 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_orders
+ok 12 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_audit_log
+ok 13 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_channels
+ok 14 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_conversations
+ok 15 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_inbound_messages
+ok 16 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_outbound_messages
+ok 17 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_customer_identity
+ok 18 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_message_templates
+ok 19 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_orders
+ok 20 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_audit_log
+ok 21 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_channels
+ok 22 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_conversations
+ok 23 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_inbound_messages
+ok 24 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_outbound_messages
+ok 25 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_customer_identity
+ok 26 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_message_templates
+ok 27 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_orders
+ok 28 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_audit_log
+ok 29 - anon INSERT on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 30 - anon UPDATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 31 - anon DELETE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 32 - anon TRUNCATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 33 - anon INSERT on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 34 - anon UPDATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 35 - anon DELETE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 36 - anon TRUNCATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 37 - anon INSERT on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 38 - anon UPDATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 39 - anon DELETE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 40 - anon TRUNCATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 41 - anon INSERT on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 42 - anon UPDATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 43 - anon DELETE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 44 - anon TRUNCATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 45 - anon INSERT on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 46 - anon UPDATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 47 - anon DELETE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 48 - anon TRUNCATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 49 - anon INSERT on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 50 - anon UPDATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 51 - anon DELETE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 52 - anon TRUNCATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 53 - anon INSERT on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 54 - anon UPDATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 55 - anon DELETE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 56 - anon TRUNCATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 57 - anon INSERT on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 58 - anon UPDATE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 59 - anon DELETE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 60 - anon TRUNCATE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 61 - authenticated INSERT on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 62 - authenticated UPDATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 63 - authenticated DELETE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 64 - authenticated TRUNCATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 65 - authenticated INSERT on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 66 - authenticated UPDATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 67 - authenticated DELETE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 68 - authenticated TRUNCATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 69 - authenticated INSERT on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 70 - authenticated UPDATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 71 - authenticated DELETE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 72 - authenticated TRUNCATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 73 - authenticated INSERT on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 74 - authenticated UPDATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 75 - authenticated DELETE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 76 - authenticated TRUNCATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 77 - authenticated INSERT on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 78 - authenticated UPDATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 79 - authenticated DELETE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 80 - authenticated TRUNCATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 81 - authenticated INSERT on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 82 - authenticated UPDATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 83 - authenticated DELETE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 84 - authenticated TRUNCATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 85 - authenticated INSERT on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 86 - authenticated UPDATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 87 - authenticated DELETE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 88 - authenticated TRUNCATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 89 - authenticated INSERT on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 90 - authenticated UPDATE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 91 - authenticated DELETE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 92 - authenticated TRUNCATE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 93 - service_role INSERT on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 94 - service_role UPDATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 95 - service_role DELETE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 96 - service_role TRUNCATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 97 - service_role INSERT on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 98 - service_role UPDATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 99 - service_role DELETE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 100 - service_role TRUNCATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 101 - service_role INSERT on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 102 - service_role UPDATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 103 - service_role DELETE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 104 - service_role TRUNCATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 105 - service_role INSERT on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 106 - service_role UPDATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 107 - service_role DELETE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 108 - service_role TRUNCATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 109 - service_role INSERT on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 110 - service_role UPDATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 111 - service_role DELETE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 112 - service_role TRUNCATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 113 - service_role INSERT on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 114 - service_role UPDATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 115 - service_role DELETE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 116 - service_role TRUNCATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 117 - service_role INSERT on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 118 - service_role UPDATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 119 - service_role DELETE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 120 - service_role TRUNCATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 121 - service_role INSERT on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 122 - service_role UPDATE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 123 - service_role DELETE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 124 - service_role TRUNCATE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 125 - service_role can still SELECT line_oa_channels (sender reads channel_access_token_ref)
+ok 126 - service_role can still SELECT line_oa_conversations (sender reads line_user_id, vertical_context)
+ok 127 - service_role can still SELECT line_oa_message_templates (sender reads body)
+CREATE TABLE
+INSERT 0 1
+ok 128 - rpc_ingest_line_webhook as service_role accepts a signed synthetic event and processes it
+ok 129 - ingress wrote the conversation, inbound message, customer identity and audit receipt through the DEFINER path
+INSERT 0 1
+ok 130 - binding a customer group as service_role fires fn_welcome_on_group_bind, which queues tpl_welcome_pack for that group
+INSERT 0 1
+INSERT 0 1
+ok 131 - fn_prod_curated as service_role queues exactly one pending tpl_prod_started push for the bound group
+INSERT 0 1
+ok 132 - rpc_claim_line_outbound_batch as service_role claims the curated row and stamps a claim token
+INSERT 0 1
+ok 133 - rpc_record_line_send_result as service_role records the claimed row as sent
+ROLLBACK
+line_oa_client_write_revoke: all ok (133 assertions)
+BEGIN
+# migration under test: ../migrations/0198_line_oa_revoke_client_write_grants.sql
+CREATE EXTENSION
+psql:supabase/migrations/0198_line_oa_revoke_client_write_grants.sql:65: ERROR:  P0-10: write privileges remain after revoke: anon:line_oa_orders
+CONTEXT:  PL/pgSQL function inline_code_block line 36 at RAISE
+1..13
+CREATE FUNCTION
+CREATE FUNCTION
+ok 1 - scope guard: 8 tables and anon exist, and anon starts without write privilege (0198 applied)
+SAVEPOINT
+CREATE ROLE
+GRANT
+GRANT ROLE
+GRANT
+SAVEPOINT
+ROLLBACK
+ROLLBACK
+RELEASE
+ok 2 - case A precondition: anon has INSERT on line_oa_orders only through role membership, and a direct INSERT on line_oa_channels
+ok 3 - case A: the migration raises SQLSTATE 42501 when an inherited write privilege survives
+ok 4 - case A: the error message starts with "P0-10: write privileges remain after revoke" and names anon:line_oa_orders
+psql:supabase/migrations/0198_line_oa_revoke_client_write_grants.sql:65: ERROR:  P0-10: write privileges remain after revoke: anon:line_oa_message_templates
+CONTEXT:  PL/pgSQL function inline_code_block line 36 at RAISE
+ok 5 - case A: after the error every table ACL, column ACL and membership is exactly as before
+ok 6 - case A: the direct INSERT that 0198 revoked on line_oa_channels is back after the error
+SAVEPOINT
+CREATE ROLE
+GRANT ROLE
+GRANT
+GRANT
+SET
+GRANT
+RESET
+GRANT
+SAVEPOINT
+ROLLBACK
+ROLLBACK
+RELEASE
+ok 7 - case B precondition: anon has a direct column UPDATE on line_oa_message_templates.body from another grantor, and a direct INSERT on line_oa_channels
+ok 8 - case B: the migration raises SQLSTATE 42501 when a column-level UPDATE survives
+ok 9 - case B: the error message starts with "P0-10: write privileges remain after revoke" and names anon:line_oa_message_templates
+ok 10 - case B: after the error every table ACL, column ACL and membership is exactly as before
+ok 11 - case B: the direct INSERT that 0198 revoked on line_oa_channels is back after the error
+SAVEPOINT
+GRANT
+GRANT
+SAVEPOINT
+DO
+ROLLBACK
+RELEASE
+ok 12 - case C: with no surviving privilege the migration completes without error
+ok 13 - case C: the direct INSERT and the owner-granted column UPDATE are revoked and anon holds no write privilege
+ROLLBACK
+line_oa_client_write_revoke_fail_closed: all ok (13 assertions)

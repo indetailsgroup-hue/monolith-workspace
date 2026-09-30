@@ -1,0 +1,20 @@
+BEGIN
+CREATE EXTENSION
+1..16
+ok 1 - isolated workload role monolith_p2_workload exists
+ok 2 - the workload role is NOLOGIN (assumed out of band, never a human login)
+ok 3 - authenticated cannot SELECT release_artifact.object_locator (raw locator contained)
+ok 4 - anon cannot SELECT release_artifact.object_locator
+ok 5 - authenticated CAN still SELECT release_artifact.status (projection reference retained)
+ok 6 - authenticated CAN still SELECT release_artifact.content_hash (hash reference retained)
+ok 7 - authenticated cannot SELECT factory_jobs.packet_storage_path (legacy raw locator contained)
+ok 8 - factory-packets read policy targets ONLY the isolated workload role
+ok 9 - the workload read policy is scoped to the factory-packets bucket (tenant-pathed)
+ok 10 - authenticated cannot execute legacy rpc_factory_job_record_packet (no client P2 publish)
+ok 11 - authenticated cannot execute legacy rpc_factory_job_packet_info (no raw locator readout)
+ok 12 - authenticated cannot execute legacy rpc_factory_job_transition (no dual mutable authority)
+ok 13 - authenticated CAN execute rpc_trust_release_status (the client projection)
+ok 14 - anon cannot execute rpc_trust_release_status
+ok 15 - rpc_trust_release_status NEVER references object_locator — the projection cannot leak a raw locator
+ok 16 - rpc_trust_release_status executes and returns no row for an unknown release (no error path)
+ROLLBACK

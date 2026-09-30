@@ -1,0 +1,18 @@
+P0-10 follow-up GREEN evidence (real 0198, regression suites, local run of the workflow's database steps) - how it was produced
+
+Executed command (Git Bash, repository root, started 2026-09-30T13:30:11Z):
+P010_MODE=green P010_OUT=docs/governance/evidence/line-p010-failclosed-green-2026-09-30 P010_RED_BUNDLE=docs/governance/evidence/line-p010-failclosed-red-2026-09-30 bash <scratchpad>/p010-run/run-p010-failclosed.sh
+The runner waited for the port's TIME_WAIT sockets from the RED run to clear before starting (checked outside the runner). It refuses to start if the suite differs from the RED copy.
+run-p010-failclosed.sh, verify-p010-failclosed.py and ci-replica.py are the exact executed files and byte-identical to the RED copies (same sha256 in both 00-context.txt files).
+
+Direct runs: the fail-closed suite against the real 0198 (04a), the P0-10 suite (04b), the original suite (04c), the claim race (05) and the 12 required Python files (06).
+
+Local run of the modified db-verify.yml (07-ci-local). This is NOT a GitHub Actions result. ci-replica.py takes each database step's run text verbatim from the workflow. It replaces only ${{ steps.db.outputs.DB_URL }} with the local DSN (password in PGPASSWORD) and runs the step with bash -e. The working directory is a scratch copy of the workflow, supabase/migrations, supabase/tests and tests/line-oa-commerce/concurrency, so tap/ and db-verify-evidence.json never land in the repository; that copy was deleted afterwards.
+- full/: steps 1-5 as written. Unlike GitHub Actions, steps 2-4 were also run after step 1 failed. On GitHub those steps would be skipped, and only "Assemble evidence" (if: always()) would run.
+  Observed: the pgTAP step exits 3 at supabase/tests/repair_phase0_containment.sql:74. That suite checks public.rpc_factory_job_record_packet with a 12-argument signature that no migration on this branch creates; the signature comes from 0170_factory_jobs_list_real_fields.sql, which is on origin/main but not on this branch. The loop therefore stops before the LINE suites. This failure predates this change and is outside its scope.
+  Observed: "Assemble evidence" marks repair_phase0_containment as pass (6 ok, 0 not ok, 8 planned), because it counts ok/not ok lines and not the plan. This is an existing weakness of the evidence script, left unchanged.
+- line-suites-only/: the same pgTAP step text with only its "for suite in ...; do" list replaced by the three LINE suites (the exact script is ci-step-1-line-suites-only.sh). This exercises the new wrapper condition, the grep checks and the "all ok" summary: 107, 133 and 13 assertions.
+
+Runner-time files are covered by SHA256SUMS.run. REPLAY.txt, REPORT.en.md/.th.md/.en.html/.th.html, gate-p010-followup.py and commit-p010-followup.sh were added afterwards; SHA256SUMS covers every file except itself.
+Re-check without a database: py verify-p010-failclosed.py docs/governance/evidence/line-p010-failclosed-green-2026-09-30 green
+Commit history of this bundle: the first run of commit-p010-followup.sh was blocked by gate-p010-followup.py. Its credential-pattern check flagged the gate's own source line holding the allow-listed local DSN literal. Nothing was committed and the wrapper restored the index. The literal was split into two byte strings (same value), SHA256SUMS was rewritten, and the wrapper was run again; the transcript records that second run.

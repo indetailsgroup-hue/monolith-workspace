@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>P0-10 follow-up evidence</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>P0-10 follow-up: fail-closed test and CI registration</h1>
+<p>Date: 30 September 2026. Base: 87930836a87852cac32efd80920b1d19f62b48f2 on codex/repair-intelligence-phase0-trust. Status: BUILT, awaiting independent review. These are local results, not GitHub Actions results. Nothing was pushed or deployed, and P0-10 and Phase A are not closed.</p>
+<h2>What changed</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>File</th>
+<th>Change</th>
+</tr></thead><tbody>
+<tr>
+<td>supabase/tests/line_oa_client_write_revoke_fail_closed.sql</td>
+<td>New pgTAP suite, 13 assertions. It runs the real 0198 file with \ir inside savepoints and checks the fail-closed path. 0198 itself is unchanged.</td>
+</tr>
+<tr>
+<td>.github/workflows/db-verify.yml</td>
+<td>Registers line_oa_client_write_revoke and the new suite with the same begin wrapper as line_outbound_claim_record. Adds a step that checks 0198 left no client write privilege, and adds both suites to the evidence summary. The upload already includes tap/*.tap.</td>
+</tr>
+</tbody></table></div>
+<h2>The fail-closed suite</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Assertions</th>
+<th>What they prove</th>
+</tr></thead><tbody>
+<tr>
+<td>1</td>
+<td>Scope guard: 8 tables and anon exist, and anon starts with no write privilege (0198 applied)</td>
+</tr>
+<tr>
+<td>2-6</td>
+<td>Case A. anon inherits INSERT/UPDATE on line_oa_orders from a throwaway role, and has a direct INSERT on line_oa_channels. 0198 must raise 42501 with a message that starts with &quot;P0-10: write privileges remain after revoke&quot; and names anon:line_oa_orders. After the error, every table ACL, column ACL and membership must equal the state before, and the direct INSERT must be back.</td>
+</tr>
+<tr>
+<td>7-11</td>
+<td>Case B. anon holds a column UPDATE on line_oa_message_templates.body granted by a second grantor, plus the same direct INSERT. Same four checks, naming anon:line_oa_message_templates.</td>
+</tr>
+<tr>
+<td>12-13</td>
+<td>Case C. With nothing surviving, 0198 completes, and it revokes both an owner-granted direct INSERT and an owner-granted column UPDATE.</td>
+</tr>
+</tbody></table></div>
+<p>Case B needs a second grantor because a table-level REVOKE also removes column privileges granted by the same grantor, as case C shows. Facts are captured in psql variables inside each case. The assertions run after the case's savepoint is rolled back, so pgTAP's own records are never undone. Throwaway roles and grants are rolled back; after the runs no p010 role remains and the catalog fingerprint is unchanged.</p>
+<h2>Results</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Check</th>
+<th>RED (mutant)</th>
+<th>GREEN (real 0198)</th>
+</tr></thead><tbody>
+<tr>
+<td>Migration chain from zero</td>
+<td>193/193, real 0198 last</td>
+<td>193/193, real 0198 last</td>
+</tr>
+<tr>
+<td>Fail-closed suite</td>
+<td>5 pass; exactly 3-6 and 8-11 fail; both rejections show SQLSTATE 00000</td>
+<td>13/13</td>
+</tr>
+<tr>
+<td>P0-10 suite / original suite</td>
+<td>not run</td>
+<td>133/133 / 107/107</td>
+</tr>
+<tr>
+<td>Claim race / 12 Python files</td>
+<td>not run</td>
+<td>overlap 0 / 72 of 72, none skipped</td>
+</tr>
+<tr>
+<td>Cron runs, fingerprint, teardown, credential scan, verifier</td>
+<td>0; unchanged; clean; pass; exit 0</td>
+<td>0; unchanged; clean; pass; exit 0</td>
+</tr>
+</tbody></table></div>
+<p>The mutant is 0198 with only the residual-privilege check loop and its RAISE removed: the diff has 20 removed lines and no added line. It was never placed in the migration chain.</p>
+<h2>Local run of the workflow's database steps</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Step</th>
+<th>Exit</th>
+<th>Note</th>
+</tr></thead><tbody>
+<tr>
+<td>pgTAP suites (as written)</td>
+<td>3</td>
+<td>Stops at repair_phase0_containment.sql:74; the 8 earlier suites report all ok</td>
+</tr>
+<tr>
+<td>Claim race</td>
+<td>0</td>
+<td>overlap 0</td>
+</tr>
+<tr>
+<td>Confirm chain reaches 0192</td>
+<td>0</td>
+<td></td>
+</tr>
+<tr>
+<td>Confirm 0198 removed client writes (new)</td>
+<td>0</td>
+<td></td>
+</tr>
+<tr>
+<td>Assemble evidence</td>
+<td>0</td>
+<td>pgtap.pass = false; the three LINE suites have no TAP because the loop stopped</td>
+</tr>
+<tr>
+<td>pgTAP loop body with only the three LINE suites</td>
+<td>0</td>
+<td>all ok: 107, 133 and 13 assertions</td>
+</tr>
+</tbody></table></div>
+<p>Two existing problems surfaced here; neither was changed:</p>
+<ol><li>repair_phase0_containment.sql checks rpc_factory_job_record_packet with a 12-argument signature that exists only through 0170_factory_jobs_list_real_fields.sql on origin/main, a migration this branch lacks. On GitHub Actions the pgTAP step would stop there, so the LINE suites would not run, and the next three steps would be skipped. CI cannot yet serve as P0-10 closure evidence. Resolving this belongs to the branch-integration decision (PRD §8 question 7) or a separately approved fix.</li><li>The &quot;Assemble evidence&quot; script scored the stopped suite as passing (6 ok, 0 not ok, 8 planned), because it does not compare results with the plan.</li></ol>
+<h2>Not established</h2>
+<ul><li>Any GitHub Actions result: nothing was pushed.</li><li>Production grants, grantors and owners: the read-only production catalog check before deploy remains a separate gate.</li><li>B12 (EXECUTE) and 0199 remain separate and unapproved.</li></ul>
+<h2>Files</h2>
+<p>The raw outputs are listed in each bundle's SHA256SUMS.run, and REPLAY.txt gives the exact commands. gate-p010-followup.py and commit-p010-followup.sh are the gate and wrapper used for the commit; the transcript is in docs/governance/evidence/line-p010-followup-commit-2026-09-30/. The gate allows exactly one known non-secret value: the Supabase CLI's documented local default DSN in db-verify.yml and its recorded copies.</p>
+</main>
+</body>
+</html>

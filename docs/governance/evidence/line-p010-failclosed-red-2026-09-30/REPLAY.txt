@@ -1,0 +1,16 @@
+P0-10 follow-up RED evidence (fail-closed suite against a mutant of 0198) - how it was produced
+
+Executed command (Git Bash, repository root; start time in 00-context.txt):
+P010_MODE=red P010_OUT=docs/governance/evidence/line-p010-failclosed-red-2026-09-30 bash <scratchpad>/p010-run/run-p010-failclosed.sh
+Base: 87930836a87852cac32efd80920b1d19f62b48f2. Working-tree changes at run time: the new untracked suite supabase/tests/line_oa_client_write_revoke_fail_closed.sql and the modified .github/workflows/db-verify.yml (copies: source-line_oa_client_write_revoke_fail_closed.sql, source-db-verify.yml, source-db-verify.diff).
+run-p010-failclosed.sh, verify-p010-failclosed.py and ci-replica.py are the exact executed files (sha256 in 00-context.txt).
+
+The migration chain applied from zero is the committed one, 193 files ending with the real 0198 (02-migrations-applied.txt); the runner refused to start if 0198 differed from the committed file.
+The mutant (mutant-0198-no-residual-check.sql) is a copy of 0198 with only the residual-privilege check loop and its RAISE removed (mutant-vs-0198.diff shows 20 removed lines and no added line). It was never placed in supabase/migrations. It was passed to the suite only as -v p010_migration=<absolute path of this bundle's copy>.
+
+Expected and observed RED (10b-verification.txt): the suite fails exactly assertions 3-6 and 8-11 (rejection, message, rollback state, direct grant back). Both rejection checks show SQLSTATE 00000 instead of 42501: the mutant completed where it should have refused. Case C passes, so the mutant applied without syntax or environment error. The psql exit is 0.
+
+Runner-time files are covered by SHA256SUMS.run. REPLAY.txt and SHA256SUMS were added afterwards; SHA256SUMS covers every file except itself.
+Re-check without a database: py verify-p010-failclosed.py docs/governance/evidence/line-p010-failclosed-red-2026-09-30 red
+Replay (a new run): check out 87930836a, apply the suite and workflow from the source-* copies, place the mutant next to the runner, and use a NEW P010_OUT. The runner's HEAD and branch checks need a checkout of that commit on that branch name, or a reviewed copy with only the branch check removed.
+Development runs of the suite on a separate throwaway stack (line-p010dev-*, port 55445) happened before this run and are not evidence.
