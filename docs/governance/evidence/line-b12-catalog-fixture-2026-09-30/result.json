@@ -1,0 +1,26 @@
+{
+  "scope": "SYNTHETIC ONLY; not MONOLITH or production",
+  "image": "sha256:29ee7bb30d804447dc9a91fd0d74322ae1dc3a4072cc6346f70a5ed6e783b565",
+  "source_sha256": "ac4b0b30dc959cca15cdc2376d5ac0defb7bf7e78995feaf9aafdc68d4e797f6",
+  "checks": [
+    "no network or published ports",
+    "missing targets remain visible",
+    "missing named roles remain visible",
+    "fixture covers exact twenty matrix identities",
+    "all expected targets resolved",
+    "all named roles found",
+    "future function grants captured",
+    "trigger dependency captured",
+    "owner and definer are captured",
+    "inherited effective EXECUTE captured",
+    "direct grantee and grantor captured",
+    "inheritance edge and option captured",
+    "unexpected overload captured",
+    "NULL ACL interpreted with defaults",
+    "catalog ACL fingerprint unchanged",
+    "query transaction is read only",
+    "single missing role is not a false pass",
+    "target bodies neither executed nor exported",
+    "owned container removed"
+  ]
+}

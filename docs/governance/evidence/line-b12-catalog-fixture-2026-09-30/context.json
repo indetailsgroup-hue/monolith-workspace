@@ -1,0 +1,12 @@
+{
+  "base": "782515143f512de1f390bdf96000dc79d445de56",
+  "evidence_packaged_utc": "2026-09-30T15:58:40.185115+00:00",
+  "reported_command": "python tests/line-oa-commerce/ci/b12_catalog_check.py --output <new-output-directory> --image postgres:18",
+  "reported_exit": 0,
+  "scope": "synthetic PostgreSQL 18 fixture only; no MONOLITH migrations or production",
+  "source": {
+    "scripts/line-b12-catalog.sql": "ac4b0b30dc959cca15cdc2376d5ac0defb7bf7e78995feaf9aafdc68d4e797f6",
+    "tests/line-oa-commerce/ci/b12_catalog_check.py": "0dd6c6ca2b78fbbc9b0238515583bde05de7d136326863ff0daf65ea23b2e613",
+    "docs/governance/line-b12-permission-matrix.en.md": "b187ceb182ef77938e48c575e51a9078edc0af61738af1af52d6efe8bdc2bc9f"
+  }
+}
