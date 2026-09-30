@@ -39,7 +39,7 @@
     "@types/yauzl": "^2.10.3",
     "@types/yazl": "^3.3.1",
     "tsx": "^4.23.12",
-    "typescript": "^5.3.2",
+    "typescript": "^7.0.2",
     "vitest": "^3.0.0"
   },
   "overrides": {
