@@ -32,6 +32,7 @@ import type { ShelfConnectorConfig } from '../../core/types/Cabinet';
 import { clsx } from 'clsx';
 import { DrawerConfigPanel } from './DrawerConfigPanel';
 import { ShelfMinifixConfigPanel } from './connectors/ShelfMinifixConfigPanel';
+import { withBase } from '../../core/config/basePath';
 
 interface ConfiguratorPanelProps {
   onOpenRegistry?: () => void;
@@ -174,7 +175,7 @@ export function ConfiguratorPanel({ onOpenRegistry }: ConfiguratorPanelProps) {
                     {/* Background - Color or Texture */}
                     {mat.textureUrl ? (
                       <img 
-                        src={mat.textureUrl} 
+                        src={withBase(mat.textureUrl)} 
                         alt={mat.name}
                         className="absolute inset-0 w-full h-full object-cover"
                       />
@@ -232,7 +233,7 @@ export function ConfiguratorPanel({ onOpenRegistry }: ConfiguratorPanelProps) {
                     >
                       {mat.textureUrl && (
                         <img 
-                          src={mat.textureUrl} 
+                          src={withBase(mat.textureUrl)} 
                           alt={mat.name}
                           className="w-full h-full object-cover"
                         />

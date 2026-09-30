@@ -22,6 +22,7 @@ import {
 import { useCabinetStore, useCabinet } from '../../core/store/useCabinetStore';
 // import { CabinetPanel } from '../../core/types/Cabinet';
 import { clsx } from 'clsx';
+import { withBase } from '../../core/config/basePath';
 
 interface PanelConfigPanelProps {
   panelId: string;
@@ -204,7 +205,7 @@ export function PanelConfigPanel({ panelId, onClose }: PanelConfigPanelProps) {
               >
                 {mat.textureUrl ? (
                   <img
-                    src={mat.textureUrl}
+                    src={withBase(mat.textureUrl)}
                     alt={mat.name}
                     className="absolute inset-0 w-full h-full object-cover"
                   />
@@ -257,7 +258,7 @@ export function PanelConfigPanel({ panelId, onClose }: PanelConfigPanelProps) {
                   )}
                 >
                   {mat.textureUrl ? (
-                    <img src={mat.textureUrl} alt={mat.name} className="absolute inset-0 w-full h-full object-cover" />
+                    <img src={withBase(mat.textureUrl)} alt={mat.name} className="absolute inset-0 w-full h-full object-cover" />
                   ) : (
                     <div className="absolute inset-0" style={{ backgroundColor: mat.color }} />
                   )}

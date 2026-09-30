@@ -11,6 +11,7 @@
 
 import { useState } from 'react';
 import { useCabinet } from '../../core/store/useCabinetStore';
+import { appPath } from '../../core/config/basePath';
 
 // Types
 type Verdict = 'PASS' | 'WARN' | 'FAIL';
@@ -157,7 +158,7 @@ export function SafetyGatePage() {
             </Badge>
             <Badge variant="released">specState: {specState}</Badge>
             <a
-              href="/"
+              href={appPath('/')}
               className="px-4 py-2 text-sm text-zinc-400 hover:text-white border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors"
             >
               ← Back to Designer

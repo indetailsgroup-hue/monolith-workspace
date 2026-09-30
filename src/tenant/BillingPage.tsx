@@ -25,6 +25,7 @@ import {
   createPortalSession,
 } from './billing';
 import { useTenantStore } from './tenantStore';
+import { appPath } from '../core/config/basePath';
 
 // ============================================================================
 // Component
@@ -68,8 +69,8 @@ export function BillingPage() {
         orgId: currentOrg.orgId,
         plan: targetPlan,
         interval,
-        successUrl: `${window.location.origin}/settings/billing?success=true`,
-        cancelUrl: `${window.location.origin}/settings/billing?canceled=true`,
+        successUrl: `${window.location.origin}${appPath('/settings/billing')}?success=true`,
+        cancelUrl: `${window.location.origin}${appPath('/settings/billing')}?canceled=true`,
       });
       window.location.href = url;
     } catch (err: any) {

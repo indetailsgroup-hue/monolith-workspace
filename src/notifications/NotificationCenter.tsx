@@ -19,6 +19,7 @@ import {
   PRIORITY_CONFIG,
   getTimeAgo,
 } from './notificationTypes';
+import { appPath, withBase } from '../core/config/basePath';
 
 // ============================================================================
 // Bell Icon with Badge
@@ -70,7 +71,7 @@ export function NotificationPanel() {
   const handleNotifClick = useCallback((notifId: string, actionUrl?: string) => {
     markAsRead(notifId);
     if (actionUrl) {
-      window.location.href = actionUrl;
+      window.location.href = withBase(actionUrl);
     }
   }, [markAsRead]);
 
@@ -156,7 +157,7 @@ export function NotificationPanel() {
 
       {/* Footer */}
       <div className="notif-panel-footer">
-        <a href="/settings/notifications" className="notif-settings-link">
+        <a href={appPath('/settings/notifications')} className="notif-settings-link">
           ⚙️ ตั้งค่าการแจ้งเตือน
         </a>
       </div>

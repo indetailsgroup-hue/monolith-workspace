@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ไม่พบหน้า · MONOLITH</title>
+  <script>
+    // GitHub Pages serves this file for every path in the site that has no file
+    // behind it. The Designer is a single-page app, so its deep links
+    // (designer/projects/42) and refreshes land here: send them to designer/
+    // with the path in ?__deeplink=, and the inline script in the Designer's
+    // index.html puts it back before the app starts. The #hash is kept as is.
+    // Every other missing path is a real 404 and gets the page below.
+    // __SITE_BASE__ is filled in by .github/workflows/field-app-pages.yml.
+    (function () {
+      var l = window.location;
+      var designer = '__SITE_BASE__designer/';
+      if (l.pathname.indexOf(designer) === 0 && l.pathname.length > designer.length &&
+          !/[?&]__deeplink=/.test(l.search)) {
+        l.replace(designer + '?__deeplink=' +
+          encodeURIComponent(l.pathname.slice(designer.length) + l.search) + l.hash);
+      }
+    })();
+  </script>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; min-height: 100vh; display: grid; place-items: center; background: #0a0a0a; color: #e5e5e5; }
+    main { text-align: center; padding: 16px; }
+    a { color: #4ade80; margin: 0 8px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>404</h1>
+    <p>ไม่พบหน้านี้ · Page not found</p>
+    <p><a href="__SITE_BASE__">Field PWA</a><a href="__SITE_BASE__designer/">Designer</a><a href="__SITE_BASE__docs/">Docs</a></p>
+  </main>
+</body>
+</html>

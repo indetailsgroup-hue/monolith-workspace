@@ -100,6 +100,22 @@ REQUIRED_CHECKS = {
     'Validate Site Files',
 }
 
+class PagesSubPathTests(unittest.TestCase):
+    def test_designer_base_and_404_page_share_one_site_base(self):
+        # Pages has no SPA fallback. Designer deep links survive only through the
+        # site-root 404.html, and its redirect must agree with the Designer's Vite
+        # base. Both come from SITE_BASE so they cannot drift apart.
+        workflow = yaml.load((WORKFLOWS / 'field-app-pages.yml').read_text(encoding='utf-8'), Loader=yaml.BaseLoader)
+        job = workflow['jobs']['build-deploy']
+        site = job['env']['SITE_BASE']
+        self.assertTrue(site.startswith('/') and site.endswith('/'), site)
+        runs = [step.get('run', '') for step in job['steps']]
+        self.assertTrue(any('--base="${SITE_BASE}designer/"' in run for run in runs))
+        self.assertTrue(any('__SITE_BASE__' in run and '.github/pages/404.html > packages/field-app/dist/404.html' in run for run in runs))
+        self.assertTrue(any('404.html' in run and 'artifact is missing' in run for run in runs))
+        self.assertIn('.github/pages/**', workflow['on']['push']['paths'])
+        self.assertIn("'__SITE_BASE__designer/'", (ROOT / '.github/pages/404.html').read_text(encoding='utf-8'))
+
 class RequiredCheckTriggerTests(unittest.TestCase):
     def test_required_checks_run_on_every_pull_request(self):
         # A path-filtered pull_request trigger never starts the job for PRs outside

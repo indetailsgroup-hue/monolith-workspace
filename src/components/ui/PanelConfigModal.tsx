@@ -21,6 +21,7 @@ import {
   DEFAULT_BACK_CONFIG,
   type EdgeConfig,
 } from '@/core/engines/ManufacturingCalculator';
+import { withBase } from '@/core/config/basePath';
 
 interface PanelConfigModalProps {
   panelId: string;
@@ -366,7 +367,7 @@ export function PanelConfigModal({ panelId, onClose }: PanelConfigModalProps) {
                   )}
                 >
                   {mat.textureUrl ? (
-                    <img src={mat.textureUrl} alt={mat.name} className="w-full h-full object-cover" />
+                    <img src={withBase(mat.textureUrl)} alt={mat.name} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full" style={{ backgroundColor: mat.color }} />
                   )}
@@ -409,7 +410,7 @@ export function PanelConfigModal({ panelId, onClose }: PanelConfigModalProps) {
                     )}
                   >
                     {mat.textureUrl ? (
-                      <img src={mat.textureUrl} alt={mat.name} className="w-full h-full object-cover" />
+                      <img src={withBase(mat.textureUrl)} alt={mat.name} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full" style={{ backgroundColor: mat.color }} />
                     )}

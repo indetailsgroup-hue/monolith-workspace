@@ -23,6 +23,7 @@ import {
   canOverrideGate,
   isDevMode,
 } from './permissions';
+import { appPath } from '../config/basePath';
 
 // ============================================================================
 // RequireRole - Hide content from unauthorized roles
@@ -66,7 +67,7 @@ function RoleGateFallback({ allow }: { allow: Role[] }): React.ReactElement {
         <p style={{ color: '#9ca3af', fontSize: '14px', marginBottom: '16px', lineHeight: 1.6 }}>
           {message}
         </p>
-        <a href="/" style={{ color: '#4ade80', fontSize: '13px', textDecoration: 'none' }}>
+        <a href={appPath('/')} style={{ color: '#4ade80', fontSize: '13px', textDecoration: 'none' }}>
           ← กลับหน้าหลัก
         </a>
       </div>

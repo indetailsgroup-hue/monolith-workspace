@@ -17,6 +17,7 @@ import {
 import { useMaterialHistoryStore } from '@/core/materials/useMaterialHistoryStore'
 import { useMaterialFavoritesStore } from '@/core/materials/useMaterialFavoritesStore'
 import { useMaterialStore, useThumbnail } from '@/core/materials/useMaterialStore'
+import { withBase } from '@/core/config/basePath'
 
 interface Material {
   id: string
@@ -350,7 +351,7 @@ function MaterialSelectorContent({
                     >
                       {mat.textureUrl ? (
                         <img
-                          src={mat.textureUrl}
+                          src={withBase(mat.textureUrl)}
                           alt=""
                           className="w-6 h-6 rounded object-cover"
                         />
@@ -389,7 +390,7 @@ function MaterialSelectorContent({
                     >
                       {mat.textureUrl ? (
                         <img
-                          src={mat.textureUrl}
+                          src={withBase(mat.textureUrl)}
                           alt=""
                           className="w-6 h-6 rounded object-cover"
                         />
