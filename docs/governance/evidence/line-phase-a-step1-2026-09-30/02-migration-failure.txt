@@ -1,0 +1,5 @@
+failed_migration: supabase/migrations/00000000000000_c12_foundation.sql
+psql:supabase/migrations/00000000000000_c12_foundation.sql:37: ERROR:  function auth.jwt() does not exist
+LINE 6:   select coalesce(auth.jwt() -> 'app_metadata' -> 'roles', '...
+                          ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.

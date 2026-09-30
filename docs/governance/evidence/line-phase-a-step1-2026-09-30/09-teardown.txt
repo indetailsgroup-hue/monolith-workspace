@@ -1,0 +1,2 @@
+removed_utc: 2026-09-30T05:09:01Z
+container_present_after_removal: [] (empty = removed)

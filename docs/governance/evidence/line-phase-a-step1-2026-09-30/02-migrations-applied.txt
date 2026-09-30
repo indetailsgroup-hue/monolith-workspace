@@ -1,0 +1,1 @@
+FAIL 2720eddc4d4aed392897987a4e7291e882961bde8dabc967857a53a5a73b6cb0  supabase/migrations/00000000000000_c12_foundation.sql
