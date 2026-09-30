@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ตารางสิทธิ์ B12 ราย identity และแผนตรวจรับ</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>ตารางสิทธิ์ B12 ราย identity และแผนตรวจรับ</h1>
+<p>30 กันยายน 2026 ฐาน source c4c76717b9d64a51ad1c0b4421148587be7ba285 สถานะ DESIGN / ยังไม่เปลี่ยนสิทธิ์ อนุมัติให้เตรียมแล้ว แต่สิทธิ์รายตัวยังขึ้นกับข้อมูล caller และมติรวมระบบ ยังไม่สร้าง 0199</p>
+<h2>ทางเลือกและข้อเสนอ</h2>
+<p>คงสิทธิ์เดิมลดผลกระทบแต่ B12 ยังเปิด ถอนทั้งหมดเสี่ยงทำ ingress, sender และ field-app พัง แนะนำถอนราย identity โดยคงผู้เรียกธุรกิจที่อนุมัติและเส้นทาง owner ไว้ การไม่มีหลักฐาน caller ไม่ใช่หลักฐานว่าไม่ได้ใช้</p>
+<h2>ตารางราย identity</h2>
+<p>Current A/U/S คือ EXECUTE ที่มีผลจริงของ anon/authenticated/service_role โดย t=มี f=ไม่มี จาก catalog ที่ commit da252d18a เป็นหลักฐาน local เดิม ไม่ใช่ production หรือ catalog ที่รันใหม่ ทั้ง 20 identity อยู่ public เป็น SECURITY DEFINER และ owner postgres ในรอบนั้น Target เป็นข้อเสนอสิทธิ์สุดท้าย ไม่ใช่คำสั่ง GRANT ใหม่ DENY ครอบคลุมสิทธิ์ผ่าน PUBLIC/membership ส่วน KEEP คือคงเดิมชั่วคราว ไม่ได้อนุมัติ caller ทุกคน DECIDE คือขอบเขตธุรกิจที่ต้องตัดสิน</p>
+<div class="table-wrap"><table><thead><tr>
+<th>ID</th>
+<th>public identity</th>
+<th>Current A/U/S</th>
+<th>Target anon</th>
+<th>Target authenticated</th>
+<th>Target service_role</th>
+<th>Class</th>
+</tr></thead><tbody>
+<tr>
+<td>B12-01</td>
+<td><code>fn_lead_followup_sweep()</code></td>
+<td>t/t/t</td>
+<td>DENY</td>
+<td>DENY</td>
+<td>KEEP</td>
+<td>SERVICE</td>
+</tr>
+<tr>
+<td>B12-02</td>
+<td><code>fn_line_handle_group_event(jsonb,text,text)</code></td>
+<td>t/t/t</td>
+<td>DENY</td>
+<td>DENY</td>
+<td>DENY</td>
+<td>INTERNAL</td>
+</tr>
+<tr>
+<td>B12-03</td>
+<td><code>fn_prod_curated(uuid,text,jsonb)</code></td>
+<td>t/t/t</td>
+<td>DENY</td>
+<td>DENY</td>
+<td>DENY</td>
+<td>INTERNAL</td>
+</tr>
+<tr>
+<td>B12-04</td>
+<td><code>fn_welcome_on_group_bind()</code></td>
+<td>t/t/t</td>
+<td>DENY</td>
+<td>DENY</td>
+<td>DENY</td>
+<td>INTERNAL</td>
+</tr>
+<tr>
+<td>B12-05</td>
+<td><code>line_oa_resolve_customer_identity(text,text)</code></td>
+<td>t/t/t</td>
+<td>DENY</td>
+<td>DENY</td>
+<td>KEEP</td>
+<td>SERVICE</td>
+</tr>
+<tr>
+<td>B12-06</td>
+<td><code>rpc_claim_line_outbound_batch(integer,integer)</code></td>
+<td>f/f/t</td>
+<td>DENY</td>
+<td>DENY</td>
+<td>KEEP</td>
+<td>SENDER</td>
+</tr>
+<tr>
+<td>B12-07</td>
+<td><code>rpc_create_line_order(uuid,jsonb,text,text)</code></td>
+<td>t/t/t</td>
+<td>DENY</td>
+<td>KEEP</td>
+<td>KEEP</td>
+<td>CALLER-UNKNOWN</td>
+</tr>
+<tr>
+<td>B12-08</td>
+<td><code>rpc_evaluate_identity_merge_candidate(text,text,uuid,jsonb,numeric)</code></td>
+<td>t/t/t</td>
+<td>DENY</td>
+<td>KEEP</td>
+<td>KEEP</td>
+<td>CALLER-UNKNOWN</td>
+</tr>
+<tr>
+<td>B12-09</td>
+<td><code>rpc_field_assign_lead(uuid,uuid)</code></td>
+<td>t/t/t</td>
+<td>DENY</td>
+<td>KEEP</td>
+<td>KEEP</td>
+<td>CALLER-UNKNOWN</td>
+</tr>
+<tr>
+<td>B12-10</td>
+<td><code>rpc_field_close_lead(uuid,text,text)</code></td>
+<td>t/t/t</td>
+<td>DENY</td>
+<td>KEEP</td>
+<td>KEEP</td>
+<td>FIELD</td>
+</tr>
+<tr>
+<td>B12-11</td>
+<td><code>rpc_field_send_photo_to_customer(uuid,uuid,text)</code></td>
+<td>t/t/t</td>
+<td>DENY</td>
+<td>KEEP</td>
+<td>KEEP</td>
+<td>FIELD</td>
+</tr>
+<tr>
+<td>B12-12</td>
+<td><code>rpc_field_set_lead_source(uuid,text)</code></td>
+<td>t/t/t</td>
+<td>DENY</td>
+<td>KEEP</td>
+<td>KEEP</td>
+<td>FIELD</td>
+</tr>
+<tr>
+<td>B12-13</td>
+<td><code>rpc_field_shop_drawing_revision(uuid,text,text,boolean,boolean)</code></td>
+<td>t/t/t</td>
+<td>DENY</td>
+<td>KEEP</td>
+<td>KEEP</td>
+<td>FIELD</td>
+</tr>
+<tr>
+<td>B12-14</td>
+<td><code>rpc_ingest_line_webhook(text,text,text)</code></td>
+<td>t/t/t</td>
+<td>DENY</td>
+<td>DENY</td>
+<td>KEEP</td>
+<td>SERVICE</td>
+</tr>
+<tr>
+<td>B12-15</td>
+<td><code>rpc_record_line_send_result(uuid,text,text,text,uuid)</code></td>
+<td>f/t/t</td>
+<td>DENY</td>
+<td>DECIDE</td>
+<td>KEEP</td>
+<td>SENDER</td>
+</tr>
+<tr>
+<td>B12-16</td>
+<td><code>rpc_request_customer_acceptance(uuid,text)</code></td>
+<td>t/t/t</td>
+<td>DENY</td>
+<td>KEEP</td>
+<td>KEEP</td>
+<td>FIELD</td>
+</tr>
+<tr>
+<td>B12-17</td>
+<td><code>rpc_resolve_conversation_site(uuid,text,text)</code></td>
+<td>t/t/t</td>
+<td>DENY</td>
+<td>KEEP</td>
+<td>KEEP</td>
+<td>CALLER-UNKNOWN</td>
+</tr>
+<tr>
+<td>B12-18</td>
+<td><code>rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean)</code></td>
+<td>t/t/t</td>
+<td>DENY</td>
+<td>KEEP</td>
+<td>KEEP</td>
+<td>CALLER-UNKNOWN</td>
+</tr>
+<tr>
+<td>B12-19</td>
+<td><code>rpc_sweep_line_session_timeouts()</code></td>
+<td>t/t/t</td>
+<td>DENY</td>
+<td>DENY</td>
+<td>KEEP</td>
+<td>SERVICE</td>
+</tr>
+<tr>
+<td>B12-20</td>
+<td><code>rpc_sync_line_forecast(text,text,text)</code></td>
+<td>t/t/t</td>
+<td>DENY</td>
+<td>KEEP</td>
+<td>KEEP</td>
+<td>CALLER-UNKNOWN</td>
+</tr>
+</tbody></table></div>
+<p>เป้าหมาย PUBLIC: ไม่มี EXECUTE ทั้ง 20 identity โดย catalog เดิมมีเฉพาะ welcome trigger คง owner, เนื้อฟังก์ชัน, SELECT ตาราง, membership และ default ACL ในขอบเขตนี้ ไม่แก้ authenticator เพียงเพราะปัจจุบันได้สิทธิ์ผ่าน PUBLIC แต่ต้องตรวจสิทธิ์ที่มีผลจริงหลังแก้ด้วย</p>
+<h2>กลุ่ม caller และมติที่ยังขาด</h2>
+<p>INTERNAL: ถอนการเรียกตรงของ role หลังพิสูจน์ว่า owner chain และ trigger ที่ติดตั้งยังทำงาน fn_prod_curated ต้องประสาน manufacturing กลุ่ม SERVICE: คงทางเข้า service และยืนยัน principal ของ cron จริงโดยไม่เปิด cron กลุ่ม FIELD: คงงานผู้ใช้ที่มีสิทธิ์และทดสอบปฏิเสธข้าม site กลุ่ม CALLER-UNKNOWN: คง authenticated/service รอ inventory การไม่พบ caller ในโค้ดไม่ให้สิทธิ์ถอนเพิ่ม และ dogfood runbook ระบุ rpc_create_line_order ไว้จริง</p>
+<p>SENDER: claim คง service-only ส่วน recorder ปัจจุบันให้ authenticated เรียกและตรวจ governance/site ใน 0197:122–129 แนะนำให้เป็น service-only ถ้า ops และเจ้าของยืนยันว่าไม่มีขั้นตอนบันทึกผลโดยผู้ใช้ หากยังต้องใช้ ให้คงเส้นทางผู้ใช้พร้อมทดสอบ guard โดยตรง ห้ามเลือกแทนโดยเงียบ</p>
+<p>ทุกแถวต้องอ้างทะเบียน ops หรือระบุ unresolved การอนุมัติต้องระบุ signature จริง มติ recorder ผู้เรียก service ที่คงไว้ principal ของ trigger/cron และการประสาน factory ตรวจ overload และเลข 0199 ใหม่บนฐานรวมก่อนเขียน SQL</p>
+<h2>แผนตรวจรับ — ยังไม่ได้รัน</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>การตรวจ</th>
+<th>หลักฐานที่ต้องได้</th>
+</tr></thead><tbody>
+<tr>
+<td>Baseline</td>
+<td>owner, identity 20 ตัวกับ overload ที่เกินมา, สิทธิ์จริงของ role, PUBLIC และ inheritance โดยไม่สมมติ production</td>
+</tr>
+<tr>
+<td>RED</td>
+<td>ใช้เทสต์ชุดเดียวกับ baseline พิสูจน์ว่าสิทธิ์ที่ต้องห้ามยังมี ใช้ input ชนิดถูกต้องและ rollback ไม่เปิด sender/cron/channel จริง</td>
+</tr>
+<tr>
+<td>Denial</td>
+<td>ทุก DENY ต้องเป็น false จากสิทธิ์จริง ordinary function ต้องได้ 42501 permission denied for function ไม่ใช่ล้มที่ schema หรือใน body</td>
+</tr>
+<tr>
+<td>ข้อยกเว้น trigger</td>
+<td>ตรวจ ACL และผล trigger จากการ bind จริง การเรียก trigger function ผิดรูปแบบโดยตรงไม่พิสูจน์การห้ามสิทธิ์</td>
+</tr>
+<tr>
+<td>งานที่ต้องคงไว้</td>
+<td>ingest ลงลายเซ็น, service identity, claim/record, field 5 เส้นทาง, RPC ที่คงไว้พร้อม guard, owner sweep, welcome trigger และ factory owner chain ตรวจผลข้อมูลและการปฏิเสธผิด site</td>
+</tr>
+<tr>
+<td>สิทธิ์ตกค้าง</td>
+<td>จำลอง inherited grant และ grantor อื่นด้วย role ชั่วคราว migration ต้องล้มแบบปิดโดยไม่เพิ่มสิทธิ์หรือแก้ membership เอง</td>
+</tr>
+<tr>
+<td>Atomicity</td>
+<td>รัน migration จริงภายใต้ transaction ที่ตั้งใจใช้ เปรียบ ACL/owner หลังล้ม และทดสอบรันซ้ำ</td>
+</tr>
+<tr>
+<td>Integration</td>
+<td>migration chain และ suite ครบ Python 12 ไฟล์ race กับการห้ามเขียนตรงของ 0198 containment ต้องคงเป็นล้มจนแก้จริง</td>
+</tr>
+<tr>
+<td>หลักฐาน</td>
+<td>ชุดใหม่ไม่ทับเดิม ระบุ source คำสั่ง UTC exit ผลดิบ checksum secret scan และ cleanup ตรวจอิสระ และ CI จริงหลังอนุมัติ push แยก</td>
+</tr>
+</tbody></table></div>
+<p>ข้อมูล fixture และ role ชั่วคราวอยู่เฉพาะ stack ใหม่แยก ปิด cron ไม่ใช้ credential จริง เทสต์ลบต้องไม่รัน outbound worker จริง rollback ผลข้อมูลหรือถอด stack ทิ้ง เอกสารนี้ไม่อ้างว่าทดสอบผ่านแล้ว</p>
+<h2>ขอบเขตรวมระบบและ deploy</h2>
+<p>เจ้าของ manufacturing ต้องพิจารณาลำดับ 0170/0191 และสิทธิ์ overload สุดท้าย ห้ามคัดลอกฟังก์ชันที่ขาดมาเป็น shim เทสต์ P0-9 ยังต้องมีมติ branch/tenant นโยบาย default grant สำหรับฟังก์ชันใหม่หรือสร้างซ้ำเป็นมติแยก แผนนี้ครอบคลุมเพียง 20 identity เดิม ห้ามเรียกว่าปิดความปลอดภัยทั้งระบบ</p>
+<p>ก่อน deploy ต้องอนุมัติตรวจ production catalog แยกเพื่อเทียบ owner, ACL, caller ภายนอก/ทำมือ และ API exposure แผนนี้ไม่อนุญาตเข้า production, merge, push, ส่งลูกค้า หรือเปิด cron</p>
+<h2>รีวิวข้อความออกแบบและข้อปรับปรุง</h2>
+<p>Opus 5.5 ตรวจเฉพาะย่อหน้าข้อกำหนดที่ตัดข้อมูลลับผ่าน Claude CLI โดยปิด tools/MCP ไม่ได้ตรวจ source ไฟล์ หรือฐานข้อมูล ข้อทักท้วงสามเรื่องคือ caller ที่ได้สิทธิ์ผ่าน PUBLIC, สิทธิ์กลับมาหลังสร้างใหม่ และสมมติฐานเรื่อง owner chain/เทสต์ trigger นี่คือข้อคิดเห็นออกแบบ ไม่ใช่การรับรอง implementation อิสระ</p>
+<p>ทุก identity ต้องบันทึกที่มาสิทธิ์ ได้แก่ direct grant กับ grantor, PUBLIC, inheritance หรือ ownership สำหรับ grantee ที่พบทั้งหมด ไม่ใช่สาม role เท่านั้น KEEP ต้องยืนยันว่าสิทธิ์จริงยังมีหลังแก้ ส่วน DECIDE คง grant เดิมจนมีมติ หากถอน PUBLIC แล้วกระทบ caller ที่ยังไม่อยู่ใน matrix ให้หยุดเพื่อตัดสิน ไม่เพิ่ม replacement grant เอง snapshot เดิมมี named grant ให้ role ที่คงไว้ แต่ catalog เป้าหมายใหม่ต้องยืนยันอีกครั้ง การห้าม anon เปลี่ยน 18 identity ส่วน claim กับ recorder ห้ามอยู่แล้วและใช้ตรวจ regression</p>
+<p>สำรวจทุก overload ของชื่อที่ครอบคลุม หลัง create/recreate หรือรวมระบบที่อนุมัติ ต้องตรวจ matrix อีกครั้งและล้มเมื่อพบ overload ใหม่ที่ยังไม่จัดประเภท ไม่ขยายนโยบายห้ามทั่ว schema ในงานนี้ นโยบาย default ACL ในอนาคตยังแยกต่างหาก</p>
+<p>ไล่ principal ที่ทำงานจริงตลอด helper chain รวมจุด DEFINER/INVOKER และ owner ต้องพิสูจน์ว่า principal นั้นยังมี EXECUTE ไม่สมมติว่าทุก caller เป็น postgres หาก inherited access ทำให้ DENY ไม่สำเร็จต้องหยุด migration ไม่ถือว่าอนุมัติแก้ membership เทสต์ ordinary function ต้องยืนยัน schema USAGE และไม่มีผลข้างเคียงในฟังก์ชัน สำหรับ welcome ให้แยก ACL assertion ออกจาก trigger non-regression และทดสอบว่าผู้รัน migration/restore ที่ตั้งใจใช้สร้าง trigger ใหม่ได้บน stack แยก ห้ามใช้ trigger เดิมที่ทำงานผ่านเป็นหลักฐานสิทธิ์ของ caller</p>
+<h2>แหล่งหลักฐาน</h2>
+<ul><li><a href="evidence/line-p010-catalog-2026-09-30/08-analysis.txt">ผล catalog</a>: ส่วน E มี signature/สิทธิ์จริง ส่วน G มี default ACL</li><li><a href="line-p010-integration-b12-followup.th.md">ผลสำรวจ integration และ caller</a>: ตำแหน่ง source และ dependency 0170/0191</li><li><a href="line-rpc-caller-register.th.md">ทะเบียน ops</a>: environment และเจ้าของผู้รับผิดชอบยังรอยืนยัน</li><li>../../supabase/migrations/0197_line_outbound_unicode_error_detail.sql:122–129: ทางอนุญาต recorder สำหรับ service และผู้ใช้</li><li>../dogfood/first-house-runbook.md:35: RPC สร้าง order แบบทำมือที่ระบุไว้</li></ul>
+</main>
+</body>
+</html>

@@ -50,3 +50,5 @@ Manufacturing request: review 0170 versus 0191 on the chosen integration base; r
 Ops request: complete RPC-01 through RPC-12 per environment, including additional external/manual callers. Return named accountable owners, exact signatures, authentication classes and redacted evidence references. Do not send keys, tokens or customer payloads. UNKNOWN remains valid when unsupported; absence requires stated inventory coverage.
 
 Return format: owner; environment; RPC/signature; caller or chain; active/last use; authentication class; retain/retire recommendation; redacted evidence reference; unresolved questions. After both replies, prepare the exact B12 permission matrix and integration decision for approval. No external system access is authorized by this handoff.
+
+Exact signatures, provisional role decisions and tests are in [the B12 matrix](line-b12-permission-matrix.en.md); it does not authorize the migration.
