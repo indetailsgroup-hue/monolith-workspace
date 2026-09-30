@@ -1,0 +1,35 @@
+evidence_bundle: docs/governance/evidence/line-p010-catalog-2026-09-30
+started_utc: 2026-09-30T09:25:58Z
+command (Git Bash, repository root): P010_OUT=docs/governance/evidence/line-p010-catalog-2026-09-30 P010_SQL=/c/Users/thai3/.codex/visualizations/2026/09/30/01a0f09b-d08f-7b43-813b-8ed8bd1316f6/p010-review/catalog-checklist.sql bash /c/Users/thai3/AppData/Local/Temp/claude/C--Users-thai3-determined-williams--2--MONOLITH-Repair-Intelligence/ce545bd9-4134-4d24-8b4c-aac4981d3aaf/scratchpad/p010-run/run-p010-catalog.sh
+runner_sha256: e64a44459d7ba6655d0c83cc9c67ffb88c17822db21727d5f98f31a22d0e2c1d (copy: run-p010-catalog.sh)
+catalog_sql_source: /c/Users/thai3/.codex/visualizations/2026/09/30/01a0f09b-d08f-7b43-813b-8ed8bd1316f6/p010-review/catalog-checklist.sql
+catalog_sql_sha256: 5ed8f00dea517687b658401dc570e8ab24b59d71ae0a5b845f808f6887a3d987 (approved: 5ed8f00dea517687b658401dc570e8ab24b59d71ae0a5b845f808f6887a3d987; copy: catalog-checklist.sql)
+branch: codex/repair-intelligence-phase0-trust
+head_sha: 6a41ebb691ff3020838774f34aa4afebe2fdd61c (approved base: 6a41ebb691ff3020838774f34aa4afebe2fdd61c)
+supabase_status_porcelain: [] (empty = clean)
+core.autocrlf: true
+db_image: public.ecr.aws/supabase/postgres:17.6.1.158 id=sha256:99b1729aeb0bac314445024fc149fbd39306170b61dd50800ccf180327ab3459 digests=public.ecr.aws/supabase/postgres@sha256:99b1729aeb0bac314445024fc149fbd39306170b61dd50800ccf180327ab3459
+auth_image: public.ecr.aws/supabase/gotrue:v2.195.0 id=sha256:362659ca70eaa75ba05bbaf963caa84c1c5afe5e8fbf0777e17b830dd5f0f60a digests=public.ecr.aws/supabase/gotrue@sha256:362659ca70eaa75ba05bbaf963caa84c1c5afe5e8fbf0777e17b830dd5f0f60a
+storage_image: public.ecr.aws/supabase/storage-api:v1.66.4 id=sha256:ead6d49b9873d65a030c6c44b46676f4276b234becd6d7819c254351b5400d95 digests=public.ecr.aws/supabase/storage-api@sha256:ead6d49b9873d65a030c6c44b46676f4276b234becd6d7819c254351b5400d95
+network: line-p010-net · containers: line-p010-db (127.0.0.1:55444), line-p010-auth, line-p010-storage (all throwaway; removed at the end)
+dsn: postgresql://postgres@127.0.0.1:55444/postgres (password generated per run, passed via PGPASSWORD, never written)
+node: v22.21.1
+python: Python 3.14.2
+psql_client: psql (PostgreSQL) 18.1
+docker: 29.8.0
+migration_source_check_exit=0
+db_ready_utc: 2026-09-30T09:26:13Z
+db_port_binding: 127.0.0.1:55444 
+cron_launch_active_jobs: off
+db_server: PostgreSQL 17.6 on x86_64-pc-linux-gnu, compiled by gcc (GCC) 15.2.0, 64-bit
+service_bootstrap: ok (01b-service-bootstrap.sql)
+auth_schema_ready: t · storage_schema_ready: t
+services_ready_utc: 2026-09-30T09:26:18Z
+migrations_applied_ok: 192 of 192 · failed: 0
+catalog_started_utc: 2026-09-30T09:26:49Z
+catalog_aligned_exit=0 · catalog_unaligned_exit=0
+catalog_fingerprint_unchanged_by_checklist: yes
+result: COMPLETED
+credential_scan_exit=0
+runner_exit=0
+finished_utc: 2026-09-30T09:26:53Z

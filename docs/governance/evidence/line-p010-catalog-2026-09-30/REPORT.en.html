@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>P0-10 catalog evidence</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>P0-10 catalog evidence: ephemeral stack built from the migration chain</h1>
+<p>Date: 30 September 2026. Base: 6a41ebb691ff3020838774f34aa4afebe2fdd61c on codex/repair-intelligence-phase0-trust. Status: EVIDENCE COLLECTED, awaiting independent review. This does not close P0-10 or Phase A, does not approve migration 0198, and changes no privilege.</p>
+<h2>Approval and scope</h2>
+<p>The owner approved two things: service_role is inside the P0-10 revoke design target, and the read-only catalog may be collected on a throwaway stack migrated from zero, with only this evidence bundle committed. No 0198, no grant/owner/membership change, no pgTAP, Python or write tests, no push, no deploy, no cron execution, no real message and no shared or production database were part of this run.</p>
+<h2>How the evidence was produced</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Item</th>
+<th>Value</th>
+</tr></thead><tbody>
+<tr>
+<td>Runner</td>
+<td>run-p010-catalog.sh (exact executed bytes, sha256 e64a4445…2c1d)</td>
+</tr>
+<tr>
+<td>Catalog SQL</td>
+<td>catalog-checklist.sql, sha256 5ed8f00dea517687b658401dc570e8ab24b59d71ae0a5b845f808f6887a3d987 (approved hash, unmodified)</td>
+</tr>
+<tr>
+<td>Stack</td>
+<td>supabase/postgres 17.6.1.158 + gotrue v2.195.0 + storage-api v1.66.4, image IDs in 00-context.txt</td>
+</tr>
+<tr>
+<td>Isolation</td>
+<td>network line-p010-net, DB published on 127.0.0.1:55444 only, cron.launch_active_jobs=off</td>
+</tr>
+<tr>
+<td>Time (UTC)</td>
+<td>started 09:25:58, catalog 09:26:49, finished 09:26:53</td>
+</tr>
+<tr>
+<td>Clients</td>
+<td>psql 18.1, Python 3.14.2, Node v22.21.1, Docker 29.8.0</td>
+</tr>
+</tbody></table></div>
+<h2>Run results</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Check</th>
+<th>Result</th>
+<th>File</th>
+</tr></thead><tbody>
+<tr>
+<td>Pre-flight (HEAD, branch, clean supabase/, SQL hash, names, port, images)</td>
+<td>passed; nothing existed beforehand</td>
+<td>00-context.txt</td>
+</tr>
+<tr>
+<td>Migration sources vs base blobs</td>
+<td>192 files: 10 identical, 182 CRLF/LF only, 0 substantive</td>
+<td>02a-migration-sources.txt</td>
+</tr>
+<tr>
+<td>Migrations from zero</td>
+<td>192 of 192 applied, 0 failed, no shim</td>
+<td>02-migrations-applied.txt</td>
+</tr>
+<tr>
+<td>Cron</td>
+<td>12 jobs defined by the chain, scheduler off, 0 rows in cron.job_run_details</td>
+<td>03-baseline-after-migrations.txt</td>
+</tr>
+<tr>
+<td>Catalog checklist</td>
+<td>aligned exit 0, unaligned exit 0, 11 result sets each</td>
+<td>04a, 04b</td>
+</tr>
+<tr>
+<td>Catalog unchanged by the checklist</td>
+<td>fingerprint identical before and after</td>
+<td>00-context.txt, 03, 05</td>
+</tr>
+<tr>
+<td>Teardown</td>
+<td>0 containers and 0 networks of this run remain</td>
+<td>06-teardown.txt</td>
+</tr>
+<tr>
+<td>In-run credential scan</td>
+<td>positive control detected; 0 generated credential bytes in 18 files</td>
+<td>07-credential-scan.txt</td>
+</tr>
+<tr>
+<td>Runner exit</td>
+<td>0</td>
+<td>00-context.txt</td>
+</tr>
+</tbody></table></div>
+<h2>Catalog findings on this stack</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>#</th>
+<th>Finding (verified from 04b, derived in 08-analysis.txt)</th>
+</tr></thead><tbody>
+<tr>
+<td>1</td>
+<td>All 8 target tables are owned by postgres and have RLS enabled but not forced.</td>
+</tr>
+<tr>
+<td>2</td>
+<td>anon, authenticated and service_role hold direct INSERT/UPDATE/DELETE/TRUNCATE on 7 tables and INSERT/TRUNCATE on line_oa_audit_log. PUBLIC holds no write grant. No column-level ACL exists.</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Effective write privilege: anon 8/8 tables, authenticated 8/8, service_role 8/8, authenticator 0/8 (NOINHERIT, SET ROLE path only), postgres 8/8.</td>
+</tr>
+<tr>
+<td>4</td>
+<td>postgres is not a superuser, has BYPASSRLS, and is an inheriting member of anon, authenticated, service_role and authenticator.</td>
+</tr>
+<tr>
+<td>5</td>
+<td>All 20 candidate names exist as exactly 20 identities with no overloads. All 20 are SECURITY DEFINER, owned by postgres, with a fixed search_path.</td>
+</tr>
+<tr>
+<td>6</td>
+<td>postgres owns all 8 tables, so every definer write right comes from ownership. Rights that depend only on role membership: none.</td>
+</tr>
+<tr>
+<td>7</td>
+<td>27 more routines matched the text search (23 definer, 4 invoker). All are owned by postgres. The 4 invoker routines are fn_wf_render_notification_text, line_oa__ct_equal, line_oa_audit_log_immutable and line_oa_normalize_order; their bodies were not captured.</td>
+</tr>
+<tr>
+<td>8</td>
+<td>10 triggers are on target tables: 8 internal foreign-key triggers (no cascade), the definer guard trg_line_guard_customer_group and the invoker trg_line_oa_audit_log_immutable. 2 are on other tables (installation_projects, line_groups), both calling definer routines.</td>
+</tr>
+<tr>
+<td>9</td>
+<td>No view, materialized view or rule depends on the 8 tables.</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Default ACLs for creators postgres and supabase_admin in public grant ALL on tables, EXECUTE on functions and sequence rights to anon, authenticated and service_role.</td>
+</tr>
+</tbody></table></div>
+<h2>What this implies (inference, still to be tested)</h2>
+<p>On this stack, revoking INSERT/UPDATE/DELETE/TRUNCATE on the 8 tables from anon, authenticated and service_role would not remove the rights the 20 definer routines use, because those rights come from table ownership, not from membership in service_role. Real-operation tests with SQLSTATE 42501 are still required after a separately approved change. Finding 10 means any future table in public receives these grants again unless defaults are changed, which is outside the approved scope.</p>
+<h2>New observation outside the table-grant scope</h2>
+<p>anon can EXECUTE 18 of the 20 definer writers, authenticated 19 and service_role 20. Only rpc_claim_line_outbound_batch is limited to service_role, and rpc_record_line_send_result is not granted to anon. fn_welcome_on_group_bind also has PUBLIC EXECUTE. Migrations revoke EXECUTE only from PUBLIC (for example 0107_factory_group_milestones.sql line 61), while default ACLs grant it directly to the named roles. The source of fn_prod_curated (0107 lines 50 to 60) inserts a pending push into a customer group without any caller check. Revoking table grants therefore does not stop a client role from calling a definer writer. Whether PostgREST in production exposes these functions is unknown. This needs its own owner decision and is not part of the approved 0198 scope.</p>
+<h2>Not established by this evidence</h2>
+<ul><li>The production catalog: owners, ACLs, memberships, default ACLs and EXECUTE grants may differ from this reconstructed chain.</li><li>Behaviour after a revoke: no revoke or write was attempted in this run.</li><li>Internal authorisation checks in the other 19 routine bodies: the capture holds body hashes, not bodies.</li><li>External service-key writers: only the owner-relayed ops attestation exists.</li></ul>
+<h2>Files</h2>
+<p>The raw run outputs are listed in SHA256SUMS.run. The collector added analyze-p010-catalog.py, 08-analysis.txt, gate-p010-commit.py, REPLAY.txt and these four report files after the run. SHA256SUMS covers every file except itself. REPLAY.txt explains re-checking and replaying.</p>
+<h2>Next step</h2>
+<p>An independent reviewer checks this commit (checksums, owner/ACL, membership, triggers and views) before any request to approve 0198. The EXECUTE observation also goes to the owner as a separate decision. Phase A remains EVIDENCE_INCOMPLETE.</p>
+</main>
+</body>
+</html>

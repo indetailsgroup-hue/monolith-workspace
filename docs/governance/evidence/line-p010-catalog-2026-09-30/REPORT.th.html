@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>หลักฐาน catalog ของ P0-10</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>หลักฐาน catalog ของ P0-10: stack ชั่วคราวที่สร้างจาก migration chain</h1>
+<p>วันที่: 30 กันยายน 2026 ฐาน: 6a41ebb691ff3020838774f34aa4afebe2fdd61c บน codex/repair-intelligence-phase0-trust สถานะ: เก็บหลักฐานแล้ว รอผู้ตรวจอิสระ ผลนี้ไม่ได้ปิด P0-10 หรือ Phase A ไม่ได้อนุมัติ migration 0198 และไม่ได้เปลี่ยนสิทธิ์ใด ๆ</p>
+<h2>การอนุมัติและขอบเขต</h2>
+<p>เจ้าของอนุมัติ 2 เรื่อง คือ รวม service_role ในเป้าหมายการออกแบบ revoke ของ P0-10 และให้เก็บ catalog แบบอ่านอย่างเดียวบน stack ชั่วคราวที่ migrate จากศูนย์ โดย commit เฉพาะชุดหลักฐานนี้ รอบนี้ไม่มี 0198 ไม่เปลี่ยน grant/owner/membership ไม่รัน pgTAP, Python หรือการทดสอบเขียน ไม่ push ไม่ deploy ไม่ให้ cron ทำงาน ไม่ส่งข้อความจริง และไม่เชื่อมต่อฐานข้อมูล shared หรือ production</p>
+<h2>วิธีสร้างหลักฐาน</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>รายการ</th>
+<th>ค่า</th>
+</tr></thead><tbody>
+<tr>
+<td>Runner</td>
+<td>run-p010-catalog.sh (ไบต์ที่รันจริง sha256 e64a4445…2c1d)</td>
+</tr>
+<tr>
+<td>Catalog SQL</td>
+<td>catalog-checklist.sql sha256 5ed8f00dea517687b658401dc570e8ab24b59d71ae0a5b845f808f6887a3d987 (hash ที่อนุมัติ ไม่ได้แก้)</td>
+</tr>
+<tr>
+<td>Stack</td>
+<td>supabase/postgres 17.6.1.158 + gotrue v2.195.0 + storage-api v1.66.4 image ID อยู่ใน 00-context.txt</td>
+</tr>
+<tr>
+<td>การแยกสภาพแวดล้อม</td>
+<td>network line-p010-net, DB เปิดเฉพาะ 127.0.0.1:55444, cron.launch_active_jobs=off</td>
+</tr>
+<tr>
+<td>เวลา (UTC)</td>
+<td>เริ่ม 09:25:58, catalog 09:26:49, จบ 09:26:53</td>
+</tr>
+<tr>
+<td>เครื่องมือ</td>
+<td>psql 18.1, Python 3.14.2, Node v22.21.1, Docker 29.8.0</td>
+</tr>
+</tbody></table></div>
+<h2>ผลการรัน</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>การตรวจ</th>
+<th>ผล</th>
+<th>ไฟล์</th>
+</tr></thead><tbody>
+<tr>
+<td>Pre-flight (HEAD, branch, supabase/ สะอาด, hash ของ SQL, ชื่อ, พอร์ต, image)</td>
+<td>ผ่าน ไม่มีของเดิมค้าง</td>
+<td>00-context.txt</td>
+</tr>
+<tr>
+<td>ไฟล์ migration เทียบ blob ของฐาน</td>
+<td>192 ไฟล์: เหมือนทุกไบต์ 10, ต่างเฉพาะ CRLF/LF 182, ต่างสาระ 0</td>
+<td>02a-migration-sources.txt</td>
+</tr>
+<tr>
+<td>Migrate จากศูนย์</td>
+<td>ผ่าน 192 จาก 192, fail 0, ไม่มี shim</td>
+<td>02-migrations-applied.txt</td>
+</tr>
+<tr>
+<td>Cron</td>
+<td>chain สร้าง 12 job, scheduler ปิด, cron.job_run_details มี 0 แถว</td>
+<td>03-baseline-after-migrations.txt</td>
+</tr>
+<tr>
+<td>Catalog checklist</td>
+<td>แบบ aligned exit 0, แบบ unaligned exit 0, ได้ 11 ชุดผลทั้งสองแบบ</td>
+<td>04a, 04b</td>
+</tr>
+<tr>
+<td>Checklist ไม่เปลี่ยน catalog</td>
+<td>fingerprint ก่อนและหลังเท่ากัน</td>
+<td>00-context.txt, 03, 05</td>
+</tr>
+<tr>
+<td>Teardown</td>
+<td>ไม่เหลือ container และ network ของรอบนี้</td>
+<td>06-teardown.txt</td>
+</tr>
+<tr>
+<td>Credential scan ระหว่างรัน</td>
+<td>positive control ตรวจเจอ, ไม่พบไบต์ credential ที่สร้างขึ้นใน 18 ไฟล์</td>
+<td>07-credential-scan.txt</td>
+</tr>
+<tr>
+<td>Exit ของ runner</td>
+<td>0</td>
+<td>00-context.txt</td>
+</tr>
+</tbody></table></div>
+<h2>ข้อค้นพบจาก catalog ของ stack นี้</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>#</th>
+<th>ข้อค้นพบ (ยืนยันจาก 04b และสรุปใน 08-analysis.txt)</th>
+</tr></thead><tbody>
+<tr>
+<td>1</td>
+<td>ตารางเป้าหมายทั้ง 8 มี owner เป็น postgres เปิด RLS แต่ไม่ได้ force</td>
+</tr>
+<tr>
+<td>2</td>
+<td>anon, authenticated และ service_role มี INSERT/UPDATE/DELETE/TRUNCATE โดยตรงใน 7 ตาราง และมี INSERT/TRUNCATE ใน line_oa_audit_log ส่วน PUBLIC ไม่มีสิทธิ์เขียน และไม่มี ACL ระดับคอลัมน์</td>
+</tr>
+<tr>
+<td>3</td>
+<td>สิทธิ์เขียนที่มีผลจริง: anon 8/8 ตาราง, authenticated 8/8, service_role 8/8, authenticator 0/8 (NOINHERIT มีแค่ทาง SET ROLE), postgres 8/8</td>
+</tr>
+<tr>
+<td>4</td>
+<td>postgres ไม่ใช่ superuser มี BYPASSRLS และเป็นสมาชิกแบบ inherit ของ anon, authenticated, service_role และ authenticator</td>
+</tr>
+<tr>
+<td>5</td>
+<td>ชื่อผู้สมัครทั้ง 20 มีอยู่จริงเป็น 20 identity ไม่มี overload ทั้ง 20 เป็น SECURITY DEFINER, owner คือ postgres และกำหนด search_path ไว้</td>
+</tr>
+<tr>
+<td>6</td>
+<td>postgres เป็นเจ้าของทั้ง 8 ตาราง สิทธิ์เขียนของฟังก์ชัน definer ทุกตัวจึงมาจากความเป็นเจ้าของ สิทธิ์ที่พึ่งการเป็นสมาชิก role อย่างเดียว: ไม่มี</td>
+</tr>
+<tr>
+<td>7</td>
+<td>มี routine อื่นอีก 27 ตัวที่ตรงกับการค้นข้อความ (definer 23, invoker 4) owner เป็น postgres ทั้งหมด ตัวที่เป็น invoker คือ fn_wf_render_notification_text, line_oa__ct_equal, line_oa_audit_log_immutable และ line_oa_normalize_order ซึ่งไม่ได้เก็บเนื้อฟังก์ชัน</td>
+</tr>
+<tr>
+<td>8</td>
+<td>มี trigger บนตารางเป้าหมาย 10 ตัว: internal foreign-key 8 ตัว (ไม่มี cascade), guard แบบ definer trg_line_guard_customer_group และ trg_line_oa_audit_log_immutable แบบ invoker อีก 2 ตัวอยู่บนตารางอื่น (installation_projects, line_groups) และเรียก routine แบบ definer ทั้งคู่</td>
+</tr>
+<tr>
+<td>9</td>
+<td>ไม่มี view, materialized view หรือ rule ที่พึ่งพา 8 ตารางนี้</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Default ACL ของผู้สร้าง postgres และ supabase_admin ใน public ให้ ALL บนตาราง, EXECUTE บนฟังก์ชัน และสิทธิ์ sequence แก่ anon, authenticated และ service_role</td>
+</tr>
+</tbody></table></div>
+<h2>ความหมาย (ข้ออนุมาน ยังต้องทดสอบ)</h2>
+<p>บน stack นี้ การ revoke INSERT/UPDATE/DELETE/TRUNCATE บน 8 ตารางจาก anon, authenticated และ service_role จะไม่ตัดสิทธิ์ที่ routine definer ทั้ง 20 ใช้ เพราะสิทธิ์นั้นมาจากความเป็นเจ้าของตาราง ไม่ได้มาจากการเป็นสมาชิก service_role แต่ยังต้องทดสอบด้วยการเขียนจริงที่ต้องได้ SQLSTATE 42501 หลังการแก้ที่อนุมัติแยก ข้อ 10 หมายความว่าตารางใหม่ใน public จะได้ grant เหล่านี้กลับมาอีก เว้นแต่จะเปลี่ยน default ซึ่งอยู่นอกขอบเขตที่อนุมัติ</p>
+<h2>ข้อสังเกตใหม่นอกขอบเขต table grant</h2>
+<p>anon EXECUTE ได้ 18 จาก 20 ฟังก์ชัน definer ที่เขียนข้อมูล authenticated ได้ 19 และ service_role ได้ 20 มีเพียง rpc_claim_line_outbound_batch ที่จำกัดให้ service_role และ rpc_record_line_send_result ที่ไม่ได้ให้ anon ส่วน fn_welcome_on_group_bind มี PUBLIC EXECUTE ด้วย migration revoke EXECUTE จาก PUBLIC เท่านั้น (เช่น 0107_factory_group_milestones.sql บรรทัด 61) ขณะที่ default ACL ให้สิทธิ์กับ role ที่มีชื่อโดยตรง source ของ fn_prod_curated (0107 บรรทัด 50 ถึง 60) insert ข้อความ push สถานะ pending เข้ากลุ่มลูกค้าโดยไม่ตรวจผู้เรียก การ revoke table grant จึงไม่ได้หยุด client role จากการเรียกฟังก์ชัน definer ที่เขียนข้อมูล ยังไม่ทราบว่า PostgREST ใน production เปิดฟังก์ชันเหล่านี้หรือไม่ เรื่องนี้ต้องให้เจ้าของตัดสินแยก และไม่อยู่ในขอบเขต 0198 ที่อนุมัติ</p>
+<h2>สิ่งที่หลักฐานนี้ยังไม่ยืนยัน</h2>
+<ul><li>Catalog ของ production: owner, ACL, membership, default ACL และ EXECUTE อาจต่างจาก chain ที่สร้างใหม่นี้</li><li>พฤติกรรมหลัง revoke: รอบนี้ไม่ได้ทดลอง revoke หรือเขียนข้อมูล</li><li>การตรวจสิทธิ์ภายในเนื้อฟังก์ชันอีก 19 ตัว: เก็บไว้แค่ hash ของเนื้อฟังก์ชัน ไม่ได้เก็บตัวเนื้อ</li><li>ผู้เขียนภายนอกผ่าน service key: มีเพียงคำยืนยันของ ops ที่เจ้าของส่งต่อ</li></ul>
+<h2>ไฟล์</h2>
+<p>ผลดิบของการรันอยู่ใน SHA256SUMS.run ผู้เก็บหลักฐานเพิ่ม analyze-p010-catalog.py, 08-analysis.txt, gate-p010-commit.py, REPLAY.txt และรายงาน 4 ไฟล์นี้หลังการรัน SHA256SUMS ครอบคลุมทุกไฟล์ยกเว้นตัวมันเอง วิธีตรวจซ้ำและรันซ้ำอยู่ใน REPLAY.txt</p>
+<h2>ขั้นต่อไป</h2>
+<p>ผู้ตรวจอิสระตรวจ commit นี้ (checksum, owner/ACL, membership, trigger และ view) ก่อนขออนุมัติ 0198 ส่วนข้อสังเกตเรื่อง EXECUTE ส่งให้เจ้าของตัดสินแยก Phase A ยังคงเป็น EVIDENCE_INCOMPLETE</p>
+</main>
+</body>
+</html>

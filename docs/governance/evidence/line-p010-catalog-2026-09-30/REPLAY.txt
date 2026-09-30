@@ -1,0 +1,16 @@
+P0-10 catalog evidence - how it was produced and how to replay it
+
+Executed command (Git Bash, repository root, 2026-09-30T09:25:58Z):
+P010_OUT=docs/governance/evidence/line-p010-catalog-2026-09-30 P010_SQL=/c/Users/thai3/.codex/visualizations/2026/09/30/01a0f09b-d08f-7b43-813b-8ed8bd1316f6/p010-review/catalog-checklist.sql bash <scratchpad>/p010-run/run-p010-catalog.sh
+run-p010-catalog.sh in this bundle is the exact executed file (sha256 e64a44459d7ba6655d0c83cc9c67ffb88c17822db21727d5f98f31a22d0e2c1d; the runner copied its own bytes here at start).
+catalog-checklist.sql in this bundle is the exact executed SQL (sha256 5ed8f00dea517687b658401dc570e8ab24b59d71ae0a5b845f808f6887a3d987, the owner-approved file). Both catalog runs read this bundle copy.
+
+Runner-time files: SHA256SUMS.run was written by the runner after teardown and the in-run credential scan. It covers every raw output of the run.
+Post-run files, added by the collector after the runner exited: analyze-p010-catalog.py, 08-analysis.txt (its output from 04b), gate-p010-commit.py, REPLAY.txt, REPORT.en.md/.th.md/.en.html/.th.html and SHA256SUMS (all files except itself).
+To re-derive the analysis: py analyze-p010-catalog.py 04b-catalog-output-unaligned.txt | cmp - 08-analysis.txt
+To verify the bundle against Git after checkout: py gate-p010-commit.py docs/governance/evidence/line-p010-catalog-2026-09-30 --rev <evidence commit>
+
+Replay (a new run, not a re-check): the runner hard-codes the approved base 6a41ebb691ff3020838774f34aa4afebe2fdd61c and branch codex/repair-intelligence-phase0-trust, and refuses an existing output directory, existing line-p010-* containers/network, port 55444 in use, or a SQL hash mismatch. After the evidence commit the branch no longer points at the base, so a replay needs a detached checkout of the base (git worktree add --detach <dir> 6a41ebb69), a copy of this runner with only line 37 (the branch-name check) removed, and a NEW P010_OUT directory. Everything else must stay unchanged.
+
+Line endings: core.autocrlf=true on this machine, so migrations were applied as CRLF working-tree bytes. 02a-migration-sources.txt compares every applied file with its blob at the base commit: 10 byte-identical, 182 differ only by CRLF/LF, 0 substantive. .gitattributes (* -text) keeps the evidence bytes unchanged in Git.
+Tool versions, image IDs/digests, the port binding and every exit code are in 00-context.txt.
