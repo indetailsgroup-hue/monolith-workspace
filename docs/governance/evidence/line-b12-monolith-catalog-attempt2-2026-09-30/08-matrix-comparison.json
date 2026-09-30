@@ -1,0 +1,486 @@
+{
+  "source_base": "5caee238e7f7d977353d7659d3c4e45ad0e01e7d",
+  "scope": "reconstructed MONOLITH, pre-0199, not production",
+  "comparisons": [
+    {
+      "id": "B12-01",
+      "signature": "public.fn_lead_followup_sweep()",
+      "role": "anon",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-01",
+      "signature": "public.fn_lead_followup_sweep()",
+      "role": "authenticated",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-01",
+      "signature": "public.fn_lead_followup_sweep()",
+      "role": "service_role",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    },
+    {
+      "id": "B12-02",
+      "signature": "public.fn_line_handle_group_event(jsonb,text,text)",
+      "role": "anon",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-02",
+      "signature": "public.fn_line_handle_group_event(jsonb,text,text)",
+      "role": "authenticated",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-02",
+      "signature": "public.fn_line_handle_group_event(jsonb,text,text)",
+      "role": "service_role",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-03",
+      "signature": "public.fn_prod_curated(uuid,text,jsonb)",
+      "role": "anon",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-03",
+      "signature": "public.fn_prod_curated(uuid,text,jsonb)",
+      "role": "authenticated",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-03",
+      "signature": "public.fn_prod_curated(uuid,text,jsonb)",
+      "role": "service_role",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-04",
+      "signature": "public.fn_welcome_on_group_bind()",
+      "role": "anon",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-04",
+      "signature": "public.fn_welcome_on_group_bind()",
+      "role": "authenticated",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-04",
+      "signature": "public.fn_welcome_on_group_bind()",
+      "role": "service_role",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-05",
+      "signature": "public.line_oa_resolve_customer_identity(text,text)",
+      "role": "anon",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-05",
+      "signature": "public.line_oa_resolve_customer_identity(text,text)",
+      "role": "authenticated",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-05",
+      "signature": "public.line_oa_resolve_customer_identity(text,text)",
+      "role": "service_role",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    },
+    {
+      "id": "B12-06",
+      "signature": "public.rpc_claim_line_outbound_batch(integer,integer)",
+      "role": "anon",
+      "effective_execute": false,
+      "proposed": "DENY",
+      "comparison": "ALREADY_DENIED"
+    },
+    {
+      "id": "B12-06",
+      "signature": "public.rpc_claim_line_outbound_batch(integer,integer)",
+      "role": "authenticated",
+      "effective_execute": false,
+      "proposed": "DENY",
+      "comparison": "ALREADY_DENIED"
+    },
+    {
+      "id": "B12-06",
+      "signature": "public.rpc_claim_line_outbound_batch(integer,integer)",
+      "role": "service_role",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    },
+    {
+      "id": "B12-07",
+      "signature": "public.rpc_create_line_order(uuid,jsonb,text,text)",
+      "role": "anon",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-07",
+      "signature": "public.rpc_create_line_order(uuid,jsonb,text,text)",
+      "role": "authenticated",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    },
+    {
+      "id": "B12-07",
+      "signature": "public.rpc_create_line_order(uuid,jsonb,text,text)",
+      "role": "service_role",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    },
+    {
+      "id": "B12-08",
+      "signature": "public.rpc_evaluate_identity_merge_candidate(text,text,uuid,jsonb,numeric)",
+      "role": "anon",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-08",
+      "signature": "public.rpc_evaluate_identity_merge_candidate(text,text,uuid,jsonb,numeric)",
+      "role": "authenticated",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    },
+    {
+      "id": "B12-08",
+      "signature": "public.rpc_evaluate_identity_merge_candidate(text,text,uuid,jsonb,numeric)",
+      "role": "service_role",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    },
+    {
+      "id": "B12-09",
+      "signature": "public.rpc_field_assign_lead(uuid,uuid)",
+      "role": "anon",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-09",
+      "signature": "public.rpc_field_assign_lead(uuid,uuid)",
+      "role": "authenticated",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    },
+    {
+      "id": "B12-09",
+      "signature": "public.rpc_field_assign_lead(uuid,uuid)",
+      "role": "service_role",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    },
+    {
+      "id": "B12-10",
+      "signature": "public.rpc_field_close_lead(uuid,text,text)",
+      "role": "anon",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-10",
+      "signature": "public.rpc_field_close_lead(uuid,text,text)",
+      "role": "authenticated",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    },
+    {
+      "id": "B12-10",
+      "signature": "public.rpc_field_close_lead(uuid,text,text)",
+      "role": "service_role",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    },
+    {
+      "id": "B12-11",
+      "signature": "public.rpc_field_send_photo_to_customer(uuid,uuid,text)",
+      "role": "anon",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-11",
+      "signature": "public.rpc_field_send_photo_to_customer(uuid,uuid,text)",
+      "role": "authenticated",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    },
+    {
+      "id": "B12-11",
+      "signature": "public.rpc_field_send_photo_to_customer(uuid,uuid,text)",
+      "role": "service_role",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    },
+    {
+      "id": "B12-12",
+      "signature": "public.rpc_field_set_lead_source(uuid,text)",
+      "role": "anon",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-12",
+      "signature": "public.rpc_field_set_lead_source(uuid,text)",
+      "role": "authenticated",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    },
+    {
+      "id": "B12-12",
+      "signature": "public.rpc_field_set_lead_source(uuid,text)",
+      "role": "service_role",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    },
+    {
+      "id": "B12-13",
+      "signature": "public.rpc_field_shop_drawing_revision(uuid,text,text,boolean,boolean)",
+      "role": "anon",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-13",
+      "signature": "public.rpc_field_shop_drawing_revision(uuid,text,text,boolean,boolean)",
+      "role": "authenticated",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    },
+    {
+      "id": "B12-13",
+      "signature": "public.rpc_field_shop_drawing_revision(uuid,text,text,boolean,boolean)",
+      "role": "service_role",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    },
+    {
+      "id": "B12-14",
+      "signature": "public.rpc_ingest_line_webhook(text,text,text)",
+      "role": "anon",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-14",
+      "signature": "public.rpc_ingest_line_webhook(text,text,text)",
+      "role": "authenticated",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-14",
+      "signature": "public.rpc_ingest_line_webhook(text,text,text)",
+      "role": "service_role",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    },
+    {
+      "id": "B12-15",
+      "signature": "public.rpc_record_line_send_result(uuid,text,text,text,uuid)",
+      "role": "anon",
+      "effective_execute": false,
+      "proposed": "DENY",
+      "comparison": "ALREADY_DENIED"
+    },
+    {
+      "id": "B12-15",
+      "signature": "public.rpc_record_line_send_result(uuid,text,text,text,uuid)",
+      "role": "authenticated",
+      "effective_execute": true,
+      "proposed": "DECIDE",
+      "comparison": "OPEN_DECISION"
+    },
+    {
+      "id": "B12-15",
+      "signature": "public.rpc_record_line_send_result(uuid,text,text,text,uuid)",
+      "role": "service_role",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    },
+    {
+      "id": "B12-16",
+      "signature": "public.rpc_request_customer_acceptance(uuid,text)",
+      "role": "anon",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-16",
+      "signature": "public.rpc_request_customer_acceptance(uuid,text)",
+      "role": "authenticated",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    },
+    {
+      "id": "B12-16",
+      "signature": "public.rpc_request_customer_acceptance(uuid,text)",
+      "role": "service_role",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    },
+    {
+      "id": "B12-17",
+      "signature": "public.rpc_resolve_conversation_site(uuid,text,text)",
+      "role": "anon",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-17",
+      "signature": "public.rpc_resolve_conversation_site(uuid,text,text)",
+      "role": "authenticated",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    },
+    {
+      "id": "B12-17",
+      "signature": "public.rpc_resolve_conversation_site(uuid,text,text)",
+      "role": "service_role",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    },
+    {
+      "id": "B12-18",
+      "signature": "public.rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean)",
+      "role": "anon",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-18",
+      "signature": "public.rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean)",
+      "role": "authenticated",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    },
+    {
+      "id": "B12-18",
+      "signature": "public.rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean)",
+      "role": "service_role",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    },
+    {
+      "id": "B12-19",
+      "signature": "public.rpc_sweep_line_session_timeouts()",
+      "role": "anon",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-19",
+      "signature": "public.rpc_sweep_line_session_timeouts()",
+      "role": "authenticated",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-19",
+      "signature": "public.rpc_sweep_line_session_timeouts()",
+      "role": "service_role",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    },
+    {
+      "id": "B12-20",
+      "signature": "public.rpc_sync_line_forecast(text,text,text)",
+      "role": "anon",
+      "effective_execute": true,
+      "proposed": "DENY",
+      "comparison": "REVOKE_NEEDED"
+    },
+    {
+      "id": "B12-20",
+      "signature": "public.rpc_sync_line_forecast(text,text,text)",
+      "role": "authenticated",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    },
+    {
+      "id": "B12-20",
+      "signature": "public.rpc_sync_line_forecast(text,text,text)",
+      "role": "service_role",
+      "effective_execute": true,
+      "proposed": "KEEP",
+      "comparison": "KEEP_PRESENT"
+    }
+  ]
+}

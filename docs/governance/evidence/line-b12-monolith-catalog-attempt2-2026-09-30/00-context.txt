@@ -1,0 +1,35 @@
+evidence_bundle: docs/governance/evidence/line-b12-monolith-catalog-attempt2-2026-09-30
+started_utc: 2026-09-30T16:03:58Z
+command (Git Bash, repository root): B12_OUT=docs/governance/evidence/line-b12-monolith-catalog-attempt2-2026-09-30 B12_SQL=scripts/line-b12-catalog.sql bash C:/Users/thai3/.codex/visualizations/2026/09/30/01a0f09b-d08f-7b43-813b-8ed8bd1316f6/p010-review/b12-baseline-run/run-b12-catalog-attempt2.sh
+runner_sha256: 3bb871be03416027fe2ecde5468f00652fda1971b2d50a63940ab6bed3815560 (copy: run-b12-catalog.sh)
+catalog_sql_source: scripts/line-b12-catalog.sql
+catalog_sql_sha256: ac4b0b30dc959cca15cdc2376d5ac0defb7bf7e78995feaf9aafdc68d4e797f6 (approved: ac4b0b30dc959cca15cdc2376d5ac0defb7bf7e78995feaf9aafdc68d4e797f6; copy: catalog-checklist.sql)
+branch: codex/repair-intelligence-phase0-trust
+head_sha: 5caee238e7f7d977353d7659d3c4e45ad0e01e7d (approved base: 5caee238e7f7d977353d7659d3c4e45ad0e01e7d)
+supabase_status_porcelain: [] (empty = clean)
+core.autocrlf: true
+db_image: sha256:99b1729aeb0bac314445024fc149fbd39306170b61dd50800ccf180327ab3459 id=sha256:99b1729aeb0bac314445024fc149fbd39306170b61dd50800ccf180327ab3459 digests=public.ecr.aws/supabase/postgres@sha256:99b1729aeb0bac314445024fc149fbd39306170b61dd50800ccf180327ab3459
+auth_image: sha256:362659ca70eaa75ba05bbaf963caa84c1c5afe5e8fbf0777e17b830dd5f0f60a id=sha256:362659ca70eaa75ba05bbaf963caa84c1c5afe5e8fbf0777e17b830dd5f0f60a digests=public.ecr.aws/supabase/gotrue@sha256:362659ca70eaa75ba05bbaf963caa84c1c5afe5e8fbf0777e17b830dd5f0f60a
+storage_image: sha256:ead6d49b9873d65a030c6c44b46676f4276b234becd6d7819c254351b5400d95 id=sha256:ead6d49b9873d65a030c6c44b46676f4276b234becd6d7819c254351b5400d95 digests=public.ecr.aws/supabase/storage-api@sha256:ead6d49b9873d65a030c6c44b46676f4276b234becd6d7819c254351b5400d95
+network: line-b12-baseline-net Â· containers: line-b12-baseline-db (no published ports), line-b12-baseline-auth, line-b12-baseline-storage (all throwaway; removed at the end)
+logical_dsn: postgresql://postgres@127.0.0.1:55447/postgres (NOT a host connection; isolated_psql selects the owned container and role; password via PGPASSWORD)
+node: v22.21.1
+python: Python 3.14.2
+psql_client: container psql (server image pinned below)
+docker: 29.8.0
+migration_source_check_exit=0
+db_ready_utc: 2026-09-30T16:04:16Z
+db_port_binding: NONE (docker exec psql; internal Docker network)
+cron_launch_active_jobs: off
+db_server: PostgreSQL 17.6 on x86_64-pc-linux-gnu, compiled by gcc (GCC) 15.2.0, 64-bit
+service_bootstrap: ok (01b-service-bootstrap.sql)
+auth_schema_ready: t Â· storage_schema_ready: t
+services_ready_utc: 2026-09-30T16:04:24Z
+migrations_applied_ok: 193 of 193 Â· failed: 0
+catalog_started_utc: 2026-09-30T16:05:48Z
+catalog_aligned_exit=0 Â· catalog_unaligned_exit=0
+catalog_fingerprint_unchanged_by_checklist: yes
+result: COMPLETED
+credential_scan_exit=0
+runner_exit=0
+finished_utc: 2026-09-30T16:05:56Z
