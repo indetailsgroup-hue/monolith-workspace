@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>หลักฐาน RED/GREEN ของ P0-10</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>หลักฐาน RED/GREEN ของ P0-10 สำหรับ migration 0198</h1>
+<p>วันที่: 30 กันยายน 2026 ฐาน: da252d18a10d12e18bfc2afed3a82f4f79001090 บน codex/repair-intelligence-phase0-trust สถานะ: สร้างแล้ว รอการตรวจรับอิสระ ผลนี้ไม่ได้ปิด P0-10 หรือ Phase A และไม่ได้ push หรือ deploy</p>
+<h2>สิ่งที่เปลี่ยน</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>ไฟล์</th>
+<th>การเปลี่ยนแปลง</th>
+</tr></thead><tbody>
+<tr>
+<td>supabase/migrations/0198_line_oa_revoke_client_write_grants.sql</td>
+<td>revoke INSERT, UPDATE, DELETE และ TRUNCATE บน 8 ตาราง line_oa_* จาก anon, authenticated และ service_role เมื่อ role นั้นมีอยู่ โดยไม่ใช้ CASCADE จากนั้น raise และ rollback หากยังมี role ใดใน 3 role นี้มีสิทธิ์เขียนที่มีผลจริงระดับตารางหรือคอลัมน์</td>
+</tr>
+<tr>
+<td>supabase/tests/line_oa_client_write_revoke.sql</td>
+<td>suite pgTAP ใหม่ 133 assertion (รายละเอียดด้านล่าง)</td>
+</tr>
+</tbody></table></div>
+<p>ไม่เปลี่ยน SELECT, EXECUTE, REFERENCES, TRIGGER, MAINTAIN, owner, role membership และ default privileges และไม่แตะไฟล์ manufacturing OS, worktree อื่น, stack ที่แชร์ หรือ production</p>
+<h2>Suite ใหม่</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Assertion</th>
+<th>สิ่งที่พิสูจน์</th>
+</tr></thead><tbody>
+<tr>
+<td>1-4</td>
+<td>ตรวจขอบเขต (8 ตาราง, 3 role, 32 คำสั่ง), USAGE ของ schema ยังอยู่, PUBLIC ไม่มีสิทธิ์เขียน, owner ของแต่ละตารางยังมีสิทธิ์เขียนครบ 4 อย่าง</td>
+</tr>
+<tr>
+<td>5-28</td>
+<td>3 role × 8 ตาราง: ไม่มี INSERT, UPDATE, DELETE หรือ TRUNCATE ที่มีผลจริงระดับตาราง และไม่มี INSERT หรือ UPDATE ระดับคอลัมน์</td>
+</tr>
+<tr>
+<td>29-124</td>
+<td>ลองเขียนจริง 96 ครั้งด้วย SET LOCAL ROLE ตารางละ INSERT, UPDATE, DELETE และ TRUNCATE ต่อ role และ rollback ทุกครั้ง นับผ่านเฉพาะ SQLSTATE 42501 ที่มีข้อความ &quot;permission denied for table&quot; ตรงตัว</td>
+</tr>
+<tr>
+<td>125-127</td>
+<td>service_role ยังอ่านคอลัมน์ที่ sender ใช้จาก line_oa_channels, line_oa_conversations และ line_oa_message_templates ได้</td>
+</tr>
+<tr>
+<td>128-129</td>
+<td>rpc_ingest_line_webhook ด้วย service_role รับ event จำลองที่ลงลายเซ็นถูกต้อง และเขียน conversation, inbound message, customer identity และ audit receipt</td>
+</tr>
+<tr>
+<td>130</td>
+<td>การผูกกลุ่มลูกค้าด้วย service_role ทำให้ fn_welcome_on_group_bind ใส่ tpl_welcome_pack เข้าคิว</td>
+</tr>
+<tr>
+<td>131</td>
+<td>fn_prod_curated ด้วย service_role ใส่ข้อความ push สถานะ pending ให้กลุ่มนั้นเพียง 1 แถว</td>
+</tr>
+<tr>
+<td>132-133</td>
+<td>rpc_claim_line_outbound_batch claim แถวนั้นพร้อม claim token และ rpc_record_line_send_result (เรียกด้วย named argument แบบเดียวกับ sender) บันทึกเป็น sent</td>
+</tr>
+</tbody></table></div>
+<p>ข้อมูลทั้งหมดเป็นข้อมูลจำลองและถูก rollback stack ไม่มี edge runtime และปิด cron scheduler จึงส่งข้อความ LINE ไม่ได้</p>
+<h2>ผลลัพธ์</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>การตรวจ</th>
+<th>RED (ไม่มี 0198)</th>
+<th>GREEN (มี 0198)</th>
+</tr></thead><tbody>
+<tr>
+<td>Migrate จากศูนย์</td>
+<td>192/192</td>
+<td>193/193</td>
+</tr>
+<tr>
+<td>pgTAP เดิม</td>
+<td>107/107</td>
+<td>107/107</td>
+</tr>
+<tr>
+<td>pgTAP ใหม่ของ P0-10</td>
+<td>ผ่าน 19 และล้มตรง 114 ข้อที่ตรวจสิทธิ์เขียน</td>
+<td>133/133</td>
+</tr>
+<tr>
+<td>Claim race</td>
+<td>10+10 ซ้ำ 0</td>
+<td>10+10 ซ้ำ 0</td>
+</tr>
+<tr>
+<td>Python ที่จำเป็น 12 ไฟล์</td>
+<td>ผ่าน 64 ล้ม 8 (เฉพาะ test_clients_hold_no_write_grants) skip 0</td>
+<td>72/72 skip 0</td>
+</tr>
+<tr>
+<td>Catalog: สิทธิ์เขียนของ anon / authenticated / service_role</td>
+<td>8/8 ตารางทุก role</td>
+<td>0/8 ทุก role</td>
+</tr>
+<tr>
+<td>Catalog: สิทธิ์ owner, SELECT ของ service_role, EXECUTE บน 20 ฟังก์ชัน</td>
+<td>ครบ; 8/8; 18/19/20</td>
+<td>ครบ; 8/8; 18/19/20 (ไม่เปลี่ยน)</td>
+</tr>
+<tr>
+<td>Fingerprint ไม่เปลี่ยนจากเทสต์, จำนวน cron ที่รัน, teardown, credential scan</td>
+<td>ใช่; 0; สะอาด; ผ่าน</td>
+<td>ใช่; 0; สะอาด; ผ่าน</td>
+</tr>
+<tr>
+<td>Exit ของตัวตรวจและ runner</td>
+<td>0 และ 0</td>
+<td>0 และ 0</td>
+</tr>
+</tbody></table></div>
+<p>ใน RED probe 6 ข้อที่ผ่านคือ UPDATE และ DELETE บน audit log ซึ่ง 0005 revoke ไว้แล้ว probe ที่ล้มแสดงสิ่งที่ 0198 ถอนออก: service_role insert, update และ delete แถวจริงได้ และ truncate ได้ 7 ตาราง ส่วน anon และ authenticated ก็ truncate ได้ 7 ตารางเช่นกัน โดย insert ถูกหยุดด้วย RLS เท่านั้น line_oa_conversations truncate ไม่ได้ทุก role เพราะมี foreign key การลองทั้งหมดถูก rollback</p>
+<h2>สิ่งที่ยังไม่ยืนยัน</h2>
+<ul><li>Production: grant, grantor, owner และ default ACL อาจต่างออกไป การตรวจ production catalog แบบอ่านอย่างเดียวก่อน deploy ยังเป็นด่านแยก</li><li>CI: suite ใหม่ยังไม่อยู่ใน .github/workflows/db-verify.yml และยังไม่ได้ push</li><li>สิทธิ์ EXECUTE (B12): 0198 ไม่ได้เปลี่ยน ดู docs/governance/line-p010-execute-survey.th.md</li><li>Claim race และ Python รันบน stack ชั่วคราวของเครื่องนี้ ไม่ใช่ stack ที่เหมือน CI</li></ul>
+<h2>ไฟล์</h2>
+<p>ผลดิบของแต่ละรอบอยู่ใน SHA256SUMS.run ของชุดนั้น REPLAY.txt ของแต่ละชุดระบุคำสั่งที่รันจริง SHA256SUMS ครอบคลุมทุกไฟล์ยกเว้นตัวมันเอง commit-p010.sh และ gate-p010-change.py คือ wrapper และ gate ที่ใช้ commit ส่วน transcript ของการรันนั้นอยู่ใน docs/governance/evidence/line-p010-commit-2026-09-30/</p>
+</main>
+</body>
+</html>

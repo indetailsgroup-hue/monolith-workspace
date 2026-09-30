@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>P0-10 RED/GREEN evidence</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>P0-10 RED/GREEN evidence for migration 0198</h1>
+<p>Date: 30 September 2026. Base: da252d18a10d12e18bfc2afed3a82f4f79001090 on codex/repair-intelligence-phase0-trust. Status: BUILT, awaiting independent acceptance. This does not close P0-10 or Phase A, and nothing was pushed or deployed.</p>
+<h2>What changed</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>File</th>
+<th>Change</th>
+</tr></thead><tbody>
+<tr>
+<td>supabase/migrations/0198_line_oa_revoke_client_write_grants.sql</td>
+<td>Revokes INSERT, UPDATE, DELETE and TRUNCATE on the eight line_oa_* tables from anon, authenticated and service_role where those roles exist, without CASCADE. It then raises and rolls back if any of the three still holds an effective table or column write privilege.</td>
+</tr>
+<tr>
+<td>supabase/tests/line_oa_client_write_revoke.sql</td>
+<td>New pgTAP suite with 133 assertions (listed below).</td>
+</tr>
+</tbody></table></div>
+<p>SELECT, EXECUTE, REFERENCES, TRIGGER, MAINTAIN, ownership, role membership and default privileges are unchanged. No manufacturing OS file, other worktree, shared stack or production system was touched.</p>
+<h2>The new suite</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Assertions</th>
+<th>What they prove</th>
+</tr></thead><tbody>
+<tr>
+<td>1-4</td>
+<td>Scope guard (8 tables, 3 roles, 32 statements), schema USAGE kept, PUBLIC holds no write grant, each table owner keeps all four write privileges</td>
+</tr>
+<tr>
+<td>5-28</td>
+<td>For 3 roles × 8 tables: no effective INSERT, UPDATE, DELETE or TRUNCATE at table level and no INSERT or UPDATE at column level</td>
+</tr>
+<tr>
+<td>29-124</td>
+<td>96 real write attempts under SET LOCAL ROLE, one INSERT, UPDATE, DELETE and TRUNCATE per table and role, each rolled back. Only SQLSTATE 42501 with the exact message &quot;permission denied for table&quot; counts as a pass.</td>
+</tr>
+<tr>
+<td>125-127</td>
+<td>service_role still reads the columns the sender reads from line_oa_channels, line_oa_conversations and line_oa_message_templates</td>
+</tr>
+<tr>
+<td>128-129</td>
+<td>rpc_ingest_line_webhook as service_role accepts a signed synthetic event and writes the conversation, inbound message, customer identity and audit receipt</td>
+</tr>
+<tr>
+<td>130</td>
+<td>Binding a customer group as service_role fires fn_welcome_on_group_bind, which queues tpl_welcome_pack</td>
+</tr>
+<tr>
+<td>131</td>
+<td>fn_prod_curated as service_role queues exactly one pending push for the group</td>
+</tr>
+<tr>
+<td>132-133</td>
+<td>rpc_claim_line_outbound_batch claims that row with a claim token, and rpc_record_line_send_result (called with the sender's named arguments) records it as sent</td>
+</tr>
+</tbody></table></div>
+<p>All data is synthetic and rolled back. The stack has no edge runtime and the cron scheduler is off, so no LINE message can be sent.</p>
+<h2>Results</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Check</th>
+<th>RED (no 0198)</th>
+<th>GREEN (with 0198)</th>
+</tr></thead><tbody>
+<tr>
+<td>Migrations from zero</td>
+<td>192/192</td>
+<td>193/193</td>
+</tr>
+<tr>
+<td>Original pgTAP</td>
+<td>107/107</td>
+<td>107/107</td>
+</tr>
+<tr>
+<td>New P0-10 pgTAP</td>
+<td>19 pass; exactly the 114 write-privilege assertions fail</td>
+<td>133/133</td>
+</tr>
+<tr>
+<td>Claim race</td>
+<td>10+10, overlap 0</td>
+<td>10+10, overlap 0</td>
+</tr>
+<tr>
+<td>12 required Python files</td>
+<td>64 pass, 8 fail (test_clients_hold_no_write_grants only), 0 skipped</td>
+<td>72/72, 0 skipped</td>
+</tr>
+<tr>
+<td>Catalog: write privilege of anon / authenticated / service_role</td>
+<td>8/8 tables each</td>
+<td>0/8 each</td>
+</tr>
+<tr>
+<td>Catalog: owner rights, service_role SELECT, EXECUTE on the 20 writers</td>
+<td>full; 8/8; 18/19/20</td>
+<td>full; 8/8; 18/19/20 (unchanged)</td>
+</tr>
+<tr>
+<td>Fingerprint unchanged by tests, cron runs, teardown, credential scan</td>
+<td>yes; 0; clean; pass</td>
+<td>yes; 0; clean; pass</td>
+</tr>
+<tr>
+<td>Verifier and runner exit</td>
+<td>0 and 0</td>
+<td>0 and 0</td>
+</tr>
+</tbody></table></div>
+<p>In RED, the six passing write probes are the audit-log UPDATE and DELETE attempts that 0005 already revoked. The failing probes show what 0198 removes. service_role inserted, updated and deleted real rows, and truncated seven tables. anon and authenticated also truncated seven tables, while their inserts were stopped only by RLS. line_oa_conversations could not be truncated by any role because of its foreign keys. All of these attempts were rolled back.</p>
+<h2>Not established</h2>
+<ul><li>Production: its grants, grantors, owners and default ACLs may differ. A read-only production catalog check before deploy remains a separate gate.</li><li>CI: the new suite is not yet in .github/workflows/db-verify.yml, and nothing has been pushed.</li><li>EXECUTE exposure (B12): 0198 does not change it. See docs/governance/line-p010-execute-survey.en.md.</li><li>The two-client race and Python suites ran on this machine's throwaway stack, not a CI-identical stack.</li></ul>
+<h2>Files</h2>
+<p>The raw outputs of each run are listed in that bundle's SHA256SUMS.run. REPLAY.txt in each bundle gives the exact command. SHA256SUMS covers every file except itself. commit-p010.sh and gate-p010-change.py are the wrapper and gate used for the commit; the transcript of that run is in docs/governance/evidence/line-p010-commit-2026-09-30/.</p>
+</main>
+</body>
+</html>

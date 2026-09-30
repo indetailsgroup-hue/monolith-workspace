@@ -1,0 +1,45 @@
+evidence_bundle: docs/governance/evidence/line-p010-red-2026-09-30
+mode: red
+started_utc: 2026-09-30T12:26:32Z
+command (Git Bash, repository root): P010_MODE=red P010_OUT=docs/governance/evidence/line-p010-red-2026-09-30 bash /c/Users/thai3/AppData/Local/Temp/claude/C--Users-thai3-determined-williams--2--MONOLITH-Repair-Intelligence/ce545bd9-4134-4d24-8b4c-aac4981d3aaf/scratchpad/p010-run/run-p010-red-green.sh
+runner_sha256: 12df4cc6afe14e38f5251c81764229e38148526818c910afa6a0ae65d049ab87 (copy: run-p010-red-green.sh)
+verifier_sha256: 90a5f9d3ab832d1f2449cb323e9e6404fcfaab9d7453813bbd89daaec649b162 (copy: verify-p010-red-green.py)
+catalog_sql_sha256: 5ed8f00dea517687b658401dc570e8ab24b59d71ae0a5b845f808f6887a3d987 (approved: 5ed8f00dea517687b658401dc570e8ab24b59d71ae0a5b845f808f6887a3d987; from docs/governance/evidence/line-p010-catalog-2026-09-30)
+branch: codex/repair-intelligence-phase0-trust
+head_sha: da252d18a10d12e18bfc2afed3a82f4f79001090 (accepted base: da252d18a10d12e18bfc2afed3a82f4f79001090)
+working_tree_changes (supabase, tests, scripts): [?? supabase/tests/line_oa_client_write_revoke.sql]
+new_pgtap_sha256: 6b798256e06f57d927ea7ae14348ea1b3b04c425e3a6aca833fef6dcc4853121 (copy: source-line_oa_client_write_revoke.sql)
+migration_0198_present: no
+core.autocrlf: true
+db_image: public.ecr.aws/supabase/postgres:17.6.1.158 id=sha256:99b1729aeb0bac314445024fc149fbd39306170b61dd50800ccf180327ab3459 digests=public.ecr.aws/supabase/postgres@sha256:99b1729aeb0bac314445024fc149fbd39306170b61dd50800ccf180327ab3459
+auth_image: public.ecr.aws/supabase/gotrue:v2.195.0 id=sha256:362659ca70eaa75ba05bbaf963caa84c1c5afe5e8fbf0777e17b830dd5f0f60a digests=public.ecr.aws/supabase/gotrue@sha256:362659ca70eaa75ba05bbaf963caa84c1c5afe5e8fbf0777e17b830dd5f0f60a
+storage_image: public.ecr.aws/supabase/storage-api:v1.66.4 id=sha256:ead6d49b9873d65a030c6c44b46676f4276b234becd6d7819c254351b5400d95 digests=public.ecr.aws/supabase/storage-api@sha256:ead6d49b9873d65a030c6c44b46676f4276b234becd6d7819c254351b5400d95
+network: line-p010rg-net · containers: line-p010rg-db (127.0.0.1:55446), line-p010rg-auth, line-p010rg-storage (all throwaway; removed at the end)
+dsn: postgresql://postgres@127.0.0.1:55446/postgres (password generated per run, passed via PGPASSWORD, never written)
+node: v22.21.1
+python: Python 3.14.2 · pytest 8.4.2 · hypothesis 6.155.5 · psycopg 3.3.4
+psql_client: psql (PostgreSQL) 18.1
+docker: 29.8.0
+source_provenance_exit=0
+db_ready_utc: 2026-09-30T12:26:50Z
+db_port_binding: 127.0.0.1:55446 
+cron_launch_active_jobs: off
+db_server: PostgreSQL 17.6 on x86_64-pc-linux-gnu, compiled by gcc (GCC) 15.2.0, 64-bit
+service_bootstrap: ok (01b-service-bootstrap.sql)
+auth_schema_ready: t · storage_schema_ready: t
+services_ready_utc: 2026-09-30T12:26:54Z
+migrations_applied_ok: 192 of 192 · failed: 0
+pgtap_original_exit=0
+pgtap_p010_exit=0
+claim_race_exit=0
+required_python_suites (12): tests/line-oa-commerce/py/test_access_control_config_smoke.py tests/line-oa-commerce/py/test_ai_action_audit_property.py tests/line-oa-commerce/py/test_failure_handling_property.py tests/line-oa-commerce/py/test_idempotent_processing_property.py tests/line-oa-commerce/py/test_outbound_status_recording_property.py tests/line-oa-commerce/py/test_reply_push_fallback_property.py tests/line-oa-commerce/py/test_rls_read_scoping_property.py tests/line-oa-commerce/py/test_schema_structure_smoke.py tests/line-oa-commerce/py/test_secret_non_exposure_property.py tests/line-oa-commerce/py/test_signature_verification_property.py tests/line-oa-commerce/py/test_strict_consistency_property.py tests/line-oa-commerce/py/test_unauthorized_mutation_denial_property.py
+pytest_exit=1
+catalog_started_utc: 2026-09-30T12:27:36Z
+catalog_aligned_exit=0 · catalog_unaligned_exit=0
+catalog_analysis_exit=0
+catalog_fingerprint_unchanged_by_tests_and_catalog: yes
+result: COMPLETED (see exit codes above; expectations are checked by the verifier)
+credential_scan_exit=0
+verification_exit=0
+runner_exit=0
+finished_utc: 2026-09-30T12:27:39Z

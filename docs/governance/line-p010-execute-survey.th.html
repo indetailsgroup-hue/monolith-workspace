@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ผลสำรวจสิทธิ์ EXECUTE ของ LINE</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>สิทธิ์ EXECUTE ของฟังก์ชัน SECURITY DEFINER ที่เขียนตาราง LINE: ผลสำรวจแบบอ่านอย่างเดียว</h1>
+<p>วันที่: 30 กันยายน 2026 ฐานของ source: da252d18a บน codex/repair-intelligence-phase0-trust สถานะ: สำรวจเท่านั้น ไม่ได้เปลี่ยน grant EXECUTE ใด ๆ และไม่ได้อ้างว่า production เปิดฟังก์ชันเหล่านี้ผ่าน API</p>
+<h2>เหตุที่ต้องสำรวจ</h2>
+<p>ผล catalog ของ P0-10 (da252d18a) แสดงว่า anon EXECUTE ได้ 18 จาก 20 routine แบบ SECURITY DEFINER ที่เขียนตาราง line_oa_* การรัน RED และ GREEN ของ 0198 เก็บ catalog ซ้ำและได้ผลเดิม: 0198 ถอนสิทธิ์เขียนตารางตรง แต่ EXECUTE ไม่เปลี่ยน (anon 18/20, authenticated 19/20, service_role 20/20) routine แบบ DEFINER ทำงานในสิทธิ์ของ owner ดังนั้นการ revoke สิทธิ์ตารางไม่ได้หยุด client role จากการเรียกฟังก์ชันเหล่านี้</p>
+<h2>วิธีสำรวจ</h2>
+<ul><li>ผู้เรียก: ค้นชื่อในทุกไฟล์ที่ Git track ใต้ src, server, supabase/functions, packages, tools, scripts และ e2e รวมถึง migration ทั้งหมด (การเรียกจากฟังก์ชันอื่น, trigger และ cron job) ส่วนเทสต์นับจำนวนไว้ ไม่ถือเป็นผู้เรียก</li><li>Grant ที่ตั้งใจไว้: คำสั่ง GRANT และ REVOKE ที่เขียนใน migration</li><li>Guard: อ่านนิยามล่าสุดของแต่ละ routine และนับว่ามี guard เมื่อเนื้อฟังก์ชันตรวจผู้เรียกชัดเจน เช่น is_governance_role, has_site_access, auth.uid หรือการตรวจลายเซ็น LINE</li><li>ประเภทที่ใช้ด้านล่าง: พบจริง (เห็นใน repository), ข้ออนุมาน (อนุมานจาก source ไม่ได้รันจริง) และยังไม่ทราบ</li></ul>
+<h2>ต้นเหตุ (พบจริง)</h2>
+<p>ไม่มี migration ใดสั่ง ALTER DEFAULT PRIVILEGES แต่ catalog แสดง default ACL จาก role ของแพลตฟอร์ม postgres และ supabase_admin ที่ให้ EXECUTE บนฟังก์ชันใหม่แก่ anon, authenticated และ service_role จากนั้น migration revoke EXECUTE จาก PUBLIC เท่านั้น เช่น 0107_factory_group_milestones.sql บรรทัด 61 แล้ว grant ให้ authenticated หรือ service_role สิทธิ์ที่ default ให้ anon โดยตรงจึงไม่เคยถูกถอน</p>
+<h2>ผลราย routine</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Routine</th>
+<th>ผู้เรียกใน repo (พบจริง)</th>
+<th>Grant ที่เขียนใน migration</th>
+<th>การตรวจผู้เรียกในเนื้อฟังก์ชัน</th>
+<th>ความเสี่ยงต่อ anon</th>
+</tr></thead><tbody>
+<tr>
+<td>fn_prod_curated</td>
+<td>23 จุดในฟังก์ชัน DEFINER อื่น (0107 ถึง 0143) ไม่มีผู้เรียกจาก edge หรือ frontend</td>
+<td>revoke จาก PUBLIC เท่านั้น (0107:61)</td>
+<td>ไม่มี (0107:50-60)</td>
+<td>สูง (ข้ออนุมาน): ใส่ข้อความ push สถานะ pending เข้ากลุ่มลูกค้าของโปรเจกต์ โดยผู้เรียกกำหนดข้อความใน slot เองได้ หากรู้ project id</td>
+</tr>
+<tr>
+<td>fn_line_handle_group_event</td>
+<td>rpc_ingest_line_webhook เท่านั้น (0097:435)</td>
+<td>revoke จาก PUBLIC เท่านั้น (0097:285)</td>
+<td>ไม่มี และถือว่าผู้เรียกตรวจลายเซ็น LINE แล้ว</td>
+<td>สูง (ข้ออนุมาน): เรียกตรงจะข้ามการตรวจลายเซ็น การผูกกลุ่มต้องใช้รหัสผูกที่ถูกต้องและ postback อนุมัติต้องใช้ approve token แต่ event join, leave และ member ไม่มีด่าน เช่น event leave ปลอมจะ archive กลุ่มที่ผูกแล้วได้ถ้ารู้ LINE group id (0107:235-240)</td>
+</tr>
+<tr>
+<td>line_oa_resolve_customer_identity</td>
+<td>edge customer-design-view (index.ts:102 ผ่าน service client) และฟังก์ชัน ingest, order, approval</td>
+<td>revoke จาก PUBLIC เท่านั้น (00020:135)</td>
+<td>ไม่มี</td>
+<td>กลาง (ข้ออนุมาน): สร้างแถว identity ให้ LINE user id ใดก็ได้ และคืน customer id</td>
+</tr>
+<tr>
+<td>fn_lead_followup_sweep</td>
+<td>cron job wf-lead-followup-sweep (0116:192)</td>
+<td>service_role เท่านั้น (0116:223-225)</td>
+<td>ไม่มี</td>
+<td>กลาง (ข้ออนุมาน): ใครก็สั่งให้ส่ง follow-up และ escalate lead ได้ทันที</td>
+</tr>
+<tr>
+<td>rpc_sweep_line_session_timeouts</td>
+<td>ไม่มีผู้เรียกใน repo นอกจากเทสต์</td>
+<td>revoke จาก PUBLIC (00061:136) แล้วให้ service_role เท่านั้น (00061:141)</td>
+<td>ไม่มี</td>
+<td>ต่ำ (ข้ออนุมาน): ปิดเฉพาะ session ที่เกินเวลาแล้ว</td>
+</tr>
+<tr>
+<td>rpc_ingest_line_webhook</td>
+<td>edge line-webhook (index.ts:201 ด้วย service key)</td>
+<td>authenticated และ service_role (00022:344-356)</td>
+<td>ตรวจลายเซ็น HMAC ของ LINE ก่อนเขียนทุกอย่าง</td>
+<td>ต่ำ (ข้ออนุมาน): ปลอมได้ต้องรู้ channel secret แต่การเรียกที่ถูกปฏิเสธยังเพิ่มแถว audit 1 แถว</td>
+</tr>
+<tr>
+<td>fn_welcome_on_group_bind</td>
+<td>trigger trg_welcome_group_bind (0136:185-186)</td>
+<td>ไม่มี และ PUBLIC ก็มี EXECUTE</td>
+<td>ใช้ได้เฉพาะเป็น trigger</td>
+<td>ต่ำ (ข้ออนุมาน): PostgreSQL ไม่ยอมให้เรียก trigger function ตรง (ไม่ได้ทดสอบในรอบนี้)</td>
+</tr>
+<tr>
+<td>rpc_send_line_outbound</td>
+<td>ไม่มีผู้เรียกจริง (ทราบตั้งแต่ 26 กรกฎาคม 2026)</td>
+<td>authenticated (00040:442)</td>
+<td>is_governance_role, has_site_access, 42501</td>
+<td>ต่ำ (ข้ออนุมาน): เนื้อฟังก์ชันปฏิเสธผู้เรียกที่ไม่มีสิทธิ์ site</td>
+</tr>
+<tr>
+<td>rpc_create_line_order</td>
+<td>ไม่มีในโค้ด</td>
+<td>authenticated (00050:643)</td>
+<td>is_governance_role, has_site_access, 42501</td>
+<td>ต่ำ (ข้ออนุมาน)</td>
+</tr>
+<tr>
+<td>rpc_evaluate_identity_merge_candidate</td>
+<td>ไม่มีในโค้ด</td>
+<td>authenticated (00021:265)</td>
+<td>is_governance_role, 42501</td>
+<td>ต่ำ (ข้ออนุมาน)</td>
+</tr>
+<tr>
+<td>rpc_resolve_conversation_site</td>
+<td>ไม่มีในโค้ด</td>
+<td>authenticated (00030:254)</td>
+<td>is_governance_role, has_site_access, 42501</td>
+<td>ต่ำ (ข้ออนุมาน)</td>
+</tr>
+<tr>
+<td>rpc_sync_line_forecast</td>
+<td>ไม่มีในโค้ด</td>
+<td>authenticated (00060:278)</td>
+<td>is_governance_role, has_site_access, 42501</td>
+<td>ต่ำ (ข้ออนุมาน)</td>
+</tr>
+<tr>
+<td>rpc_request_customer_acceptance</td>
+<td>field-app LeadPanel.tsx:43</td>
+<td>authenticated และ service_role (0098:110-113)</td>
+<td>is_governance_role, has_site_access</td>
+<td>ต่ำ (ข้ออนุมาน)</td>
+</tr>
+<tr>
+<td>rpc_field_assign_lead</td>
+<td>ไม่มีในโค้ด</td>
+<td>authenticated และ service_role (0116:205-220)</td>
+<td>auth.uid, is_governance_role, has_site_access</td>
+<td>ต่ำ (ข้ออนุมาน)</td>
+</tr>
+<tr>
+<td>rpc_field_close_lead</td>
+<td>field-app SaleHome.tsx:34</td>
+<td>authenticated และ service_role (0116:205-220)</td>
+<td>is_governance_role, has_site_access</td>
+<td>ต่ำ (ข้ออนุมาน)</td>
+</tr>
+<tr>
+<td>rpc_field_set_lead_source</td>
+<td>field-app SaleHome.tsx:42</td>
+<td>authenticated และ service_role (0151:264-273)</td>
+<td>is_governance_role, has_site_access</td>
+<td>ต่ำ (ข้ออนุมาน)</td>
+</tr>
+<tr>
+<td>rpc_field_send_photo_to_customer</td>
+<td>field-app PhotoSendCard.tsx:33</td>
+<td>authenticated และ service_role (0134:69-74)</td>
+<td>is_governance_role, has_site_access</td>
+<td>ต่ำ (ข้ออนุมาน)</td>
+</tr>
+<tr>
+<td>rpc_field_shop_drawing_revision</td>
+<td>field-app DesignerToolsPanel.tsx:69</td>
+<td>authenticated และ service_role (0143:478-487)</td>
+<td>is_governance_role, has_site_access</td>
+<td>ต่ำ (ข้ออนุมาน)</td>
+</tr>
+</tbody></table></div>
+<p>&quot;ต่ำ&quot; หมายความเพียงว่าเนื้อฟังก์ชันดูเหมือนจะปฏิเสธ anon ยังขึ้นกับว่า guard แต่ละตัวถูกต้องทุกเส้นทางหรือไม่ ซึ่งรอบนี้ไม่ได้ทดสอบ</p>
+<h2>ยังไม่ทราบ</h2>
+<ul><li>ผู้เรียกนอก repository เช่น แอปอื่น, script, ระบบอัตโนมัติ หรือเครื่องมือที่ใช้ด้วยมือ การไม่พบผู้เรียกใน repo ไม่ได้พิสูจน์ว่าไม่มี</li><li>Production: ยังไม่ได้อ่าน grant EXECUTE, default ACL และการตั้งค่า schema ที่ PostgREST เปิด ข้อมูลในรายงานนี้ไม่ได้แสดงว่า production เปิดฟังก์ชันเหล่านี้</li><li>พฤติกรรมจริงของ guard แต่ละตัวเมื่อ anon เรียก และการที่ PostgreSQL ปฏิเสธการเรียก trigger function ตรงในระบบนี้: ยังไม่ได้รัน</li></ul>
+<h2>แผนแก้ที่เสนอ (ต้องอนุมัติแยก ยังไม่ได้ทำ)</h2>
+<ol><li>Migration ใหม่ (เสนอเลข 0199) revoke EXECUTE จาก anon บนทั้ง 18 routine และ revoke จาก authenticated ในตัวที่ไม่มีผู้เรียกใน repo ต้องใช้ ได้แก่ fn_prod_curated, fn_line_handle_group_event, fn_welcome_on_group_bind (รวม PUBLIC), fn_lead_followup_sweep, rpc_sweep_line_session_timeouts, line_oa_resolve_customer_identity และ rpc_ingest_line_webhook ส่วน helper ภายใน 3 ตัว (fn_prod_curated, fn_line_handle_group_event, fn_welcome_on_group_bind) ให้ถอนจาก service_role ด้วย ผู้เรียกที่เป็น DEFINER ยังทำงานได้เพราะรันในสิทธิ์ owner</li><li>เทสต์รูปแบบ RED/GREEN เหมือน P0-10: ตาราง has_function_privilege, การเรียกจริงด้วย anon ต้องได้ 42501 permission denied for function และเส้นทางที่ต้องยังทำงาน คือ RPC ของ field-app ด้วย authenticated พร้อม claims, edge ด้วย service_role, ฟังก์ชัน cron ในสิทธิ์ owner และ trigger welcome</li><li>ประสานกับเจ้าของ manufacturing OS ก่อนเปลี่ยน grant ของ fn_prod_curated เพราะฟังก์ชันฝั่งโรงงานเรียกใช้ (0107, 0124, 0143) โดยไม่ต้องแก้โค้ดโรงงาน</li><li>การเปลี่ยน default privileges ของฟังก์ชันในอนาคตเป็นเรื่องที่กว้างกว่าและต้องตัดสินแยก</li><li>การตรวจ production catalog แบบอ่านอย่างเดียวยังเป็นด่านแยกก่อน deploy</li></ol>
+</main>
+</body>
+</html>

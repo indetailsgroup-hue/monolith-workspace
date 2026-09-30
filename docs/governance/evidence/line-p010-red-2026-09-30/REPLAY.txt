@@ -1,0 +1,14 @@
+P0-10 RED evidence (base da252d18a without 0198) - how it was produced
+
+Executed command (Git Bash, repository root, started 2026-09-30T12:26:32Z):
+P010_MODE=red P010_OUT=docs/governance/evidence/line-p010-red-2026-09-30 bash <scratchpad>/p010-run/run-p010-red-green.sh
+run-p010-red-green.sh and verify-p010-red-green.py in this bundle are the exact executed files (sha256 in 00-context.txt; the runner copied them here at start). The GREEN bundle holds byte-identical copies.
+The only working-tree change at run time was the new untracked test supabase/tests/line_oa_client_write_revoke.sql (copy: source-line_oa_client_write_revoke.sql). 0198 did not exist yet.
+catalog-checklist.sql and analyze-p010-catalog.py were copied from the accepted catalog bundle line-p010-catalog-2026-09-30 (checklist sha256 5ed8f00dea517687b658401dc570e8ab24b59d71ae0a5b845f808f6887a3d987 checked before start).
+
+Expected and observed RED result (10b-verification.txt): original pgTAP 107/107 pass; new P0-10 pgTAP 19 pass and exactly the 114 write-privilege assertions fail; claim race overlap 0; Python 64 pass, 8 fail (only test_clients_hold_no_write_grants), 0 skipped; catalog shows anon, authenticated and service_role with write privilege on 8/8 tables.
+
+Runner-time files are covered by SHA256SUMS.run, written by the runner after teardown, the in-run credential scan and the verifier. REPLAY.txt and SHA256SUMS were added afterwards by the collector; SHA256SUMS covers every file except itself.
+Re-check without a database: py verify-p010-red-green.py docs/governance/evidence/line-p010-red-2026-09-30 red
+Replay (a new run): check out the base da252d18a, add only the test file from source-line_oa_client_write_revoke.sql, keep 0198 absent, and run the runner with a NEW P010_OUT. After the evidence commit the branch no longer points at the base, so the runner's HEAD and branch checks need a checkout of the base on that branch name, or a reviewed copy of the runner with only the branch check removed.
+Development runs of the test file on a separate throwaway stack (names line-p010dev-*, port 55445) happened before this run and are not evidence.

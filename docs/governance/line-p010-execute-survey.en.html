@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LINE EXECUTE exposure survey</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>EXECUTE exposure of the LINE SECURITY DEFINER writers: read-only survey</h1>
+<p>Date: 30 September 2026. Source base: da252d18a on codex/repair-intelligence-phase0-trust. Status: SURVEY ONLY. No EXECUTE grant was changed. This does not claim that production exposes these functions through its API.</p>
+<h2>Why this survey exists</h2>
+<p>The P0-10 catalog capture (da252d18a) showed that anon can EXECUTE 18 of the 20 SECURITY DEFINER routines that write line_oa_* tables. The RED and GREEN runs of 0198 captured the same catalog again: 0198 removes direct table writes but leaves EXECUTE unchanged (anon 18/20, authenticated 19/20, service_role 20/20). A DEFINER routine runs as its owner, so revoking table grants does not stop a client role from calling it.</p>
+<h2>Method</h2>
+<ul><li>Callers: every tracked file under src, server, supabase/functions, packages, tools, scripts and e2e was searched by name, plus all migrations (calls inside other functions, triggers and cron jobs). Tests were counted, not treated as callers.</li><li>Intended grants: the GRANT and REVOKE statements written in the migrations.</li><li>Guards: the final definition of each routine was read. A guard means an explicit caller check in the body, such as is_governance_role, has_site_access, auth.uid or the LINE signature check.</li><li>Classes used below: FOUND (seen in the repository), INFERENCE (reasoned from the source, not executed) and UNKNOWN.</li></ul>
+<h2>Root cause (FOUND)</h2>
+<p>No migration issues ALTER DEFAULT PRIVILEGES. The catalog shows default ACLs from the platform roles postgres and supabase_admin that grant EXECUTE on new functions to anon, authenticated and service_role. The migrations then revoke EXECUTE only from PUBLIC, for example 0107_factory_group_milestones.sql line 61, and grant to authenticated or service_role. The direct default grant to anon is never removed.</p>
+<h2>Findings per routine</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Routine</th>
+<th>In-repo callers (FOUND)</th>
+<th>Grant written in migrations</th>
+<th>Caller check in body</th>
+<th>Exposure to anon</th>
+</tr></thead><tbody>
+<tr>
+<td>fn_prod_curated</td>
+<td>23 call sites inside other DEFINER functions (0107 to 0143); no edge or frontend caller</td>
+<td>revoke from PUBLIC only (0107:61)</td>
+<td>none (0107:50-60)</td>
+<td>High (INFERENCE): queues a pending push into a project's customer group with caller-chosen slot text, given a project id</td>
+</tr>
+<tr>
+<td>fn_line_handle_group_event</td>
+<td>only rpc_ingest_line_webhook (0097:435)</td>
+<td>revoke from PUBLIC only (0097:285)</td>
+<td>none; it trusts that the caller verified the LINE signature</td>
+<td>High (INFERENCE): a direct call skips signature verification. Binding needs a valid bind code and approval postbacks need the approve token, but join, leave and member events are not gated; a forged leave event archives a bound group whose LINE group id is known (0107:235-240)</td>
+</tr>
+<tr>
+<td>line_oa_resolve_customer_identity</td>
+<td>edge customer-design-view (index.ts:102, service client); ingest, order and approval functions</td>
+<td>revoke from PUBLIC only (00020:135)</td>
+<td>none</td>
+<td>Medium (INFERENCE): creates an identity row for any LINE user id and returns the customer id</td>
+</tr>
+<tr>
+<td>fn_lead_followup_sweep</td>
+<td>cron job wf-lead-followup-sweep (0116:192)</td>
+<td>service_role only (0116:223-225)</td>
+<td>none</td>
+<td>Medium (INFERENCE): anyone can trigger lead follow-up pushes and escalations on demand</td>
+</tr>
+<tr>
+<td>rpc_sweep_line_session_timeouts</td>
+<td>no in-repo caller outside tests</td>
+<td>revoke from PUBLIC (00061:136), then service_role only (00061:141)</td>
+<td>none</td>
+<td>Low (INFERENCE): closes sessions already past the timeout</td>
+</tr>
+<tr>
+<td>rpc_ingest_line_webhook</td>
+<td>edge line-webhook (index.ts:201, service key)</td>
+<td>authenticated and service_role (00022:344-356)</td>
+<td>LINE HMAC signature before any write</td>
+<td>Low (INFERENCE): forgery needs the channel secret; a rejected call still appends one audit row</td>
+</tr>
+<tr>
+<td>fn_welcome_on_group_bind</td>
+<td>trigger trg_welcome_group_bind (0136:185-186)</td>
+<td>none; PUBLIC also holds EXECUTE</td>
+<td>trigger-only function</td>
+<td>Low (INFERENCE): PostgreSQL refuses to call a trigger function directly (not tested here)</td>
+</tr>
+<tr>
+<td>rpc_send_line_outbound</td>
+<td>none live (known since 26 July 2026)</td>
+<td>authenticated (00040:442)</td>
+<td>is_governance_role, has_site_access, 42501</td>
+<td>Low (INFERENCE): the body denies callers without a site role</td>
+</tr>
+<tr>
+<td>rpc_create_line_order</td>
+<td>none in code</td>
+<td>authenticated (00050:643)</td>
+<td>is_governance_role, has_site_access, 42501</td>
+<td>Low (INFERENCE)</td>
+</tr>
+<tr>
+<td>rpc_evaluate_identity_merge_candidate</td>
+<td>none in code</td>
+<td>authenticated (00021:265)</td>
+<td>is_governance_role, 42501</td>
+<td>Low (INFERENCE)</td>
+</tr>
+<tr>
+<td>rpc_resolve_conversation_site</td>
+<td>none in code</td>
+<td>authenticated (00030:254)</td>
+<td>is_governance_role, has_site_access, 42501</td>
+<td>Low (INFERENCE)</td>
+</tr>
+<tr>
+<td>rpc_sync_line_forecast</td>
+<td>none in code</td>
+<td>authenticated (00060:278)</td>
+<td>is_governance_role, has_site_access, 42501</td>
+<td>Low (INFERENCE)</td>
+</tr>
+<tr>
+<td>rpc_request_customer_acceptance</td>
+<td>field-app LeadPanel.tsx:43</td>
+<td>authenticated and service_role (0098:110-113)</td>
+<td>is_governance_role, has_site_access</td>
+<td>Low (INFERENCE)</td>
+</tr>
+<tr>
+<td>rpc_field_assign_lead</td>
+<td>none in code</td>
+<td>authenticated and service_role (0116:205-220)</td>
+<td>auth.uid, is_governance_role, has_site_access</td>
+<td>Low (INFERENCE)</td>
+</tr>
+<tr>
+<td>rpc_field_close_lead</td>
+<td>field-app SaleHome.tsx:34</td>
+<td>authenticated and service_role (0116:205-220)</td>
+<td>is_governance_role, has_site_access</td>
+<td>Low (INFERENCE)</td>
+</tr>
+<tr>
+<td>rpc_field_set_lead_source</td>
+<td>field-app SaleHome.tsx:42</td>
+<td>authenticated and service_role (0151:264-273)</td>
+<td>is_governance_role, has_site_access</td>
+<td>Low (INFERENCE)</td>
+</tr>
+<tr>
+<td>rpc_field_send_photo_to_customer</td>
+<td>field-app PhotoSendCard.tsx:33</td>
+<td>authenticated and service_role (0134:69-74)</td>
+<td>is_governance_role, has_site_access</td>
+<td>Low (INFERENCE)</td>
+</tr>
+<tr>
+<td>rpc_field_shop_drawing_revision</td>
+<td>field-app DesignerToolsPanel.tsx:69</td>
+<td>authenticated and service_role (0143:478-487)</td>
+<td>is_governance_role, has_site_access</td>
+<td>Low (INFERENCE)</td>
+</tr>
+</tbody></table></div>
+<p>&quot;Low&quot; means only that the body appears to deny anon. It still depends on each guard being correct on every path, which this survey did not test.</p>
+<h2>Unknown</h2>
+<ul><li>Callers outside this repository: other apps, scripts, automation or manual tools. Finding no caller in the repository does not prove there is none.</li><li>Production: its EXECUTE grants, default ACLs and PostgREST schema exposure were not read. Nothing here shows that production exposes these functions.</li><li>Runtime behaviour of each guard for anon, and whether PostgreSQL refuses a direct trigger-function call in this setup: not executed.</li></ul>
+<h2>Proposed remediation (needs separate approval; nothing done)</h2>
+<ol><li>A new migration (proposed 0199) revokes EXECUTE from anon on all 18 routines. It also revokes EXECUTE from authenticated where no in-repo caller needs it: fn_prod_curated, fn_line_handle_group_event, fn_welcome_on_group_bind (also PUBLIC), fn_lead_followup_sweep, rpc_sweep_line_session_timeouts, line_oa_resolve_customer_identity and rpc_ingest_line_webhook. For the three internal helpers (fn_prod_curated, fn_line_handle_group_event, fn_welcome_on_group_bind) service_role would lose EXECUTE too. DEFINER callers keep working because they run as the owner.</li><li>Tests with the same RED/GREEN shape as P0-10: a has_function_privilege matrix; a real call as anon expecting 42501 permission denied for function; and positive paths for field-app RPCs as authenticated with claims, edge paths as service_role, the cron function as its owner and the welcome trigger.</li><li>Coordinate with the manufacturing OS owner before changing fn_prod_curated grants, because factory functions call it (0107, 0124, 0143). No factory code would change.</li><li>Changing default privileges for future functions is a broader, separate decision.</li><li>A read-only production catalog check stays a separate gate before any deploy.</li></ol>
+</main>
+</body>
+</html>

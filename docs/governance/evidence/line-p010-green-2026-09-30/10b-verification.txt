@@ -1,0 +1,26 @@
+PASS: all 193 migrations applied from zero, none failed
+PASS: migration count matches the mode (193)
+PASS: 0198 applied only in GREEN (applied=True)
+PASS: cron scheduler disabled
+PASS: no cron job ran
+PASS: schema/ACL/ownership fingerprint unchanged by tests and catalog
+PASS: 04a-pgtap-original.tap: plan 1..107 with 107 ordered results
+PASS: original 107 pgTAP assertions all pass
+PASS: both pgTAP psql runs exit 0
+PASS: 04b-pgtap-p010.tap: plan 1..133 with 133 ordered results
+PASS: GREEN: all 133 P0-10 pgTAP assertions pass (failed=[])
+PASS: two-client claim race passes with zero overlap
+PASS: 12 required Python suites: 72 cases, 0 skipped (cases=72, skipped=0)
+PASS: GREEN: 72 of 72 Python cases pass (0 failures)
+PASS: GREEN: pytest exit 0
+PASS: catalog checklist (both formats) and analysis exit 0
+PASS: catalog: anon/authenticated/service_role effective writes 0/8 ({'anon': '0', 'authenticated': '0', 'service_role': '0', 'authenticator': '0', 'postgres': '8'})
+PASS: catalog: owner keeps all rights; no DEFINER right depends on membership
+PASS: catalog: service_role keeps SELECT on all 8 tables
+PASS: catalog: 20 DEFINER identities unchanged
+PASS: catalog: EXECUTE on the 20 unchanged (anon 18, authenticated 19, service_role 20) ({'anon': '18', 'authenticated': '19', 'service_role': '20', 'authenticator': '1', 'postgres': '20'})
+PASS: catalog: no PUBLIC write grant and no column ACL
+PASS: owned containers and network removed
+PASS: in-run credential scan passed
+RESULT: P0-10 GREEN expectations met
+Scope: reconstructed migration chain on a throwaway stack only; not production. Phase A remains EVIDENCE_INCOMPLETE.

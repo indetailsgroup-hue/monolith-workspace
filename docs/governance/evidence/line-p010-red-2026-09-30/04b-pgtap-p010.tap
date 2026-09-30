@@ -1,0 +1,506 @@
+BEGIN
+CREATE EXTENSION
+1..133
+CREATE TABLE
+INSERT 0 3
+CREATE TABLE
+INSERT 0 8
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+bbbd798c-6b49-4a72-86da-23aa7cf5eb14
+INSERT 0 1
+INSERT 0 2
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+CREATE TABLE
+INSERT 0 32
+ok 1 - scope guard: 8 target tables, 3 roles and 32 write statements exist (no vacuous pass)
+ok 2 - anon, authenticated and service_role keep USAGE on schema public, so denials are not schema-level
+ok 3 - PUBLIC holds no INSERT/UPDATE/DELETE/TRUNCATE grant on the eight tables
+ok 4 - each table owner (the SECURITY DEFINER owner) keeps INSERT/UPDATE/DELETE/TRUNCATE
+not ok 5 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_channels
+# Failed test 5: "anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_channels"
+#         have: {"COLUMN INSERT","COLUMN UPDATE",DELETE,INSERT,TRUNCATE,UPDATE}
+#         want: {}
+not ok 6 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_conversations
+# Failed test 6: "anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_conversations"
+#         have: {"COLUMN INSERT","COLUMN UPDATE",DELETE,INSERT,TRUNCATE,UPDATE}
+#         want: {}
+not ok 7 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_inbound_messages
+# Failed test 7: "anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_inbound_messages"
+#         have: {"COLUMN INSERT","COLUMN UPDATE",DELETE,INSERT,TRUNCATE,UPDATE}
+#         want: {}
+not ok 8 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_outbound_messages
+# Failed test 8: "anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_outbound_messages"
+#         have: {"COLUMN INSERT","COLUMN UPDATE",DELETE,INSERT,TRUNCATE,UPDATE}
+#         want: {}
+not ok 9 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_customer_identity
+# Failed test 9: "anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_customer_identity"
+#         have: {"COLUMN INSERT","COLUMN UPDATE",DELETE,INSERT,TRUNCATE,UPDATE}
+#         want: {}
+not ok 10 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_message_templates
+# Failed test 10: "anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_message_templates"
+#         have: {"COLUMN INSERT","COLUMN UPDATE",DELETE,INSERT,TRUNCATE,UPDATE}
+#         want: {}
+not ok 11 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_orders
+# Failed test 11: "anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_orders"
+#         have: {"COLUMN INSERT","COLUMN UPDATE",DELETE,INSERT,TRUNCATE,UPDATE}
+#         want: {}
+not ok 12 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_audit_log
+# Failed test 12: "anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_audit_log"
+#         have: {"COLUMN INSERT",INSERT,TRUNCATE}
+#         want: {}
+not ok 13 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_channels
+# Failed test 13: "authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_channels"
+#         have: {"COLUMN INSERT","COLUMN UPDATE",DELETE,INSERT,TRUNCATE,UPDATE}
+#         want: {}
+not ok 14 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_conversations
+# Failed test 14: "authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_conversations"
+#         have: {"COLUMN INSERT","COLUMN UPDATE",DELETE,INSERT,TRUNCATE,UPDATE}
+#         want: {}
+not ok 15 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_inbound_messages
+# Failed test 15: "authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_inbound_messages"
+#         have: {"COLUMN INSERT","COLUMN UPDATE",DELETE,INSERT,TRUNCATE,UPDATE}
+#         want: {}
+not ok 16 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_outbound_messages
+# Failed test 16: "authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_outbound_messages"
+#         have: {"COLUMN INSERT","COLUMN UPDATE",DELETE,INSERT,TRUNCATE,UPDATE}
+#         want: {}
+not ok 17 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_customer_identity
+# Failed test 17: "authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_customer_identity"
+#         have: {"COLUMN INSERT","COLUMN UPDATE",DELETE,INSERT,TRUNCATE,UPDATE}
+#         want: {}
+not ok 18 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_message_templates
+# Failed test 18: "authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_message_templates"
+#         have: {"COLUMN INSERT","COLUMN UPDATE",DELETE,INSERT,TRUNCATE,UPDATE}
+#         want: {}
+not ok 19 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_orders
+# Failed test 19: "authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_orders"
+#         have: {"COLUMN INSERT","COLUMN UPDATE",DELETE,INSERT,TRUNCATE,UPDATE}
+#         want: {}
+not ok 20 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_audit_log
+# Failed test 20: "authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_audit_log"
+#         have: {"COLUMN INSERT",INSERT,TRUNCATE}
+#         want: {}
+not ok 21 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_channels
+# Failed test 21: "service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_channels"
+#         have: {"COLUMN INSERT","COLUMN UPDATE",DELETE,INSERT,TRUNCATE,UPDATE}
+#         want: {}
+not ok 22 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_conversations
+# Failed test 22: "service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_conversations"
+#         have: {"COLUMN INSERT","COLUMN UPDATE",DELETE,INSERT,TRUNCATE,UPDATE}
+#         want: {}
+not ok 23 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_inbound_messages
+# Failed test 23: "service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_inbound_messages"
+#         have: {"COLUMN INSERT","COLUMN UPDATE",DELETE,INSERT,TRUNCATE,UPDATE}
+#         want: {}
+not ok 24 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_outbound_messages
+# Failed test 24: "service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_outbound_messages"
+#         have: {"COLUMN INSERT","COLUMN UPDATE",DELETE,INSERT,TRUNCATE,UPDATE}
+#         want: {}
+not ok 25 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_customer_identity
+# Failed test 25: "service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_customer_identity"
+#         have: {"COLUMN INSERT","COLUMN UPDATE",DELETE,INSERT,TRUNCATE,UPDATE}
+#         want: {}
+not ok 26 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_message_templates
+# Failed test 26: "service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_message_templates"
+#         have: {"COLUMN INSERT","COLUMN UPDATE",DELETE,INSERT,TRUNCATE,UPDATE}
+#         want: {}
+not ok 27 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_orders
+# Failed test 27: "service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_orders"
+#         have: {"COLUMN INSERT","COLUMN UPDATE",DELETE,INSERT,TRUNCATE,UPDATE}
+#         want: {}
+not ok 28 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_audit_log
+# Failed test 28: "service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_audit_log"
+#         have: {"COLUMN INSERT",INSERT,TRUNCATE}
+#         want: {}
+not ok 29 - anon INSERT on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+# Failed test 29: "anon INSERT on line_oa_channels is refused by the table privilege (42501 permission denied for table)"
+#         have: rls_denied
+#         want: acl_denied
+not ok 30 - anon UPDATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+# Failed test 30: "anon UPDATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 31 - anon DELETE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+# Failed test 31: "anon DELETE on line_oa_channels is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 32 - anon TRUNCATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+# Failed test 32: "anon TRUNCATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 33 - anon INSERT on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+# Failed test 33: "anon INSERT on line_oa_conversations is refused by the table privilege (42501 permission denied for table)"
+#         have: rls_denied
+#         want: acl_denied
+not ok 34 - anon UPDATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+# Failed test 34: "anon UPDATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 35 - anon DELETE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+# Failed test 35: "anon DELETE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 36 - anon TRUNCATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+# Failed test 36: "anon TRUNCATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)"
+#         have: other 0A000: cannot truncate a table referenced in a foreign key constraint
+#         want: acl_denied
+not ok 37 - anon INSERT on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+# Failed test 37: "anon INSERT on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)"
+#         have: rls_denied
+#         want: acl_denied
+not ok 38 - anon UPDATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+# Failed test 38: "anon UPDATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 39 - anon DELETE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+# Failed test 39: "anon DELETE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 40 - anon TRUNCATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+# Failed test 40: "anon TRUNCATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 41 - anon INSERT on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+# Failed test 41: "anon INSERT on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)"
+#         have: rls_denied
+#         want: acl_denied
+not ok 42 - anon UPDATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+# Failed test 42: "anon UPDATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 43 - anon DELETE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+# Failed test 43: "anon DELETE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 44 - anon TRUNCATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+# Failed test 44: "anon TRUNCATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 45 - anon INSERT on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+# Failed test 45: "anon INSERT on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)"
+#         have: rls_denied
+#         want: acl_denied
+not ok 46 - anon UPDATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+# Failed test 46: "anon UPDATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 47 - anon DELETE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+# Failed test 47: "anon DELETE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 48 - anon TRUNCATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+# Failed test 48: "anon TRUNCATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 49 - anon INSERT on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+# Failed test 49: "anon INSERT on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)"
+#         have: rls_denied
+#         want: acl_denied
+not ok 50 - anon UPDATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+# Failed test 50: "anon UPDATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 51 - anon DELETE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+# Failed test 51: "anon DELETE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 52 - anon TRUNCATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+# Failed test 52: "anon TRUNCATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 53 - anon INSERT on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+# Failed test 53: "anon INSERT on line_oa_orders is refused by the table privilege (42501 permission denied for table)"
+#         have: rls_denied
+#         want: acl_denied
+not ok 54 - anon UPDATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+# Failed test 54: "anon UPDATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 55 - anon DELETE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+# Failed test 55: "anon DELETE on line_oa_orders is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 56 - anon TRUNCATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+# Failed test 56: "anon TRUNCATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 57 - anon INSERT on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+# Failed test 57: "anon INSERT on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)"
+#         have: rls_denied
+#         want: acl_denied
+ok 58 - anon UPDATE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 59 - anon DELETE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+not ok 60 - anon TRUNCATE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+# Failed test 60: "anon TRUNCATE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 61 - authenticated INSERT on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+# Failed test 61: "authenticated INSERT on line_oa_channels is refused by the table privilege (42501 permission denied for table)"
+#         have: rls_denied
+#         want: acl_denied
+not ok 62 - authenticated UPDATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+# Failed test 62: "authenticated UPDATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 63 - authenticated DELETE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+# Failed test 63: "authenticated DELETE on line_oa_channels is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 64 - authenticated TRUNCATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+# Failed test 64: "authenticated TRUNCATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 65 - authenticated INSERT on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+# Failed test 65: "authenticated INSERT on line_oa_conversations is refused by the table privilege (42501 permission denied for table)"
+#         have: rls_denied
+#         want: acl_denied
+not ok 66 - authenticated UPDATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+# Failed test 66: "authenticated UPDATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 67 - authenticated DELETE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+# Failed test 67: "authenticated DELETE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 68 - authenticated TRUNCATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+# Failed test 68: "authenticated TRUNCATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)"
+#         have: other 0A000: cannot truncate a table referenced in a foreign key constraint
+#         want: acl_denied
+not ok 69 - authenticated INSERT on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+# Failed test 69: "authenticated INSERT on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)"
+#         have: rls_denied
+#         want: acl_denied
+not ok 70 - authenticated UPDATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+# Failed test 70: "authenticated UPDATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 71 - authenticated DELETE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+# Failed test 71: "authenticated DELETE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 72 - authenticated TRUNCATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+# Failed test 72: "authenticated TRUNCATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 73 - authenticated INSERT on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+# Failed test 73: "authenticated INSERT on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)"
+#         have: rls_denied
+#         want: acl_denied
+not ok 74 - authenticated UPDATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+# Failed test 74: "authenticated UPDATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 75 - authenticated DELETE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+# Failed test 75: "authenticated DELETE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 76 - authenticated TRUNCATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+# Failed test 76: "authenticated TRUNCATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 77 - authenticated INSERT on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+# Failed test 77: "authenticated INSERT on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)"
+#         have: rls_denied
+#         want: acl_denied
+not ok 78 - authenticated UPDATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+# Failed test 78: "authenticated UPDATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 79 - authenticated DELETE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+# Failed test 79: "authenticated DELETE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 80 - authenticated TRUNCATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+# Failed test 80: "authenticated TRUNCATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 81 - authenticated INSERT on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+# Failed test 81: "authenticated INSERT on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)"
+#         have: rls_denied
+#         want: acl_denied
+not ok 82 - authenticated UPDATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+# Failed test 82: "authenticated UPDATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 83 - authenticated DELETE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+# Failed test 83: "authenticated DELETE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 84 - authenticated TRUNCATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+# Failed test 84: "authenticated TRUNCATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 85 - authenticated INSERT on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+# Failed test 85: "authenticated INSERT on line_oa_orders is refused by the table privilege (42501 permission denied for table)"
+#         have: rls_denied
+#         want: acl_denied
+not ok 86 - authenticated UPDATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+# Failed test 86: "authenticated UPDATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 87 - authenticated DELETE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+# Failed test 87: "authenticated DELETE on line_oa_orders is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 88 - authenticated TRUNCATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+# Failed test 88: "authenticated TRUNCATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 89 - authenticated INSERT on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+# Failed test 89: "authenticated INSERT on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)"
+#         have: rls_denied
+#         want: acl_denied
+ok 90 - authenticated UPDATE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 91 - authenticated DELETE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+not ok 92 - authenticated TRUNCATE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+# Failed test 92: "authenticated TRUNCATE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 93 - service_role INSERT on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+# Failed test 93: "service_role INSERT on line_oa_channels is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (1 rows, rolled back)
+#         want: acl_denied
+not ok 94 - service_role UPDATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+# Failed test 94: "service_role UPDATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (1 rows, rolled back)
+#         want: acl_denied
+not ok 95 - service_role DELETE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+# Failed test 95: "service_role DELETE on line_oa_channels is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (1 rows, rolled back)
+#         want: acl_denied
+not ok 96 - service_role TRUNCATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+# Failed test 96: "service_role TRUNCATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 97 - service_role INSERT on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+# Failed test 97: "service_role INSERT on line_oa_conversations is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (1 rows, rolled back)
+#         want: acl_denied
+not ok 98 - service_role UPDATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+# Failed test 98: "service_role UPDATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (1 rows, rolled back)
+#         want: acl_denied
+not ok 99 - service_role DELETE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+# Failed test 99: "service_role DELETE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (1 rows, rolled back)
+#         want: acl_denied
+not ok 100 - service_role TRUNCATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+# Failed test 100: "service_role TRUNCATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)"
+#         have: other 0A000: cannot truncate a table referenced in a foreign key constraint
+#         want: acl_denied
+not ok 101 - service_role INSERT on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+# Failed test 101: "service_role INSERT on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (1 rows, rolled back)
+#         want: acl_denied
+not ok 102 - service_role UPDATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+# Failed test 102: "service_role UPDATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (1 rows, rolled back)
+#         want: acl_denied
+not ok 103 - service_role DELETE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+# Failed test 103: "service_role DELETE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (1 rows, rolled back)
+#         want: acl_denied
+not ok 104 - service_role TRUNCATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+# Failed test 104: "service_role TRUNCATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 105 - service_role INSERT on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+# Failed test 105: "service_role INSERT on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (1 rows, rolled back)
+#         want: acl_denied
+not ok 106 - service_role UPDATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+# Failed test 106: "service_role UPDATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (1 rows, rolled back)
+#         want: acl_denied
+not ok 107 - service_role DELETE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+# Failed test 107: "service_role DELETE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (1 rows, rolled back)
+#         want: acl_denied
+not ok 108 - service_role TRUNCATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+# Failed test 108: "service_role TRUNCATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 109 - service_role INSERT on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+# Failed test 109: "service_role INSERT on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (1 rows, rolled back)
+#         want: acl_denied
+not ok 110 - service_role UPDATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+# Failed test 110: "service_role UPDATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (1 rows, rolled back)
+#         want: acl_denied
+not ok 111 - service_role DELETE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+# Failed test 111: "service_role DELETE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (1 rows, rolled back)
+#         want: acl_denied
+not ok 112 - service_role TRUNCATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+# Failed test 112: "service_role TRUNCATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 113 - service_role INSERT on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+# Failed test 113: "service_role INSERT on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (1 rows, rolled back)
+#         want: acl_denied
+not ok 114 - service_role UPDATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+# Failed test 114: "service_role UPDATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (1 rows, rolled back)
+#         want: acl_denied
+not ok 115 - service_role DELETE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+# Failed test 115: "service_role DELETE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (1 rows, rolled back)
+#         want: acl_denied
+not ok 116 - service_role TRUNCATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+# Failed test 116: "service_role TRUNCATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 117 - service_role INSERT on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+# Failed test 117: "service_role INSERT on line_oa_orders is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (1 rows, rolled back)
+#         want: acl_denied
+not ok 118 - service_role UPDATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+# Failed test 118: "service_role UPDATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (1 rows, rolled back)
+#         want: acl_denied
+not ok 119 - service_role DELETE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+# Failed test 119: "service_role DELETE on line_oa_orders is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (1 rows, rolled back)
+#         want: acl_denied
+not ok 120 - service_role TRUNCATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+# Failed test 120: "service_role TRUNCATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+not ok 121 - service_role INSERT on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+# Failed test 121: "service_role INSERT on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (1 rows, rolled back)
+#         want: acl_denied
+ok 122 - service_role UPDATE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 123 - service_role DELETE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+not ok 124 - service_role TRUNCATE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+# Failed test 124: "service_role TRUNCATE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)"
+#         have: succeeded (0 rows, rolled back)
+#         want: acl_denied
+ok 125 - service_role can still SELECT line_oa_channels (sender reads channel_access_token_ref)
+ok 126 - service_role can still SELECT line_oa_conversations (sender reads line_user_id, vertical_context)
+ok 127 - service_role can still SELECT line_oa_message_templates (sender reads body)
+CREATE TABLE
+INSERT 0 1
+ok 128 - rpc_ingest_line_webhook as service_role accepts a signed synthetic event and processes it
+ok 129 - ingress wrote the conversation, inbound message, customer identity and audit receipt through the DEFINER path
+INSERT 0 1
+ok 130 - binding a customer group as service_role fires fn_welcome_on_group_bind, which queues tpl_welcome_pack for that group
+INSERT 0 1
+INSERT 0 1
+ok 131 - fn_prod_curated as service_role queues exactly one pending tpl_prod_started push for the bound group
+INSERT 0 1
+ok 132 - rpc_claim_line_outbound_batch as service_role claims the curated row and stamps a claim token
+INSERT 0 1
+ok 133 - rpc_record_line_send_result as service_role records the claimed row as sent
+# Looks like you failed 114 tests of 133
+ROLLBACK

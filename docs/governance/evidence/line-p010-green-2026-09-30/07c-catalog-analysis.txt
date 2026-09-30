@@ -1,0 +1,252 @@
+P0-10 catalog analysis (derived from 04b-catalog-output-unaligned.txt; no DB access)
+server: PostgreSQL 17.6 on x86_64-pc-linux-gnu, compiled by gcc (GCC) 15.2.0, 64-bit
+captured as current_user=postgres session_user=postgres
+result sets parsed: 11
+
+== A. Target tables: owner, RLS, direct ACL write grants ==
+tables found: 8/8; missing: none
+- line_oa_channels: owner=postgres rls=t force=f
+    anon            writes=-                              other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+    authenticated   writes=-                              other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+    postgres        writes=DELETE,INSERT,TRUNCATE,UPDATE  other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+    service_role    writes=-                              other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+- line_oa_conversations: owner=postgres rls=t force=f
+    anon            writes=-                              other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+    authenticated   writes=-                              other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+    postgres        writes=DELETE,INSERT,TRUNCATE,UPDATE  other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+    service_role    writes=-                              other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+- line_oa_inbound_messages: owner=postgres rls=t force=f
+    anon            writes=-                              other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+    authenticated   writes=-                              other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+    postgres        writes=DELETE,INSERT,TRUNCATE,UPDATE  other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+    service_role    writes=-                              other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+- line_oa_outbound_messages: owner=postgres rls=t force=f
+    anon            writes=-                              other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+    authenticated   writes=-                              other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+    postgres        writes=DELETE,INSERT,TRUNCATE,UPDATE  other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+    service_role    writes=-                              other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+- line_oa_customer_identity: owner=postgres rls=t force=f
+    anon            writes=-                              other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+    authenticated   writes=-                              other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+    postgres        writes=DELETE,INSERT,TRUNCATE,UPDATE  other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+    service_role    writes=-                              other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+- line_oa_message_templates: owner=postgres rls=t force=f
+    anon            writes=-                              other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+    authenticated   writes=-                              other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+    postgres        writes=DELETE,INSERT,TRUNCATE,UPDATE  other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+    service_role    writes=-                              other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+- line_oa_orders: owner=postgres rls=t force=f
+    anon            writes=-                              other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+    authenticated   writes=-                              other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+    postgres        writes=DELETE,INSERT,TRUNCATE,UPDATE  other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+    service_role    writes=-                              other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+- line_oa_audit_log: owner=postgres rls=t force=f
+    anon            writes=-                              other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+    authenticated   writes=-                              other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+    postgres        writes=DELETE,INSERT,TRUNCATE,UPDATE  other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+    service_role    writes=-                              other=MAINTAIN,REFERENCES,SELECT,TRIGGER
+PUBLIC holds a direct write grant on: none
+
+== B. Effective privileges (has_table_privilege / has_any_column_privilege) ==
+role            table                          SEL INS UPD DEL TRU | colINS colUPD
+anon            line_oa_channels               t   f   f   f   f   | f      f     
+anon            line_oa_conversations          t   f   f   f   f   | f      f     
+anon            line_oa_inbound_messages       t   f   f   f   f   | f      f     
+anon            line_oa_outbound_messages      t   f   f   f   f   | f      f     
+anon            line_oa_customer_identity      t   f   f   f   f   | f      f     
+anon            line_oa_message_templates      t   f   f   f   f   | f      f     
+anon            line_oa_orders                 t   f   f   f   f   | f      f     
+anon            line_oa_audit_log              t   f   f   f   f   | f      f     
+authenticated   line_oa_channels               t   f   f   f   f   | f      f     
+authenticated   line_oa_conversations          t   f   f   f   f   | f      f     
+authenticated   line_oa_inbound_messages       t   f   f   f   f   | f      f     
+authenticated   line_oa_outbound_messages      t   f   f   f   f   | f      f     
+authenticated   line_oa_customer_identity      t   f   f   f   f   | f      f     
+authenticated   line_oa_message_templates      t   f   f   f   f   | f      f     
+authenticated   line_oa_orders                 t   f   f   f   f   | f      f     
+authenticated   line_oa_audit_log              t   f   f   f   f   | f      f     
+service_role    line_oa_channels               t   f   f   f   f   | f      f     
+service_role    line_oa_conversations          t   f   f   f   f   | f      f     
+service_role    line_oa_inbound_messages       t   f   f   f   f   | f      f     
+service_role    line_oa_outbound_messages      t   f   f   f   f   | f      f     
+service_role    line_oa_customer_identity      t   f   f   f   f   | f      f     
+service_role    line_oa_message_templates      t   f   f   f   f   | f      f     
+service_role    line_oa_orders                 t   f   f   f   f   | f      f     
+service_role    line_oa_audit_log              t   f   f   f   f   | f      f     
+authenticator   line_oa_channels               f   f   f   f   f   | f      f     
+authenticator   line_oa_conversations          f   f   f   f   f   | f      f     
+authenticator   line_oa_inbound_messages       f   f   f   f   f   | f      f     
+authenticator   line_oa_outbound_messages      f   f   f   f   f   | f      f     
+authenticator   line_oa_customer_identity      f   f   f   f   f   | f      f     
+authenticator   line_oa_message_templates      f   f   f   f   f   | f      f     
+authenticator   line_oa_orders                 f   f   f   f   f   | f      f     
+authenticator   line_oa_audit_log              f   f   f   f   f   | f      f     
+postgres        line_oa_channels               t   t   t   t   t   | t      t     
+postgres        line_oa_conversations          t   t   t   t   t   | t      t     
+postgres        line_oa_inbound_messages       t   t   t   t   t   | t      t     
+postgres        line_oa_outbound_messages      t   t   t   t   t   | t      t     
+postgres        line_oa_customer_identity      t   t   t   t   t   | t      t     
+postgres        line_oa_message_templates      t   t   t   t   t   | t      t     
+postgres        line_oa_orders                 t   t   t   t   t   | t      t     
+postgres        line_oa_audit_log              t   t   t   t   t   | t      t     
+effective write on target tables — anon: 0/8
+effective write on target tables — authenticated: 0/8
+effective write on target tables — service_role: 0/8
+effective write on target tables — authenticator: 0/8
+effective write on target tables — postgres: 8/8
+
+== C. Column-level ACLs on target tables ==
+none (no attacl set on any column of the 8 tables)
+
+== D. Role attributes and membership edges ==
+- anon: super=f inherit=t bypassrls=f login=f
+- authenticated: super=f inherit=t bypassrls=f login=f
+- authenticator: super=f inherit=f bypassrls=f login=t
+- postgres: super=f inherit=t bypassrls=t login=t
+- service_role: super=f inherit=t bypassrls=t login=f
+membership edges touching these roles (member -> granted_role [admin/inherit/set]):
+  authenticator -> anon [f/f/t]
+  authenticator -> authenticated [f/f/t]
+  authenticator -> service_role [f/f/t]
+  postgres -> anon [t/t/t]
+  postgres -> authenticated [t/t/t]
+  postgres -> authenticator [t/t/t]
+  postgres -> monolith_p2_workload [t/f/f]
+  postgres -> pg_create_subscription [t/t/t]
+  postgres -> pg_monitor [t/t/t]
+  postgres -> pg_read_all_data [t/t/t]
+  postgres -> pg_signal_backend [t/t/t]
+  postgres -> service_role [t/t/t]
+  postgres -> supabase_privileged_role [f/t/t]
+  supabase_storage_admin -> authenticator [f/f/t]
+
+== E. The 20 candidate writer names: catalog identity, owner, security, EXECUTE ==
+names found in catalog candidate set: 20/20; missing: none
+- fn_lead_followup_sweep()
+    owner=postgres secdef=t config={search_path=public} acl={postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+    EXECUTE: anon=t authenticated=t service_role=t authenticator=f postgres=t
+- fn_line_handle_group_event(jsonb,text,text)
+    owner=postgres secdef=t config={search_path=public} acl={postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+    EXECUTE: anon=t authenticated=t service_role=t authenticator=f postgres=t
+- fn_prod_curated(uuid,text,jsonb)
+    owner=postgres secdef=t config={search_path=public} acl={postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+    EXECUTE: anon=t authenticated=t service_role=t authenticator=f postgres=t
+- fn_welcome_on_group_bind()
+    owner=postgres secdef=t config={search_path=public} acl={=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+    EXECUTE: anon=t authenticated=t service_role=t authenticator=t postgres=t
+- line_oa_resolve_customer_identity(text,text)
+    owner=postgres secdef=t config={"search_path=public, pg_temp"} acl={postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+    EXECUTE: anon=t authenticated=t service_role=t authenticator=f postgres=t
+- rpc_claim_line_outbound_batch(integer,integer)
+    owner=postgres secdef=t config={"search_path=public, pg_temp"} acl={postgres=X/postgres,service_role=X/postgres}
+    EXECUTE: anon=f authenticated=f service_role=t authenticator=f postgres=t
+- rpc_create_line_order(uuid,jsonb,text,text)
+    owner=postgres secdef=t config={"search_path=public, pg_temp"} acl={postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+    EXECUTE: anon=t authenticated=t service_role=t authenticator=f postgres=t
+- rpc_evaluate_identity_merge_candidate(text,text,uuid,jsonb,numeric)
+    owner=postgres secdef=t config={"search_path=public, pg_temp"} acl={postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+    EXECUTE: anon=t authenticated=t service_role=t authenticator=f postgres=t
+- rpc_field_assign_lead(uuid,uuid)
+    owner=postgres secdef=t config={search_path=public} acl={postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+    EXECUTE: anon=t authenticated=t service_role=t authenticator=f postgres=t
+- rpc_field_close_lead(uuid,text,text)
+    owner=postgres secdef=t config={search_path=public} acl={postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+    EXECUTE: anon=t authenticated=t service_role=t authenticator=f postgres=t
+- rpc_field_send_photo_to_customer(uuid,uuid,text)
+    owner=postgres secdef=t config={search_path=public} acl={postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+    EXECUTE: anon=t authenticated=t service_role=t authenticator=f postgres=t
+- rpc_field_set_lead_source(uuid,text)
+    owner=postgres secdef=t config={search_path=public} acl={postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+    EXECUTE: anon=t authenticated=t service_role=t authenticator=f postgres=t
+- rpc_field_shop_drawing_revision(uuid,text,text,boolean,boolean)
+    owner=postgres secdef=t config={search_path=public} acl={postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+    EXECUTE: anon=t authenticated=t service_role=t authenticator=f postgres=t
+- rpc_ingest_line_webhook(text,text,text)
+    owner=postgres secdef=t config={"search_path=public, pg_temp"} acl={postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+    EXECUTE: anon=t authenticated=t service_role=t authenticator=f postgres=t
+- rpc_record_line_send_result(uuid,text,text,text,uuid)
+    owner=postgres secdef=t config={"search_path=public, pg_temp"} acl={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+    EXECUTE: anon=f authenticated=t service_role=t authenticator=f postgres=t
+- rpc_request_customer_acceptance(uuid,text)
+    owner=postgres secdef=t config={search_path=public} acl={postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+    EXECUTE: anon=t authenticated=t service_role=t authenticator=f postgres=t
+- rpc_resolve_conversation_site(uuid,text,text)
+    owner=postgres secdef=t config={"search_path=public, pg_temp"} acl={postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+    EXECUTE: anon=t authenticated=t service_role=t authenticator=f postgres=t
+- rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean)
+    owner=postgres secdef=t config={"search_path=public, pg_temp"} acl={postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+    EXECUTE: anon=t authenticated=t service_role=t authenticator=f postgres=t
+- rpc_sweep_line_session_timeouts()
+    owner=postgres secdef=t config={"search_path=public, pg_temp"} acl={postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+    EXECUTE: anon=t authenticated=t service_role=t authenticator=f postgres=t
+- rpc_sync_line_forecast(text,text,text)
+    owner=postgres secdef=t config={"search_path=public, pg_temp"} acl={postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+    EXECUTE: anon=t authenticated=t service_role=t authenticator=f postgres=t
+identities (incl. overloads) for the 20 names: 20
+owners of the 20: ['postgres']; SECURITY DEFINER: 20/20
+EXECUTE on the 20 — anon: 18/20 (not: ['rpc_claim_line_outbound_batch', 'rpc_record_line_send_result'])
+EXECUTE on the 20 — authenticated: 19/20 (not: ['rpc_claim_line_outbound_batch'])
+EXECUTE on the 20 — service_role: 20/20
+EXECUTE on the 20 — authenticator: 1/20 (not: ['fn_lead_followup_sweep', 'fn_line_handle_group_event', 'fn_prod_curated', 'line_oa_resolve_customer_identity', 'rpc_claim_line_outbound_batch', 'rpc_create_line_order', 'rpc_evaluate_identity_merge_candidate', 'rpc_field_assign_lead', 'rpc_field_close_lead', 'rpc_field_send_photo_to_customer', 'rpc_field_set_lead_source', 'rpc_field_shop_drawing_revision', 'rpc_ingest_line_webhook', 'rpc_record_line_send_result', 'rpc_request_customer_acceptance', 'rpc_resolve_conversation_site', 'rpc_send_line_outbound', 'rpc_sweep_line_session_timeouts', 'rpc_sync_line_forecast'])
+EXECUTE on the 20 — postgres: 20/20
+PUBLIC EXECUTE among the 20: ['fn_welcome_on_group_bind()']
+other text-matched routines (mention line_oa_ or call known writers; readers included): 27 (secdef=23, invoker=4)
+    fn_after_sales_sweep() owner=postgres secdef=t
+    fn_line_guard_customer_group() owner=postgres secdef=t
+    fn_payment_fire(uuid,text) owner=postgres secdef=t
+    fn_payment_overdue_sweep() owner=postgres secdef=t
+    fn_project_on_completed() owner=postgres secdef=t
+    fn_wf_render_notification_text(text,jsonb) owner=postgres secdef=f
+    line_oa__ct_equal(bytea,bytea) owner=postgres secdef=f
+    line_oa_audit_log_immutable() owner=postgres secdef=f
+    line_oa_normalize_order(text,jsonb) owner=postgres secdef=f
+    line_oa_resolve_channel(text) owner=postgres secdef=t
+    line_oa_verify_signature(text,text,text) owner=postgres secdef=t
+    rpc_capture_promote(uuid,text,uuid) owner=postgres secdef=t
+    rpc_claim_line_media_fetches(integer) owner=postgres secdef=t
+    rpc_claim_pending_notifications(integer,integer) owner=postgres secdef=t
+    rpc_factory_approve_gate(uuid) owner=postgres secdef=t
+    rpc_factory_report_station(uuid,text,text,text,jsonb,jsonb) owner=postgres secdef=t
+    rpc_field_close_phase(uuid,text) owner=postgres secdef=t
+    rpc_field_create_appointment(uuid,text,timestamp with time zone,text) owner=postgres secdef=t
+    rpc_field_list_leads() owner=postgres secdef=t
+    rpc_field_sales_summary(date,date) owner=postgres secdef=t
+    rpc_field_send_contract(uuid) owner=postgres secdef=t
+    rpc_field_send_install_plan(uuid) owner=postgres secdef=t
+    rpc_field_send_variation(uuid) owner=postgres secdef=t
+    rpc_finance_record_payment(uuid,text) owner=postgres secdef=t
+    rpc_query_line_audit(text,text,text,text,timestamp with time zone,timestamp with time zone) owner=postgres secdef=t
+    rpc_record_customer_approval_decision(uuid,text,wf_decision,text,integer,text) owner=postgres secdef=t
+    rpc_record_customer_approval_from_webhook(text,text,text) owner=postgres secdef=t
+
+== F. SECURITY DEFINER owners: rights on target tables and where they come from ==
+distinct owners of text-matched SECURITY DEFINER routines: ['postgres']
+- postgres: owns all 8 target tables = True
+definer write rights that depend only on role membership: none
+definer owners lacking INSERT/UPDATE on a target table: none
+
+== G. Default ACLs (recurrence risk for future objects) ==
+- creator=postgres ns=public type=S acl={postgres=rwU/postgres,anon=rwU/postgres,authenticated=rwU/postgres,service_role=rwU/postgres}
+- creator=postgres ns=public type=f acl={postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+- creator=postgres ns=public type=r acl={postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}  <- grants writes to ['anon', 'authenticated', 'service_role']
+- creator=supabase_admin ns=public type=S acl={postgres=rwU/supabase_admin,anon=rwU/supabase_admin,authenticated=rwU/supabase_admin,service_role=rwU/supabase_admin}
+- creator=supabase_admin ns=public type=f acl={postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}
+- creator=supabase_admin ns=public type=r acl={postgres=arwdDxtm/supabase_admin,anon=arwdDxtm/supabase_admin,authenticated=arwdDxtm/supabase_admin,service_role=arwdDxtm/supabase_admin}  <- grants writes to ['anon', 'authenticated', 'service_role']
+
+== H. Triggers (on target tables, or routines that mention targets/known writers) ==
+on target tables: 10 (internal=8); on other tables: 2
+- line_oa_conversations RI_ConstraintTrigger_a_17459 enabled=O internal=t routine="RI_FKey_noaction_del"() owner=supabase_admin secdef=f
+- line_oa_conversations RI_ConstraintTrigger_a_17460 enabled=O internal=t routine="RI_FKey_noaction_upd"() owner=supabase_admin secdef=f
+- line_oa_conversations RI_ConstraintTrigger_a_17473 enabled=O internal=t routine="RI_FKey_noaction_del"() owner=supabase_admin secdef=f
+- line_oa_conversations RI_ConstraintTrigger_a_17474 enabled=O internal=t routine="RI_FKey_noaction_upd"() owner=supabase_admin secdef=f
+- line_oa_inbound_messages RI_ConstraintTrigger_c_17461 enabled=O internal=t routine="RI_FKey_check_ins"() owner=supabase_admin secdef=f
+- line_oa_inbound_messages RI_ConstraintTrigger_c_17462 enabled=O internal=t routine="RI_FKey_check_upd"() owner=supabase_admin secdef=f
+- line_oa_outbound_messages RI_ConstraintTrigger_c_17475 enabled=O internal=t routine="RI_FKey_check_ins"() owner=supabase_admin secdef=f
+- line_oa_outbound_messages RI_ConstraintTrigger_c_17476 enabled=O internal=t routine="RI_FKey_check_upd"() owner=supabase_admin secdef=f
+- line_oa_outbound_messages trg_line_guard_customer_group enabled=O internal=f routine=fn_line_guard_customer_group() owner=postgres secdef=t
+- line_oa_audit_log trg_line_oa_audit_log_immutable enabled=O internal=f routine=line_oa_audit_log_immutable() owner=postgres secdef=f
+- installation_projects trg_project_completed enabled=O internal=f routine=fn_project_on_completed() owner=postgres secdef=t
+- line_groups trg_welcome_group_bind enabled=O internal=f routine=fn_welcome_on_group_bind() owner=postgres secdef=t
+
+== I. Views / rules depending on target tables, with ACL and effective rights ==
+none (no view, materialized view or rule depends on the 8 tables in this catalog)

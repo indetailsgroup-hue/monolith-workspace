@@ -1,0 +1,22 @@
+captured_utc: 2026-09-30T12:27:36Z
+catalog_fingerprint_md5 (relations+owners+ACLs, columns, functions+source hashes+owners+ACLs, roles, memberships, extensions): d9b17758b132641732a14047a0f3154f
+schemas:
+  auth
+  cron
+  extensions
+  graphql
+  graphql_public
+  net
+  public
+  realtime
+  storage
+  vault
+extensions:
+  pg_cron 1.6.4
+  pg_net 0.20.4
+  pg_stat_statements 1.11
+  pgcrypto 1.3
+  plpgsql 1.0
+  supabase_vault 0.3.1
+  uuid-ossp 1.1
+cron_job_run_details_rows: 0

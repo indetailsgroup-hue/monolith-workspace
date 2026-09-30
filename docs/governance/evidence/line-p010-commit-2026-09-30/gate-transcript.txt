@@ -1,0 +1,119 @@
+P0-10 commit gate transcript (written by commit-p010.sh only after the gate exited 0)
+written_utc: 2026-09-30T12:40:21Z
+base_head: da252d18a10d12e18bfc2afed3a82f4f79001090
+wrapper: docs/governance/evidence/line-p010-green-2026-09-30/commit-p010.sh sha256 371e0b1a9ffbecfe7ca544f915e454af9e17d5cb06e82a26b1a6c5e090a53125
+gate: docs/governance/evidence/line-p010-green-2026-09-30/gate-p010-change.py sha256 d8d31d6211f47f4f585b88a90435b12f0b4ca1684e8faba683a51e60e86e2e2a
+gate_exit: 0
+gated_tree: 021e96f6f1e9a91bccd274ca6b8b92d1218fea81
+check: the commit tree without docs/governance/evidence/line-p010-commit-2026-09-30 must equal gated_tree (command in the wrapper header)
+staged_changes:
+  M	docs/PRD-LINE-OA.en.html
+  M	docs/PRD-LINE-OA.en.md
+  M	docs/PRD-LINE-OA.th.html
+  M	docs/PRD-LINE-OA.th.md
+  A	docs/governance/evidence/line-p010-green-2026-09-30/.gitattributes
+  A	docs/governance/evidence/line-p010-green-2026-09-30/00-context.txt
+  A	docs/governance/evidence/line-p010-green-2026-09-30/01a-baseline-empty-image.txt
+  A	docs/governance/evidence/line-p010-green-2026-09-30/01b-service-bootstrap-output.txt
+  A	docs/governance/evidence/line-p010-green-2026-09-30/01b-service-bootstrap.sql
+  A	docs/governance/evidence/line-p010-green-2026-09-30/01c-baseline-after-services.txt
+  A	docs/governance/evidence/line-p010-green-2026-09-30/02-migrations-applied.txt
+  A	docs/governance/evidence/line-p010-green-2026-09-30/02a-source-provenance.txt
+  A	docs/governance/evidence/line-p010-green-2026-09-30/03-baseline-after-migrations.txt
+  A	docs/governance/evidence/line-p010-green-2026-09-30/04a-pgtap-original.tap
+  A	docs/governance/evidence/line-p010-green-2026-09-30/04b-pgtap-p010.tap
+  A	docs/governance/evidence/line-p010-green-2026-09-30/05-claim-race-output.txt
+  A	docs/governance/evidence/line-p010-green-2026-09-30/06-pytest-junit.xml
+  A	docs/governance/evidence/line-p010-green-2026-09-30/06-pytest-output.txt
+  A	docs/governance/evidence/line-p010-green-2026-09-30/07a-catalog-output-aligned.txt
+  A	docs/governance/evidence/line-p010-green-2026-09-30/07b-catalog-output-unaligned.txt
+  A	docs/governance/evidence/line-p010-green-2026-09-30/07c-catalog-analysis.txt
+  A	docs/governance/evidence/line-p010-green-2026-09-30/08-baseline-after-tests.txt
+  A	docs/governance/evidence/line-p010-green-2026-09-30/09-teardown.txt
+  A	docs/governance/evidence/line-p010-green-2026-09-30/10a-credential-scan.txt
+  A	docs/governance/evidence/line-p010-green-2026-09-30/10b-verification.txt
+  A	docs/governance/evidence/line-p010-green-2026-09-30/REPLAY.txt
+  A	docs/governance/evidence/line-p010-green-2026-09-30/REPORT.en.html
+  A	docs/governance/evidence/line-p010-green-2026-09-30/REPORT.en.md
+  A	docs/governance/evidence/line-p010-green-2026-09-30/REPORT.th.html
+  A	docs/governance/evidence/line-p010-green-2026-09-30/REPORT.th.md
+  A	docs/governance/evidence/line-p010-green-2026-09-30/SHA256SUMS
+  A	docs/governance/evidence/line-p010-green-2026-09-30/SHA256SUMS.run
+  A	docs/governance/evidence/line-p010-green-2026-09-30/analyze-p010-catalog.py
+  A	docs/governance/evidence/line-p010-green-2026-09-30/catalog-checklist.sql
+  A	docs/governance/evidence/line-p010-green-2026-09-30/commit-p010.sh
+  A	docs/governance/evidence/line-p010-green-2026-09-30/gate-p010-change.py
+  A	docs/governance/evidence/line-p010-green-2026-09-30/logs-line-p010rg-auth.txt
+  A	docs/governance/evidence/line-p010-green-2026-09-30/logs-line-p010rg-db.txt
+  A	docs/governance/evidence/line-p010-green-2026-09-30/logs-line-p010rg-storage.txt
+  A	docs/governance/evidence/line-p010-green-2026-09-30/run-p010-red-green.sh
+  A	docs/governance/evidence/line-p010-green-2026-09-30/source-0198_line_oa_revoke_client_write_grants.sql
+  A	docs/governance/evidence/line-p010-green-2026-09-30/source-line_oa_client_write_revoke.sql
+  A	docs/governance/evidence/line-p010-green-2026-09-30/verify-p010-red-green.py
+  A	docs/governance/evidence/line-p010-red-2026-09-30/.gitattributes
+  A	docs/governance/evidence/line-p010-red-2026-09-30/00-context.txt
+  A	docs/governance/evidence/line-p010-red-2026-09-30/01a-baseline-empty-image.txt
+  A	docs/governance/evidence/line-p010-red-2026-09-30/01b-service-bootstrap-output.txt
+  A	docs/governance/evidence/line-p010-red-2026-09-30/01b-service-bootstrap.sql
+  A	docs/governance/evidence/line-p010-red-2026-09-30/01c-baseline-after-services.txt
+  A	docs/governance/evidence/line-p010-red-2026-09-30/02-migrations-applied.txt
+  A	docs/governance/evidence/line-p010-red-2026-09-30/02a-source-provenance.txt
+  A	docs/governance/evidence/line-p010-red-2026-09-30/03-baseline-after-migrations.txt
+  A	docs/governance/evidence/line-p010-red-2026-09-30/04a-pgtap-original.tap
+  A	docs/governance/evidence/line-p010-red-2026-09-30/04b-pgtap-p010.tap
+  A	docs/governance/evidence/line-p010-red-2026-09-30/05-claim-race-output.txt
+  A	docs/governance/evidence/line-p010-red-2026-09-30/06-pytest-junit.xml
+  A	docs/governance/evidence/line-p010-red-2026-09-30/06-pytest-output.txt
+  A	docs/governance/evidence/line-p010-red-2026-09-30/07a-catalog-output-aligned.txt
+  A	docs/governance/evidence/line-p010-red-2026-09-30/07b-catalog-output-unaligned.txt
+  A	docs/governance/evidence/line-p010-red-2026-09-30/07c-catalog-analysis.txt
+  A	docs/governance/evidence/line-p010-red-2026-09-30/08-baseline-after-tests.txt
+  A	docs/governance/evidence/line-p010-red-2026-09-30/09-teardown.txt
+  A	docs/governance/evidence/line-p010-red-2026-09-30/10a-credential-scan.txt
+  A	docs/governance/evidence/line-p010-red-2026-09-30/10b-verification.txt
+  A	docs/governance/evidence/line-p010-red-2026-09-30/REPLAY.txt
+  A	docs/governance/evidence/line-p010-red-2026-09-30/SHA256SUMS
+  A	docs/governance/evidence/line-p010-red-2026-09-30/SHA256SUMS.run
+  A	docs/governance/evidence/line-p010-red-2026-09-30/analyze-p010-catalog.py
+  A	docs/governance/evidence/line-p010-red-2026-09-30/catalog-checklist.sql
+  A	docs/governance/evidence/line-p010-red-2026-09-30/logs-line-p010rg-auth.txt
+  A	docs/governance/evidence/line-p010-red-2026-09-30/logs-line-p010rg-db.txt
+  A	docs/governance/evidence/line-p010-red-2026-09-30/logs-line-p010rg-storage.txt
+  A	docs/governance/evidence/line-p010-red-2026-09-30/run-p010-red-green.sh
+  A	docs/governance/evidence/line-p010-red-2026-09-30/source-line_oa_client_write_revoke.sql
+  A	docs/governance/evidence/line-p010-red-2026-09-30/verify-p010-red-green.py
+  A	docs/governance/line-p010-execute-survey.en.html
+  A	docs/governance/line-p010-execute-survey.en.md
+  A	docs/governance/line-p010-execute-survey.th.html
+  A	docs/governance/line-p010-execute-survey.th.md
+  A	supabase/migrations/0198_line_oa_revoke_client_write_grants.sql
+  A	supabase/tests/line_oa_client_write_revoke.sql
+gate_output:
+  PASS: HEAD is the accepted base da252d18a
+  PASS: change set is exactly the approved 81 paths (unexpected=[], missing=[])
+  PASS: only additions, plus modifications of the four PRD files ({})
+  PASS: docs/governance/evidence/line-p010-red-2026-09-30: SHA256SUMS lists every file except itself (31)
+  PASS: docs/governance/evidence/line-p010-red-2026-09-30: SHA256SUMS matches working-tree bytes ([])
+  PASS: docs/governance/evidence/line-p010-red-2026-09-30: SHA256SUMS matches staged Git blobs byte-for-byte ([])
+  PASS: docs/governance/evidence/line-p010-red-2026-09-30: 29 raw run outputs unchanged since the runner ([])
+  PASS: docs/governance/evidence/line-p010-red-2026-09-30: in-run credential scan passed
+  PASS: docs/governance/evidence/line-p010-red-2026-09-30: verifier re-run over the captured files exits 0 (red)
+  PASS: docs/governance/evidence/line-p010-green-2026-09-30: SHA256SUMS lists every file except itself (38)
+  PASS: docs/governance/evidence/line-p010-green-2026-09-30: SHA256SUMS matches working-tree bytes ([])
+  PASS: docs/governance/evidence/line-p010-green-2026-09-30: SHA256SUMS matches staged Git blobs byte-for-byte ([])
+  PASS: docs/governance/evidence/line-p010-green-2026-09-30: 30 raw run outputs unchanged since the runner ([])
+  PASS: docs/governance/evidence/line-p010-green-2026-09-30: in-run credential scan passed
+  PASS: docs/governance/evidence/line-p010-green-2026-09-30: verifier re-run over the captured files exits 0 (green)
+  PASS: supabase/tests/line_oa_client_write_revoke.sql equals the copy used by line-p010-red-2026-09-30
+  PASS: supabase/tests/line_oa_client_write_revoke.sql equals the copy used by line-p010-green-2026-09-30
+  PASS: supabase/migrations/0198_line_oa_revoke_client_write_grants.sql equals the copy applied by the GREEN run
+  PASS: Git blobs of the non-bundle files equal the working tree ([])
+  PASS: docs/PRD-LINE-OA.en.html equals the renderer output of its Markdown
+  PASS: docs/PRD-LINE-OA.th.html equals the renderer output of its Markdown
+  PASS: docs/governance/line-p010-execute-survey.en.html equals the renderer output of its Markdown
+  PASS: docs/governance/line-p010-execute-survey.th.html equals the renderer output of its Markdown
+  PASS: docs/governance/evidence/line-p010-green-2026-09-30/REPORT.en.html equals the renderer output of its Markdown
+  PASS: docs/governance/evidence/line-p010-green-2026-09-30/REPORT.th.html equals the renderer output of its Markdown
+  PASS: pattern scanner positive controls all detected
+  PASS: no credential-shaped value in 81 Git blobs ({})
+  RESULT: GATE PASS

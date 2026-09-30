@@ -1,0 +1,34 @@
+captured_utc: 2026-09-30T12:31:04Z
+catalog_fingerprint_md5 (relations+owners+ACLs, columns, functions+source hashes+owners+ACLs, roles, memberships, extensions): a25de82263c9ae5bb0618307155c8ad6
+schemas:
+  auth
+  cron
+  extensions
+  graphql
+  graphql_public
+  net
+  public
+  realtime
+  storage
+  vault
+extensions:
+  pg_cron 1.6.4
+  pg_net 0.20.4
+  pg_stat_statements 1.11
+  pgcrypto 1.3
+  plpgsql 1.0
+  supabase_vault 0.3.1
+  uuid-ossp 1.1
+cron jobs created by the migration chain (throwaway stack; cron.launch_active_jobs=off; dedicated network; DB on host loopback only):
+  wf-after-sales-sweep | 30 2 * * * | true
+  wf-appointment-reminder | 30 0 * * * | true
+  wf-daily-digest | 0 1 * * * | true
+  wf-gate-sla-sweep | */15 * * * * | true
+  wf-issue-sla-sweep | */15 * * * * | true
+  wf-lead-followup-sweep | 15 3 * * * | true
+  wf-line-token-refresh | 15 21 1,11,21 * * | true
+  wf-media-fetch | */5 * * * * | true
+  wf-notification-retry | * * * * * | true
+  wf-payment-overdue-sweep | 45 3 * * * | true
+  wf-sales-training-reminder | 0 2 1 1,4,7,10 * | true
+  wf-sla-sweep | */15 * * * * | true

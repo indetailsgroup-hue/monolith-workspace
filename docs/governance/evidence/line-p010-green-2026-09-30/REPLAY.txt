@@ -1,0 +1,13 @@
+P0-10 GREEN evidence (base da252d18a plus 0198) - how it was produced
+
+Executed command (Git Bash, repository root, started 2026-09-30T12:30:18Z):
+P010_MODE=green P010_OUT=docs/governance/evidence/line-p010-green-2026-09-30 P010_RED_BUNDLE=docs/governance/evidence/line-p010-red-2026-09-30 bash <scratchpad>/p010-run/run-p010-red-green.sh
+A first invocation of the same command a few minutes earlier was refused at pre-flight with "port 55446 already in use": 240 TIME_WAIT sockets left by the RED run were still open. The runner creates nothing before pre-flight passes, so no directory, container or network existed. After the sockets cleared (about 105 s), the unchanged command was run again; that run is this bundle.
+run-p010-red-green.sh and verify-p010-red-green.py are the exact executed files and are byte-identical to the RED bundle copies (same sha256 in both 00-context.txt files).
+Working-tree changes at run time: the untracked test file (byte-identical to the RED copy; the runner refuses otherwise) and the untracked migration supabase/migrations/0198_line_oa_revoke_client_write_grants.sql (copy: source-0198_line_oa_revoke_client_write_grants.sql).
+
+Expected and observed GREEN result (10b-verification.txt): 193 migrations from zero including 0198; original pgTAP 107/107; new P0-10 pgTAP 133/133; claim race overlap 0; Python 72/72 pass, 0 skipped; catalog shows anon, authenticated and service_role with 0/8 write privilege, the owner with full rights, service_role SELECT on 8/8, and EXECUTE on the 20 DEFINER writers unchanged (anon 18, authenticated 19, service_role 20).
+
+Runner-time files are covered by SHA256SUMS.run. The collector added REPLAY.txt, REPORT.en.md/.th.md/.en.html/.th.html and commit-p010.sh afterwards; SHA256SUMS covers every file except itself.
+Re-check without a database: py verify-p010-red-green.py docs/governance/evidence/line-p010-green-2026-09-30 green
+Replay (a new run): check out the base da252d18a, add the test file and 0198 from the source-* copies, and run the runner with a NEW P010_OUT and P010_RED_BUNDLE pointing at a RED bundle with the same test bytes. The branch-check note in the RED REPLAY.txt applies here as well.
