@@ -1,0 +1,76 @@
+diff --git a/supabase/tests/line_outbound_claim_record.sql b/supabase/tests/line_outbound_claim_record.sql
+index f534a94bb..3eb304f4e 100644
+--- a/supabase/tests/line_outbound_claim_record.sql
++++ b/supabase/tests/line_outbound_claim_record.sql
+@@ -17,7 +17,7 @@
+ \set ON_ERROR_STOP on
+ 
+ create extension if not exists pgtap;
+-select plan(70);
++select plan(107);
+ 
+ -- ---------------------------------------------------------------------------
+ -- Test-only dynamic helpers let the complete suite run against the pre-0193
+@@ -1327,5 +1327,62 @@ select ok(
+   'non-UTC successful send stamps sent_at within five seconds of now()'
+ );
+ 
++-- P0-11: real RPC; returned AND persisted values.
++create function pg_temp.p011_detail(detail text, expected text) returns boolean
++language plpgsql as $p011$
++declare oid uuid := gen_random_uuid(); r record; stored record;
++begin
++  insert into public.line_oa_outbound_messages
++    (id, conversation_id, send_type, status, template_key, slot_values)
++  values (oid, 'a1000000-0000-0000-0000-00000000c001', 'push', 'pending', 'p011', '{}');
++  perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
++  execute 'set local role service_role';
++  select * into r from public.rpc_record_line_send_result(oid, 'failed', detail, 'permanent', null);
++  execute 'reset role';
++  select * into stored from public.line_oa_outbound_messages where id=oid;
++  return r.recorded and r.status='failed' and r.sent_at is null
++    and r.error_detail is not distinct from expected
++    and stored.status='failed' and stored.sent_at is null
++    and stored.error_detail is not distinct from expected;
++end;
++$p011$;
++select ok(pg_temp.p011_detail(chr(9), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+0009');
++select ok(pg_temp.p011_detail(chr(10), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+000A');
++select ok(pg_temp.p011_detail(chr(11), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+000B');
++select ok(pg_temp.p011_detail(chr(12), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+000C');
++select ok(pg_temp.p011_detail(chr(13), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+000D');
++select ok(pg_temp.p011_detail(chr(28), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+001C');
++select ok(pg_temp.p011_detail(chr(29), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+001D');
++select ok(pg_temp.p011_detail(chr(30), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+001E');
++select ok(pg_temp.p011_detail(chr(31), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+001F');
++select ok(pg_temp.p011_detail(chr(32), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+0020');
++select ok(pg_temp.p011_detail(chr(133), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+0085');
++select ok(pg_temp.p011_detail(chr(160), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+00A0');
++select ok(pg_temp.p011_detail(chr(5760), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+1680');
++select ok(pg_temp.p011_detail(chr(8192), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+2000');
++select ok(pg_temp.p011_detail(chr(8193), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+2001');
++select ok(pg_temp.p011_detail(chr(8194), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+2002');
++select ok(pg_temp.p011_detail(chr(8195), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+2003');
++select ok(pg_temp.p011_detail(chr(8196), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+2004');
++select ok(pg_temp.p011_detail(chr(8197), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+2005');
++select ok(pg_temp.p011_detail(chr(8198), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+2006');
++select ok(pg_temp.p011_detail(chr(8199), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+2007');
++select ok(pg_temp.p011_detail(chr(8200), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+2008');
++select ok(pg_temp.p011_detail(chr(8201), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+2009');
++select ok(pg_temp.p011_detail(chr(8202), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+200A');
++select ok(pg_temp.p011_detail(chr(8232), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+2028');
++select ok(pg_temp.p011_detail(chr(8233), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+2029');
++select ok(pg_temp.p011_detail(chr(8239), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+202F');
++select ok(pg_temp.p011_detail(chr(8287), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+205F');
++select ok(pg_temp.p011_detail(chr(12288), 'line_oa: send failed (no detail provided)'), 'P0-11 whitespace U+3000');
++select ok(pg_temp.p011_detail(null, 'line_oa: send failed (no detail provided)'), 'P0-11 null');
++select ok(pg_temp.p011_detail('', 'line_oa: send failed (no detail provided)'), 'P0-11 empty');
++select ok(pg_temp.p011_detail(chr(9)||chr(10)||chr(11)||chr(12)||chr(13)||chr(28)||chr(29)||chr(30)||chr(31)||chr(32)||chr(133)||chr(160)||chr(5760)||chr(8192)||chr(8193)||chr(8194)||chr(8195)||chr(8196)||chr(8197)||chr(8198)||chr(8199)||chr(8200)||chr(8201)||chr(8202)||chr(8232)||chr(8233)||chr(8239)||chr(8287)||chr(12288), 'line_oa: send failed (no detail provided)'), 'P0-11 all whitespace');
++select ok(pg_temp.p011_detail(chr(160)||'อ่านได้ readable'||chr(12288), 'อ่านได้ readable'), 'P0-11 trim edges');
++select ok(pg_temp.p011_detail('first'||chr(160)||'second', 'first'||chr(160)||'second'), 'P0-11 internal whitespace');
++select ok(pg_temp.p011_detail(chr(8203), chr(8203)), 'P0-11 zero width space');
++select ok(pg_temp.p011_detail(chr(65279), chr(65279)), 'P0-11 BOM');
++select ok(pg_temp.p011_detail(chr(160)||'Bearer secret-token'||chr(12288), 'Bearer [REDACTED]'), 'P0-11 token scrub');
++
+ select * from finish();
+ rollback;

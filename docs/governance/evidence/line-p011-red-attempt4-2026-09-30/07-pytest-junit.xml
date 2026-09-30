@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.846" timestamp="2026-09-30T15:14:19.373388+07:00" hostname="Santi"><properties><property name="hypothesis-statistics-test_failure_handling_property.py::test_failure_handling" value="dGVzdF9mYWlsdXJlX2hhbmRsaW5nX3Byb3BlcnR5LnB5Ojp0ZXN0X2ZhaWx1cmVfaGFuZGxpbmc6CgogIC0gZHVyaW5nIGdlbmVyYXRlIHBoYXNlICgwLjQyIHNlY29uZHMpOgogICAgLSBUeXBpY2FsIHJ1bnRpbWVzOiB+IDktMTgwIG1zLCBvZiB3aGljaCB+IDAtNzAgbXMgaW4gZGF0YSBnZW5lcmF0aW9uCiAgICAtIDcgcGFzc2luZyBleGFtcGxlcywgMyBmYWlsaW5nIGV4YW1wbGVzLCAwIGludmFsaWQgZXhhbXBsZXMKICAgIC0gRm91bmQgMSBkaXN0aW5jdCBlcnJvciBpbiB0aGlzIHBoYXNlCgogIC0gZHVyaW5nIHNocmluayBwaGFzZSAoMC4wOSBzZWNvbmRzKToKICAgIC0gVHlwaWNhbCBydW50aW1lczogfiA4LTEzIG1zLCBvZiB3aGljaCA8IDFtcyBpbiBkYXRhIGdlbmVyYXRpb24KICAgIC0gMiBwYXNzaW5nIGV4YW1wbGVzLCA0IGZhaWxpbmcgZXhhbXBsZXMsIDAgaW52YWxpZCBleGFtcGxlcwogICAgLSBUcmllZCA2IHNocmlua3Mgb2Ygd2hpY2ggNCB3ZXJlIHN1Y2Nlc3NmdWwKCiAgLSBTdG9wcGVkIGJlY2F1c2Ugbm90aGluZyBsZWZ0IHRvIGRv" /></properties><testcase classname="test_failure_handling_property" name="test_failure_handling" time="0.671"><failure message="AssertionError: a reported failure must carry a non-empty error_detail (even when the supplied detail is 'whitespace'='\r'); got '\r'&#10;assert ('\r' is not None and '' != '')&#10; +  where '' = &lt;built-in method strip of str object at 0x00007FF9B6456938&gt;()&#10; +    where &lt;built-in method strip of str object at 0x00007FF9B6456938&gt; = '\r'.strip&#10;Falsifying example: test_failure_handling(&#10;    db_conn=&lt;psycopg.Connection [INTRANS] (host=127.0.0.1 port=55443 database=postgres) at 0x245897f5160&gt;,&#10;    case={'vertical': 'monolith', 'kind': 'whitespace', 'detail': '\r'},&#10;)&#10;Explanation:&#10;    These lines were always and only run by failing examples:&#10;        C:\Users\thai3\determined-williams (2)\MONOLITH Repair Intelligence\.worktrees\repair-intelligence-phase0-trust\tests\line-oa-commerce\py\test_failure_handling_property.py:359&#10;        C:\Users\thai3\determined-williams (2)\MONOLITH Repair Intelligence\.worktrees\repair-intelligence-phase0-trust\tests\line-oa-commerce\py\test_failure_handling_property.py:361">db_conn = &lt;psycopg.Connection [INTRANS] (host=127.0.0.1 port=55443 database=postgres) at 0x245897f5160&gt;
+
+    @property(
+&gt;       10,
+            
+        "A reported failure sets status=failed with non-empty error_detail and is "
+        "never marked sent",
+    )
+
+tests\line-oa-commerce\py\test_failure_handling_property.py:315: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+db_conn = &lt;psycopg.Connection [INTRANS] (host=127.0.0.1 port=55443 database=postgres) at 0x245897f5160&gt;
+case = {'detail': '\r', 'kind': 'whitespace', 'vertical': 'monolith'}
+
+    @property(
+        10,
+        "A reported failure sets status=failed with non-empty error_detail and is "
+        "never marked sent",
+    )
+    @given(case=_failure_case())
+    @settings(max_examples=PROPERTY_RUNS, deadline=None)
+    def test_failure_handling(db_conn: Any, case: dict[str, Any]) -&gt; None:
+        """**Validates: Requirements 4.4**"""
+        vertical: str = case["vertical"]
+        kind: str = case["kind"]
+        detail: str | None = case["detail"]
+    
+        # Namespace the userId so it can never collide with pre-existing rows.
+        line_user_id = f"failrec-{uuid.uuid4().hex}"
+    
+        with db_conn.cursor() as cur:
+            cur.execute("savepoint prop10")
+            try:
+                active = _active_site_codes(cur)
+                if not active:
+                    pytest.skip("no active Site_Code available for this example.")
+                site_code = active[0]
+    
+                conversation_id = _seed_open(cur, line_user_id, vertical, site_code)
+                template_key = _seed_template(cur, vertical)
+    
+                staged = _stage_pending(cur, conversation_id, template_key)
+                assert staged["staged"] is True, (
+                    f"a bound, slot-free, in-voice outbound must stage a pending row; got {staged!r}"
+                )
+                outbound_id = staged["outbound_id"]
+                assert outbound_id is not None, "a staged compose must return the outbound_id"
+    
+                # Report a FAILURE with the generated (possibly empty/None) error_detail.
+                result = _record_failure(cur, outbound_id, detail)
+    
+                # --- OUT values returned by the RPC ---------------------------------
+                assert result["recorded"] is True, (
+                    f"recording a failure must succeed; got {result!r}"
+                )
+                assert result["status"] == "failed", (
+                    f"a reported failure must set status='failed'; got {result['status']!r}"
+                )
+&gt;               assert result["error_detail"] is not None and result["error_detail"].strip() != "", (
+                    "a reported failure must carry a non-empty error_detail (even when the "
+                    f"supplied detail is {kind!r}={detail!r}); got {result['error_detail']!r}"
+                )
+E               AssertionError: a reported failure must carry a non-empty error_detail (even when the supplied detail is 'whitespace'='\r'); got '\r'
+E               assert ('\r' is not None and '' != '')
+E                +  where '' = &lt;built-in method strip of str object at 0x00007FF9B6456938&gt;()
+E                +    where &lt;built-in method strip of str object at 0x00007FF9B6456938&gt; = '\r'.strip
+E               Falsifying example: test_failure_handling(
+E                   db_conn=&lt;psycopg.Connection [INTRANS] (host=127.0.0.1 port=55443 database=postgres) at 0x245897f5160&gt;,
+E                   case={'vertical': 'monolith', 'kind': 'whitespace', 'detail': '\r'},
+E               )
+E               Explanation:
+E                   These lines were always and only run by failing examples:
+E                       C:\Users\thai3\determined-williams (2)\MONOLITH Repair Intelligence\.worktrees\repair-intelligence-phase0-trust\tests\line-oa-commerce\py\test_failure_handling_property.py:359
+E                       C:\Users\thai3\determined-williams (2)\MONOLITH Repair Intelligence\.worktrees\repair-intelligence-phase0-trust\tests\line-oa-commerce\py\test_failure_handling_property.py:361
+
+tests\line-oa-commerce\py\test_failure_handling_property.py:358: AssertionError</failure></testcase></testsuite></testsuites>

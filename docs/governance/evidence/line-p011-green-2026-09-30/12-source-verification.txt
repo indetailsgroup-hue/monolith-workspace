@@ -1,0 +1,3 @@
+PASS 227 tested source hashes match working-tree bytes; staged blobs: 20 byte-identical, 207 differ only by CRLF/LF. No substantive differences.
+PASS original 70 assertions unchanged in Git
+PASS Python assertions unchanged; only comment corrected

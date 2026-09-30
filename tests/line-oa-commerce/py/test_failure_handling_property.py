@@ -92,7 +92,7 @@ def _failure_case(draw: st.DrawFn) -> dict[str, Any]:
     elif kind == "empty":
         detail = ""
     elif kind == "whitespace":
-        # btrim() collapses to empty -> RPC must substitute a placeholder.
+        # Whitespace-only input must produce a placeholder under Python str.strip().
         detail = draw(st.text(alphabet=" \t\r\n", min_size=1, max_size=8))
     else:  # "text" — arbitrary printable operator detail (no NUL).
         detail = draw(

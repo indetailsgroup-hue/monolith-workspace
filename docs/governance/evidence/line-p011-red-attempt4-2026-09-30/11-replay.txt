@@ -1,0 +1,9 @@
+Command (Git Bash, repository root):
+P011_MODE=red STEP1_OUT=docs/governance/evidence/line-p011-red-attempt4-2026-09-30 bash scripts/run-line-p011-evidence.sh
+Runner refuses existing output directories: use a NEW directory when replaying.
+Base HEAD 29d15d022 plus source-SHA256SUMS and source-changes.patch identify the tested working tree. HEAD alone is not the tested code.
+RED: replay at base HEAD with the captured patch; do not apply 0197.
+GREEN: apply captured patch and source-0197.sql as supabase/migrations/0197_line_outbound_unicode_error_detail.sql.
+Script and verifier copies are the exact executed bytes. PSQL and Python paths/runtime versions are in 00-context.txt.
+
+Raw source hashes include Windows CRLF. Git blobs may use LF: reconstruct per-file bytes or compare normalized LF for source equivalence. Final GREEN check covers all 227 inputs (20 raw-identical, 207 CRLF/LF-only). Raw evidence itself is preserved byte-for-byte in Git. Packaging .gitattributes disables EOL conversion and whitespace lint for raw output.

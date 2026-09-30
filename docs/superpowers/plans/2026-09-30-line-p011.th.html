@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>แผนดำเนินการ P0-11</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>แผนดำเนินการ P0-11</h1>
+<p>เจ้าของอนุมัติให้ session นี้สร้าง</p>
+<p>เป้าหมาย: จัดการ whitespace ของเหตุผลการส่งล้มเหลวให้ตรงกับ str.strip() ของ Python</p>
+<p>โครงสร้าง: migration 0197 แก้เฉพาะ normalization ของฟังก์ชันบันทึกผล ใช้ btrim กับชุดอักขระ 29 ตัว คง signature การตรวจสิทธิ์ fencing retry เวลา และการปิดบัง token</p>
+<ol><li>เพิ่ม pgTAP ผ่าน RPC จริง 37 กรณีต่อจาก 70 กรณีเดิม เก็บ RED บน stack ใหม่</li><li>สร้าง 0197 คง Python assertion เดิม รัน pgTAP, claim แข่งสอง client และ Python ที่จำเป็น 12 ไฟล์บน stack ใหม่อีกชุด</li><li>เก็บคำสั่ง เวลา UTC hash source exit code การเก็บกวาดและ checksum ไม่แก้หลักฐานเก่า ตรวจรหัสลับที่สร้างก่อน commit</li><li>ปรับ PRD สองภาษาและสร้าง HTML ด้วย renderer ของ repo โดยยังรอตรวจรับข้ามค่าย</li></ol>
+<p>ข้อจำกัด: ไม่เข้าถึง stack ที่แชร์ ไม่ให้ cron ทำงาน ไม่แก้ manufacturing ไม่ push deploy หรือส่งข้อความจริง P0-10 ยังไม่อนุมัติ คาดว่าเทสต์สิทธิ์ 8 ข้อยังล้ม เลขข้อเสนอเลื่อนไป 0198 ใช้ image postgres/auth/storage ที่มีในเครื่องกับ network แยกเฉพาะงานและเปิดพอร์ต DB บน loopback เท่านั้น (Docker Desktop ไม่เปิดพอร์ตของ internal network)</p>
+</main>
+</body>
+</html>

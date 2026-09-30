@@ -1,0 +1,35 @@
+captured_utc: 2026-09-30T08:14:16Z
+catalog_fingerprint_md5 (relations, columns, function identities + source hashes, extensions): 334e7c0f311345e776de564235f9b4a3
+pg_dump_schema_only_sha256 (as supabase_admin, inside the db container): a75705f12a7be939860fc4eee4eb1ab854c0bb8b386b01ff8db00011f9ee1e6d (e3b0c442... = empty dump, i.e. pg_dump failed)
+schemas:
+  auth
+  cron
+  extensions
+  graphql
+  graphql_public
+  net
+  public
+  realtime
+  storage
+  vault
+extensions:
+  pg_cron 1.6.4
+  pg_net 0.20.4
+  pg_stat_statements 1.11
+  pgcrypto 1.3
+  plpgsql 1.0
+  supabase_vault 0.3.1
+  uuid-ossp 1.1
+cron jobs created by the migration chain itself (throwaway stack; cron.launch_active_jobs=off; dedicated network; DB published on host loopback only):
+  wf-after-sales-sweep | 30 2 * * * | select public.fn_after_sales_sweep()
+  wf-appointment-reminder | 30 0 * * * | select public.fn_appointment_reminder_sweep()
+  wf-daily-digest | 0 1 * * * | select public.fn_wf_cron_invoke_edge('sla-sweep-scheduler', '{"assemble_digest": true}'::jsonb)
+  wf-gate-sla-sweep | */15 * * * * | select public.fn_factory_gate_sla_sweep()
+  wf-issue-sla-sweep | */15 * * * * | select public.fn_issue_sla_sweep()
+  wf-lead-followup-sweep | 15 3 * * * | select public.fn_lead_followup_sweep()
+  wf-line-token-refresh | 15 21 1,11,21 * * |  select public.fn_wf_cron_invoke_edge('line-token-refresh'); 
+  wf-media-fetch | */5 * * * * | select public.fn_wf_cron_invoke_edge('capture-media-worker')
+  wf-notification-retry | * * * * * | select public.fn_wf_cron_invoke_edge('notification-retry-worker')
+  wf-payment-overdue-sweep | 45 3 * * * | select public.fn_payment_overdue_sweep()
+  wf-sales-training-reminder | 0 2 1 1,4,7,10 * | select public.fn_sales_training_reminder()
+  wf-sla-sweep | */15 * * * * | select public.fn_wf_cron_invoke_edge('sla-sweep-scheduler')

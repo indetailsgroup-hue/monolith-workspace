@@ -1,0 +1,11 @@
+scope: exactly the values listed below, nothing else
+captured_utc: 2026-09-30T08:15:41Z
+outbound_columns_A1_A4|5
+fn_rpc_claim_line_outbound_batch|1
+fn_rpc_record_line_send_result_5arg|1
+ext_pgtap_version|absent
+rows_line_oa_outbound_messages|0
+rows_line_oa_audit_log|0
+rows_line_groups|0
+rows_line_oa_conversations|0
+cron_jobs|12

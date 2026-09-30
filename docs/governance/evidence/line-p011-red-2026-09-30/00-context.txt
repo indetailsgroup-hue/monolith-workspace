@@ -1,0 +1,18 @@
+evidence_bundle: docs/governance/evidence/line-p011-red-2026-09-30
+started_utc: 2026-09-30T08:08:36Z
+branch: codex/repair-intelligence-phase0-trust
+head_sha: 29d15d022d6bb2cb8da15465923e13394ff46bad
+accepted_A4_sha: 46a203a611af4c71d5f166aa5a1448cbbda2f6fc
+code_under_test_diff_vs_A4 (supabase, tests/line-oa-commerce): [ 8 files changed, 8 insertions(+), 8 deletions(-)] (empty = byte-identical)
+uncommitted_changes_in_code_under_test: [ M supabase/tests/line_outbound_claim_record.sql] (empty = clean)
+db_image: public.ecr.aws/supabase/postgres:17.6.1.158 id=sha256:99b1729aeb0bac314445024fc149fbd39306170b61dd50800ccf180327ab3459 digests=public.ecr.aws/supabase/postgres@sha256:99b1729aeb0bac314445024fc149fbd39306170b61dd50800ccf180327ab3459
+auth_image: public.ecr.aws/supabase/gotrue:v2.195.0 id=sha256:362659ca70eaa75ba05bbaf963caa84c1c5afe5e8fbf0777e17b830dd5f0f60a digests=public.ecr.aws/supabase/gotrue@sha256:362659ca70eaa75ba05bbaf963caa84c1c5afe5e8fbf0777e17b830dd5f0f60a
+storage_image: public.ecr.aws/supabase/storage-api:v1.66.4 id=sha256:ead6d49b9873d65a030c6c44b46676f4276b234becd6d7819c254351b5400d95 digests=public.ecr.aws/supabase/storage-api@sha256:ead6d49b9873d65a030c6c44b46676f4276b234becd6d7819c254351b5400d95
+network: line-p011-net · containers: line-p011-db (127.0.0.1:55443), line-p011-auth, line-p011-storage (all throwaway; removed at the end)
+dsn: postgresql://postgres@127.0.0.1:55443/postgres (password generated per run, passed via PGPASSWORD, never written)
+node: v22.21.1
+python: Python 3.14.2 · pytest 8.4.2 · hypothesis 6.155.5 · psycopg 3.3.4
+psql_client: psql (PostgreSQL) 18.1
+docker: 29.8.0
+
+result: ABORTED BEFORE MIGRATIONS. Overriding image CMD omitted -D /etc/postgresql; DB listened on container loopback. Runner explicitly stopped; owned line-p011-db and line-p011-net removed. No tests ran. Next attempt restores image configuration and bounds connection time.
