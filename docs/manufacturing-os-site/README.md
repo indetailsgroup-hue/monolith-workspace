@@ -1,20 +1,19 @@
 # Monolith Manufacturing OS — Documentation Site
 
-[![Deploy Manufacturing OS Docs](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/deploy-docs-pages.yml/badge.svg)](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/deploy-docs-pages.yml)
+[![Deploy GitHub Pages](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/field-app-pages.yml/badge.svg)](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/field-app-pages.yml)
 [![CI — Validate Site Files](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/deploy-docs-ci.yml/badge.svg)](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/deploy-docs-ci.yml)
 [![Sync Chapters on Release](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/sync-chapters.yml/badge.svg)](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/sync-chapters.yml)
 [![Auto-Update Changelog](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/auto-update-changelog.yml/badge.svg)](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/auto-update-changelog.yml)
 [![Notify Slack on Deploy](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/notify-slack-deploy.yml/badge.svg)](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/notify-slack-deploy.yml)
 [![Lighthouse Audit](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/lighthouse-audit.yml/badge.svg)](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/lighthouse-audit.yml)
 [![Generate Site Data](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/generate-site-data.yml/badge.svg)](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/generate-site-data.yml)
-[![Auto-Deploy SciSpace](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/auto-deploy-scispace.yml/badge.svg)](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/auto-deploy-scispace.yml)
 [![Validate Frontmatter](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/validate-chapter-frontmatter.yml/badge.svg)](https://github.com/indetailsgroup-hue/monolith-workspace/actions/workflows/validate-chapter-frontmatter.yml)
 
 > Static documentation site covering **55 chapters** across **15 development phases**  
 > from Core Architecture to Predictive Maintenance AI.
 
 **Live (SciSpace):** https://0ly1b489.scispace.co  
-**GitHub Pages:** https://indetailsgroup-hue.github.io/monolith-workspace/ *(auto-deployed via GitHub Actions)*
+**GitHub Pages:** https://indetailsgroup-hue.github.io/monolith-workspace/docs/ *(auto-deployed via GitHub Actions)*
 
 ---
 
@@ -175,9 +174,12 @@ docs/manufacturing-os-site/
 ### GitHub Pages (Automated)
 
 Any push to `main` that changes files under `docs/manufacturing-os-site/**`  
-automatically triggers `.github/workflows/deploy-docs-pages.yml`.
+automatically triggers `.github/workflows/field-app-pages.yml`. It is the only
+workflow that deploys Pages. It publishes the Field PWA at `/`, the Designer at
+`/designer/` and this site at `/docs/` together, because each Pages deploy
+replaces the whole site.
 
-**GitHub Pages URL:** `https://indetailsgroup-hue.github.io/monolith-workspace/`
+**GitHub Pages URL:** `https://indetailsgroup-hue.github.io/monolith-workspace/docs/`
 
 ### SciSpace Hosting
 

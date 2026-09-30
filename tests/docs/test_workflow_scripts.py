@@ -32,13 +32,17 @@ def lighthouse_steps():
 
 class LighthouseTests(unittest.TestCase):
     def test_followup_workflows_watch_actual_deploy_name(self):
-        deployed = yaml.load((WORKFLOWS / 'deploy-docs-pages.yml').read_text(encoding='utf-8'), Loader=yaml.BaseLoader)['name']
+        deployed = yaml.load((WORKFLOWS / 'field-app-pages.yml').read_text(encoding='utf-8'), Loader=yaml.BaseLoader)['name']
         for name in ['lighthouse-audit.yml', 'notify-slack-deploy.yml']:
             with self.subTest(workflow=name):
                 workflow = yaml.load((WORKFLOWS / name).read_text(encoding='utf-8'), Loader=yaml.BaseLoader)
-                self.assertIn(deployed, workflow['on']['workflow_run']['workflows'])
-                if name == 'lighthouse-audit.yml':
-                    self.assertIn('Auto-Deploy SciSpace Site',workflow['on']['workflow_run']['workflows'])
+                self.assertEqual([deployed], workflow['on']['workflow_run']['workflows'])
+
+    def test_exactly_one_workflow_deploys_pages(self):
+        # A Pages deploy replaces the whole site. Two deployers overwrite each other:
+        # the docs-only deploys took /designer/ and the Field PWA offline from 2026-09-21.
+        deployers = sorted(p.name for p in WORKFLOWS.glob('*.yml') if 'actions/deploy-pages@' in p.read_text(encoding='utf-8'))
+        self.assertEqual(deployers, ['field-app-pages.yml'])
 
     def test_threshold_boundaries_and_missing_scores(self):
         step = next(s for s in lighthouse_steps() if s.get('id') == 'threshold')
@@ -74,8 +78,8 @@ assert.equal(calls.length,1);assert.equal(calls[0][0],EXPECTED);assert.equal(cal
                 self.assertEqual(result.returncode,0,result.stderr)
 
 class AllDocumentationShellTests(unittest.TestCase):
-    def test_all_nine_workflows_parse_and_shell_scripts_compile(self):
-        names=['deploy-docs-pages','deploy-docs-ci','sync-chapters','auto-update-changelog','notify-slack-deploy','lighthouse-audit','generate-site-data','auto-deploy-scispace','validate-chapter-frontmatter']
+    def test_all_documentation_workflows_parse_and_shell_scripts_compile(self):
+        names=['field-app-pages','deploy-docs-ci','sync-chapters','auto-update-changelog','notify-slack-deploy','lighthouse-audit','generate-site-data','validate-chapter-frontmatter']
         for name in names:
             workflow=yaml.load((WORKFLOWS/(name+'.yml')).read_text(encoding='utf-8'),Loader=yaml.BaseLoader)
             for job in workflow['jobs'].values():

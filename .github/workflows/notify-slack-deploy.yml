@@ -1,6 +1,6 @@
 # ──────────────────────────────────────────────────────────────────────────────
 # notify-slack-deploy.yml
-# Sends a Slack notification whenever deploy-docs-pages.yml completes.
+# Sends a Slack notification whenever field-app-pages.yml (the only Pages deploy) completes.
 #
 # Required secret:
 #   SLACK_WEBHOOK_URL — Slack Incoming Webhook URL
@@ -11,7 +11,7 @@ name: Notify Slack on Deploy
 on:
   workflow_run:
     workflows:
-      - "Deploy Manufacturing OS Docs to GitHub Pages"   # must match `name:` in deploy-docs-pages.yml
+      - "Deploy GitHub Pages"   # must match `name:` in field-app-pages.yml
     types:
       - completed
 
@@ -32,7 +32,7 @@ jobs:
           COMMIT_SHA="${{ github.event.workflow_run.head_sha }}"
           COMMIT_SHORT="${COMMIT_SHA:0:7}"
           COMMIT_URL="https://github.com/${{ github.repository }}/commit/${COMMIT_SHA}"
-          SITE_URL="https://indetailsgroup-hue.github.io/monolith-workspace/"
+          SITE_URL="https://indetailsgroup-hue.github.io/monolith-workspace/docs/"
           BRANCH="${{ github.event.workflow_run.head_branch }}"
           ACTOR="${{ github.event.workflow_run.actor.login }}"
           TRIGGERED_AT="${{ github.event.workflow_run.run_started_at }}"

@@ -58,7 +58,7 @@ Generator และ release sync ใช้ renderer เดียวกัน fin
 
 | ปลายทาง | วิธี deploy | หลักฐานยอมรับ |
 |---|---|---|
-| [GitHub Pages](https://indetailsgroup-hue.github.io/monolith-workspace/) | deploy-docs-pages.yml และ auto-deploy-scispace.yml ใช้ deploy-pages | run สำเร็จ, SHA/artifact ที่ deploy และเนื้อหาจริง |
+| [GitHub Pages](https://indetailsgroup-hue.github.io/monolith-workspace/docs/) | field-app-pages.yml เป็น workflow deploy-pages ตัวเดียว เผยแพร่ Field PWA (/), Designer (/designer/) และเว็บนี้ (/docs/) พร้อมกัน | run สำเร็จ, SHA/artifact ที่ deploy และเนื้อหาจริง |
 | [SciSpace site](https://0ly1b489.scispace.co/) | กระบวนการ publish ของ SciSpace แยกต่างหาก | หลักฐาน publish และตรวจหน้าเว็บจริงแยกกัน |
 
 Workflow ชื่อ Auto-Deploy SciSpace Site **ไม่ได้** publish ไป scispace.co เว็บเก่าเปิดได้ไม่พิสูจน์ว่า PR ถูก deploy แล้ว บันทึก pending/skipped/failed ตามจริง Lighthouse ต้อง performance≥70 และ accessibility≥90 โดยเก็บรายงาน/ความเห็นก่อน final gate ตัดสินล้มเหลว
