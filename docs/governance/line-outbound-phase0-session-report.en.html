@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Session Report — LINE OA Outbound Trust + Repair Phase 0</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>Session Report — LINE OA Outbound Trust + Repair Phase 0 (Wave 3.x / Phase A)</h1>
+<p><strong>Edition:</strong> English <strong>Report compiled:</strong> 30 September 2026 <strong>All work committed (per git):</strong> 1 August 2026 <strong>Worktree:</strong> <code>MONOLITH Repair Intelligence/.worktrees/repair-intelligence-phase0-trust</code> <strong>Branch:</strong> <code>codex/repair-intelligence-phase0-trust</code> — 62 commits ahead of <code>main</code> · <strong>not pushed anywhere</strong> <strong>Repair Phase 0 status:</strong> <code>EVIDENCE_INCOMPLETE</code> / <code>PENDING_OWNER_APPROVAL</code> — <strong>unchanged</strong> <strong>Live customer messaging:</strong> not enabled; no cron, no activation of any kind</p>
+<blockquote><p><strong>Rules held throughout:</strong> separate &quot;present in real code&quot; from &quot;spec only&quot; on every claim · always cite <code>file:line</code> · tests passing ≠ wired into the live path · never relax a security criterion to make something pass · builder ≠ reviewer (SoD) · close work with real test output, not assertions</p></blockquote>
+<hr>
+<h2>1. Roles and method (as the owner directed)</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Role</th>
+<th>Who</th>
+<th>Responsibility</th>
+</tr></thead><tbody>
+<tr>
+<td>Planner + acceptance gate</td>
+<td>Claude</td>
+<td>Decompose work, verify real status from code, <strong>re-run every test independently</strong>, commit on pass, accept no claims at face value</td>
+</tr>
+<tr>
+<td>Builder</td>
+<td>Codex</td>
+<td>Write code/migrations/tests TDD-style (RED first) — <strong>never commits</strong></td>
+</tr>
+<tr>
+<td>Cross-vendor reviewer</td>
+<td>Sol (separate Codex line)</td>
+<td>Adversarial review before any wave is accepted — holds veto</td>
+</tr>
+</tbody></table></div>
+<p><strong>Loop:</strong> Codex builds → Claude verifies + commits → Sol reviews → on REJECT the whole round is reworked.</p>
+<p>Key observation this round: <strong>cross-vendor review caught something real every single time.</strong> Of 7 waves submitted, Sol rejected 5, and every rejection carried verifiable <code>file:line</code> evidence — no vague objections.</p>
+<hr>
+<h2>2. Part 1 — Verifying the real state of the LINE OA system</h2>
+<p>The findings were recorded as a new PRD: **<code>docs/PRD-LINE-OA.md</code>** (edition 1.1).</p>
+<h3>2.1 ✅ Actually working (wired, with callers on the live path)</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Capability</th>
+<th>Evidence</th>
+</tr></thead><tbody>
+<tr>
+<td>Inbound: <code>line-webhook</code> forwards raw body + signature to the RPC, returns 401 on invalid signature</td>
+<td><code>supabase/functions/line-webhook/index.ts:87-127</code></td>
+</tr>
+<tr>
+<td>Replay protection via <code>webhook_event_id</code> UNIQUE</td>
+<td><code>00000000000022_line_oa_ingest_webhook.sql</code></td>
+</tr>
+<tr>
+<td>Group router (<code>#ผูก</code> bind, <code>#ปัญหา</code> issue, photos, acceptance card)</td>
+<td><code>0097_line_group_bot_flows.sql:101</code></td>
+</tr>
+<tr>
+<td>Fail-closed customer-group guard (non-customer templates cannot enter a customer group)</td>
+<td><code>0095_line_groups_identity.sql:102,145</code> + re-wire <code>0101_scrutiny3_fixes.sql:16</code></td>
+</tr>
+<tr>
+<td>Staff notifications + 1-minute cron, SKIP LOCKED, backoff, dead-letter</td>
+<td><code>0089_cron_schedules.sql:87-96</code>, claim v3 <code>0084</code></td>
+</tr>
+<tr>
+<td>Staff LINE Login + binding + consent</td>
+<td><code>0105_staff_bind_login.sql:86-92</code></td>
+</tr>
+<tr>
+<td>Token rotation cron</td>
+<td><code>0154_line_token_rotation.sql:77</code></td>
+</tr>
+<tr>
+<td>Enqueueing of outbound messages (~60 direct insert sites)</td>
+<td><code>0097:140</code>, <code>0098:93</code>, <code>0100:513</code>, <code>0101</code>, <code>0107</code>, <code>0111</code>, <code>0114:94</code>, <code>0127</code>, <code>0134</code>, <code>0136</code>, <code>0143</code></td>
+</tr>
+</tbody></table></div>
+<h3>2.2 🔴 Confirmed defects (B1–B9)</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>#</th>
+<th>Defect</th>
+<th>Evidence</th>
+</tr></thead><tbody>
+<tr>
+<td>B1</td>
+<td>Queue pickup had no row lock → overlapping runs duplicate sends</td>
+<td><code>line-outbound-sender/index.ts:589-602</code> (pre-fix)</td>
+</tr>
+<tr>
+<td>B2</td>
+<td><strong>Result recording rejected for every row</strong> — the sender uses the service role, but the RPC checked roles from JWT <code>app_metadata</code> and granted EXECUTE only to <code>authenticated</code></td>
+<td><code>00000000000041:162</code>, <code>00000000000000_c12_foundation.sql:36</code>, <code>00000000000041:253-258</code></td>
+</tr>
+<tr>
+<td>B3</td>
+<td>Group rows could never record a result (INNER JOIN against conversations)</td>
+<td><code>00000000000041:143-148</code> vs <code>0097:140</code></td>
+</tr>
+<tr>
+<td>B4</td>
+<td>No transition guard → <code>sent</code>→<code>failed</code> flips and duplicate audit rows possible</td>
+<td><code>00000000000041:143,194-210</code></td>
+</tr>
+<tr>
+<td>B5</td>
+<td>A single send failure was permanently terminal</td>
+<td><code>00000000000041:179-199</code></td>
+</tr>
+<tr>
+<td>B6</td>
+<td>**No cron invokes <code>line-outbound-sender</code>** anywhere in the repo</td>
+<td>grep <code>cron.schedule</code> across migrations</td>
+</tr>
+<tr>
+<td>B7</td>
+<td>Existing tests were blind to B1–B4 (all dependencies faked)</td>
+<td><code>tests/line-oa-commerce/ts/senderClaimAndRecord.integration.test.ts:43</code></td>
+</tr>
+<tr>
+<td>B8</td>
+<td>**<code>handler_error</code> counted as processed + the event is lost permanently**</td>
+<td><code>0097:281</code> (return), <code>0097:437-438</code> (skip list misses the prefix), <code>0097:454</code> (counts processed), <code>0097:429-433</code> (dedupe swallows redelivery)</td>
+</tr>
+<tr>
+<td>B9</td>
+<td><code>line-login</code> consumes no OAuth <code>state</code> / OIDC <code>nonce</code></td>
+<td><code>supabase/functions/line-login/index.ts:2,9</code></td>
+</tr>
+</tbody></table></div>
+<blockquote><p>B8 and B9 surfaced first in the product repo's 31 July 2026 research document and were then confirmed present here as well — the defects match line-for-line, so both repos carry the same code lineage.</p></blockquote>
+<h3>2.3 ⚫ Complete code, passing tests, <strong>zero callers</strong></h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Subsystem</th>
+<th>Defined at</th>
+<th>grep result</th>
+</tr></thead><tbody>
+<tr>
+<td>Autonomy gate + ≤200-char brand voice (<code>rpc_send_line_outbound</code>)</td>
+<td><code>00000000000040:131</code></td>
+<td><strong>0 callers</strong> — referenced only in tests/spec/comments</td>
+</tr>
+<tr>
+<td>Ordering (<code>rpc_create_line_order</code>, <code>line_oa_orders</code>)</td>
+<td><code>00000000000050:397</code></td>
+<td>0 callers</td>
+</tr>
+<tr>
+<td>Forecast sync (<code>rpc_sync_line_forecast</code>)</td>
+<td><code>00000000000060:88</code></td>
+<td>0 callers</td>
+</tr>
+<tr>
+<td>R-03 identity merge</td>
+<td><code>00000000000021:96</code></td>
+<td>0 callers</td>
+</tr>
+<tr>
+<td>24-hour auto-close</td>
+<td><code>00000000000061:50</code></td>
+<td><code>cron.schedule</code> sits inside a comment</td>
+</tr>
+<tr>
+<td>TCCK vertical</td>
+<td>spread across the schema</td>
+<td>no wired flow</td>
+</tr>
+</tbody></table></div>
+<h3>2.4 📝 Spec only</h3>
+<ul><li><strong>Customer-side consent</strong> — no column exists at all, and no pre-send consent check anywhere (staff have <code>identity_binding.consent_at</code>, <code>0088:10</code>)</li><li>Admin UI for message templates (today templates are seeded by migration only)</li></ul>
+<h3>2.5 Correcting previously overstated records</h3>
+<p><code>docs/PRD.md:512</code> and <code>docs/LINE-Architecture-System-Complete.md:40</code> claimed &quot;LINE OA Commerce ✅ complete 20/20&quot;, which <strong>does not hold for the live path</strong>. Both files now carry a ⚠️ banner pointing to <code>docs/PRD-LINE-OA.md</code>.</p>
+<hr>
+<h2>3. Part 2 — LINE Phase A: fixing the outbound path (owner-approved)</h2>
+<h3>3.1 Sequence and review outcomes</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Round</th>
+<th>Built</th>
+<th>Commit</th>
+<th>Sol verdict</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>A1</strong></td>
+<td><code>0193</code> — claim RPC + replacement record RPC (group rows, service role, transition guard, retry bound)</td>
+<td><code>a70da502</code></td>
+<td>❌ <strong>REJECT</strong> — the RPC had no caller (the sender still used the old SELECT) + P0-6 had no transient/permanent split</td>
+</tr>
+<tr>
+<td><strong>A2</strong></td>
+<td><code>0194</code> + wired the sender to the RPC, <code>next_attempt_at</code>, <code>claim_token</code> fencing, <code>X-Line-Retry-Key</code>, suite registered in CI</td>
+<td><code>ff564c85</code></td>
+<td>❌ <strong>REJECT</strong> — failure classification still wrong + backoff broken by timezone</td>
+</tr>
+<tr>
+<td><strong>A3</strong></td>
+<td><code>0195</code> — propagate previously discarded errors, timezone-safe backoff</td>
+<td><code>1b6769ff</code></td>
+<td>❌ <strong>REJECT</strong> — <strong>over-corrected</strong>, permanently killing the 0097 <code>#ผูก</code> onboarding flow + <code>sent_at</code> still unsafe</td>
+</tr>
+<tr>
+<td><strong>A4</strong></td>
+<td><code>0196</code> — restore the monolith fallback for unbound groups, <code>sent_at := now()</code>, UUID guard, HTTP 408 transient</td>
+<td><code>46a203a6</code></td>
+<td>✅ <strong>ACCEPT PHASE A4</strong></td>
+</tr>
+</tbody></table></div>
+<h3>3.2 What is fixed on the executable path</h3>
+<ul><li><strong>B1 duplicate sends</strong> — <code>claimPending</code> now calls <code>rpc_claim_line_outbound_batch</code> (<code>index.ts:676-687</code>); claims use <code>FOR UPDATE SKIP LOCKED</code> with timeout-based reclaim plus <code>claim_token</code> fencing so a stale lease holder cannot overwrite the current claimant.</li><li><strong>B2 service role</strong> — service context is detected from the <strong>SQL role</strong> (<code>current_setting('role')</code>), not the JWT, so forged JWT claims fail; the human path (governance/site access) is not relaxed at all.</li><li><strong>B3 group rows</strong> — LEFT JOIN, vertical from <code>line_groups</code> with the 0097 <code>monolith</code> fallback, NULL site in the audit row.</li><li><strong>B4 transition guard</strong> — only a still-<code>pending</code> row can be recorded; a finished row returns <code>recorded=false</code> with no duplicate audit.</li><li><strong>B5 / P0-6 retry</strong> — transient (network/timeout/5xx/429/408/lookup errors) is separated from permanent (genuinely absent config, inactive template, slot mismatch, other 4xx), with exponential backoff and a 5-attempt bound.</li><li><strong>P0-5</strong> — <code>X-Line-Retry-Key = outbound row id</code> on every push type (text/flex/image); reply is untouched because reply tokens are single-use.</li><li><strong>Two timezone defects that would have been severe</strong> — <code>next_attempt_at</code> and <code>sent_at</code> were assigned <code>timezone('utc', now())</code> (a timestamp WITHOUT time zone) into <code>timestamptz</code> columns, so east of UTC the backoff collapsed to zero and send times were stamped ~7 hours early. Both were reproduced by the gate before fixing.</li></ul>
+<h3>3.3 Evidence (run independently by the gate, not the builder)</h3>
+<ul><li><strong>pgTAP 70/70</strong> under the rollback wrapper <code>BEGIN; 0193; 0194; 0195; 0196; suite; ROLLBACK</code> — including regressions executed under <code>set local timezone='Asia/Bangkok'</code> for both backoff and <code>sent_at</code></li><li><strong>vitest: 18 files / 73 tests</strong> passing</li><li><strong>No leaks on the shared stack</strong> (post-run column check = 0)</li><li>**No <code>cron.schedule</code>** in 0193–0196 and no activation of live sending</li></ul>
+<h3>3.4 What is <strong>not</strong> proven (stated by Sol — do not overstate)</h3>
+<ul><li>Python property suites were <strong>never executed</strong> (python is not installed on this machine)</li><li>The two-client claim-race harness <strong>skips</strong> because it requires an explicitly designated ephemeral DSN</li><li><strong>No CI run, no real Edge Function run, no real LINE API run</strong> has happened</li><li>LINE-side retry-key behaviour is an external guarantee — the database fence alone does not stop two lease-expired workers from both reaching LINE</li><li>**P0-9 (B8 — <code>handler_error</code>) has not been built**, although it is inside the approved Phase A scope</li></ul>
+<hr>
+<h2>4. Part 3 — Repair Phase 0: Wave 3 → 3.4</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Wave</th>
+<th>Substance</th>
+<th>Sol verdict</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>3</strong></td>
+<td>LOW-1 organization status load-bearing, LOW-4 full sha256, accepted-risks register, negative-control harness</td>
+<td>❌ REJECT — (1) a context minted before org deactivation could still mutate (2) the harness overclaimed &quot;every gate&quot;</td>
+</tr>
+<tr>
+<td><strong>3.1</strong></td>
+<td><code>0192</code> org+site recheck at consume time (pgTAP 18→21), honest harness, honest accepted-risks, regenerated exit review</td>
+<td>❌ REJECT — the final gate accepted missing reports + the exit review cited stale 18-assertion evidence</td>
+</tr>
+<tr>
+<td><strong>3.2</strong></td>
+<td><code>REQUIRED_REPORT_MANIFEST</code> (28 reports, deleting any fails the gate), fresh 21/21 TAP, <code>0192</code> fail-fast on a divergent overload, ranges 0189–0192</td>
+<td>✅ <strong>ACCEPT</strong></td>
+</tr>
+<tr>
+<td><strong>3.3</strong></td>
+<td>Evidence issuer stopped hardcoding <code>verified:false</code>, <code>build-evidence-manifest.mjs</code> + CI wiring, TAP name mapping, db-verify through 0192, docs verifier covering governance docs</td>
+<td>❌ REJECT — (1) a self-consistent forged manifest still signed (2) the final gate accepted a bare <code>{&quot;verified&quot;:true}</code> and ignored the evidence job result</td>
+</tr>
+<tr>
+<td><strong>3.4</strong></td>
+<td>Issuer recomputes sha256 from real report bytes + pins git/CI identity, requires <code>RELEASE_SIGNER_KEY_IDS</code> + https + distinct origins, final gate validates the attestation, conflicting TAP → <code>EVIDENCE_CONFLICT</code></td>
+<td>❌ REJECT — the issuer still <strong>does not read the meaning</strong> of those bytes (never re-derives pass/fail counts) and does not pin itself</td>
+</tr>
+</tbody></table></div>
+<p><strong>Notable environmental defect found on the way:</strong> the shared stack (127.0.0.1:54322) carries <code>consume_verified_action_context(uuid,text,boolean)</code> from another branch, making 2-argument calls ambiguous (42725). <code>0192</code> now fails fast with an explicit message on such a database.</p>
+<hr>
+<h2>5. Files produced this round</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>File</th>
+<th>Purpose</th>
+</tr></thead><tbody>
+<tr>
+<td><code>docs/PRD-LINE-OA.md</code></td>
+<td><strong>PRD for the whole LINE system</strong>, edition 1.1 — four-tier real status + requirements + owner decisions</td>
+</tr>
+<tr>
+<td><code>supabase/migrations/0193_line_outbound_claim_and_record.sql</code></td>
+<td>Claim RPC + replacement record RPC</td>
+</tr>
+<tr>
+<td><code>supabase/migrations/0194_line_outbound_retry_and_claim_fencing.sql</code></td>
+<td><code>next_attempt_at</code>, <code>p_failure_class</code>, <code>claim_token</code></td>
+</tr>
+<tr>
+<td><code>supabase/migrations/0195_line_outbound_timezone_safe_backoff.sql</code></td>
+<td>Timezone-safe backoff</td>
+</tr>
+<tr>
+<td><code>supabase/migrations/0196_line_outbound_timezone_safe_sent_at.sql</code></td>
+<td><code>sent_at := now()</code> plus a full sweep</td>
+</tr>
+<tr>
+<td><code>supabase/tests/line_outbound_claim_record.sql</code></td>
+<td>pgTAP, 70 assertions (incl. Asia/Bangkok regressions)</td>
+</tr>
+<tr>
+<td><code>supabase/functions/line-outbound-sender/index.ts</code></td>
+<td>Calls the claim RPC, classifies failures, passes the claim token, sets <code>X-Line-Retry-Key</code></td>
+</tr>
+<tr>
+<td><code>tests/line-oa-commerce/ts/*.unit.test.ts</code> (6 new files)</td>
+<td>Wiring / classification / fencing / retry-key / CI-registration tests</td>
+</tr>
+<tr>
+<td><code>tests/line-oa-commerce/concurrency/claim-race.mjs</code></td>
+<td>Two-client harness (requires an explicit ephemeral DSN)</td>
+</tr>
+<tr>
+<td><code>supabase/migrations/0192_repair_phase0_consume_org_recheck.sql</code></td>
+<td>Phase 0: org/site recheck at consume + fail-fast on the divergent overload</td>
+</tr>
+<tr>
+<td><code>scripts/trust-kernel/evidence-manifest-integrity.mjs</code></td>
+<td>Shared module keeping builder/issuer/gate derivations from drifting</td>
+</tr>
+<tr>
+<td><code>scripts/trust-kernel/build-evidence-manifest.mjs</code></td>
+<td>Builds EvidenceManifestV1 from the CI report tree</td>
+</tr>
+</tbody></table></div>
+<hr>
+<h2>6. Decisions awaiting the owner (still unanswered — not to be assumed)</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>#</th>
+<th>Question</th>
+<th>Blocks</th>
+</tr></thead><tbody>
+<tr>
+<td>1</td>
+<td>Does the real environment have a cron invoking <code>line-outbound-sender</code>? (The repo definitively has none.)</td>
+<td>If one exists, the defect is live and the fixes need deploying urgently</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Is human approval required before sending to customers?</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Autonomy gate + brand voice: wire it live, or formally retire it and correct <code>tasks.md:157</code>?</td>
+<td>P0-7</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Is sending to customers without a consent gate acceptable for now (PDPA)?</td>
+<td>P0-8 / P1</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Dead subsystems (ordering/forecast/R-03/auto-close/TCCK): keep or remove?</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Is an admin UI for templates needed?</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Which repo is authoritative for the LINE subsystem (this one vs the product repo with Trust Kernel <code>0171–0179</code>)?</td>
+<td>Cross-repo adoption of this work</td>
+</tr>
+</tbody></table></div>
+<p><strong>New information on #7:</strong> the product repo's 26 July 2026 amendment confirms the product repo owns the LINE Trust Kernel roadmap, where <code>0178</code> = atomic outbox, overlapping our P0-1. Phase A work here is therefore built as <strong>portable per-defect patches</strong> and does not claim reserved migration numbers.</p>
+<hr>
+<h2>7. Next queue</h2>
+<ol><li><strong>P0-9 (B8)</strong> — <code>handler_error</code> must not count as processed, and needs <strong>its own retry state</strong> (LINE redelivery is not guaranteed and must not be relied upon)</li><li><strong>Wave 3.5</strong> — the issuer must re-derive pass/fail from real report bytes, pin itself and the integrity module, and require a clean tracked tree</li><li><strong>Phase C (needs answers to #1, #2, #4)</strong> — register the real cron + consent gate + human approval before enabling customer sends</li><li><strong>Phase D (needs answers to #5, #6)</strong> — retire or wire the dead subsystems + admin UI</li></ol>
+<hr>
+<h2>8. Lessons recorded for future rounds</h2>
+<ol><li><strong>&quot;DB-layer batch&quot; is not enough</strong> — a correct RPC with no caller fixes nothing (Sol caught this at A1). Every batch must now verify its consumer.</li><li><strong>Over-cautious fixes are also dangerous</strong> — A3 permanently killed the onboarding flow by treating &quot;no row found&quot; as a failure.</li><li><strong>A builder session does not die with its timeout</strong> — the MCP call aborts at 30 minutes while the process keeps writing files, which once produced a duplicated import and edits racing the gate. Builders now write a completion sentinel and the gate waits for a stable tree before committing.</li><li>**The builder sandbox cannot write <code>.git/worktrees</code>** → builders do not commit; the gate commits on their behalf and says so in every commit message.</li></ol>
+</main>
+</body>
+</html>

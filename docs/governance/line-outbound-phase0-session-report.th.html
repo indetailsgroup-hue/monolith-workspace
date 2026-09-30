@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>รายงานสรุปงาน LINE OA Outbound Trust + Repair Phase 0</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>รายงานสรุปงาน — LINE OA Outbound Trust + Repair Phase 0 (รอบ Wave 3.x / Phase A)</h1>
+<p><strong>ฉบับ:</strong> ภาษาไทย <strong>วันที่รวบรวมรายงาน:</strong> 30 กันยายน 2026 <strong>วันที่ commit งานทั้งหมด (ตาม git):</strong> 1 สิงหาคม 2026 <strong>Worktree:</strong> <code>MONOLITH Repair Intelligence/.worktrees/repair-intelligence-phase0-trust</code> <strong>Branch:</strong> <code>codex/repair-intelligence-phase0-trust</code> — 62 commits เหนือ <code>main</code> · <strong>ยังไม่ push ที่ใดเลย</strong> <strong>สถานะ Repair Phase 0:</strong> <code>EVIDENCE_INCOMPLETE</code> / <code>PENDING_OWNER_APPROVAL</code> — <strong>ไม่เปลี่ยน</strong> <strong>การส่งข้อความหาลูกค้าจริง:</strong> ยังไม่เปิด ไม่มี cron ไม่มีการ activate ใด ๆ</p>
+<blockquote><p><strong>กฎที่ยึดตลอดรอบ:</strong> แยก &quot;มีในโค้ดจริง&quot; ออกจาก &quot;อยู่แค่ spec&quot; ทุกข้อ · อ้าง <code>file:line</code> เสมอ · เทสต์ผ่าน ≠ ต่อสายเข้า live path · ห้ามอ่อนกฎความปลอดภัยเพื่อให้ผ่าน · คนสร้าง ≠ คนรีวิว (SoD) · ปิดงานด้วยผลเทสต์จริง ไม่ใช่คำกล่าวอ้าง</p></blockquote>
+<hr>
+<h2>1. บทบาทและวิธีทำงาน (ตามที่เจ้าของกำหนด)</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>บทบาท</th>
+<th>ใคร</th>
+<th>ทำอะไร</th>
+</tr></thead><tbody>
+<tr>
+<td>ผู้วางแผน + ผู้ตรวจรับ (gate)</td>
+<td>Claude</td>
+<td>แตกงาน, ตรวจสถานะจริงจากโค้ด, <strong>รันเทสต์ด้วยตัวเองซ้ำ</strong>, commit ให้เมื่อผ่าน, ไม่รับคำกล่าวอ้าง</td>
+</tr>
+<tr>
+<td>ผู้ลงมือ (builder)</td>
+<td>Codex</td>
+<td>เขียนโค้ด/migration/เทสต์แบบ TDD (RED ก่อน) — <strong>ไม่ commit เอง</strong></td>
+</tr>
+<tr>
+<td>ผู้รีวิวข้ามค่าย</td>
+<td>Sol (Codex อีกสาย)</td>
+<td>รีวิวเชิงปรปักษ์ก่อนรับทุก wave — มีอำนาจปฏิเสธ</td>
+</tr>
+</tbody></table></div>
+<p><strong>วงจร:</strong> Codex สร้าง → Claude ตรวจ+commit → Sol รีวิว → ถ้า REJECT วนแก้ใหม่ทั้งรอบ</p>
+<p>ข้อค้นพบสำคัญของรอบนี้: <strong>การรีวิวข้ามค่ายจับของจริงได้ทุกครั้ง</strong> — จาก 7 wave ที่ส่งรีวิว Sol ปฏิเสธ 5 ครั้ง และทุกครั้งมีหลักฐาน <code>file:line</code> ที่ตรวจสอบได้ ไม่มีการปฏิเสธลอย ๆ</p>
+<hr>
+<h2>2. ส่วนที่ 1 — ตรวจสถานะจริงของระบบ LINE OA ทั้งหมด</h2>
+<p>ผลตรวจถูกบันทึกเป็น PRD ฉบับใหม่: **<code>docs/PRD-LINE-OA.md</code>** (ฉบับ 1.1)</p>
+<h3>2.1 ✅ ทำงานจริง (ต่อสายครบ มีผู้เรียกบน live path)</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>ความสามารถ</th>
+<th>หลักฐาน</th>
+</tr></thead><tbody>
+<tr>
+<td>ขาเข้า: <code>line-webhook</code> ส่ง raw body + signature เข้า RPC, คืน 401 เมื่อลายเซ็นผิด</td>
+<td><code>supabase/functions/line-webhook/index.ts:87-127</code></td>
+</tr>
+<tr>
+<td>กันซ้ำด้วย <code>webhook_event_id</code> UNIQUE</td>
+<td><code>00000000000022_line_oa_ingest_webhook.sql</code></td>
+</tr>
+<tr>
+<td>Router กลุ่ม (<code>#ผูก</code>, <code>#ปัญหา</code>, รูป, การ์ดตรวจรับ)</td>
+<td><code>0097_line_group_bot_flows.sql:101</code></td>
+</tr>
+<tr>
+<td>Guard กลุ่มลูกค้า fail-closed (template ที่ไม่ใช่ลูกค้าเข้ากลุ่มลูกค้าไม่ได้)</td>
+<td><code>0095_line_groups_identity.sql:102,145</code> + re-wire <code>0101_scrutiny3_fixes.sql:16</code></td>
+</tr>
+<tr>
+<td>แจ้งเตือนพนักงาน + cron ทุก 1 นาที, SKIP LOCKED, backoff, dead-letter</td>
+<td><code>0089_cron_schedules.sql:87-96</code>, claim v3 <code>0084</code></td>
+</tr>
+<tr>
+<td>Staff LINE Login + binding + consent</td>
+<td><code>0105_staff_bind_login.sql:86-92</code></td>
+</tr>
+<tr>
+<td>Token rotation cron</td>
+<td><code>0154_line_token_rotation.sql:77</code></td>
+</tr>
+<tr>
+<td>การยิงข้อความเข้าคิวขาออก (~60 จุด insert ตรง)</td>
+<td><code>0097:140</code>, <code>0098:93</code>, <code>0100:513</code>, <code>0101</code>, <code>0107</code>, <code>0111</code>, <code>0114:94</code>, <code>0127</code>, <code>0134</code>, <code>0136</code>, <code>0143</code></td>
+</tr>
+</tbody></table></div>
+<h3>2.2 🔴 บั๊กที่ยืนยันแล้ว (B1–B9)</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>#</th>
+<th>ปัญหา</th>
+<th>หลักฐาน</th>
+</tr></thead><tbody>
+<tr>
+<td>B1</td>
+<td>หยิบคิวไม่มี row lock → รันคาบกัน = ส่งซ้ำ</td>
+<td><code>line-outbound-sender/index.ts:589-602</code> (ก่อนแก้)</td>
+</tr>
+<tr>
+<td>B2</td>
+<td><strong>บันทึกผลถูกปฏิเสธทุกแถว</strong> — sender ใช้ service role แต่ RPC เช็ค role จาก JWT <code>app_metadata</code> และ grant ให้แค่ <code>authenticated</code></td>
+<td><code>00000000000041:162</code>, <code>00000000000000_c12_foundation.sql:36</code>, <code>00000000000041:253-258</code></td>
+</tr>
+<tr>
+<td>B3</td>
+<td>แถวกลุ่มบันทึกผลไม่ได้ถาวร (INNER JOIN กับ conversations)</td>
+<td><code>00000000000041:143-148</code> vs <code>0097:140</code></td>
+</tr>
+<tr>
+<td>B4</td>
+<td>ไม่มี transition guard → flip <code>sent</code>→<code>failed</code> / audit ซ้ำได้</td>
+<td><code>00000000000041:143,194-210</code></td>
+</tr>
+<tr>
+<td>B5</td>
+<td>ส่งพลาดครั้งเดียว = ตายถาวร</td>
+<td><code>00000000000041:179-199</code></td>
+</tr>
+<tr>
+<td>B6</td>
+<td>**ไม่มี cron เรียก <code>line-outbound-sender</code>** ในเรโป</td>
+<td>grep <code>cron.schedule</code> ทั้ง migrations</td>
+</tr>
+<tr>
+<td>B7</td>
+<td>เทสต์เดิมตาบอดต่อ B1–B4 (ฉีด deps ปลอมทั้งชุด)</td>
+<td><code>tests/line-oa-commerce/ts/senderClaimAndRecord.integration.test.ts:43</code></td>
+</tr>
+<tr>
+<td>B8</td>
+<td>**<code>handler_error</code> ถูกนับว่าสำเร็จ + เหตุการณ์หายถาวร**</td>
+<td><code>0097:281</code> (คืนค่า), <code>0097:437-438</code> (skip list ไม่ครอบ), <code>0097:454</code> (นับ processed), <code>0097:429-433</code> (dedupe)</td>
+</tr>
+<tr>
+<td>B9</td>
+<td><code>line-login</code> ไม่ consume OAuth <code>state</code>/OIDC <code>nonce</code></td>
+<td><code>supabase/functions/line-login/index.ts:2,9</code></td>
+</tr>
+</tbody></table></div>
+<blockquote><p>B8 และ B9 พบครั้งแรกจากเอกสาร research 31 ก.ค. 2026 ของเรโป product แล้วยืนยันว่ามีในเรโปนี้ด้วย (บั๊กตรงกันถึงระดับเลขบรรทัด — โค้ดสายพันธุ์เดียวกัน)</p></blockquote>
+<h3>2.3 ⚫ โค้ดครบ เทสต์ผ่าน แต่ <strong>ไม่มีผู้เรียกเลย</strong></h3>
+<div class="table-wrap"><table><thead><tr>
+<th>ระบบ</th>
+<th>นิยามที่</th>
+<th>ผล grep</th>
+</tr></thead><tbody>
+<tr>
+<td>Autonomy gate + brand-voice ≤200 ตัวอักษร (<code>rpc_send_line_outbound</code>)</td>
+<td><code>00000000000040:131</code></td>
+<td><strong>0 caller</strong> — มีแต่ใน tests/spec/comment</td>
+</tr>
+<tr>
+<td>Ordering (<code>rpc_create_line_order</code>, <code>line_oa_orders</code>)</td>
+<td><code>00000000000050:397</code></td>
+<td>0 caller</td>
+</tr>
+<tr>
+<td>Forecast sync (<code>rpc_sync_line_forecast</code>)</td>
+<td><code>00000000000060:88</code></td>
+<td>0 caller</td>
+</tr>
+<tr>
+<td>R-03 identity merge</td>
+<td><code>00000000000021:96</code></td>
+<td>0 caller</td>
+</tr>
+<tr>
+<td>Auto-close 24 ชม.</td>
+<td><code>00000000000061:50</code></td>
+<td><code>cron.schedule</code> อยู่ใน comment</td>
+</tr>
+<tr>
+<td>TCCK vertical</td>
+<td>กระจายใน schema</td>
+<td>ไม่มี flow ต่อสาย</td>
+</tr>
+</tbody></table></div>
+<h3>2.4 📝 อยู่แค่ spec</h3>
+<ul><li><strong>Consent ฝั่งลูกค้า</strong> — ไม่มีช่องเก็บเลย และไม่มีด่านเช็คก่อนส่ง (พนักงานมี <code>identity_binding.consent_at</code>, <code>0088:10</code>)</li><li>หน้า admin จัดการ template (ตอนนี้ seed ผ่าน migration เท่านั้น)</li></ul>
+<h3>2.5 การแก้บันทึกที่เคยเกินจริง</h3>
+<p>เอกสารเดิม <code>docs/PRD.md:512</code> และ <code>docs/LINE-Architecture-System-Complete.md:40</code> ระบุ &quot;LINE OA Commerce ✅ เสร็จ 20/20&quot; ซึ่ง<strong>ไม่ตรง live path</strong> — ได้ใส่ banner ⚠️ ชี้ไป <code>docs/PRD-LINE-OA.md</code> ในทั้งสองไฟล์แล้ว</p>
+<hr>
+<h2>3. ส่วนที่ 2 — LINE Phase A: แก้บั๊กขาออก (อนุมัติโดยเจ้าของ)</h2>
+<h3>3.1 ลำดับการทำงานและผลรีวิว</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>รอบ</th>
+<th>สร้างอะไร</th>
+<th>Commit</th>
+<th>ผล Sol</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>A1</strong></td>
+<td><code>0193</code> — claim RPC + record RPC ใหม่ (แถวกลุ่ม, service role, transition guard, retry bound)</td>
+<td><code>a70da502</code></td>
+<td>❌ <strong>REJECT</strong> — RPC ไม่มีผู้เรียก (sender ยังใช้ SELECT เดิม) + P0-6 ไม่มี transient/permanent</td>
+</tr>
+<tr>
+<td><strong>A2</strong></td>
+<td><code>0194</code> + ต่อสาย sender เข้า RPC จริง, <code>next_attempt_at</code>, <code>claim_token</code> fencing, <code>X-Line-Retry-Key</code>, ลงทะเบียน suite ใน CI</td>
+<td><code>ff564c85</code></td>
+<td>❌ <strong>REJECT</strong> — จำแนกความล้มเหลวยังผิด + backoff เพี้ยนตาม timezone</td>
+</tr>
+<tr>
+<td><strong>A3</strong></td>
+<td><code>0195</code> — ส่งต่อ error ที่เคยถูกทิ้ง, backoff timezone-safe</td>
+<td><code>1b6769ff</code></td>
+<td>❌ <strong>REJECT</strong> — <strong>แก้เกิน</strong> ทำให้ flow <code>#ผูก</code> ของ 0097 ตายถาวร + <code>sent_at</code> ยังเพี้ยน</td>
+</tr>
+<tr>
+<td><strong>A4</strong></td>
+<td><code>0196</code> — คืน monolith fallback ให้กลุ่มที่ยังไม่ผูก, <code>sent_at := now()</code>, UUID guard, HTTP 408 transient</td>
+<td><code>46a203a6</code></td>
+<td>✅ <strong>ACCEPT PHASE A4</strong></td>
+</tr>
+</tbody></table></div>
+<h3>3.2 สิ่งที่แก้จบแล้วบนเส้นทางที่รันจริง</h3>
+<ul><li><strong>B1 ส่งซ้ำ</strong> — <code>claimPending</code> เรียก <code>rpc_claim_line_outbound_batch</code> จริง (<code>index.ts:676-687</code>); claim แบบ <code>FOR UPDATE SKIP LOCKED</code> + reclaim ตาม timeout + <code>claim_token</code> fencing กันคนถือ lease ค้างเขียนทับ</li><li><strong>B2 service role</strong> — ตรวจ service context จาก <strong>SQL role</strong> (<code>current_setting('role')</code>) ไม่ใช่ JWT → ปลอม claim ใน JWT ไม่ผ่าน; ด่านของมนุษย์ (governance/site) ไม่ถูกผ่อนเลย</li><li><strong>B3 แถวกลุ่ม</strong> — LEFT JOIN + vertical จาก <code>line_groups</code> + fallback <code>monolith</code> ตาม 0097 + audit site เป็น NULL</li><li><strong>B4 transition guard</strong> — บันทึกได้เฉพาะแถวที่ยัง <code>pending</code>; แถวจบแล้ว → <code>recorded=false</code> ไม่มี audit ซ้ำ</li><li><strong>B5/P0-6 retry</strong> — แยก transient (network/timeout/5xx/429/408/ลูกอัป lookup error) กับ permanent (config ที่ไม่มีจริง/template ปิด/slot ไม่ตรง/4xx อื่น) + exponential backoff + เพดาน 5 ครั้ง</li><li><strong>P0-5</strong> — <code>X-Line-Retry-Key = outbound row id</code> บน push ทุกชนิด (text/flex/image); reply ไม่ใส่ (reply token ใช้ครั้งเดียวอยู่แล้ว)</li><li><strong>บั๊ก timezone 2 จุดที่ถ้าไม่เจอจะร้าย</strong> — <code>next_attempt_at</code> และ <code>sent_at</code> เคยรับค่า <code>timezone('utc', now())</code> (timestamp ไม่มี tz) ใส่คอลัมน์ <code>timestamptz</code> → ในไทย backoff กลายเป็นศูนย์ และเวลาส่งเพี้ยน ~7 ชั่วโมง (ผมรีโปรดิวซ์เองยืนยันก่อนแก้)</li></ul>
+<h3>3.3 หลักฐาน (gate รันเองแยกจาก builder)</h3>
+<ul><li><strong>pgTAP 70/70</strong> ผ่าน ใน rollback wrapper <code>BEGIN; 0193; 0194; 0195; 0196; suite; ROLLBACK</code> — รวมเทสต์ regression ที่รันใต้ <code>set local timezone='Asia/Bangkok'</code> ทั้ง backoff และ <code>sent_at</code></li><li><strong>vitest 18 ไฟล์ / 73 เทสต์</strong> ผ่าน</li><li><strong>ไม่มี leak บน stack ที่แชร์</strong> (ตรวจคอลัมน์หลังรัน = 0)</li><li>**ไม่มี <code>cron.schedule</code>** ใน 0193–0196 และไม่มีการ activate การส่งจริง</li></ul>
+<h3>3.4 สิ่งที่ยัง <strong>ไม่ได้</strong> พิสูจน์ (Sol ระบุเอง — ห้ามพูดเกิน)</h3>
+<ul><li>Python property suites <strong>ไม่เคยรัน</strong> (เครื่องนี้ไม่มี python ติดตั้ง)</li><li>เทสต์ claim แข่งกัน 2 client <strong>ข้ามไป</strong> เพราะต้องมี DSN ของ stack ชั่วคราวโดยเฉพาะ</li><li><strong>ยังไม่มีการรัน CI / Edge Function จริง / LINE API จริง</strong> สักครั้ง</li><li>พฤติกรรม retry key ฝั่ง LINE เป็นการรับประกันภายนอก — ด่านใน DB อย่างเดียวไม่กัน worker 2 ตัวที่ lease หมดอายุยิงถึง LINE พร้อมกัน</li><li>**P0-9 (B8 — <code>handler_error</code>) ยังไม่ได้สร้าง** ทั้งที่อยู่ในขอบเขต Phase A ที่อนุมัติแล้ว</li></ul>
+<hr>
+<h2>4. ส่วนที่ 3 — Repair Phase 0: Wave 3 → 3.4</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Wave</th>
+<th>สาระ</th>
+<th>ผล Sol</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>3</strong></td>
+<td>LOW-1 org status load-bearing, LOW-4 sha256 เต็ม, accepted-risks, negative-control harness</td>
+<td>❌ REJECT — (1) context ที่ mint ก่อนปิด org ยังใช้ mutate ได้ (2) harness อ้าง &quot;every gate&quot; เกินจริง</td>
+</tr>
+<tr>
+<td><strong>3.1</strong></td>
+<td><code>0192</code> recheck org+site ตอน consume (pgTAP 18→21), harness ซื่อตรง, accepted-risks ตรงความจริง, regen exit review</td>
+<td>❌ REJECT — final gate ยอมรับ report หาย + exit review อ้างหลักฐาน 18 ข้อเก่า</td>
+</tr>
+<tr>
+<td><strong>3.2</strong></td>
+<td><code>REQUIRED_REPORT_MANIFEST</code> (28 report ลบตัวไหนก็ตก), TAP 21/21 ใหม่, <code>0192</code> fail-fast เจอ overload แปลกปลอม, ranges 0189–0192</td>
+<td>✅ <strong>ACCEPT</strong></td>
+</tr>
+<tr>
+<td><strong>3.3</strong></td>
+<td>evidence issuer เลิก hardcode <code>verified:false</code>, <code>build-evidence-manifest.mjs</code> + ต่อสาย CI, TAP name mapping, db-verify ถึง 0192, docs verifier ครอบ governance docs</td>
+<td>❌ REJECT — (1) manifest ปลอมที่สอดคล้องกันเองยังเซ็นผ่าน (2) final gate รับ <code>{&quot;verified&quot;:true}</code> เปล่า + ไม่บังคับผล evidence job</td>
+</tr>
+<tr>
+<td><strong>3.4</strong></td>
+<td>issuer คำนวณ sha256 จากไบต์จริง + pin git/CI, บังคับ <code>RELEASE_SIGNER_KEY_IDS</code> + https + แยก origin, final gate ตรวจ attestation จริง, TAP ชนกัน = <code>EVIDENCE_CONFLICT</code></td>
+<td>❌ REJECT — issuer ยัง<strong>ไม่อ่านความหมาย</strong>ในไบต์ (ไม่คำนวณ pass/fail ใหม่) + ไม่ pin ตัวเอง</td>
+</tr>
+</tbody></table></div>
+<p><strong>บั๊กเด่นที่พบระหว่างทาง:</strong> stack ที่แชร์ (127.0.0.1:54322) มี <code>consume_verified_action_context(uuid,text,boolean)</code> จากสาขาอื่นค้างอยู่ ทำให้เรียกแบบ 2 argument กำกวม (42725) — <code>0192</code> จึง fail-fast พร้อมข้อความชัดเมื่อเจอ DB แบบนี้</p>
+<hr>
+<h2>5. เอกสารและไฟล์ที่เกิดขึ้นในรอบนี้</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>ไฟล์</th>
+<th>หน้าที่</th>
+</tr></thead><tbody>
+<tr>
+<td><code>docs/PRD-LINE-OA.md</code></td>
+<td><strong>PRD ระบบ LINE ทั้งหมด</strong> ฉบับ 1.1 — สถานะจริง 4 ระดับ + requirements + คำถามรอเจ้าของ</td>
+</tr>
+<tr>
+<td><code>supabase/migrations/0193_line_outbound_claim_and_record.sql</code></td>
+<td>claim RPC + record RPC ใหม่</td>
+</tr>
+<tr>
+<td><code>supabase/migrations/0194_line_outbound_retry_and_claim_fencing.sql</code></td>
+<td><code>next_attempt_at</code>, <code>p_failure_class</code>, <code>claim_token</code></td>
+</tr>
+<tr>
+<td><code>supabase/migrations/0195_line_outbound_timezone_safe_backoff.sql</code></td>
+<td>backoff timezone-safe</td>
+</tr>
+<tr>
+<td><code>supabase/migrations/0196_line_outbound_timezone_safe_sent_at.sql</code></td>
+<td><code>sent_at := now()</code> + sweep</td>
+</tr>
+<tr>
+<td><code>supabase/tests/line_outbound_claim_record.sql</code></td>
+<td>pgTAP 70 assertions (รวม Asia/Bangkok regression)</td>
+</tr>
+<tr>
+<td><code>supabase/functions/line-outbound-sender/index.ts</code></td>
+<td>เรียก claim RPC, จำแนกความล้มเหลว, ส่ง claim token, <code>X-Line-Retry-Key</code></td>
+</tr>
+<tr>
+<td><code>tests/line-oa-commerce/ts/*.unit.test.ts</code> (6 ไฟล์ใหม่)</td>
+<td>เทสต์ wiring/classification/fencing/retry-key/CI registration</td>
+</tr>
+<tr>
+<td><code>tests/line-oa-commerce/concurrency/claim-race.mjs</code></td>
+<td>harness 2 client (ต้องระบุ DSN ชั่วคราวเอง)</td>
+</tr>
+<tr>
+<td><code>supabase/migrations/0192_repair_phase0_consume_org_recheck.sql</code></td>
+<td>Phase 0: recheck org/site ตอน consume + fail-fast overload</td>
+</tr>
+<tr>
+<td><code>scripts/trust-kernel/evidence-manifest-integrity.mjs</code></td>
+<td>โมดูลกลางกัน builder/issuer/gate ไถลจากกัน</td>
+</tr>
+<tr>
+<td><code>scripts/trust-kernel/build-evidence-manifest.mjs</code></td>
+<td>สร้าง EvidenceManifestV1 จาก report tree ของ CI</td>
+</tr>
+</tbody></table></div>
+<hr>
+<h2>6. คำถามที่รอเจ้าของตัดสิน (ยังไม่มีใครตอบ — ห้ามเดาแทน)</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>#</th>
+<th>คำถาม</th>
+<th>บล็อกอะไร</th>
+</tr></thead><tbody>
+<tr>
+<td>1</td>
+<td>Environment จริงมี cron เรียก <code>line-outbound-sender</code> ไหม (ในเรโปไม่มีแน่นอน)</td>
+<td>ถ้ามีอยู่ = บั๊กเดินอยู่จริง ต้องรีบ deploy ของที่แก้แล้ว</td>
+</tr>
+<tr>
+<td>2</td>
+<td>ต้องมี human-approval ก่อนส่งหาลูกค้าจริงไหม</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Autonomy gate + brand-voice: wire ให้ live หรือเลิกอย่างเป็นทางการ + แก้ <code>tasks.md:157</code></td>
+<td>P0-7</td>
+</tr>
+<tr>
+<td>4</td>
+<td>ส่งลูกค้าโดยไม่มี consent gate รับได้ชั่วคราวไหม (PDPA)</td>
+<td>P0-8 / P1</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Subsystem ที่ตายสนิท (ordering/forecast/R-03/auto-close/TCCK) เก็บหรือลบ</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>6</td>
+<td>ต้องมีหน้า admin จัดการ template ไหม</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>7</td>
+<td>เรโปไหนเป็น authoritative ของ LINE subsystem (เรโปนี้ vs เรโป product ที่มี Trust Kernel <code>0171–0179</code>)</td>
+<td>การนำงานไปใช้ข้ามเรโป</td>
+</tr>
+</tbody></table></div>
+<p><strong>ข้อ 7 มีข้อมูลใหม่:</strong> แผน amendment ของเรโป product (26 ก.ค. 2026) ยืนยันว่าเรโป product เป็นเจ้าของ roadmap LINE Trust Kernel โดย <code>0178</code> = atomic outbox ซึ่งทับกับ P0-1 ของเรา — งาน Phase A ในเรโปนี้จึงทำเป็น <strong>patch แยกชัดต่อบั๊ก</strong> เพื่อ port ไปได้ ไม่แย่งเลข migration</p>
+<hr>
+<h2>7. คิวงานถัดไป</h2>
+<ol><li><strong>P0-9 (B8)</strong> — <code>handler_error</code> ต้องไม่ถูกนับว่าสำเร็จ และต้องมี <strong>retry state ของเราเอง</strong> (ห้ามพึ่ง LINE redelivery เพราะ LINE ไม่รับประกัน)</li><li><strong>Wave 3.5</strong> — issuer ต้อง re-derive ผล pass/fail จากไบต์ report จริง + pin ตัวเอง/โมดูล integrity + บังคับ tracked tree สะอาด</li><li><strong>Phase C (ต้องรอคำตอบข้อ 1, 2, 4)</strong> — ตั้ง cron จริง + consent gate + human-approval ก่อนเปิดส่งลูกค้า</li><li><strong>Phase D (รอคำตอบข้อ 5, 6)</strong> — เก็บกวาด subsystem ที่ตาย + admin UI</li></ol>
+<hr>
+<h2>8. บทเรียนที่จดไว้ใช้ต่อ</h2>
+<ol><li><strong>&quot;batch DB layer&quot; ไม่พอ</strong> — RPC ที่ถูกต้องแต่ไม่มีใครเรียก = ไม่ได้แก้อะไร (Sol จับได้ที่ A1) ต่อไปนี้ทุก batch ต้องตรวจ consumer ด้วย</li><li><strong>การแก้ที่ระวังเกินไปก็อันตราย</strong> — A3 ทำให้ flow onboarding ตายถาวรเพราะตีความ &quot;ไม่มีแถว&quot; ว่าเป็นความล้มเหลว</li><li><strong>Session ของ builder ไม่ตายพร้อม timeout</strong> — MCP ตัดที่ 30 นาทีแต่ process ยังเขียนไฟล์ต่อ เคยทำให้เกิด import ซ้ำและแก้ไฟล์ทับกับ gate → ตอนนี้ builder ต้องเขียน sentinel file ตอนจบ และ gate รอ tree นิ่งก่อน commit</li><li>**Sandbox ของ builder เขียน <code>.git/worktrees</code> ไม่ได้** → builder ไม่ commit, gate commit แทน และระบุไว้ใน commit message ทุกครั้ง</li></ol>
+</main>
+</body>
+</html>

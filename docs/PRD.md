@@ -509,6 +509,8 @@ Factory (ตรวจ receipt offline ด้วย monolith-receipt-verify)
 
 ### 6.6 โมดูล LINE OA Commerce
 
+> ⚠️ **สถานะในหัวข้อนี้ถูกแทนที่แล้ว** — การ verify จากโค้ดจริง (26 ก.ค. + 1 ส.ค. 2026) พบว่า "✅ เสร็จ" ด้านล่างไม่ตรง live path หลายรายการ (ตัวส่งลูกค้ามีบั๊ก B1–B9, autonomy gate/order/forecast ไม่มี caller) — **ให้ยึด `docs/PRD-LINE-OA.md` เป็นสถานะจริงของ LINE**
+
 **ไฟล์หลัก:** `supabase/functions/line-webhook`, `line-outbound-sender`, migrations `00000000000000–62` — ✅ เสร็จ (13 req, 31 properties ผ่าน PBT)
 
 **[P0] ทั้งหมด ✅**
