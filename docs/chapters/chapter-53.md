@@ -205,7 +205,7 @@ Strategy | When Used | Behavior
 
 ## 53.5 Tool: `trigger_realtime_alert`
 
-Describes real-time alert routing with deduplication, escalation tracking, and acknowledgement flow. MONOLITH selects LINE OA (Messaging API) for human communication. The LINE route below is a target contract, not evidence of a deployed adapter; recipient authorization and delivery tests are required before activation.
+Describes real-time alert routing across email, SMS, webhook, push, MQTT, PagerDuty and LINE, with deduplication, escalation tracking, and acknowledgement flow. MONOLITH selects LINE OA (Messaging API) for human communication. The LINE route below is a target contract, not evidence of a deployed adapter; recipient authorization and delivery tests are required before activation.
 [code] 
     {
       tenantId:       string;
@@ -263,7 +263,7 @@ Severity | escalationLevel | Auto-escalates to | SLA for Acknowledgement
         │
      Create RealtimeAlert (status: "open")
         │
-     Deliver through configured adapters; LINE requires authorization and delivery evidence
+     Deliver through configured adapters (email/SMS/webhook/push/MQTT/PagerDuty/LINE)
         │
         ├── deliveredTo[] populated
         │
@@ -426,7 +426,7 @@ Persona | Primary Tool | Use Case
 ---|---|---  
 System Administrator | `register_edge_device` + `update_device_firmware` | Fleet provisioning and OTA management  
 Maintenance Engineer | `trigger_realtime_alert` + `query_sensor_history` | Incident response and root-cause  
-Plant Manager | `trigger_realtime_alert` (target channel: line) | Executive alerts for critical events; LINE adapter activation remains subject to verification
+Plant Manager | `trigger_realtime_alert` (target channels: email, line) | Executive alerts for critical events; LINE adapter activation remains subject to verification
 AI Agent | Full Phase 14 pipeline | Autonomous predictive maintenance  
 Security Officer | `update_device_firmware` (hotfix channel) | Critical vulnerability patching  
 Field Technician | `register_edge_device` (on-site provisioning) | New device onboarding at plant

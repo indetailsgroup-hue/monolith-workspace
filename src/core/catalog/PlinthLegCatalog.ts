@@ -12,7 +12,7 @@
  * counter height needing a plinth shorter than the shortest leg you can buy is not a
  * kitchen that gets built slightly wrong — it is a kitchen that cannot be assembled.
  *
- * THE ADJUSTMENT RANGE IS THE FLOOR-LEVELLING TOLERANCE, NOT SLACK.
+ * THE ADJUSTMENT RANGE IS THE FLOOR-LEVELLING TOLERANCE, NOT DISCRETIONARY CLEARANCE.
  * An adjustable leg is wound down under a floor high spot and up under a low spot so the
  * carcass tops come level. The distance from the nominal plinth height to each end of the
  * leg's range is therefore the levelling headroom in that direction, and it is a real

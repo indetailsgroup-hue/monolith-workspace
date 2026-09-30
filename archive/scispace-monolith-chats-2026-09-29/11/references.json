@@ -614,7 +614,6 @@
     "monolith_roles_workflows.md",
     "monolith_key_findings.md",
     "monolith_gaps_limitations.md",
-    "docx_slack_to_line.py",
     "export_pdf.py",
     "docx_exec_summary.py",
     "docx_insert_schedule_png.py",

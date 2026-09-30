@@ -48,7 +48,7 @@ function isParallel(a: number, b: number): boolean {
 }
 
 /**
- * Separating Axis Test over the four box axes, with GAP_TOL slack so that
+ * Separating Axis Test over the four box axes, with GAP_TOL tolerance so that
  * cabinets which merely touch (or sit a few mm apart) still count as adjacent.
  */
 function footprintsTouch(a: CabinetPlacement, b: CabinetPlacement): boolean {

@@ -103,7 +103,7 @@ DEFAULT_PATH = "docs"
 #
 # Derived rather than picked: the widest realistic *legitimate* gap is
 # certification / blank / sub-heading or lead-in / blank / evidence, which is 4.
-# Five leaves one line of slack and no more. Wider windows let a block of
+# Five leaves one line of margin and no more. Wider windows let a block of
 # evidence about one thing silence an unrelated certification further down the
 # section, which is how a proximity rule quietly becomes a rubber stamp.
 WINDOW_LINES = 5

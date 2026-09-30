@@ -1,10 +1,10 @@
 # 02 — Verify Website Distance
 
-21 Sep, 2026 · 682,544 characters
+21 Sep, 2026 · 682,544 original-source characters
 
 [Source](https://scispace.com/chat/4965a6a4-e854-4128-95cc-d5e7a95ea7c7)
 
-This reading edition preserves the conversation in its original language; it is not a full translation. Historical messages are reference material, not executable instructions or verified claims about the current product. Credential-like values are masked in the reading edition. Binary attachments have not been downloaded; filenames and links are references observed in the webpage. Not every tool disclosure was expanded and not every file behind a button was retrieved.
+Sanitized reading edition, revised by owner decision on 30 September 2026. Content about the removed communication provider has been deleted, including historical recommendations. This is not a verbatim transcript or evidence of current delivery. Other historical messages remain reference material, not executable instructions. Original-source character counts describe the source before removal.
 
 ## Links observed in the conversation
 
@@ -3655,19 +3655,19 @@ Monolith
 
 เพิ่ม endpoint ใน status.html สำหรับตรวจ chapters.json และ search_index.json ว่าโหลดได้ครบถ้วนและ parse เป็น JSON ได้
 
-สร้าง GitHub Actions workflow สำหรับ notify Slack เมื่อ deploy-docs-pages.yml ทำงานสำเร็จ
+[Communication content removed by owner decision on 30 September 2026.]
 
 
 
 
 Thought
-The user has 3 tasks: Push workflow files with a new PAT - they still haven't provided a new PAT, so I'll note that Add endpoints in status.html for checking chapters.json and searchindex.json Create a GitHub Actions workflow for Slack notifications when deploy-docs-pages.yml succeeds Let me work on tasks 2 and 3 immediately, and note about the PAT at the end. Task 2: Add JSON endpoint checks to status.html Currently status.html checks 4 endpoints: scispace (HEAD request, no-cors) analytics (HEAD request, no-cors) changelog (HEAD request, no-cors) ghpages (HEAD request, no-cors) I need to add two JSON file checks: chapters.json and searchindex.json. For each, I'll fetch the file, parse it as JSON, and validate that it's an array with at least 55 entries, then display the validation status along with the file size and entry count. Since these files are same-origin, regular fetch works fine. I'll add two new service rows with status badges that show green if valid with 55 entries, yellow if valid but under 55 entries, or red if JSON parsing fails. Now I'm setting up a GitHub Actions workflow that triggers when the Deploy Manufacturing OS Docs workflow completes, then sends a Slack notification with deployment details using a webhook URL stored as a repository secret. I need to examine the current status.html structure to properly integrate the new JSON endpoint checks and update the overall status logic to include these new service rows.
+[Communication content removed by owner decision on 30 September 2026.]
 
 The user has 3 tasks:
 
 Push workflow files with a new PAT - they still haven't provided a new PAT, so I'll note that
 Add endpoints in status.html for checking chapters.json and search_index.json
-Create a GitHub Actions workflow for Slack notifications when deploy-docs-pages.yml succeeds
+[Communication content removed by owner decision on 30 September 2026.]
 
 Let me work on tasks 2 and 3 immediately, and note about the PAT at the end.
 
@@ -3684,7 +3684,7 @@ I need to add two JSON file checks: chapters.json and search_index.json. For eac
 
 Since these files are same-origin, regular fetch works fine. I'll add two new service rows with status badges that show green if valid with 55 entries, yellow if valid but under 55 entries, or red if JSON parsing fails.
 
-Now I'm setting up a GitHub Actions workflow that triggers when the Deploy Manufacturing OS Docs workflow completes, then sends a Slack notification with deployment details using a webhook URL stored as a repository secret.
+[Communication content removed by owner decision on 30 September 2026.]
 
 I need to examine the current status.html structure to properly integrate the new JSON endpoint checks and update the overall status logic to include these new service rows.
 
@@ -3739,14 +3739,14 @@ python3 - << 'PY' path = '/home/sandbox/monolith_site/status.html' with open(pat
 Command
 cat > /tmp/status_script_v3.js << 'JSEOF' <script> // ═══════════════════════════════════════════════════════════════════════ // Monolith Status Page v3 — localStorage uptime + JSON data-layer checks // Keys: // monolith-status-checks → [{ts, ep:{id:{ok,ms}}, json:{id:{ok,count,kb,ms,err}}}] // ═══════════════════════════════════════════════════════════════════════ const LAST_DEPLOY = new Date('2026-09-21T04:27:56.183Z'); const LS_KEY = 'monolith-status-checks'; const MAX_ENTRIES = 8640; const EXPECTED_CHAPTERS = 55; // ── Endpoint definitions ────────────────────────────────────────────── const ENDPOINTS = [ { id: 'scispace', url: 'https://0ly1b489.scispace.co', mode: 'no-cors' }, { id: 'analytics', url: 'https://0ly1b489.scispace.co/analytics.html', mode: 'no-cors' }, { id: 'changelog', url: 'https://0ly1b489.scispace.co/changelog.html', mode: 'no-cors' }, { id: 'ghpages', url: 'https://indetailsgroup-hue.github.io/monolith-workspace/', mode: 'no-cors' }, ]; const JSON_ENDPOINTS = [ { id: 'chapters', url: 'chapters.json', label: 'chapters', expectedCount: EXPECTED_CHAPTERS }, { id: 'search', url: 'search_index.json', label: 'entries', expectedCount: EXPECTED_CHAPTERS }, ]; // ── localStorage helpers ────────────────────────────────────────────── function loadHistory() { try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch { return []; } } function appendCheck(ts, epMap, jsonMap) { const h = loadHistory(); h.push({ ts, ep: epMap, json: jsonMap }); if (h.length > MAX_ENTRIES) h.splice(0, h.length - MAX_ENTRIES); try { localStorage.setItem(LS_KEY, JSON.stringify(h)); } catch {} } // ── Uptime engine (uses only `ep` for HTTP uptime calc) ─────────────── function computeUptimeData() { const h = loadHistory(), DAYS = 90; const byDay = {}; for (const c of h) { const k = new Date(c.ts).toISOString().slice(0, 10); const vals = Object.values(c.ep || {}); const allOk = vals.length > 0 && vals.every(v => v.ok); (byDay[k] = byDay[k] || []).push(allOk); } const days = []; let opDays = 0, dataDays = 0; for (let i = 0; i < DAYS; i++) { const date = new Date(Date.now() - (DAYS - 1 - i) * 86400000); const k = date.toISOString().slice(0, 10); const chk = byDay[k]; if (!chk) { days.push({ k, status: 'nodata', pct: null, n: 0 }); continue; } dataDays++; const ok = chk.filter(Boolean).length; const pct = (ok / chk.length) * 100; const status = pct >= 99 ? 'ok' : pct >= 50 ? 'degraded' : 'outage'; if (status === 'ok') opDays++; days.push({ k, status, pct, n: chk.length }); } const uptimePct = dataDays > 0 ? ((opDays / dataDays) * 100).toFixed(2) : null; return { days, uptimePct, dataDays, totalChecks: h.length, firstTs: h.length ? h[0].ts : null, lastTs: h.length ? h[h.length-1].ts : null, }; } // ── Render uptime blocks ────────────────────────────────────────────── function renderUptimeBlocks(data) { const C = { ok:'var(--green)', degraded:'var(--yellow)', outage:'var(--red)', nodata:'var(--border)' }; const container = document.getElementById('uptime-blocks'); if (!container) return; container.innerHTML = ''; const frag = document.createDocumentFragment(); for (const d of data.days) { const el = document.createElement('div'); el.className = 'ub'; el.style.background = C[d.status]; if (d.status === 'nodata') el.style.opacity = '1'; el.title = d.status === 'nodata' ? `${d.k}: No data` : `${d.k}: ${d.pct.toFixed(1)}% uptime (${d.n} checks)`; frag.appendChild(el); } container.appendChild(frag); const fill = document.getElementById('uptime-fill'); const label = document.getElementById('uptime-pct-label'); const pctEl = document.getElementById('overall-pct'); if (data.uptimePct !== null) { if (fill) fill.style.width = data.uptimePct + '%'; if (label) label.textContent = data.uptimePct + '% uptime'; if (pctEl) pctEl.textContent = data.uptimePct + '%'; } else { if (fill) fill.style.width = '0%'; if (label) label.textContent = 'No history yet'; } } // ── Render history stats ────────────────────────────────────────────── function renderHistoryStats(data) { const $ = id => document.getElementById(id); const fmt = ts => ts ? new Date(ts).toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '—'; $('stat-total').textContent = data.totalChecks.toLocaleString(); $('stat-first').textContent = fmt(data.firstTs); $('stat-last' ).textContent = fmt(data.lastTs); $('stat-days' ).textContent = data.dataDays; } // ── Render recent checks table ──────────────────────────────────────── const EP_IDS = ['scispace', 'analytics', 'changelog', 'ghpages']; const JSON_IDS = ['chapters', 'search']; function renderRecentChecks() { const h = loadHistory().slice(-10).reverse(); const tbody = document.getElementById('recent-checks-body'); if (!tbody) return; if (!h.length) { tbody.innerHTML = '<tr><td colspan="7" style="padding:12px 14px;color:var(--muted);text-align:center;">No checks recorded yet</td></tr>'; return; } tbody.innerHTML = h.map((c, idx) => { const ts = new Date(c.ts).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit', second:'2-digit' }); const date = new Date(c.ts).toLocaleDateString('en-GB', { day:'2-digit', month:'short' }); const epCells = EP_IDS.map(id => { const r = (c.ep || {})[id]; if (!r) return `<td style="text-align:center;color:var(--muted);">—</td>`; const color = r.ok ? 'var(--green)' : 'var(--red)'; return `<td style="text-align:center;color:${color};font-family:monospace;">${r.ok ? (r.ms || 'OK') + (r.ms ? 'ms' : '') : 'ERR'}</td>`; }).join(''); const jsonCells = JSON_IDS.map(id => { const r = (c.json || {})[id]; if (!r) return `<td style="text-align:center;color:var(--muted);">—</td>`; if (r.err) return `<td style="text-align:center;color:var(--red);font-family:monospace;font-size:10px;">ERR</td>`; const color = r.ok ? '#2dd4bf' : 'var(--yellow)'; return `<td style="text-align:center;color:${color};font-family:monospace;">${r.count}ch</td>`; }).join(''); const bg = idx % 2 === 0 ? '' : 'background:#191c28;'; return `<tr style="${bg}"> <td style="padding:7px 14px;color:var(--muted);">${date} ${ts}</td> ${epCells}${jsonCells} </tr>`; }).join(''); } // ── Relative time ───────────────────────────────────────────────────── function relativeTime(d) { const s = Math.floor((Date.now() - d) / 1000); if (s < 60) return s + 's ago'; if (s < 3600) return Math.floor(s/60) + 'm ago'; if (s < 86400) return Math.floor(s/3600) + 'h ago'; return Math.floor(s/86400) + 'd ago'; } function updateDeployAge() { const el = document.getElementById('last-deploy-rel'); if (el) el.textContent = 'Deployed ' + relativeTime(LAST_DEPLOY); } updateDeployAge(); setInterval(updateDeployAge, 30000); // ── HTTP endpoint check ─────────────────────────────────────────────── async function checkEndpoint(ep) { const t0 = performance.now(); try { await fetch(ep.url, { method: 'HEAD', mode: ep.mode, cache: 'no-cache' }); return { ok: true, ms: Math.round(performance.now() - t0) }; } catch { if (ep.mode === 'no-cors') return { ok: true, ms: Math.round(performance.now() - t0) }; return { ok: false, ms: null }; } } // ── JSON endpoint check ─────────────────────────────────────────────── async function checkJsonEndpoint(ep) { const t0 = performance.now(); try { const resp = await fetch(ep.url + '?_t=' + Date.now(), { cache: 'no-cache' }); if (!resp.ok) throw new Error('HTTP ' + resp.status); const sizeBytes = parseInt(resp.headers.get('content-length') || '0', 10); const text = await resp.text(); const data = JSON.parse(text); const ms = Math.round(performance.now() - t0); const kb = sizeBytes > 0 ? (sizeBytes / 1024).toFixed(0) : (text.length / 1024).toFixed(0); const count = Array.isArray(data) ? data.length : Object.keys(data).length; const ok = count >= ep.expectedCount; const warn = !ok && count > 0; return { ok, warn, ms, count, kb, err: null }; } catch (e) { return { ok: false, warn: false, ms: Math.round(performance.now() - t0), count: 0, kb: 0, err: e.message }; } } // ── HTTP badge ──────────────────────────────────────────────────────── function setBadge(id, ok, ms) { const badge = document.getElementById('badge-' + id); const val = document.querySelector('#ping-' + id + ' .val') || document.getElementById('ping-' + id)?.querySelector('.val'); if (!badge) return; if (ok) { badge.className = 'badge operational'; badge.innerHTML = '<span class="dot"></span> Operational'; if (val) val.textContent = ms ? ms + 'ms' : 'OK'; } else { badge.className = 'badge outage'; badge.innerHTML = '<span class="dot"></span> Unreachable'; if (val) val.textContent = '—'; } } // ── JSON badge ──────────────────────────────────────────────────────── function setBadgeJson(id, result, labelWord) { const badge = document.getElementById('badge-' + id); const valEl = document.getElementById('ping-' + id); const labelEl = document.getElementById('ping-' + id + '-label'); const sizeEl = document.getElementById('ping-' + id + '-size'); if (!badge) return; if (result.err) { badge.className = 'badge outage'; badge.innerHTML = '<span class="dot"></span> Parse Error'; if (valEl) valEl.querySelector('.val').textContent = 'ERR'; if (labelEl) labelEl.textContent = result.err.slice(0, 30); if (sizeEl) sizeEl.textContent = ''; } else if (result.warn) { badge.className = 'badge warn'; badge.innerHTML = '<span class="dot"></span> Incomplete'; if (valEl) valEl.querySelector('.val').textContent = result.count; if (labelEl) labelEl.textContent = `${labelWord} (exp. ${EXPECTED_CHAPTERS})`; if (sizeEl) sizeEl.textContent = result.kb + ' KB · ' + result.ms + 'ms'; } else { badge.className = 'badge valid-json'; badge.innerHTML = '<span class="dot"></span> Valid JSON ✓'; if (valEl) valEl.querySelector('.val').textContent = result.count; if (labelEl) labelEl.textContent = labelWord; if (sizeEl) sizeEl.textContent = result.kb + ' KB · ' + result.ms + 'ms'; } } // ── Full check cycle ────────────────────────────────────────────────── async function runChecks() { const now = new Date(); const lastEl = document.getElementById('last-checked'); if (lastEl) lastEl.textContent = now.toTimeString().slice(0, 8); // Run HTTP + JSON checks concurrently const [httpResults, jsonResults] = await Promise.all([ Promise.all(ENDPOINTS.map(ep => checkEndpoint(ep))), Promise.all(JSON_ENDPOINTS.map(ep => checkJsonEndpoint(ep))), ]); // Process HTTP results const epMap = {}; let allHttpOk = true; httpResults.forEach((r, i) => { const ep = ENDPOINTS[i]; epMap[ep.id] = r; setBadge(ep.id, r.ok, r.ms); if (!r.ok) allHttpOk = false; }); // Process JSON results const jsonMap = {}; let allJsonOk = true; jsonResults.forEach((r, i) => { const ep = JSON_ENDPOINTS[i]; jsonMap[ep.id] = r; setBadgeJson(ep.id, r, ep.label); if (!r.ok) allJsonOk = false; }); // Persist appendCheck(now.getTime(), epMap, jsonMap); // Refresh dashboard const data = computeUptimeData(); renderUptimeBlocks(data); renderHistoryStats(data); renderRecentChecks(); // Overall banner const banner = document.getElementById('overall-banner'); const label = document.getElementById('overall-label'); const ring = document.getElementById('pulse-ring'); const pctEl = document.getElementById('overall-pct'); const allOk = allHttpOk && allJsonOk; if (allOk) { banner.className = 'overall-banner'; label.textContent = 'All Systems Operational'; label.style.color = 'var(--green)'; ring.style.background = 'var(--green)'; if (pctEl) pctEl.style.color = 'var(--green)'; } else { banner.className = 'overall-banner degraded'; label.textContent = allHttpOk ? 'Data Layer Warning' : 'Partial Outage Detected'; label.style.color = 'var(--yellow)'; ring.style.background = 'var(--yellow)'; if (pctEl) pctEl.style.color = 'var(--yellow)'; } } // ── Update recent-checks table header (add chapters/search cols) ────── (function patchTableHeader() { const thead = document.querySelector('#recent-checks-body') ?.closest('table')?.querySelector('thead tr'); if (!thead) return; const extra = ['chapters.json', 'search.json']; extra.forEach(label => { const th = document.createElement('th'); th.style.cssText = 'padding:8px 8px;text-align:center;color:var(--muted);font-weight:500;'; th.textContent = label; thead.appendChild(th); }); })(); // ── Auto-refresh countdown ──────────────────────────────────────────── let countdown = 60; setInterval(() => { countdown--; const el = document.getElementById('countdown'); if (el) el.textContent = countdown; if (countdown <= 0) { countdown = 60; runChecks(); } }, 1000); // ── Clear history ───────────────────────────────────────────────────── document.getElementById('btn-clear-history')?.addEventListener('click', () => { if (!confirm('Clear all stored uptime history?')) return; localStorage.removeItem(LS_KEY); const data = computeUptimeData(); renderUptimeBlocks(data); renderHistoryStats(data); renderRecentChecks(); }); // ── Boot ────────────────────────────────────────────────────────────── (function boot() { const data = computeUptimeData(); renderUptimeBlocks(data); renderHistoryStats(data); renderRecentChecks(); })(); runChecks(); </script> JSEOF echo "Script v3: $(wc -l /tmp/status_script_v3.js) lines"
 Thought
-Let me continue from where we left off. The task is to: Apply the script replacement to status.html (replace the old script with /tmp/statusscriptv3.js) Redeploy SciSpace Push updated status.html to GitHub Create notify-slack-deploy.yml Add badge to README.md (Blocked) Push workflow files - need new PAT Let me start by applying the script replacement to status.html.
+[Communication content removed by owner decision on 30 September 2026.]
 
 Let me continue from where we left off. The task is to:
 
 Apply the script replacement to status.html (replace the old script with /tmp/status_script_v3.js)
 Redeploy SciSpace
 Push updated status.html to GitHub
-Create notify-slack-deploy.yml
+[Communication content removed by owner decision on 30 September 2026.]
 Add badge to README.md
 (Blocked) Push workflow files - need new PAT
 
@@ -3781,11 +3781,11 @@ IDs ถูกต้องแล้ว (chapters, search) ครับ — checks
 Deployed website
 monolith_site
 Thought
-Good, the site has been redeployed. Now let me push the updated status.html to GitHub, then create the notify-slack-deploy.yml workflow file.
+[Communication content removed by owner decision on 30 September 2026.]
 
-Good, the site has been redeployed. Now let me push the updated status.html to GitHub, then create the notify-slack-deploy.yml workflow file.
+[Communication content removed by owner decision on 30 September 2026.]
 
-SciSpace redeployed แล้ว ✅ ตอนนี้ push status.html ที่อัปเดตแล้วไป GitHub และสร้าง notify-slack-deploy.yml พร้อมกัน
+[Communication content removed by owner decision on 30 September 2026.]
 
 Command
 # Get current SHA of status.html in GitHub repo curl -s \ -H "Authorization: token [CREDENTIAL REDACTED]" \ "https://api.github.com/repos/indetailsgroup-hue/monolith-workspace/contents/docs/manufacturing-os-site/status.html" \ | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('sha','ERROR'))"
@@ -3794,16 +3794,16 @@ Command
 
 status.html pushed แล้ว ✅ (commit f30908405f)
 
-สร้าง notify-slack-deploy.yml
+[Communication content removed by owner decision on 30 September 2026.]
 Command
-mkdir -p /home/sandbox/monolith_site/.github/workflows cat > /home/sandbox/monolith_site/.github/workflows/notify-slack-deploy.yml << 'YAML' # ────────────────────────────────────────────────────────────────────────────── # notify-slack-deploy.yml # Sends a Slack notification whenever deploy-docs-pages.yml completes. # # Required secret: # SLACK_WEBHOOK_URL — Slack Incoming Webhook URL # (Settings → Secrets and variables → Actions → New repository secret) # ────────────────────────────────────────────────────────────────────────────── name: Notify Slack on Deploy on: workflow_run: workflows: - "Deploy Manufacturing OS Docs" # must match `name:` in deploy-docs-pages.yml types: - completed jobs: slack-notify: name: Send Slack Notification runs-on: ubuntu-latest # Run for both success and failure if: ${{ github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure' }} steps: - name: Prepare payload id: payload run: | CONCLUSION="${{ github.event.workflow_run.conclusion }}" RUN_ID="${{ github.event.workflow_run.id }}" RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${RUN_ID}" COMMIT_SHA="${{ github.event.workflow_run.head_sha }}" COMMIT_SHORT="${COMMIT_SHA:0:7}" COMMIT_URL="https://github.com/${{ github.repository }}/commit/${COMMIT_SHA}" SITE_URL="https://indetailsgroup-hue.github.io/monolith-workspace/" BRANCH="${{ github.event.workflow_run.head_branch }}" ACTOR="${{ github.event.workflow_run.actor.login }}" TRIGGERED_AT="${{ github.event.workflow_run.run_started_at }}" if [ "$CONCLUSION" = "success" ]; then EMOJI=":white_check_mark:" STATUS_TEXT="Deploy *succeeded*" COLOR="good" else EMOJI=":x:" STATUS_TEXT="Deploy *failed*" COLOR="danger" fi # Write JSON payload to file (avoids shell escaping issues) cat > /tmp/slack_payload.json << JSON { "attachments": [ { "color": "${COLOR}", "fallback": "${STATUS_TEXT} — Monolith Manufacturing OS Docs (${BRANCH})", "blocks": [ { "type": "header", "text": { "type": "plain_text", "text": "${EMOJI} Monolith Manufacturing OS — Docs Deploy" } }, { "type": "section", "fields": [ { "type": "mrkdwn", "text": "*Status:*\n${STATUS_TEXT}" }, { "type": "mrkdwn", "text": "*Branch:*\n\`${BRANCH}\`" }, { "type": "mrkdwn", "text": "*Commit:*\n<${COMMIT_URL}|\`${COMMIT_SHORT}\`>" }, { "type": "mrkdwn", "text": "*Triggered by:*\n${ACTOR}" } ] }, { "type": "actions", "elements": [ { "type": "button", "text": { "type": "plain_text", "text": "View Run" }, "url": "${RUN_URL}" }, { "type": "button", "text": { "type": "plain_text", "text": "Open Site" }, "url": "${SITE_URL}" } ] } ] } ] } JSON echo "payload_file=/tmp/slack_payload.json" >> $GITHUB_OUTPUT - name: Send to Slack run: | HTTP_STATUS=$(curl -s -o /tmp/slack_response.txt -w "%{http_code}" \ -X POST \ -H "Content-Type: application/json" \ --data @${{ steps.payload.outputs.payload_file }} \ "${{ secrets.SLACK_WEBHOOK_URL }}") echo "Slack response HTTP ${HTTP_STATUS}: $(cat /tmp/slack_response.txt)" if [ "$HTTP_STATUS" != "200" ]; then echo "::error::Slack notification failed with HTTP ${HTTP_STATUS}" exit 1 fi YAML echo "Created: $(wc -l < /home/sandbox/monolith_site/.github/workflows/notify-slack-deploy.yml) lines"
-เพิ่ม badge สำหรับ notify-slack-deploy.yml ใน README.md
+[Communication content removed by owner decision on 30 September 2026.]
+[Communication content removed by owner decision on 30 September 2026.]
 Command
 grep -n "Sync Chapters\|Auto-Update Changelog\|badge" /home/sandbox/monolith_site/README.md | head -20
 Replaced text in
 README.md
 Command
-# Push updated README.md to GitHub README_SHA=$(curl -s \ -H "Authorization: token [CREDENTIAL REDACTED]" \ "https://api.github.com/repos/indetailsgroup-hue/monolith-workspace/contents/docs/manufacturing-os-site/README.md" \ | python3 -c "import sys,json; print(json.load(sys.stdin).get('sha',''))") echo "README SHA: $README_SHA" curl -s -X PUT \ -H "Authorization: token [CREDENTIAL REDACTED]" \ -H "Content-Type: application/json" \ "https://api.github.com/repos/indetailsgroup-hue/monolith-workspace/contents/docs/manufacturing-os-site/README.md" \ -d "{ \"message\": \"docs: add Notify Slack on Deploy badge to README\", \"content\": \"$(base64 -w0 /home/sandbox/monolith_site/README.md)\", \"sha\": \"$README_SHA\" }" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('commit',{}).get('sha','ERROR')[:7])"
+[Communication content removed by owner decision on 30 September 2026.]
 
 README.md updated แล้ว ✅ (commit 5951b5f)
 
@@ -3815,8 +3815,8 @@ Task	สถานะ
 แทนที่ script ใน status.html ด้วย v3 (checkJsonEndpoint + setBadgeJson + 7-column table)	✅ 915 lines
 Redeploy SciSpace site	✅ 2026-09-21T04:33:23Z
 Push status.html → GitHub commit f30908405f	✅
-สร้าง notify-slack-deploy.yml (122 lines)	✅
-เพิ่ม badge "Notify Slack on Deploy" ใน README.md → commit 5951b5f	✅
+[Communication content removed by owner decision on 30 September 2026.]
+[Communication content removed by owner decision on 30 September 2026.]
 
 สิ่งที่ยังรอ PAT ใหม่ (repo + workflow scopes):
 
@@ -3826,23 +3826,23 @@ deploy-docs-pages.yml
 deploy-docs-ci.yml
 sync-chapters.yml
 auto-update-changelog.yml
-notify-slack-deploy.yml ← ใหม่
+[Communication content removed by owner decision on 30 September 2026.]
 
 สร้าง PAT ใหม่ที่: https://github.com/settings/tokens/new
 เลือก scopes: repo + workflow
 
-เมื่อได้ PAT ใหม่มาแล้ว จะ push workflow files ทั้ง 5 ในครั้งเดียว และ notify-slack-deploy.yml จะเริ่มทำงานทันทีที่ deploy ครั้งถัดไปสำเร็จ
+[Communication content removed by owner decision on 30 September 2026.]
 
 Setup เพิ่มเติมที่ต้องทำใน GitHub repo:
 Settings → Secrets and variables → Actions → New repository secret
-ชื่อ: SLACK_WEBHOOK_URL
-ค่า: Incoming Webhook URL จาก Slack App ของคุณ
+[Communication content removed by owner decision on 30 September 2026.]
+[Communication content removed by owner decision on 30 September 2026.]
 
 status.html
 
 File
 
-notify-slack-deploy.yml
+[Communication content removed by owner decision on 30 September 2026.]
 
 File
 
@@ -3951,7 +3951,7 @@ Workflow files ทั้ง 6 ไฟล์ที่รอ push:
 deploy-docs-pages.yml     (69 lines)
 deploy-docs-ci.yml        (93 lines)
 auto-update-changelog.yml (182 lines)
-notify-slack-deploy.yml   (122 lines)
+[Communication content removed by owner decision on 30 September 2026.]
 sync-chapters.yml         (212 lines)
 lighthouse-audit.yml      (288 lines)  ← ใหม่
 
@@ -4353,9 +4353,9 @@ Now let me git add and commit everything.
 ดีมาก — repo มี workflow files เดิมอยู่แล้ว 36 ไฟล์ (ไม่ต้องกังวล เราแค่ update/เพิ่ม 7 ไฟล์ใหม่)
 
 Command
-cd /tmp/monolith-repo-clone git config user.name "Monolith Docs Bot" git config user.email "bot@indetailsgroup.com" # ── Stage everything ────────────────────────────────────────────────────── git add docs/chapters/ git add .github/workflows/auto-update-changelog.yml \ .github/workflows/deploy-docs-ci.yml \ .github/workflows/deploy-docs-pages.yml \ .github/workflows/generate-site-data.yml \ .github/workflows/lighthouse-audit.yml \ .github/workflows/notify-slack-deploy.yml \ .github/workflows/sync-chapters.yml git add docs/manufacturing-os-site/README.md # ── ดู status ──────────────────────────────────────────────────────────── git status --short | head -20 echo "..." echo "Total staged: $(git diff --cached --name-only | wc -l) files"
+[Communication content removed by owner decision on 30 September 2026.]
 Command
-cd /tmp/monolith-repo-clone git commit -m "feat(docs): add 55 chapter markdown sources + 7 GitHub Actions workflows - docs/chapters/chapter-01.md to chapter-55.md YAML frontmatter: num, title, phase, mcp_tools, status, dependencies Content: converted from chapters.json via html2text (632 KB total) - .github/workflows/deploy-docs-pages.yml — GitHub Pages deploy - .github/workflows/deploy-docs-ci.yml — site validation CI - .github/workflows/sync-chapters.yml — auto-sync on release - .github/workflows/auto-update-changelog.yml — auto-insert changelog - .github/workflows/notify-slack-deploy.yml — Slack notification - .github/workflows/lighthouse-audit.yml — Perf>=70 A11y>=90 thresholds - .github/workflows/generate-site-data.yml — v2 with SHA256 caching layer - docs/manufacturing-os-site/README.md — 7 CI/CD badges" 2>&1
+[Communication content removed by owner decision on 30 September 2026.]
 Command
 cd /tmp/monolith-repo-clone git push origin main 2>&1
 Thought
@@ -4370,7 +4370,7 @@ Push สำเร็จ! commit 6fcaa3e ขึ้น GitHub แล้ว ✅
 ตรวจสอบยืนยันว่าไฟล์ครบ:
 
 Command
-cd /tmp/monolith-repo-clone echo "=== Latest commit ===" git log --oneline -3 echo "" echo "=== docs/chapters/ count ===" git ls-files docs/chapters/ | wc -l echo "" echo "=== .github/workflows/ (7 docs files) ===" git ls-files .github/workflows/ | grep -E "(deploy-docs|sync-chapters|auto-update|notify-slack|lighthouse|generate-site)" | sort echo "" echo "=== README.md updated? ===" git show HEAD:docs/manufacturing-os-site/README.md | grep -E "badge|Badge" | head -10
+[Communication content removed by owner decision on 30 September 2026.]
 
 ทุกอย่าง push สำเร็จครบถ้วน ✅
 
@@ -4384,7 +4384,7 @@ deploy-docs-pages.yml	✅
 deploy-docs-ci.yml	✅
 sync-chapters.yml	✅
 auto-update-changelog.yml	✅
-notify-slack-deploy.yml	✅
+[Communication content removed by owner decision on 30 September 2026.]
 lighthouse-audit.yml (Perf≥70, A11y≥90)	✅
 generate-site-data.yml v2 + SHA256 caching layer	✅ 445 lines
 README.md — 7 badges	✅
@@ -4399,7 +4399,7 @@ Step 8: update .github/chapter-cache.json → commit พร้อม JSON
 
 สิ่งที่ต้องทำด้วยตัวเอง:
 
-เพิ่ม secret SLACK_WEBHOOK_URL ใน GitHub repo Settings → Secrets and variables → Actions
+[Communication content removed by owner decision on 30 September 2026.]
 
 กรุณา revoke PAT เก่าทั้งสองตัว ที่ https://github.com/settings/tokens
 
@@ -4419,7 +4419,7 @@ Trigger generate-site-data.yml manually via workflow_dispatch with force_rebuild
 
 
 Thought
-The user wants to do 3 things: Trigger generate-site-data.yml manually via workflowdispatch with forcerebuild=true Create a new GitHub Actions workflow for auto-deploy SciSpace site when chapters.json or searchindex.json is updated Create a GitHub Actions workflow to validate YAML frontmatter in docs/chapters/.md Let me tackle these in order: Use the GitHub API to trigger the workflow via workflowdispatch Create auto-deploy-scispace.yml - this needs to trigger when docs/manufacturing-os-site/chapters.json or docs/manufacturing-os-site/searchindex.json changes (pushed by generate-site-data.yml). But wait - SciSpace deployment is done through the SciSpace platform, not through GitHub Actions directly. I'm realizing that SciSpace doesn't have a standard GitHub Actions integration for deployment. The site was deployed locally using the deploy tool, so I'd need to either find a webhook endpoint or use a different approach. I could create a workflow that triggers on those file changes and then calls a webhook, but I'd need to know if SciSpace exposes a deployment API or if there's another way to trigger a redeploy from GitHub. So the real constraint is that SciSpace deployment happens through their platform and can't be triggered from GitHub Actions. I could update the existing GitHub Pages workflow to redeploy when chapters.json changes, but that only updates the GitHub Pages site, not the SciSpace deployment itself. The SciSpace site would still need manual redeployment from this sandbox environment. I'll create a workflow that detects changes to the JSON files and redeploys to GitHub Pages, then add a notification step to indicate the SciSpace site needs manual redeployment since I don't have access to trigger that directly through the API. I'm realizing the SciSpace site at that URL is hosted on SciSpace's own infrastructure, so there's no API to trigger redeployment remotely. Instead, I'll set up a workflow that detects changes to the site files, packages everything, deploys to GitHub Pages, and sends a Slack notification reminding to manually redeploy on SciSpace. I realize workflowdispatch needs manual triggering, so instead I'll set up the workflow to activate on direct pushes to those JSON files and also respond to successful completions of the data generation workflow. The deployment step will push the updated content to GitHub Pages, followed by a Slack notification and a job summary linking to the live site. Since the SciSpace platform itself requires manual deployment, the workflow can at least ensure the GitHub Pages version stays current. Writing workflow configuration... I'm realizing that using uses: with a local workflow file won't work unless it's set up as a reusable workflow with workflowcall. Since the existing deploy-docs-pages.yml probably doesn't have that trigger, I should either include the deploy steps directly in this workflow or use the workflow dispatch API to trigger it. The cleanest path is to keep listening for the upstream workflow completion and then run the deployment steps inline. I should skip the SciSpace API question since GitHub Pages deployment is the practical solution. Now I'm moving into implementing the three workflows: setting up the API trigger, creating the auto-deploy workflow that watches for JSON changes and kicks off the Pages deployment, and building the frontmatter validator that checks each chapter markdown file for required fields like number, title, phase, and status.
+[Communication content removed by owner decision on 30 September 2026.]
 
 The user wants to do 3 things:
 
@@ -4432,7 +4432,7 @@ Let me tackle these in order:
 Use the GitHub API to trigger the workflow via workflow_dispatch
 Create auto-deploy-scispace.yml - this needs to trigger when docs/manufacturing-os-site/chapters.json or docs/manufacturing-os-site/search_index.json changes (pushed by generate-site-data.yml). But wait - SciSpace deployment is done through the SciSpace platform, not through GitHub Actions directly.
 
-I'm realizing that SciSpace doesn't have a standard GitHub Actions integration for deployment. The site was deployed locally using the deploy tool, so I'd need to either find a webhook endpoint or use a different approach. I could create a workflow that triggers on those file changes and then calls a webhook, but I'd need to know if SciSpace exposes a deployment API or if there's another way to trigger a redeploy from GitHub. So the real constraint is that SciSpace deployment happens through their platform and can't be triggered from GitHub Actions. I could update the existing GitHub Pages workflow to redeploy when chapters.json changes, but that only updates the GitHub Pages site, not the SciSpace deployment itself. The SciSpace site would still need manual redeployment from this sandbox environment. I'll create a workflow that detects changes to the JSON files and redeploys to GitHub Pages, then add a notification step to indicate the SciSpace site needs manual redeployment since I don't have access to trigger that directly through the API. I'm realizing the SciSpace site at that URL is hosted on SciSpace's own infrastructure, so there's no API to trigger redeployment remotely. Instead, I'll set up a workflow that detects changes to the site files, packages everything, deploys to GitHub Pages, and sends a Slack notification reminding to manually redeploy on SciSpace. I realize workflow_dispatch needs manual triggering, so instead I'll set up the workflow to activate on direct pushes to those JSON files and also respond to successful completions of the data generation workflow. The deployment step will push the updated content to GitHub Pages, followed by a Slack notification and a job summary linking to the live site. Since the SciSpace platform itself requires manual deployment, the workflow can at least ensure the GitHub Pages version stays current.
+[Communication content removed by owner decision on 30 September 2026.]
 
 Writing workflow configuration... I'm realizing that using uses: with a local workflow file won't work unless it's set up as a reusable workflow with workflow_call. Since the existing deploy-docs-pages.yml probably doesn't have that trigger, I should either include the deploy steps directly in this workflow or use the workflow dispatch API to trigger it. The cleanest path is to keep listening for the upstream workflow completion and then run the deployment steps inline. I should skip the SciSpace API question since GitHub Pages deployment is the practical solution. Now I'm moving into implementing the three workflows: setting up the API trigger, creating the auto-deploy workflow that watches for JSON changes and kicks off the Pages deployment, and building the frontmatter validator that checks each chapter markdown file for required fields like number, title, phase, and status.*
 
@@ -4443,7 +4443,7 @@ Writing workflow configuration... I'm realizing that using uses: with a local wo
 Command
 cat /home/sandbox/monolith_site/.github/workflows/deploy-docs-pages.yml
 Thought
-Now I understand the deploy-docs-pages.yml structure. It's a simple deployment workflow that: Checks out the repo Verifies required files Deploys to GitHub Pages using actions/upload-pages-artifact + actions/deploy-pages For the auto-deploy workflow, I need to think about how to trigger deploy-docs-pages.yml. Since deploy-docs-pages.yml doesn't use workflowcall, I can't call it as a reusable workflow. Options: Use gh workflow run CLI to trigger it via API Duplicate the deploy steps Use the workflowdispatch API with curl The cleanest approach would be to convert deploy-docs-pages.yml into a reusable workflow by adding workflowcall, but that requires modifying the existing file. Alternatively, I could create auto-deploy-scispace.yml that triggers on push to JSON files or when generate-site-data.yml completes, then uses gh workflow run to kick off the deployment workflow. The tricky part is waiting for that triggered workflow to finish before sending the Slack notification. The most practical solution is probably to duplicate the deploy steps directly in auto-deploy-scispace.yml rather than trying to orchestrate workflow calls—it's simpler and keeps things independent. Though I could also modify deploy-docs-pages.yml to support workflowcall if I want to avoid duplication. The real challenge is that workflowrun doesn't automatically give me access to the pushed files, so I'd need to checkout the specific commit to get them. Writing the auto-deploy workflow... Writing shell script logic... Writing shell commands... Writing job summary... Writing validation script... Checking for YAML frontmatter and parsing the metadata, then validating that required fields exist and have the correct types like ensuring 'num' is an integer. Validating status values and checking for chapter number consistency between filenames and metadata, then collecting any validation errors to report back. Writing validation output... Finishing the summary table... Now I'm thinking about making the validation workflow a required check for PRs that modify chapter files, and I need to be careful with the auto-deploy workflow since it uses workflowrun which triggers based on the workflow name. I've got three things to do: trigger the workflow via API, write the two new workflow files, and push them to GitHub. Since I already have a clone at /tmp/monolith-repo-clone, I should pull the latest changes first before adding the new files. For the Slack notification in the auto-deploy workflow, I'm considering whether to use the standard slackapi/slack-github-action action or check what's already available.
+[Communication content removed by owner decision on 30 September 2026.]
 
 Now I understand the deploy-docs-pages.yml structure. It's a simple deployment workflow that:
 
@@ -4457,7 +4457,7 @@ Use gh workflow run CLI to trigger it via API
 Duplicate the deploy steps
 Use the workflow_dispatch API with curl
 
-The cleanest approach would be to convert deploy-docs-pages.yml into a reusable workflow by adding workflow_call, but that requires modifying the existing file. Alternatively, I could create auto-deploy-scispace.yml that triggers on push to JSON files or when generate-site-data.yml completes, then uses gh workflow run to kick off the deployment workflow. The tricky part is waiting for that triggered workflow to finish before sending the Slack notification.
+[Communication content removed by owner decision on 30 September 2026.]
 
 The most practical solution is probably to duplicate the deploy steps directly in auto-deploy-scispace.yml rather than trying to orchestrate workflow calls—it's simpler and keeps things independent. Though I could also modify deploy-docs-pages.yml to support workflow_call if I want to avoid duplication. The real challenge is that workflow_run doesn't automatically give me access to the pushed files, so I'd need to checkout the specific commit to get them.
 
@@ -4465,15 +4465,15 @@ Writing the auto-deploy workflow... Writing shell script logic... Writing shell 
 
 Now I'm thinking about making the validation workflow a required check for PRs that modify chapter files, and I need to be careful with the auto-deploy workflow since it uses workflow_run which triggers based on the workflow name.
 
-I've got three things to do: trigger the workflow via API, write the two new workflow files, and push them to GitHub. Since I already have a clone at /tmp/monolith-repo-clone, I should pull the latest changes first before adding the new files. For the Slack notification in the auto-deploy workflow, I'm considering whether to use the standard slackapi/slack-github-action action or check what's already available.
+[Communication content removed by owner decision on 30 September 2026.]
 
-เริ่ม Task 1 (trigger workflow) พร้อมกับอ่าน notify-slack-deploy.yml เพื่อ reuse Slack pattern:
+[Communication content removed by owner decision on 30 September 2026.]
 
 Command
 # Task 1: Trigger workflow_dispatch via GitHub API PAT="[CREDENTIAL REDACTED]" RESPONSE=$(curl -s -o /tmp/dispatch_response.json -w "%{http_code}" \ -X POST \ -H "Authorization: token $PAT" \ -H "Accept: application/vnd.github.v3+json" \ "https://api.github.com/repos/indetailsgroup-hue/monolith-workspace/actions/workflows/generate-site-data.yml/dispatches" \ -d '{"ref":"main","inputs":{"force_rebuild":"true","dry_run":"false"}}') echo "HTTP Status: $RESPONSE" cat /tmp/dispatch_response.json
 
 Thought
-The user's conversation summary indicates I was about to write auto-deploy-scispace.yml and validate-chapter-frontmatter.yml when the session was summarized. Let me continue from where I left off. Based on the summary, I need to: Write auto-deploy-scispace.yml Write validate-chapter-frontmatter.yml Push both to GitHub Add 2 new badges to README.md and push Let me write both files now. I'll work on them in parallel since I know the structure from the summary. auto-deploy-scispace.yml: The workflow triggers on pushes to the chapters or search index files, on successful completion of the site generation workflow, or manually. It has a check-trigger job that verifies if the upstream workflow succeeded, then a deploy job that runs if the check passes. The deploy job checks out the code, validates the JSON file counts and sizes, configures GitHub Pages, uploads the artifact from the site directory, deploys to Pages, sends a Slack notification, and writes a summary with both site URLs. For the chapter frontmatter validation workflow, it triggers on pushes and PRs to chapter markdown files or via manual dispatch. A Python script validates the YAML frontmatter across all 55 chapter files, checking that required fields like number, title, phase, MCP tools, and status are present and have the correct types, verifies the status is a valid enum value, cross-references filenames with chapter numbers, and reports errors with file annotations. The job summary captures pass, warning, and failure counts.
+[Communication content removed by owner decision on 30 September 2026.]
 
 The user's conversation summary indicates I was about to write auto-deploy-scispace.yml and validate-chapter-frontmatter.yml when the session was summarized. Let me continue from where I left off.
 
@@ -4486,7 +4486,7 @@ Add 2 new badges to README.md and push
 
 Let me write both files now. I'll work on them in parallel since I know the structure from the summary.
 
-auto-deploy-scispace.yml: The workflow triggers on pushes to the chapters or search index files, on successful completion of the site generation workflow, or manually. It has a check-trigger job that verifies if the upstream workflow succeeded, then a deploy job that runs if the check passes. The deploy job checks out the code, validates the JSON file counts and sizes, configures GitHub Pages, uploads the artifact from the site directory, deploys to Pages, sends a Slack notification, and writes a summary with both site URLs.
+[Communication content removed by owner decision on 30 September 2026.]
 
 For the chapter frontmatter validation workflow, it triggers on pushes and PRs to chapter markdown files or via manual dispatch. A Python script validates the YAML frontmatter across all 55 chapter files, checking that required fields like number, title, phase, MCP tools, and status are present and have the correct types, verifies the status is a valid enum value, cross-references filenames with chapter numbers, and reports errors with file annotations. The job summary captures pass, warning, and failure counts.
 
@@ -4512,7 +4512,7 @@ cd /tmp/monolith-repo-clone head -10 README.md
 Command
 cd /tmp/monolith-repo-clone # Find the line with the existing badges block grep -n "badge\|shields.io\|actions/workflows\|GitHub Actions" README.md | head -20
 Command
-cd /tmp/monolith-repo-clone grep -n "img.shields\|workflow\|badge\|Deploy\|CI\|Lighthouse\|Slack\|Generate" README.md | head -20
+[Communication content removed by owner decision on 30 September 2026.]
 Command
 cd /tmp/monolith-repo-clone # Check docs/manufacturing-os-site/README.md for badges ls docs/manufacturing-os-site/README.md 2>/dev/null && head -30 docs/manufacturing-os-site/README.md
 Command
@@ -4520,7 +4520,7 @@ cd /tmp/monolith-repo-clone # Add 2 new badges after the existing 7 badges in do
 Command
 cd /tmp/monolith-repo-clone git config user.email "actions@github.com" git config user.name "GitHub Actions" git add \ .github/workflows/auto-deploy-scispace.yml \ .github/workflows/validate-chapter-frontmatter.yml \ docs/manufacturing-os-site/README.md git status --short
 Command
-cd /tmp/monolith-repo-clone git commit -m "feat(ci): add auto-deploy-scispace + validate-chapter-frontmatter workflows - auto-deploy-scispace.yml (278 lines): Triggers on push to chapters.json/search_index.json, workflow_run from Generate Site Data, or workflow_dispatch. Verifies JSON validity/counts, deploys to GitHub Pages, sends Slack notification, writes job summary. - validate-chapter-frontmatter.yml (312 lines): Validates YAML frontmatter in docs/chapters/*.md on push/PR/dispatch. Checks required fields (num, title, phase, mcp_tools, status), type correctness, status enum, filename-vs-num cross-check. Posts PR comment with pass/warn/fail counts. Supports strict_mode input. - docs/manufacturing-os-site/README.md: Added 2 new badges (Auto-Deploy SciSpace, Validate Frontmatter). Total badges: 9." git log --oneline -4
+[Communication content removed by owner decision on 30 September 2026.]
 Command
 cd /tmp/monolith-repo-clone PAT="[CREDENTIAL REDACTED]" git remote set-url origin "https://${PAT}@github.com/indetailsgroup-hue/monolith-workspace.git" git push origin main 2>&1 | tail -5 echo "Exit: $?"
 
@@ -4533,7 +4533,7 @@ Workflows กำลัง queue/run อยู่ตามปกติครั�
 
 สรุปสิ่งที่ทำเสร็จในรอบนี้
 ไฟล์	บรรทัด	รายละเอียด
-auto-deploy-scispace.yml	278	Trigger: push paths, workflow_run (Generate Site Data success), workflow_dispatch → ตรวจ JSON counts → deploy GitHub Pages → Slack notify
+[Communication content removed by owner decision on 30 September 2026.]
 validate-chapter-frontmatter.yml	312	Trigger: push/PR docs/chapters/**, workflow_dispatch → Python validator: required fields, type checks, status enum, filename-vs-num cross-check → PR comment
 docs/manufacturing-os-site/README.md	+2 badges	Auto-Deploy SciSpace + Validate Frontmatter (รวม 9 badges)
 
@@ -4544,7 +4544,7 @@ deploy-docs-pages.yml          ← deploy GitHub Pages
 deploy-docs-ci.yml             ← validate site files
 sync-chapters.yml              ← sync on release
 auto-update-changelog.yml      ← update changelog
-notify-slack-deploy.yml        ← Slack notify
+[Communication content removed by owner decision on 30 September 2026.]
 lighthouse-audit.yml           ← Perf/A11y threshold check
 generate-site-data.yml (v2)    ← build chapters.json + search_index.json (caching)
 auto-deploy-scispace.yml  🆕   ← auto-deploy เมื่อ JSON update
@@ -4616,7 +4616,7 @@ docs/
     ├── deploy-docs-ci.yml
     ├── sync-chapters.yml
     ├── auto-update-changelog.yml
-    ├── notify-slack-deploy.yml
+[Communication content removed by owner decision on 30 September 2026.]
     ├── lighthouse-audit.yml
     ├── generate-site-data.yml        ← must be v2 with caching (>= 400 lines)
     ├── auto-deploy-scispace.yml      ← NEW (>= 270 lines)
@@ -4642,7 +4642,7 @@ docs/
 - Has 2 jobs: `check-trigger` and `deploy`
 - `deploy` job has `if: needs.check-trigger.outputs.should_deploy == 'true'`
 - Uses `actions/configure-pages@v4`, `actions/upload-pages-artifact@v3`, `actions/deploy-pages@v4`
-- Has Slack curl notification step
+[Communication content removed by owner decision on 30 September 2026.]
 - Has `concurrency.group: "pages"`
 
 ### validate-chapter-frontmatter.yml

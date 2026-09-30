@@ -6,6 +6,8 @@ Remaining coverage limits: Download all files and Download attempts did not retu
 
 Select a chat title for HTML or MD for Markdown. Use Ctrl+F to search within each file. Long conversations are retained without summarization; credential values are masked in reading copies.
 
+Revision, 30 September 2026: by owner decision, the reading editions of chats 2, 3, 5, 6, 11 and 12 were sanitized. Each transcript line that referred to the retired communication provider is replaced by a removal notice (40, 3, 428, 2, 83 and 2 lines respectively), and one file-reference entry was removed from chat 11. These six editions are not verbatim transcripts. Character, link and reference counts and the source SHA-256 values in manifest.json and chat-register.csv describe the capture before removal. checksums.sha256.json was regenerated for the revised files.
+
 ## All 12 chats
 
 | # | Chat | Folder date | Characters | Links | File/folder references |

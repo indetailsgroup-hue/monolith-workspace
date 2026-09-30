@@ -25,7 +25,7 @@
 
 GitHub App tokenทำให้CIเริ่มอัตโนมัติได้ แต่ต้องมีidentityและsecretที่อนุมัติแยก งานนี้ไม่เพิ่ม ส่วนการเขียนREST/GraphQL publisherเองจะซ้ำซ้อนกับbranch/diff/signature/retryที่actionมีอยู่ ใช้actionที่pinรุ่นเพื่อลดขอบเขตการแก้ แยกChangelog PRเพื่อรักษาทุกevent แม้จำนวนPRมากขึ้น
 
-Patchนี้ไม่แก้เนื้อหาsite data, Slack settings, SciSpace hosting หรือbranch protection ส่วนsync-chapters.ymlเป็นworkflowreleaseแยกและอยู่นอกคำสั่งนี้ ต้องยืนยันpolicyสร้างPRและsignatureจากrunจริงหลังworkflowมีผล testsในเครื่องยืนยันการตั้งค่าจริงเหล่านั้นไม่ได้
+Patchนี้ไม่แก้เนื้อหาsite data, SciSpace hosting หรือbranch protection ส่วนsync-chapters.ymlเป็นworkflowreleaseแยกและอยู่นอกคำสั่งนี้ ต้องยืนยันpolicyสร้างPRและsignatureจากrunจริงหลังworkflowมีผล testsในเครื่องยืนยันการตั้งค่าจริงเหล่านั้นไม่ได้
 
 ## การตรวจสอบ
 

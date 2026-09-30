@@ -184,7 +184,7 @@ Phase 9 Post-Launch         ░░░░░░░░░░░░░░░░░�
 | งาน | คำอธิบาย | Priority |
 |-----|----------|----------|
 | **pg_notify Consumer Edge Function** | Edge Function subscribe ช่อง `etax_risk_rank_changed` → ส่ง webhook/email เมื่อ tier เป็น CRITICAL | 🔴 High |
-| **Alert Delivery** | เสนอส่งผ่าน LINE OA (Messaging API) เมื่อ org เปลี่ยนเป็น CRITICAL — ต้องตรวจสิทธิ์ผู้รับและการส่งจริงก่อนระบุว่าเปิดใช้งาน | 🔴 High |
+| **Alert Delivery** | เสนอส่งผ่าน LINE OA (Messaging API) / Email เมื่อ org เปลี่ยนเป็น CRITICAL — ต้องตรวจสิทธิ์ผู้รับและการส่งจริงก่อนระบุว่าเปิดใช้งาน | 🔴 High |
 | **Realtime UI Update** | `useEtaxCompliance` subscribe Supabase Realtime แทน polling เพื่อลด latency | 🟡 Medium |
 | **Export Reports** | Download CSV / Excel ของ compliance data จาก UI | 🟡 Medium |
 | **OpenAPI / Swagger Docs** | Auto-gen spec จาก Supabase RPC signatures | 🟡 Medium |

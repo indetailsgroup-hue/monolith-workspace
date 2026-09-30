@@ -225,7 +225,7 @@ async function handleSecurityAlert(entry: VerifyAuditEntry): Promise<void> {
   }
 
   // Production Integration Points (implement when infrastructure ready):
-  // 1. LINE OA (Messaging API): route alertEntry through an authorized adapter.
+  // 1. LINE OA (Messaging API) / PagerDuty: route alertEntry through an authorized adapter.
   //    Pending implementation and delivery verification; logging is the current behavior.
   //    - Critical/High: Immediate notification channel
   //    - Medium/Low: Monitoring channel

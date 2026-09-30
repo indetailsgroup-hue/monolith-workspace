@@ -14,7 +14,6 @@ on:
       - '.github/workflows/generate-site-data.yml'
       - '.github/workflows/lighthouse-audit.yml'
       - 'tools/check_communication_policy.py'
-      - 'tools/communication_policy_exceptions.json'
       - '.github/workflows/auto-update-changelog.yml'
       - '.github/workflows/field-app-pages.yml'
   # No paths filter on pull_request, on purpose. "Validate Site Files" is a
