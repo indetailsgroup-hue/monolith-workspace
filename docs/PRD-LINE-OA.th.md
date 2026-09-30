@@ -34,7 +34,7 @@
 
 **หลักฐานที่รายงานไว้ (ไม่มี raw output ใน repo):** ผลรันของรอบ A1–A4 วันที่ 1 ส.ค. 2026 อยู่ใน ledger ของ builder (`artifacts/wA1-ledger.md` ถึง `artifacts/wA4-ledger.md` ซึ่งไม่ได้ track ใน git) และใน commit message · คำตัดสินของรีวิวข้ามค่าย (A1–A3 ปฏิเสธ, A4 `SOL VERDICT: ACCEPT PHASE A4`) มาจาก thread รีวิวที่ไม่ได้เก็บใน repo
 
-**หลักฐานขั้นที่ 1 บน stack ชั่วคราว (ตรวจซ้ำได้ — raw output, สคริปต์ที่รันจาก repository root และ `SHA256SUMS` อยู่ในแต่ละชุด):**
+**หลักฐานขั้นที่ 1 บน stack ชั่วคราว** (ตรวจซ้ำได้ — raw output, สคริปต์ที่รันจาก repository root และ `SHA256SUMS` อยู่ในแต่ละชุด):
 
 | ชุด | SHA ที่ทดสอบ | ผล |
 |---|---|---|

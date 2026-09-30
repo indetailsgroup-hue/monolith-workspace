@@ -34,7 +34,7 @@
 
 **Reported evidence (no raw output in the repo):** the A1–A4 runs of 1 Aug 2026 are in the builder ledgers (`artifacts/wA1-ledger.md` to `artifacts/wA4-ledger.md`, not tracked in git) and in commit messages · the cross-vendor verdicts (A1–A3 rejected, A4 `SOL VERDICT: ACCEPT PHASE A4`) come from review threads not stored in the repo
 
-**Step 1 evidence on a throwaway stack (reproducible — raw output, a script run from the repository root, and `SHA256SUMS` in each bundle):**
+**Step 1 evidence on a throwaway stack** (reproducible — raw output, a script run from the repository root, and `SHA256SUMS` in each bundle):
 
 | Bundle | SHA tested | Result |
 |---|---|---|
