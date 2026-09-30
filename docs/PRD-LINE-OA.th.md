@@ -2,7 +2,7 @@
 
 > **ภาษา:** ไทย · ฉบับภาษาอังกฤษ: `docs/PRD-LINE-OA.en.md` · HTML: `docs/PRD-LINE-OA.th.html` / `docs/PRD-LINE-OA.en.html`
 > **ฉบับ:** 1.7 · 30 กันยายน 2026 (1.6, 1.5, 1.4, 1.3 และ 1.2 = 30 ก.ย. 2026 · 1.1 = 1 ส.ค. 2026 · 1.0 = 26 ก.ค. 2026)
-> **สิ่งที่เปลี่ยนในฉบับ 1.7:** สร้าง P0-11 ตามอนุมัติด้วย migration 0197 โดยกำหนด Unicode whitespace ให้ตรงกับ Python; เก็บหลักฐาน RED/GREEN ใหม่; Python เป็น 64 ผ่าน / 8 ล้ม / 0 skip เหลือเฉพาะ B10 ส่วน P0-10 ยังไม่อนุมัติและเลขข้อเสนอเลื่อนไป 0198 ขณะนี้ P0-11 ยังรอตรวจรับข้ามค่าย
+> **สิ่งที่เปลี่ยนในฉบับ 1.7:** สร้าง P0-11 ตามอนุมัติด้วย migration 0197 โดยกำหนด Unicode whitespace ให้ตรงกับ Python; เก็บหลักฐาน RED/GREEN ใหม่; Python เป็น 64 ผ่าน / 8 ล้ม / 0 skip เหลือเฉพาะ B10 ส่วน P0-10 ยังไม่อนุมัติและเลขข้อเสนอเลื่อนไป 0198 P0-11 ผ่านการตรวจรับข้ามค่ายที่ commit 00651a6cd แล้ว ตามรายงานตรวจรับที่เจ้าของส่งมา
 > **สถานะเอกสาร:** รอเจ้าของ (คุณเดฟ) ตัดสินคำถามเปิดใน §8 — ทุกขั้นที่เสนอใน §9 ไม่เปิด cron และไม่ส่งข้อความหาลูกค้าจริง
 > **หลักการเขียน:** ทุกแถวแยก "ทำงานจริง / มีโค้ดแต่ไม่ต่อสาย / อยู่แค่ spec" พร้อมอ้าง file:line และแยกหลักฐาน "ตรวจซ้ำได้ (มี raw output ใน repo)" ออกจาก "รายงานไว้ (ไม่มี raw output ใน repo)"
 > **หมายเหตุความจริง:** เอกสารเดิม (`docs/LINE-Architecture-System-Complete.md:41`, `docs/PRD.md:514`) ระบุ "LINE OA Commerce ✅ 20/20" ซึ่งเกินจริงสำหรับ live path — เอกสารนี้คือบันทึกสถานะที่ตรงความจริงกว่า
@@ -11,9 +11,9 @@
 
 ## 0. สถานะการดำเนินการ (ฉบับ 1.7)
 
-**P0-1 ถึง P0-6 ฉบับเดิมมี implementation และผ่านรีวิวข้ามค่ายแล้ว ส่วนการแก้ P0-11 รอบนี้ยังรอตรวจรับ — Phase A ยังไม่ปิด**
+**P0-1 ถึง P0-6 ฉบับเดิมมี implementation และผ่านรีวิวข้ามค่ายแล้ว ส่วนการแก้ P0-11 ที่ 00651a6cd ผ่านการตรวจรับข้ามค่ายแล้ว — Phase A ยังไม่ปิด**
 
-**สถานะหลักฐาน Phase A:** `EVIDENCE_INCOMPLETE` — Python ที่จำเป็นยังล้ม 8 ข้อจาก B10 และยังขาด CI กับเกณฑ์อื่นใน §9.1 ส่วน P0-11 มีหลักฐานในเครื่องแล้วแต่ยังรอตรวจรับอิสระ
+**สถานะหลักฐาน Phase A:** `EVIDENCE_INCOMPLETE` — Python ที่จำเป็นยังล้ม 8 ข้อจาก B10 และยังขาด CI กับเกณฑ์อื่นใน §9.1 ส่วน P0-11 มีหลักฐานในเครื่องและผ่านการตรวจรับข้ามค่ายที่ 00651a6cd แล้ว โดยผลรันซ้ำของผู้ตรวจยังเป็นหลักฐานที่รายงานไว้
 
 - **Branch:** `codex/repair-intelligence-phase0-trust` · commit ที่ผ่านรีวิว: `46a203a6` (1 ส.ค. 2026) · ยังไม่ push และยังไม่ deploy
 - **Migrations:** `0193_line_outbound_claim_and_record.sql`, `0194_line_outbound_retry_and_claim_fencing.sql`, `0195_line_outbound_timezone_safe_backoff.sql`, `0196_line_outbound_timezone_safe_sent_at.sql` + การแก้ `supabase/functions/line-outbound-sender/index.ts`
@@ -46,6 +46,8 @@
 
 **หลักฐาน P0-11 (30 กันยายน 2026):** `docs/governance/evidence/line-p011-red-attempt4-2026-09-30/` ยืนยัน RED: 70 เดิมผ่าน ส่วน 37 ข้อใหม่ล้ม 31 และ failure property เดิมล้ม `docs/governance/evidence/line-p011-green-2026-09-30/` ยืนยัน GREEN: migration จากศูนย์ 192 ไฟล์, pgTAP 107/107, claim race 10+10 ซ้ำ 0, Python 64 ผ่าน / 8 ล้มจาก B10 / 0 skip ตัวตรวจหลักฐานทั้งสองรอบ exit 0 ส่วน pytest exit 1 ตามผลจริง ระบุโค้ดที่รันด้วย base HEAD ร่วมกับ hash/patch ของ source ไม่ใช่ HEAD เพียงอย่างเดียว ตรวจรหัสลับที่สร้างผ่าน ค่าตรวจที่ระบุไว้ก่อน–หลังตรงกันเมื่อตัดเวลาบันทึกออก และลบ container/network ของงานแล้ว เก็บสามครั้งก่อนหน้าที่หยุดตอนเริ่มระบบก่อน migration/เทสต์ไว้เป็นบันทึกเริ่มระบบที่ไม่ครบ ใช้ bridge แยกและพอร์ต DB เฉพาะ loopback ปิดการรันงาน cron ไม่แตะ stack ที่แชร์หรือ credentials จริง การเพิ่ม 0197 เกิดหลังผลเทียบตาม SHA ใน §8.1
 
+**ผลตรวจรับข้ามค่าย — หลักฐานที่รายงานไว้ (30 กันยายน 2026):** เจ้าของส่งคำตัดสิน ACCEPT ของผู้ตรวจอิสระสำหรับ P0-11/B11 ที่ commit `00651a6cd` ผู้ตรวจรายงานว่ารันซ้ำบน tree สะอาดกับ stack ชั่วคราว ได้ migration 192/192, pgTAP 107/107, claim race 10+10 ซ้ำ 0, Python 64 ผ่าน / 8 ล้มเฉพาะ P0-10 / 0 skip ตัวตรวจผ่านและลบ container แล้ว ไฟล์ดิบของรอบตรวจยังอยู่ใน scratchpad ภายนอกของผู้ตรวจ งานเอกสารรอบนี้ยังไม่ได้เปิดตรวจหรือนำเข้ามาใน repo hash ย่อที่รายงานคือ pgTAP `9f5870b5…`, pytest `7362d613…`, ตัวตรวจ `8c4b8f8d…` ใช้ระบุรายงาน ไม่ใช่ checksum เต็มที่ใช้ตรวจไฟล์ได้ ข้อจำกัดเรื่อง byte ของ source ยังเป็นไปตาม GREEN `12-source-verification.txt`: 20 ไฟล์ตรงกับ Git blob ทุก byte และ 207 ไฟล์ต่างเฉพาะ CRLF/LF ผลรับรองนี้ปิด B11/P0-11 และคืนสถานะผ่านการรับรองให้ P0-6 แต่ไม่ปิด Phase A ไม่อนุมัติ P0-10 และไม่อนุมัติ push/deploy
+
 **ทำไม Phase A ยังไม่ปิด:**
 
 - **P0-9 (B8) ยังไม่ได้สร้าง** — และอาจทับซ้อนกับ `0175` unified ingress ที่ branch `codex/line-trust-wave1-main` วางแผนไว้ (ยังเป็นเลขจอง ไม่มีโค้ด) จึงต้องตัดสินเจ้าของงานก่อน (§8 ข้อ 7)
@@ -64,7 +66,7 @@
 | B8 `handler_error` นับว่าสำเร็จ | 🔴 ยังไม่แก้ — P0-9 ยังไม่ได้สร้าง; อาจทับซ้อนกับ `0175` ที่ line-trust จองไว้ |
 | B9 `line-login` ไม่ใช้ state/nonce | 🔴 ยังไม่แก้ — อยู่ใน P1; อาจทับซ้อนกับ `0176` ที่ line-trust จองไว้ |
 | B10 role ฝั่ง client มีสิทธิ์เขียนและ TRUNCATE บนตาราง LINE | 🔴 ยังไม่แก้ — เสนอ P0-10 ไว้ใน §9.1 ขั้นที่ 1b รออนุมัติ |
-| B11 ความล้มเหลวที่ error detail เป็นช่องว่างล้วน | 🟡 มี implementation ใน 0197 และหลักฐาน RED/GREEN ในเครื่อง; รอตรวจรับข้ามค่าย |
+| B11 ความล้มเหลวที่ error detail เป็นช่องว่างล้วน | ✅ มี implementation ใน 0197 และหลักฐาน RED/GREEN ในเครื่อง; ผ่านการตรวจรับข้ามค่ายที่ 00651a6cd แล้ว |
 
 **หมายเหตุแก้ข้อมูลเดิม:** ฉบับก่อนอธิบายว่าไม่ได้รัน Python เพราะเครื่องไม่มี interpreter คำอธิบายนั้นขึ้นกับสภาพแวดล้อมและใช้เหมารวมทุกเครื่องหรือ sandbox ไม่ได้ หลักฐานรอบ 3 บันทึก Python 3.14.2 พร้อม pytest, hypothesis และ psycopg และผลรันจริง แต่ไม่ได้พิสูจน์ว่าสาเหตุที่ session ก่อนรัน Python ไม่ได้คืออะไร
 
@@ -185,12 +187,12 @@ MONOLITH ใช้ LINE เป็นช่องทางหลักติด�
 | P0-3 | **แถวกลุ่มบันทึกผลได้:** LEFT JOIN + ดึง vertical/audit จาก `line_groups` เมื่อ `conversation_id` เป็น NULL | แถว group → recordResult สำเร็จ + audit ครบ | ✅ มี implementation + หลักฐาน (0193 + fallback 0196) |
 | P0-4 | **Transition guard:** บันทึกผลได้เฉพาะแถวที่ยัง `pending`; แถวจบแล้ว → `recorded=false` no-op | บันทึกซ้ำ / flip `sent`→`failed` → ถูกปฏิเสธ, audit ไม่ซ้ำ | ✅ มี implementation + หลักฐาน (0193 + fencing 0194) |
 | P0-5 | **LINE-level dedupe:** ใส่ `X-Line-Retry-Key` = outbound id ในการ push | Phase A (ฝั่งเรา): ทุก push มี header = outbound id, reply ไม่มี; ตอบ 409 ที่มี `x-line-accepted-request-id` → ถือว่าส่งแล้ว ไม่ retry; 409 ที่ไม่มี header นี้ → permanent · Phase C (ฝั่ง LINE): gate G-C1 ใน §9.2 | ✅ ฝั่งเรามีหลักฐาน unit test (`senderRetryKey.unit.test.ts`, `senderFailureClassification.unit.test.ts:84`) · ฝั่ง LINE ย้ายเป็น gate G-C1 ไม่ใช่เกณฑ์ปิด Phase A |
-| P0-6 | **Retry จำกัดครั้งสำหรับความล้มเหลวชั่วคราว** (แนว claim v3 ของ 0084) + dead-letter | LINE ตอบ 5xx → retry ตาม backoff; เกินเพดาน → `failed` พร้อมเหตุผล | 🟡 มี retry และการจัดการเหตุผลแล้ว (0194–0197); pgTAP 107/107 ผ่าน; รอตรวจรับ P0-11 ข้ามค่าย |
+| P0-6 | **Retry จำกัดครั้งสำหรับความล้มเหลวชั่วคราว** (แนว claim v3 ของ 0084) + dead-letter | LINE ตอบ 5xx → retry ตาม backoff; เกินเพดาน → `failed` พร้อมเหตุผล | ✅ มี retry และการจัดการเหตุผลแล้ว (0194–0197); pgTAP 107/107 ผ่าน; P0-11 ผ่านการตรวจรับข้ามค่ายที่ 00651a6cd แล้ว |
 | P0-7 | **ตัดสิน autonomy gate (§8 ข้อ 3) แล้วทำตามมติ:** wire ให้ live หรือลบ + แก้ `tasks.md:157` | ไม่เหลือโค้ดที่อ้างว่าคุมแต่ไม่ได้คุมจริง | ⏸ รอมติข้อ 3 |
 | P0-8 | **มติ cron + consent (§8 ข้อ 1, 2, 4) บันทึกเป็นลายลักษณ์อักษร** ก่อนเปิดส่งจริง | runbook ระบุ cron ที่ต้องมี; มติ consent ลงเอกสาร | ⏸ รอมติข้อ 1, 2, 4 |
 | P0-9 | **Handler ที่ล้มต้องไม่นับเป็น processed (B8):** `handler_error` — เหตุการณ์ที่ handler ล้มต้องมี retry state ของเราเอง (แถว retry + sweep แบบ claim v3 ของ 0084) — ห้ามพึ่ง LINE redelivery เพราะ LINE ไม่รับประกัน — ไม่นับ processed และไม่ทำให้แถวที่ล้มโดน dedupe | จำลอง handler ล้ม → event เข้าคิว retry ภายในระบบและถูกประมวลผลซ้ำจนสำเร็จหรือครบเพดาน → dead-letter + audit; ไม่มี false success | 🔴 ยังไม่ได้สร้าง — อาจทับซ้อนกับ `0175` ที่ line-trust จองไว้ รอมติข้อ 7 |
 | P0-10 | **ปิดสิทธิ์เขียนตรงของ role ฝั่ง client (B10):** revoke INSERT, UPDATE, DELETE และ TRUNCATE บน 8 ตาราง `line_oa_*` จาก `anon`, `authenticated` และ `PUBLIC` และแยกพิจารณา `service_role` — คง SELECT ไว้ | ดูข้อเสนอและเกณฑ์ใน §9.1 ขั้นที่ 1b | ⏸ เสนอแล้ว รออนุมัติ |
-| P0-11 | **ความล้มเหลวต้องมีเหตุผลที่ไม่ว่าง (B11):** แทนค่าที่มีแต่ whitespace ตามนิยาม Python ด้วย placeholder เดิม | property เดิมผ่าน; pgTAP เพิ่ม 37 กรณีครอบคลุม whitespace 29 ตัว ค่าผสม ข้อความที่มีความหมาย และการ scrub token | 🟡 มี implementation ใน 0197; รอตรวจรับอิสระ |
+| P0-11 | **ความล้มเหลวต้องมีเหตุผลที่ไม่ว่าง (B11):** แทนค่าที่มีแต่ whitespace ตามนิยาม Python ด้วย placeholder เดิม | property เดิมผ่าน; pgTAP เพิ่ม 37 กรณีครอบคลุม whitespace 29 ตัว ค่าผสม ข้อความที่มีความหมาย และการ scrub token | ✅ มี implementation ใน 0197; ผ่านการตรวจรับข้ามค่ายที่ 00651a6cd แล้ว |
 
 ### P1 — ควรมีเร็ว ๆ นี้
 
@@ -261,7 +263,7 @@ MONOLITH ใช้ LINE เป็นช่องทางหลักติด�
 
 ## 9. ลำดับงาน (Phasing)
 
-1. **Phase A — 🟡 ยังไม่ปิด:** `EVIDENCE_INCOMPLETE`; P0-9 และ P0-10 ยังไม่ได้สร้าง P0-11 รอตรวจรับอิสระ Python ที่จำเป็นยังล้มเรื่องสิทธิ์ 8 ข้อ และยังไม่มีหลักฐาน CI (§9.1)
+1. **Phase A — 🟡 ยังไม่ปิด:** `EVIDENCE_INCOMPLETE`; P0-9 และ P0-10 ยังไม่ได้สร้าง P0-11 ผ่านการตรวจรับที่ 00651a6cd แล้ว Python ที่จำเป็นยังล้มเรื่องสิทธิ์ 8 ข้อ และยังไม่มีหลักฐาน CI (§9.1)
 2. **Phase B (หลังมติข้อ 3):** P0-7 — wire หรือลบ autonomy gate + แก้ spec ให้ตรง
 3. **Phase C (หลังมติข้อ 1, 2, 4 และหลังปิด Phase A):** push + deploy งาน Phase A, ผ่าน gate ใน §9.2, ตั้ง cron จริง, เพิ่ม consent gate และ human-approval ถ้ามีมติ → เปิดส่งลูกค้า
 4. **Phase D (หลังมติข้อ 5, 6):** เก็บกวาด subsystem ที่ตาย + admin UI
@@ -287,7 +289,7 @@ MONOLITH ใช้ LINE เป็นช่องทางหลักติด�
 - **Python suites ที่จำเป็น:** ทุกไฟล์ใน `tests/line-oa-commerce/py/` ที่อ้างถึง `rpc_record_line_send_result`, `rpc_claim_line_outbound_batch` หรือ `line_oa_outbound_messages` — ตรวจ 30 ก.ย. 2026 ได้ 12 ไฟล์: `test_access_control_config_smoke.py`, `test_ai_action_audit_property.py`, `test_failure_handling_property.py`, `test_idempotent_processing_property.py`, `test_outbound_status_recording_property.py`, `test_reply_push_fallback_property.py`, `test_rls_read_scoping_property.py`, `test_schema_structure_smoke.py`, `test_secret_non_exposure_property.py`, `test_signature_verification_property.py`, `test_strict_consistency_property.py`, `test_unauthorized_mutation_denial_property.py`
 - **เกณฑ์รับงาน:** ทั้ง 12 ไฟล์ต้องรันจริงและผ่าน — ถ้า suite ที่จำเป็นถูก skip ด้วยเหตุผลใดก็ตาม (รวมเหตุผลด้านสภาพแวดล้อม) ให้บันทึกเหตุผลได้ แต่ไม่นับว่าผ่าน สถานะหลักฐานคงเป็น `EVIDENCE_INCOMPLETE` และขั้นที่ 5 ปิดไม่ได้
 
-#### ขั้นที่ 1b — ปิด B10 และ B11 (P0-10 ยังเป็นข้อเสนอ; P0-11 สร้างแล้ว รอตรวจรับ)
+#### ขั้นที่ 1b — ปิด B10 และ B11 (P0-10 ยังเป็นข้อเสนอ; P0-11 ผ่านการตรวจรับแล้ว)
 
 **B10 / P0-10 — ผลวิเคราะห์ผลกระทบแบบอ่านอย่างเดียว (30 ก.ย. 2026, อ่าน source ใน repo เท่านั้น ไม่ query stack ที่แชร์ในรอบตรวจนี้):**
 
@@ -301,9 +303,9 @@ MONOLITH ใช้ LINE เป็นช่องทางหลักติด�
 
 **ข้อเสนอ migration:** `0198_line_oa_revoke_client_write_grants.sql` จะ revoke สิทธิ์เขียนที่ระบุจาก PUBLIC และ `anon`/`authenticated` ที่มีอยู่ ส่วน `service_role` รวมได้หลังตรวจผลกระทบและอนุมัติแยก คง SELECT เดิมไว้ ทั้งหมดเป็นข้อเสนอเท่านั้น ข้อเสนอ P0-10 นี้ยังไม่สร้างหรือ apply migration
 
-**เกณฑ์รับงาน P0-10:** ใช้ผลล้มการตรวจ grant ทั้ง 8 ตารางเป็นหลักฐาน RED หลังอนุมัติต้องพิสูจน์ว่าทุก role ในขอบเขตถูกปฏิเสธ INSERT/UPDATE/DELETE/TRUNCATE บนทั้ง 8 ตาราง รวม grant ที่สืบทอดและจาก PUBLIC ใช้ fixture ที่ถูกต้องและยืนยัน permission denial (42501) ไม่ใช่การล้มเพราะ constraint ตรวจว่า service role ยัง SELECT 3 ตารางของ sender และเรียก claim/record RPC ได้ รัน pgTAP 70 assertion เดิม, Python ที่จำเป็นทั้ง 12 ไฟล์ และ claim race บน schema ชั่วคราวที่สร้างใหม่ พร้อมหลักฐานชุดใหม่ ไม่มีเทสต์ที่จำเป็นล้มหรือ skip และต้องผ่านรีวิวข้ามค่าย P0-11 สร้างแล้วแต่ยังรอตรวจรับอิสระ
+**เกณฑ์รับงาน P0-10:** ใช้ผลล้มการตรวจ grant ทั้ง 8 ตารางเป็นหลักฐาน RED หลังอนุมัติต้องพิสูจน์ว่าทุก role ในขอบเขตถูกปฏิเสธ INSERT/UPDATE/DELETE/TRUNCATE บนทั้ง 8 ตาราง รวม grant ที่สืบทอดและจาก PUBLIC ใช้ fixture ที่ถูกต้องและยืนยัน permission denial (42501) ไม่ใช่การล้มเพราะ constraint ตรวจว่า service role ยัง SELECT 3 ตารางของ sender และเรียก claim/record RPC ได้ รัน pgTAP 70 assertion เดิม, Python ที่จำเป็นทั้ง 12 ไฟล์ และ claim race บน schema ชั่วคราวที่สร้างใหม่ พร้อมหลักฐานชุดใหม่ ไม่มีเทสต์ที่จำเป็นล้มหรือ skip และต้องผ่านรีวิวข้ามค่าย P0-11 สร้างแล้วและผ่านการตรวจรับข้ามค่ายที่ 00651a6cd
 
-**การสร้าง B11 / P0-11:** เจ้าของอนุมัติให้ session นี้สร้าง 0197 ฟังก์ชันตัด whitespace 29 ตัวให้ตรงกับ `str.strip()` ของ Python 3.14.2 ด้วยชุด Unicode ชัดเจน รวม U+00A0 และ U+3000 คง signature, ACL, guard, fencing, retry, เวลา และการ scrub token เดิม Python assertion เดิมผ่าน โดยแก้เพียงคอมเมนต์เรื่อง btrim ที่ผิด 70 pgTAP เดิมและ 37 กรณีใหม่ผ่านครบ ยังต้องตรวจรับข้ามค่าย และไม่ได้รับอนุมัติ deploy หรือ push
+**การสร้าง B11 / P0-11:** เจ้าของอนุมัติให้ session นี้สร้าง 0197 ฟังก์ชันตัด whitespace 29 ตัวให้ตรงกับ `str.strip()` ของ Python 3.14.2 ด้วยชุด Unicode ชัดเจน รวม U+00A0 และ U+3000 คง signature, ACL, guard, fencing, retry, เวลา และการ scrub token เดิม Python assertion เดิมผ่าน โดยแก้เพียงคอมเมนต์เรื่อง btrim ที่ผิด 70 pgTAP เดิมและ 37 กรณีใหม่ผ่านครบ ผ่านการตรวจรับข้ามค่ายที่ 00651a6cd แล้ว และไม่ได้รับอนุมัติ deploy หรือ push
 
 #### ขั้นที่ 2 — ตัดสินแผนรวม branch (§8 ข้อ 7)
 

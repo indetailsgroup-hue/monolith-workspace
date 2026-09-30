@@ -2,7 +2,7 @@
 
 > **Language:** English · Thai edition: `docs/PRD-LINE-OA.th.md` · HTML: `docs/PRD-LINE-OA.en.html` / `docs/PRD-LINE-OA.th.html`
 > **Edition:** 1.7 · 30 September 2026 (1.6, 1.5, 1.4, 1.3 and 1.2 = 30 Sep 2026 · 1.1 = 1 Aug 2026 · 1.0 = 26 Jul 2026)
-> **What changed in 1.7:** owner-approved P0-11 implemented in 0197 with Python-compatible Unicode whitespace; fresh RED/GREEN evidence; Python now 64 passed / 8 failed / 0 skipped, with only B10 remaining. P0-10 remains unapproved and its proposed migration moves to 0198. Independent cross-vendor acceptance of P0-11 is pending.
+> **What changed in 1.7:** owner-approved P0-11 implemented in 0197 with Python-compatible Unicode whitespace; fresh RED/GREEN evidence; Python now 64 passed / 8 failed / 0 skipped, with only B10 remaining. P0-10 remains unapproved and its proposed migration moves to 0198. P0-11 was accepted by the independent cross-vendor reviewer at commit 00651a6cd (acceptance report supplied by the owner).
 > **Document status:** awaiting the owner's (Dave's) decisions on the open questions in §8 — no step proposed in §9 enables cron or sends messages to real customers
 > **Writing rule:** every row separates "actually working / code present but not wired / spec only" and cites file:line, and separates evidence that is "reproducible (raw output in the repo)" from evidence that is "reported (no raw output in the repo)"
 > **Truth note:** older documents (`docs/LINE-Architecture-System-Complete.md:41`, `docs/PRD.md:514`) claim "LINE OA Commerce ✅ 20/20", which is overstated for the live path — this document is the more truthful status record
@@ -11,9 +11,9 @@
 
 ## 0. Implementation status (edition 1.7)
 
-**The earlier P0-1 to P0-6 implementation passed cross-vendor review; this P0-11 change still awaits independent acceptance — Phase A is not closed**
+**The earlier P0-1 to P0-6 implementation passed cross-vendor review; P0-11 at 00651a6cd has also passed independent cross-vendor acceptance — Phase A is not closed**
 
-**Phase A evidence status:** `EVIDENCE_INCOMPLETE` — required Python tests still have 8 B10 failures; CI and the remaining §9.1 gates are outstanding. P0-11 has local evidence but independent acceptance is pending.
+**Phase A evidence status:** `EVIDENCE_INCOMPLETE` — required Python tests still have 8 B10 failures; CI and the remaining §9.1 gates are outstanding. P0-11 has local evidence and cross-vendor acceptance at 00651a6cd; the reviewer rerun remains reported evidence.
 
 - **Branch:** `codex/repair-intelligence-phase0-trust` · accepted commit: `46a203a6` (1 Aug 2026) · not pushed and not deployed
 - **Migrations:** `0193_line_outbound_claim_and_record.sql`, `0194_line_outbound_retry_and_claim_fencing.sql`, `0195_line_outbound_timezone_safe_backoff.sql`, `0196_line_outbound_timezone_safe_sent_at.sql` plus changes to `supabase/functions/line-outbound-sender/index.ts`
@@ -46,6 +46,8 @@
 
 **P0-11 evidence (30 September 2026):** `docs/governance/evidence/line-p011-red-attempt4-2026-09-30/` proves RED: original 70 pass, 31 of 37 new checks fail, unchanged failure property fails. `docs/governance/evidence/line-p011-green-2026-09-30/` proves GREEN: 192 migrations from zero, pgTAP 107/107, claim race 10+10 with zero overlap, Python 64 passed / 8 B10 failures / 0 skipped. Both runner verification gates exit 0; pytest exits 1 as recorded. The tested working tree is identified by base HEAD plus source hashes/patch, not HEAD alone. Generated-credential scan passes. Listed pre/post counters match after excluding capture time; owned containers/network are removed. Three earlier startup attempts stopped before migrations/tests and are retained as incomplete startup records. Dedicated bridge, loopback-only DB port and cron job execution disabled; no shared stack or live credentials. The 0197 addition postdates the SHA-bound comparison in §8.1.
 
+**Cross-vendor acceptance — reported evidence (30 September 2026):** the owner supplied the independent reviewer’s ACCEPT decision for P0-11/B11 at commit `00651a6cd`. The reviewer reports a clean-tree rerun on an ephemeral stack: migrations 192/192, pgTAP 107/107, claim race 10+10 with zero overlap, Python 64 passed / 8 P0-10 failures / 0 skipped, verification passed and containers removed. Raw rerun files remain in the reviewer’s external scratchpad and have not been independently inspected or imported in this documentation update. Reported hash prefixes: pgTAP `9f5870b5…`, pytest `7362d613…`, verifier `8c4b8f8d…`; these are identifiers, not full checksums that can verify files. Source-byte qualification remains as recorded in GREEN `12-source-verification.txt`: 20 inputs match Git blobs byte-for-byte; 207 differ only by CRLF/LF. Acceptance closes B11/P0-11 and restores P0-6’s accepted status; it does not close Phase A, approve P0-10, or authorize push/deploy.
+
 **Why Phase A is not closed:**
 
 - **P0-9 (B8) has not been built** — and it may overlap `0175` unified ingress planned by branch `codex/line-trust-wave1-main` (still a reservation, no code), so ownership must be decided first (§8 question 7)
@@ -64,7 +66,7 @@
 | B8 `handler_error` counted as success | 🔴 not fixed — P0-9 has not been built; may overlap line-trust's reserved `0175` |
 | B9 `line-login` without state/nonce | 🔴 not fixed — in P1; may overlap line-trust's reserved `0176` |
 | B10 client roles hold write and TRUNCATE privileges on LINE tables | 🔴 not fixed — P0-10 proposed in §9.1 step 1b, awaiting approval |
-| B11 failures recorded with a whitespace-only error detail | 🟡 implemented in 0197; local RED/GREEN passes; independent cross-vendor acceptance pending |
+| B11 failures recorded with a whitespace-only error detail | ✅ implemented in 0197; local RED/GREEN passes; cross-vendor acceptance passed at 00651a6cd |
 
 **Correction of earlier information:** earlier editions attributed the missing Python runs to an unavailable interpreter. That explanation was environment-specific and cannot describe every host or sandbox. The attempt-3 context records Python 3.14.2 with pytest, hypothesis and psycopg and actual suite execution; it does not establish why the earlier session could not run Python.
 
@@ -185,12 +187,12 @@ MONOLITH uses LINE as its main channel to customers and field technicians (Thai 
 | P0-3 | **Group rows can record results:** LEFT JOIN + take vertical/audit data from `line_groups` when `conversation_id` is NULL | A group row → recordResult succeeds with a complete audit | ✅ implemented + evidence (0193 + 0196 fallback) |
 | P0-4 | **Transition guard:** results can be recorded only for rows still `pending`; finished rows → `recorded=false` no-op | Duplicate recording / a `sent`→`failed` flip → rejected, no duplicate audit | ✅ implemented + evidence (0193 + 0194 fencing) |
 | P0-5 | **LINE-level dedupe:** set `X-Line-Retry-Key` = outbound id on push | Phase A (our side): every push carries the header = outbound id, reply does not; a 409 carrying `x-line-accepted-request-id` → treated as sent, not retried; a 409 without that header → permanent · Phase C (LINE side): gate G-C1 in §9.2 | ✅ our side has unit-test evidence (`senderRetryKey.unit.test.ts`, `senderFailureClassification.unit.test.ts:84`) · the LINE side moved to gate G-C1, not a Phase A closure criterion |
-| P0-6 | **Bounded retry for transient failures** (following the 0084 claim v3 pattern) + dead-letter | LINE answers 5xx → retried with backoff; over the bound → `failed` with a reason | 🟡 retry and readable-detail implementation (0194–0197); 107/107 pgTAP passes; P0-11 independent acceptance pending |
+| P0-6 | **Bounded retry for transient failures** (following the 0084 claim v3 pattern) + dead-letter | LINE answers 5xx → retried with backoff; over the bound → `failed` with a reason | ✅ retry and readable-detail implementation (0194–0197); 107/107 pgTAP passes; P0-11 cross-vendor acceptance passed at 00651a6cd |
 | P0-7 | **Decide on the autonomy gate (§8 question 3) and act on it:** wire it live or remove it + correct `tasks.md:157` | No code left that claims to govern but does not | ⏸ awaiting decision 3 |
 | P0-8 | **Written decisions on cron + consent (§8 questions 1, 2, 4)** before switching on real sending | The runbook lists the required crons; the consent decision is documented | ⏸ awaiting decisions 1, 2, 4 |
 | P0-9 | **A failed handler must not count as processed (B8):** for `handler_error`, events whose handler failed need our own retry state (retry rows + a sweep like the 0084 claim v3) — never rely on LINE redelivery, which LINE does not guarantee — not counted as processed and never dropped by dedupe | Simulate a handler failure → the event enters an internal retry queue and is reprocessed until success or the bound → dead-letter + audit; no false success | 🔴 not built — may overlap line-trust's reserved `0175`, awaiting decision 7 |
 | P0-10 | **Close direct-write grants (B10):** propose revoking INSERT, UPDATE, DELETE and TRUNCATE on the eight `line_oa_*` tables from `anon`, `authenticated` and `PUBLIC`; assess `service_role` separately; preserve SELECT | Proposal and acceptance criteria in §9.1 step 1b | ⏸ proposed, awaiting approval |
-| P0-11 | **Failures need a nonblank reason (B11):** use the existing placeholder for Python-whitespace-only details | Unchanged failure property passes; 29 whitespace codepoints, mixed input, readable text and token scrubbing covered by 37 added pgTAP cases | 🟡 implemented in 0197; independent acceptance pending |
+| P0-11 | **Failures need a nonblank reason (B11):** use the existing placeholder for Python-whitespace-only details | Unchanged failure property passes; 29 whitespace codepoints, mixed input, readable text and token scrubbing covered by 37 added pgTAP cases | ✅ implemented in 0197; cross-vendor acceptance passed at 00651a6cd |
 
 ### P1 — should follow soon
 
@@ -261,7 +263,7 @@ MONOLITH uses LINE as its main channel to customers and field technicians (Thai 
 
 ## 9. Phasing
 
-1. **Phase A — 🟡 not closed:** `EVIDENCE_INCOMPLETE`; P0-9 and P0-10 remain unimplemented, P0-11 awaits independent acceptance, eight required Python grant checks fail, and CI evidence is outstanding (§9.1).
+1. **Phase A — 🟡 not closed:** `EVIDENCE_INCOMPLETE`; P0-9 and P0-10 remain unimplemented, P0-11 is accepted at 00651a6cd, eight required Python grant checks fail, and CI evidence is outstanding (§9.1).
 2. **Phase B (after decision 3):** P0-7 — wire or remove the autonomy gate + correct the spec
 3. **Phase C (after decisions 1, 2, 4 and after Phase A closes):** push + deploy the Phase A work, pass the gates in §9.2, register the real cron, add the consent gate and human approval if decided → switch on customer messaging
 4. **Phase D (after decisions 5, 6):** clean up the dead subsystems + admin UI
@@ -287,7 +289,7 @@ MONOLITH uses LINE as its main channel to customers and field technicians (Thai 
 - **Required Python suites:** every file in `tests/line-oa-commerce/py/` that references `rpc_record_line_send_result`, `rpc_claim_line_outbound_batch` or `line_oa_outbound_messages` — 12 files as checked on 30 Sep 2026: `test_access_control_config_smoke.py`, `test_ai_action_audit_property.py`, `test_failure_handling_property.py`, `test_idempotent_processing_property.py`, `test_outbound_status_recording_property.py`, `test_reply_push_fallback_property.py`, `test_rls_read_scoping_property.py`, `test_schema_structure_smoke.py`, `test_secret_non_exposure_property.py`, `test_signature_verification_property.py`, `test_strict_consistency_property.py`, `test_unauthorized_mutation_denial_property.py`
 - **Acceptance criteria:** all 12 files must actually run and pass — if a required suite is skipped for any reason (including environmental reasons), the reason may be recorded but it does not count as passing; the evidence status stays `EVIDENCE_INCOMPLETE` and step 5 cannot close
 
-#### Step 1b — close B10 and B11 (P0-10 proposed; P0-11 implemented, review pending)
+#### Step 1b — close B10 and B11 (P0-10 proposed; P0-11 accepted)
 
 **B10 / P0-10 — read-only impact assessment (30 Sep 2026, repository source only; no shared-stack query in this review):**
 
@@ -301,9 +303,9 @@ MONOLITH uses LINE as its main channel to customers and field technicians (Thai 
 
 **Migration proposal:** `0198_line_oa_revoke_client_write_grants.sql` would revoke the stated writes from PUBLIC and existing `anon`/`authenticated` roles, with `service_role` included only after its separate impact review and approval. Preserve SELECT. This is a proposal only; no P0-10 SQL migration is created or applied.
 
-**P0-10 acceptance criteria:** keep the eight failing grant checks as RED evidence. After approval, verify effective denial of INSERT/UPDATE/DELETE/TRUNCATE across all eight tables for each in-scope role, including inherited/PUBLIC grants. Use valid fixtures and prove permission denial (42501), not accidental constraint failure. Confirm service-role SELECT on the three sender tables and claim/record RPCs still work. Re-run the existing 70 pgTAP assertions, all 12 required Python files and claim race on a fresh ephemeral schema with new evidence; no required test may fail or skip. Cross-vendor review is required. P0-11 is now implemented; it still requires independent acceptance.
+**P0-10 acceptance criteria:** keep the eight failing grant checks as RED evidence. After approval, verify effective denial of INSERT/UPDATE/DELETE/TRUNCATE across all eight tables for each in-scope role, including inherited/PUBLIC grants. Use valid fixtures and prove permission denial (42501), not accidental constraint failure. Confirm service-role SELECT on the three sender tables and claim/record RPCs still work. Re-run the existing 70 pgTAP assertions, all 12 required Python files and claim race on a fresh ephemeral schema with new evidence; no required test may fail or skip. Cross-vendor review is required. P0-11 is implemented and independently accepted at 00651a6cd.
 
-**B11 / P0-11 implementation:** owner approved this session to build 0197. The recorder trims the 29 characters matching Python 3.14.2 `str.strip()` using an explicit Unicode set, including U+00A0 and U+3000. Signature, ACLs, guards, fencing, retry, timestamps and token scrub are unchanged. The existing Python assertion passes; only its inaccurate btrim comment changed. The original 70 pgTAP checks plus 37 regressions pass. Independent cross-vendor acceptance remains required; no deployment or push is authorized.
+**B11 / P0-11 implementation:** owner approved this session to build 0197. The recorder trims the 29 characters matching Python 3.14.2 `str.strip()` using an explicit Unicode set, including U+00A0 and U+3000. Signature, ACLs, guards, fencing, retry, timestamps and token scrub are unchanged. The existing Python assertion passes; only its inaccurate btrim comment changed. The original 70 pgTAP checks plus 37 regressions pass. Independent cross-vendor acceptance passed at 00651a6cd; no deployment or push is authorized.
 
 #### Step 2 — decide the branch integration plan (§8 question 7)
 
