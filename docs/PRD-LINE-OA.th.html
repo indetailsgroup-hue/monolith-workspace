@@ -9,9 +9,9 @@
 <body>
 <main>
 <h1>PRD — ระบบสื่อสาร LINE OA ทั้งหมด (MONOLITH Repair Intelligence)</h1>
-<blockquote><p><strong>ภาษา:</strong> ไทย · ฉบับภาษาอังกฤษ: <code>docs/PRD-LINE-OA.en.md</code> · HTML: <code>docs/PRD-LINE-OA.th.html</code> / <code>docs/PRD-LINE-OA.en.html</code></p><p><strong>ฉบับ:</strong> 1.4 · 30 กันยายน 2026 (1.3 และ 1.2 = 30 ก.ย. 2026 · 1.1 = 1 ส.ค. 2026 · 1.0 = 26 ก.ค. 2026)</p><p><strong>สิ่งที่เปลี่ยนในฉบับ 1.4:</strong> คืนข้อห้ามด้านระบบ manufacturing OS แยกจากข้อห้ามด้าน worktree; เกณฑ์ปิด Phase A ไม่ยอมให้ suite ที่จำเป็นถูก skip และกำหนดสถานะหลักฐาน <code>EVIDENCE_INCOMPLETE</code>; ตัดสินหลักฐานของ P0-5 ให้ชัด (ฝั่งเราใน Phase A, ฝั่ง LINE เป็น gate ก่อนเปิดส่งจริง); แนบ raw evidence ที่ตรวจซ้ำได้; แยก &quot;ซ้ำแล้วจริง&quot; ออกจาก &quot;อาจทับซ้อนตามแผน&quot;; ผูกตัวเลขของ git กับ SHA ที่ตรวจ</p><p><strong>สถานะเอกสาร:</strong> รอเจ้าของ (คุณเดฟ) ตัดสินคำถามเปิดใน §8 — ทุกขั้นที่เสนอใน §9 ไม่เปิด cron และไม่ส่งข้อความหาลูกค้าจริง</p><p><strong>หลักการเขียน:</strong> ทุกแถวแยก &quot;ทำงานจริง / มีโค้ดแต่ไม่ต่อสาย / อยู่แค่ spec&quot; พร้อมอ้าง file:line และแยกหลักฐาน &quot;ตรวจซ้ำได้ (มี raw output ใน repo)&quot; ออกจาก &quot;รายงานไว้ (ไม่มี raw output ใน repo)&quot;</p><p><strong>หมายเหตุความจริง:</strong> เอกสารเดิม (<code>docs/LINE-Architecture-System-Complete.md:41</code>, <code>docs/PRD.md:514</code>) ระบุ &quot;LINE OA Commerce ✅ 20/20&quot; ซึ่งเกินจริงสำหรับ live path — เอกสารนี้คือบันทึกสถานะที่ตรงความจริงกว่า</p></blockquote>
+<blockquote><p><strong>ภาษา:</strong> ไทย · ฉบับภาษาอังกฤษ: <code>docs/PRD-LINE-OA.en.md</code> · HTML: <code>docs/PRD-LINE-OA.th.html</code> / <code>docs/PRD-LINE-OA.en.html</code></p><p><strong>ฉบับ:</strong> 1.5 · 30 กันยายน 2026 (1.4, 1.3 และ 1.2 = 30 ก.ย. 2026 · 1.1 = 1 ส.ค. 2026 · 1.0 = 26 ก.ค. 2026)</p><p><strong>สิ่งที่เปลี่ยนในฉบับ 1.5:</strong> จำกัดคำกล่าวเรื่อง &quot;ไม่มีสิ่งค้าง&quot; ให้อยู่ในขอบเขต 7 ค่าที่ตรวจจริง; ระบุข้อจำกัดด้านการรันซ้ำของชุดหลักฐาน 2026-09-30; เพิ่มเกณฑ์ baseline ของฐานข้อมูลและ path แบบ relative สำหรับชุดหลักฐานถัดไป (ฉบับ 1.4 แยกข้อห้าม manufacturing OS กับ worktree, กำหนด <code>EVIDENCE_INCOMPLETE</code>, ตัดสินหลักฐาน P0-5 และแนบ raw evidence)</p><p><strong>สถานะเอกสาร:</strong> รอเจ้าของ (คุณเดฟ) ตัดสินคำถามเปิดใน §8 — ทุกขั้นที่เสนอใน §9 ไม่เปิด cron และไม่ส่งข้อความหาลูกค้าจริง</p><p><strong>หลักการเขียน:</strong> ทุกแถวแยก &quot;ทำงานจริง / มีโค้ดแต่ไม่ต่อสาย / อยู่แค่ spec&quot; พร้อมอ้าง file:line และแยกหลักฐาน &quot;ตรวจซ้ำได้ (มี raw output ใน repo)&quot; ออกจาก &quot;รายงานไว้ (ไม่มี raw output ใน repo)&quot;</p><p><strong>หมายเหตุความจริง:</strong> เอกสารเดิม (<code>docs/LINE-Architecture-System-Complete.md:41</code>, <code>docs/PRD.md:514</code>) ระบุ &quot;LINE OA Commerce ✅ 20/20&quot; ซึ่งเกินจริงสำหรับ live path — เอกสารนี้คือบันทึกสถานะที่ตรงความจริงกว่า</p></blockquote>
 <hr>
-<h2>0. สถานะการดำเนินการ (ฉบับ 1.4)</h2>
+<h2>0. สถานะการดำเนินการ (ฉบับ 1.5)</h2>
 <p><strong>P0-1 ถึง P0-6 มี implementation แล้วบน branch และผ่านรีวิวข้ามค่าย — แต่ Phase A ยังไม่ปิด</strong></p>
 <p><strong>สถานะหลักฐาน Phase A:</strong> <code>EVIDENCE_INCOMPLETE</code> — จะเปลี่ยนได้ก็ต่อเมื่อผ่านเกณฑ์ใน §9.1 ครบ โดยไม่มี suite ที่จำเป็นถูก skip</p>
 <ul><li><strong>Branch:</strong> <code>codex/repair-intelligence-phase0-trust</code> · commit ที่ผ่านรีวิว: <code>46a203a6</code> (1 ส.ค. 2026) · ยังไม่ push และยังไม่ deploy</li><li><strong>Migrations:</strong> <code>0193_line_outbound_claim_and_record.sql</code>, <code>0194_line_outbound_retry_and_claim_fencing.sql</code>, <code>0195_line_outbound_timezone_safe_backoff.sql</code>, <code>0196_line_outbound_timezone_safe_sent_at.sql</code> + การแก้ <code>supabase/functions/line-outbound-sender/index.ts</code></li><li><strong>ผลต่อ environment จริง:</strong> เพราะยังไม่ deploy ทุก environment ที่รันโค้ดเดิมยังมีบั๊ก B1–B6 อยู่ครบ</li></ul>
@@ -28,8 +28,8 @@
 </tr>
 <tr>
 <td><code>01-precheck.txt</code> / <code>04-postcheck.txt</code></td>
-<td>snapshot ของ stack ที่แชร์ก่อนและหลังรัน (คอลัมน์ A1–A4, function ใหม่, extension pgTAP, จำนวนแถวในตาราง LINE)</td>
-<td>เหมือนกันทุก byte (sha256 ตรงกัน) — ไม่มีอะไรค้าง</td>
+<td>ค่าตรวจ 7 รายการก่อนและหลังรัน: จำนวนคอลัมน์ A1–A4, function <code>rpc_claim_line_outbound_batch</code>, <code>rpc_record_line_send_result</code> แบบ 5 argument, extension pgTAP และจำนวนแถวใน 3 ตาราง LINE</td>
+<td>ค่าที่ตรวจทั้ง 7 รายการก่อน–หลังตรงกัน (sha256 ของสองไฟล์ตรงกัน) และผลรันท้ายสุดแสดง ROLLBACK; ไม่พบสิ่งค้างในขอบเขตที่ตรวจ</td>
 </tr>
 <tr>
 <td><code>02-pgtap-wrapper.sql</code> / <code>03-pgtap-output.tap</code></td>
@@ -52,12 +52,13 @@
 <td>ตรวจด้วย <code>sha256sum -c SHA256SUMS</code></td>
 </tr>
 </tbody></table></div>
+<p><strong>ข้อจำกัดของชุดนี้:</strong> ตรวจความครบถ้วนได้ด้วย hash แต่ยังรันซ้ำแบบอิสระไม่ได้ครบ — <code>02-pgtap-wrapper.sql</code> ใช้ absolute path ของเครื่องที่รัน และไม่ได้บันทึก baseline ของ shared stack ก่อนทดสอบ (รายการ migration ที่ apply แล้วและ fingerprint ของ schema); ค่าตรวจก่อน/หลังรันครอบคลุม 7 รายการเท่านั้น ไม่ใช่ snapshot ทั้งฐานข้อมูล — ชุดถัดไปต้องเป็นไปตามเกณฑ์ใน §9.1</p>
 <p><strong>หลักฐานที่รายงานไว้ (ไม่มี raw output ใน repo):</strong> ผลรันของรอบ A1–A4 วันที่ 1 ส.ค. 2026 อยู่ใน ledger ของ builder (<code>artifacts/wA1-ledger.md</code> ถึง <code>artifacts/wA4-ledger.md</code> ซึ่งไม่ได้ track ใน git) และใน commit message · คำตัดสินของรีวิวข้ามค่าย (A1–A3 ปฏิเสธ, A4 <code>SOL VERDICT: ACCEPT PHASE A4</code>) มาจาก thread รีวิวที่ไม่ได้เก็บใน repo</p>
 <p><strong>ทำไม Phase A ยังไม่ปิด:</strong></p>
 <ul><li><strong>P0-9 (B8) ยังไม่ได้สร้าง</strong> — และอาจทับซ้อนกับ <code>0175</code> unified ingress ที่ branch <code>codex/line-trust-wave1-main</code> วางแผนไว้ (ยังเป็นเลขจอง ไม่มีโค้ด) จึงต้องตัดสินเจ้าของงานก่อน (§8 ข้อ 7)</li><li><strong>หลักฐานทดสอบยังค้าง:</strong> เทสต์ claim แข่งกัน 2 client ยังไม่เคยรันจริง · Python property suites ที่จำเป็น 12 ไฟล์ (นิยามใน §9.1) ยังไม่เคยรัน · ยังไม่มีการรัน CI ที่มี suite <code>line_outbound_claim_record</code></li></ul>
 <div class="table-wrap"><table><thead><tr>
 <th>บั๊ก</th>
-<th>สถานะ ณ ฉบับ 1.4</th>
+<th>สถานะ ณ ฉบับ 1.5</th>
 </tr></thead><tbody>
 <tr>
 <td>B1 หยิบคิวไม่มี lock</td>
@@ -259,7 +260,7 @@
 <th>Req</th>
 <th>รายละเอียด</th>
 <th>Acceptance criteria (เทสต์ชน Postgres จริง, RED ก่อน)</th>
-<th>สถานะ (1.4)</th>
+<th>สถานะ (1.5)</th>
 </tr></thead><tbody>
 <tr>
 <td>P0-1</td>
@@ -485,7 +486,7 @@
 <ol><li><strong>Phase A — 🟡 ยังไม่ปิด:</strong> สถานะหลักฐาน <code>EVIDENCE_INCOMPLETE</code> — P0-1 ถึง P0-6 มี implementation และผ่านรีวิวข้ามค่ายแล้ว (§0) แต่ P0-9 ยังไม่ได้สร้าง และหลักฐานทดสอบยังค้าง — ขั้นปิด Phase A ดู §9.1</li><li><strong>Phase B (หลังมติข้อ 3):</strong> P0-7 — wire หรือลบ autonomy gate + แก้ spec ให้ตรง</li><li><strong>Phase C (หลังมติข้อ 1, 2, 4 และหลังปิด Phase A):</strong> push + deploy งาน Phase A, ผ่าน gate ใน §9.2, ตั้ง cron จริง, เพิ่ม consent gate และ human-approval ถ้ามีมติ → เปิดส่งลูกค้า</li><li><strong>Phase D (หลังมติข้อ 5, 6):</strong> เก็บกวาด subsystem ที่ตาย + admin UI</li></ol>
 <p><strong>เงื่อนไขปิดทุก Phase:</strong> แนบผลเทสต์จริง ไม่รับคำกล่าวอ้าง; ห้าม log token; ห้ามอ่อนกฎความปลอดภัยเพื่อให้ผ่าน; ทุก wave ต้องผ่านรีวิวข้ามค่ายก่อนรับ</p>
 <h3>9.1 ขั้นตอนถัดไปที่เสนอเพื่อปิด Phase A (รออนุมัติ)</h3>
-<blockquote><p><strong>ข้อห้ามทุกขั้น:</strong> ไม่เปิด cron ใด ๆ, ไม่ deploy, ไม่ส่งข้อความหาลูกค้าจริง, ไม่ push โดยไม่ได้รับอนุมัติจากเจ้าของ และไม่แก้ manufacturing OS — ฟังก์ชัน retry/sweep ที่สร้างใหม่เรียกได้จากเทสต์หรือด้วยมือเท่านั้นจนถึง Phase C</p><p></p><p><strong>รูปแบบหลักฐานที่รับ:</strong> raw output ใน repo พร้อม SHA ของ commit ที่ทดสอบ, คำสั่งที่ใช้, เวลา UTC, exit code และ snapshot ก่อน/หลังรันเมื่อแตะฐานข้อมูล ตามรูปแบบของชุด <code>docs/governance/evidence/line-phase-a-2026-09-30/</code> — ผลที่ &quot;รายงานไว้&quot; อย่างเดียวไม่นับเป็นหลักฐานปิดงาน</p></blockquote>
+<blockquote><p><strong>ข้อห้ามทุกขั้น:</strong> ไม่เปิด cron ใด ๆ, ไม่ deploy, ไม่ส่งข้อความหาลูกค้าจริง, ไม่ push โดยไม่ได้รับอนุมัติจากเจ้าของ และไม่แก้ manufacturing OS — ฟังก์ชัน retry/sweep ที่สร้างใหม่เรียกได้จากเทสต์หรือด้วยมือเท่านั้นจนถึง Phase C</p><p></p><p><strong>รูปแบบหลักฐานที่รับ:</strong> raw output ใน repo พร้อม SHA ของ commit ที่ทดสอบ, คำสั่งที่ใช้, เวลา UTC, exit code และ <code>SHA256SUMS</code> — ผลที่ &quot;รายงานไว้&quot; อย่างเดียวไม่นับเป็นหลักฐานปิดงาน</p><p></p><p><strong>ต้องรันซ้ำได้โดยอิสระ (เพิ่มจากชุด 2026-09-30):</strong> wrapper และคำสั่งทั้งหมดรันจาก repository root ด้วย path แบบ relative (เช่น <code>\ir</code> ใน psql) โดยไม่มี absolute path ของเครื่องที่รัน; บันทึก baseline ของฐานข้อมูลก่อนทดสอบ คือรายการ migration ที่ apply แล้ว (<code>supabase_migrations.schema_migrations</code>) และ fingerprint ของ schema (sha256 ของ <code>pg_dump --schema-only</code>) หรือสร้างฐานข้อมูลจากศูนย์ด้วย migration chain ของ SHA ที่ทดสอบ; บันทึกค่าตรวจก่อน/หลังรันโดยระบุชัดว่าตรวจอะไรบ้าง และอ้างผลเฉพาะในขอบเขตที่ตรวจ</p></blockquote>
 <h4>ขั้นที่ 1 — ปิดหลักฐานทดสอบที่ค้างของ P0-1 ถึง P0-6 (เริ่มได้ทันที ไม่ขึ้นกับมติ)</h4>
 <ul><li>รัน <code>tests/line-oa-commerce/concurrency/claim-race.mjs</code> บน Postgres ชั่วคราวที่สร้างจากศูนย์ ไม่ใช่ stack ที่แชร์</li><li><strong>เกณฑ์รับงาน:</strong> สอง connection claim แถว pending ชุดเดียวกันพร้อมกัน → แถวที่ซ้ำกัน = 0 และแถวที่ถูก claim รวมกัน = จำนวนแถวทั้งหมด; หลังรันไม่มี object ค้าง</li><li><strong>Python suites ที่จำเป็น:</strong> ทุกไฟล์ใน <code>tests/line-oa-commerce/py/</code> ที่อ้างถึง <code>rpc_record_line_send_result</code>, <code>rpc_claim_line_outbound_batch</code> หรือ <code>line_oa_outbound_messages</code> — ตรวจ 30 ก.ย. 2026 ได้ 12 ไฟล์: <code>test_access_control_config_smoke.py</code>, <code>test_ai_action_audit_property.py</code>, <code>test_failure_handling_property.py</code>, <code>test_idempotent_processing_property.py</code>, <code>test_outbound_status_recording_property.py</code>, <code>test_reply_push_fallback_property.py</code>, <code>test_rls_read_scoping_property.py</code>, <code>test_schema_structure_smoke.py</code>, <code>test_secret_non_exposure_property.py</code>, <code>test_signature_verification_property.py</code>, <code>test_strict_consistency_property.py</code>, <code>test_unauthorized_mutation_denial_property.py</code></li><li><strong>เกณฑ์รับงาน:</strong> ทั้ง 12 ไฟล์ต้องรันจริงและผ่าน — ถ้า suite ที่จำเป็นถูก skip ด้วยเหตุผลใดก็ตาม (รวมเหตุผลด้านสภาพแวดล้อม) ให้บันทึกเหตุผลได้ แต่ไม่นับว่าผ่าน สถานะหลักฐานคงเป็น <code>EVIDENCE_INCOMPLETE</code> และขั้นที่ 5 ปิดไม่ได้</li></ul>
 <h4>ขั้นที่ 2 — ตัดสินแผนรวม branch (§8 ข้อ 7)</h4>

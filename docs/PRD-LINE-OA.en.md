@@ -1,15 +1,15 @@
 # PRD — The Complete LINE OA Communication System (MONOLITH Repair Intelligence)
 
 > **Language:** English · Thai edition: `docs/PRD-LINE-OA.th.md` · HTML: `docs/PRD-LINE-OA.en.html` / `docs/PRD-LINE-OA.th.html`
-> **Edition:** 1.4 · 30 September 2026 (1.3 and 1.2 = 30 Sep 2026 · 1.1 = 1 Aug 2026 · 1.0 = 26 Jul 2026)
-> **What changed in 1.4:** restored the manufacturing OS system restriction as separate from the worktree restriction; Phase A closure no longer lets required suites be skipped and defines the `EVIDENCE_INCOMPLETE` evidence status; resolved how P0-5 is evidenced (our side in Phase A, the LINE side as a gate before real sending); attached reproducible raw evidence; separated "already duplicated" from "may overlap by plan"; bound git figures to the SHAs checked
+> **Edition:** 1.5 · 30 September 2026 (1.4, 1.3 and 1.2 = 30 Sep 2026 · 1.1 = 1 Aug 2026 · 1.0 = 26 Jul 2026)
+> **What changed in 1.5:** limited the "nothing left behind" claim to the 7 values actually checked; stated the re-run limitations of the 2026-09-30 evidence bundle; added database-baseline and relative-path criteria for the next evidence bundle (edition 1.4 separated the manufacturing OS and worktree restrictions, defined `EVIDENCE_INCOMPLETE`, resolved P0-5 evidence and attached raw evidence)
 > **Document status:** awaiting the owner's (Dave's) decisions on the open questions in §8 — no step proposed in §9 enables cron or sends messages to real customers
 > **Writing rule:** every row separates "actually working / code present but not wired / spec only" and cites file:line, and separates evidence that is "reproducible (raw output in the repo)" from evidence that is "reported (no raw output in the repo)"
 > **Truth note:** older documents (`docs/LINE-Architecture-System-Complete.md:41`, `docs/PRD.md:514`) claim "LINE OA Commerce ✅ 20/20", which is overstated for the live path — this document is the more truthful status record
 
 ---
 
-## 0. Implementation status (edition 1.4)
+## 0. Implementation status (edition 1.5)
 
 **P0-1 to P0-6 are implemented on the branch and have passed cross-vendor review — but Phase A is not closed**
 
@@ -24,11 +24,13 @@
 | File | What it records | Result |
 |---|---|---|
 | `00-context.txt` | UTC time, SHA, proof that the code matches `46a203a6`, tool versions, commands used, exit codes | pgTAP exit 0 · vitest exit 0 |
-| `01-precheck.txt` / `04-postcheck.txt` | snapshot of the shared stack before and after the run (A1–A4 columns, new functions, the pgTAP extension, row counts of the LINE tables) | byte-identical (same sha256) — nothing left behind |
+| `01-precheck.txt` / `04-postcheck.txt` | 7 values checked before and after the run: the count of A1–A4 columns, function `rpc_claim_line_outbound_batch`, the 5-argument `rpc_record_line_send_result`, the pgTAP extension, and row counts of 3 LINE tables | all 7 checked values match before and after (both files share one sha256) and the run ends with ROLLBACK; nothing left behind was found within the scope checked |
 | `02-pgtap-wrapper.sql` / `03-pgtap-output.tap` | the rollback wrapper and raw TAP output | 70/70 ok, 0 not ok, ends with ROLLBACK |
 | `05-vitest-output.txt` | raw vitest output | 18 files / 73 tests passed |
 | `06-git-integration-check.txt` | git findings for §8.1, bound to SHAs | see §8.1 |
 | `SHA256SUMS` | hash of every file in the bundle | verify with `sha256sum -c SHA256SUMS` |
+
+**Limitations of this bundle:** its completeness is verifiable by hash, but it cannot yet be independently re-run in full — `02-pgtap-wrapper.sql` uses absolute paths from the machine that ran it, and no baseline of the shared stack was recorded before the test (applied migrations and a schema fingerprint); the before/after checks cover 7 values only, not a whole-database snapshot — the next bundle must meet the §9.1 criteria
 
 **Reported evidence (no raw output in the repo):** the A1–A4 runs of 1 Aug 2026 are in the builder ledgers (`artifacts/wA1-ledger.md` to `artifacts/wA4-ledger.md`, not tracked in git) and in commit messages · the cross-vendor verdicts (A1–A3 rejected, A4 `SOL VERDICT: ACCEPT PHASE A4`) come from review threads not stored in the repo
 
@@ -37,7 +39,7 @@
 - **P0-9 (B8) has not been built** — and it may overlap `0175` unified ingress planned by branch `codex/line-trust-wave1-main` (still a reservation, no code), so ownership must be decided first (§8 question 7)
 - **Test evidence is outstanding:** the two-client claim race test has never actually run · the 12 required Python property suites (defined in §9.1) have never run · no CI run including the `line_outbound_claim_record` suite has happened
 
-| Defect | Status as of edition 1.4 |
+| Defect | Status as of edition 1.5 |
 |---|---|
 | B1 queue pickup without a lock | 🟡 implemented on the branch — the sender calls `rpc_claim_line_outbound_batch` (`index.ts:740-744`), `FOR UPDATE SKIP LOCKED`, timeout-based reclaim, `claim_token` fencing — two-client test evidence missing |
 | B2 service role cannot record results | ✅ implemented on the branch — service context is detected from the SQL role (`current_setting('role')`), not the JWT; user checks are not relaxed |
@@ -156,7 +158,7 @@ MONOLITH uses LINE as its main channel to customers and field technicians (Thai 
 
 ### P0 — required before switching on real customer messaging (fixes B1–B8)
 
-| Req | Description | Acceptance criteria (tests against real Postgres, RED first) | Status (1.4) |
+| Req | Description | Acceptance criteria (tests against real Postgres, RED first) | Status (1.5) |
 |---|---|---|---|
 | P0-1 | **Atomic queue claim:** add `claimed_at/claimed_by` + `rpc_claim_line_outbound_batch` — `UPDATE ... WHERE id IN (SELECT ... FOR UPDATE SKIP LOCKED) RETURNING` (no new enum value, to avoid the `ALTER TYPE` limitation and the impact on status readers) | Two clients claiming at once → no duplicated rows; a claim stuck past the timeout → re-claimable | 🟡 implemented (0193 + sender wiring) — two-client test evidence missing |
 | P0-2 | **Service context can record results:** grant + teach `rpc_record_line_send_result` to recognise the service role as a system actor without relaxing user role checks | Called with the service role → recorded; a user without a role → rejected as before | ✅ implemented + pgTAP evidence (0193) |
@@ -248,7 +250,9 @@ MONOLITH uses LINE as its main channel to customers and field technicians (Thai 
 
 > **Prohibited in every step:** enabling any cron, deploying, sending messages to real customers, pushing without the owner's approval, or changing the manufacturing OS — any new retry/sweep function is callable only from tests or by hand until Phase C
 >
-> **Accepted evidence format:** raw output in the repo with the SHA of the commit tested, the commands used, UTC time, exit codes, and before/after snapshots whenever a database is touched, following the format of bundle `docs/governance/evidence/line-phase-a-2026-09-30/` — results that are only "reported" do not count as closure evidence
+> **Accepted evidence format:** raw output in the repo with the SHA of the commit tested, the commands used, UTC time, exit codes and `SHA256SUMS` — results that are only "reported" do not count as closure evidence
+>
+> **Independently re-runnable (added after the 2026-09-30 bundle):** the wrapper and every command run from the repository root with relative paths (for example `\ir` in psql), with no absolute path from the machine that ran them; record the database baseline before testing — the applied migrations (`supabase_migrations.schema_migrations`) and a schema fingerprint (sha256 of `pg_dump --schema-only`) — or build the database from zero with the migration chain of the SHA under test; record the before/after checks stating exactly what was checked, and claim results only within the scope checked
 
 #### Step 1 — close the outstanding test evidence for P0-1 to P0-6 (can start now, independent of the decisions)
 

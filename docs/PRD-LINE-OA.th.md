@@ -1,15 +1,15 @@
 # PRD — ระบบสื่อสาร LINE OA ทั้งหมด (MONOLITH Repair Intelligence)
 
 > **ภาษา:** ไทย · ฉบับภาษาอังกฤษ: `docs/PRD-LINE-OA.en.md` · HTML: `docs/PRD-LINE-OA.th.html` / `docs/PRD-LINE-OA.en.html`
-> **ฉบับ:** 1.4 · 30 กันยายน 2026 (1.3 และ 1.2 = 30 ก.ย. 2026 · 1.1 = 1 ส.ค. 2026 · 1.0 = 26 ก.ค. 2026)
-> **สิ่งที่เปลี่ยนในฉบับ 1.4:** คืนข้อห้ามด้านระบบ manufacturing OS แยกจากข้อห้ามด้าน worktree; เกณฑ์ปิด Phase A ไม่ยอมให้ suite ที่จำเป็นถูก skip และกำหนดสถานะหลักฐาน `EVIDENCE_INCOMPLETE`; ตัดสินหลักฐานของ P0-5 ให้ชัด (ฝั่งเราใน Phase A, ฝั่ง LINE เป็น gate ก่อนเปิดส่งจริง); แนบ raw evidence ที่ตรวจซ้ำได้; แยก "ซ้ำแล้วจริง" ออกจาก "อาจทับซ้อนตามแผน"; ผูกตัวเลขของ git กับ SHA ที่ตรวจ
+> **ฉบับ:** 1.5 · 30 กันยายน 2026 (1.4, 1.3 และ 1.2 = 30 ก.ย. 2026 · 1.1 = 1 ส.ค. 2026 · 1.0 = 26 ก.ค. 2026)
+> **สิ่งที่เปลี่ยนในฉบับ 1.5:** จำกัดคำกล่าวเรื่อง "ไม่มีสิ่งค้าง" ให้อยู่ในขอบเขต 7 ค่าที่ตรวจจริง; ระบุข้อจำกัดด้านการรันซ้ำของชุดหลักฐาน 2026-09-30; เพิ่มเกณฑ์ baseline ของฐานข้อมูลและ path แบบ relative สำหรับชุดหลักฐานถัดไป (ฉบับ 1.4 แยกข้อห้าม manufacturing OS กับ worktree, กำหนด `EVIDENCE_INCOMPLETE`, ตัดสินหลักฐาน P0-5 และแนบ raw evidence)
 > **สถานะเอกสาร:** รอเจ้าของ (คุณเดฟ) ตัดสินคำถามเปิดใน §8 — ทุกขั้นที่เสนอใน §9 ไม่เปิด cron และไม่ส่งข้อความหาลูกค้าจริง
 > **หลักการเขียน:** ทุกแถวแยก "ทำงานจริง / มีโค้ดแต่ไม่ต่อสาย / อยู่แค่ spec" พร้อมอ้าง file:line และแยกหลักฐาน "ตรวจซ้ำได้ (มี raw output ใน repo)" ออกจาก "รายงานไว้ (ไม่มี raw output ใน repo)"
 > **หมายเหตุความจริง:** เอกสารเดิม (`docs/LINE-Architecture-System-Complete.md:41`, `docs/PRD.md:514`) ระบุ "LINE OA Commerce ✅ 20/20" ซึ่งเกินจริงสำหรับ live path — เอกสารนี้คือบันทึกสถานะที่ตรงความจริงกว่า
 
 ---
 
-## 0. สถานะการดำเนินการ (ฉบับ 1.4)
+## 0. สถานะการดำเนินการ (ฉบับ 1.5)
 
 **P0-1 ถึง P0-6 มี implementation แล้วบน branch และผ่านรีวิวข้ามค่าย — แต่ Phase A ยังไม่ปิด**
 
@@ -24,11 +24,13 @@
 | ไฟล์ | สิ่งที่บันทึก | ผล |
 |---|---|---|
 | `00-context.txt` | เวลา UTC, SHA, การยืนยันว่าโค้ดตรงกับ `46a203a6`, เวอร์ชันเครื่องมือ, คำสั่งที่ใช้, exit code | pgTAP exit 0 · vitest exit 0 |
-| `01-precheck.txt` / `04-postcheck.txt` | snapshot ของ stack ที่แชร์ก่อนและหลังรัน (คอลัมน์ A1–A4, function ใหม่, extension pgTAP, จำนวนแถวในตาราง LINE) | เหมือนกันทุก byte (sha256 ตรงกัน) — ไม่มีอะไรค้าง |
+| `01-precheck.txt` / `04-postcheck.txt` | ค่าตรวจ 7 รายการก่อนและหลังรัน: จำนวนคอลัมน์ A1–A4, function `rpc_claim_line_outbound_batch`, `rpc_record_line_send_result` แบบ 5 argument, extension pgTAP และจำนวนแถวใน 3 ตาราง LINE | ค่าที่ตรวจทั้ง 7 รายการก่อน–หลังตรงกัน (sha256 ของสองไฟล์ตรงกัน) และผลรันท้ายสุดแสดง ROLLBACK; ไม่พบสิ่งค้างในขอบเขตที่ตรวจ |
 | `02-pgtap-wrapper.sql` / `03-pgtap-output.tap` | wrapper แบบ rollback และผล TAP ดิบ | 70/70 ok, 0 not ok, จบด้วย ROLLBACK |
 | `05-vitest-output.txt` | ผล vitest ดิบ | 18 ไฟล์ / 73 เทสต์ผ่าน |
 | `06-git-integration-check.txt` | ผลตรวจ git สำหรับ §8.1 ผูกกับ SHA | ดู §8.1 |
 | `SHA256SUMS` | hash ของทุกไฟล์ในชุด | ตรวจด้วย `sha256sum -c SHA256SUMS` |
+
+**ข้อจำกัดของชุดนี้:** ตรวจความครบถ้วนได้ด้วย hash แต่ยังรันซ้ำแบบอิสระไม่ได้ครบ — `02-pgtap-wrapper.sql` ใช้ absolute path ของเครื่องที่รัน และไม่ได้บันทึก baseline ของ shared stack ก่อนทดสอบ (รายการ migration ที่ apply แล้วและ fingerprint ของ schema); ค่าตรวจก่อน/หลังรันครอบคลุม 7 รายการเท่านั้น ไม่ใช่ snapshot ทั้งฐานข้อมูล — ชุดถัดไปต้องเป็นไปตามเกณฑ์ใน §9.1
 
 **หลักฐานที่รายงานไว้ (ไม่มี raw output ใน repo):** ผลรันของรอบ A1–A4 วันที่ 1 ส.ค. 2026 อยู่ใน ledger ของ builder (`artifacts/wA1-ledger.md` ถึง `artifacts/wA4-ledger.md` ซึ่งไม่ได้ track ใน git) และใน commit message · คำตัดสินของรีวิวข้ามค่าย (A1–A3 ปฏิเสธ, A4 `SOL VERDICT: ACCEPT PHASE A4`) มาจาก thread รีวิวที่ไม่ได้เก็บใน repo
 
@@ -37,7 +39,7 @@
 - **P0-9 (B8) ยังไม่ได้สร้าง** — และอาจทับซ้อนกับ `0175` unified ingress ที่ branch `codex/line-trust-wave1-main` วางแผนไว้ (ยังเป็นเลขจอง ไม่มีโค้ด) จึงต้องตัดสินเจ้าของงานก่อน (§8 ข้อ 7)
 - **หลักฐานทดสอบยังค้าง:** เทสต์ claim แข่งกัน 2 client ยังไม่เคยรันจริง · Python property suites ที่จำเป็น 12 ไฟล์ (นิยามใน §9.1) ยังไม่เคยรัน · ยังไม่มีการรัน CI ที่มี suite `line_outbound_claim_record`
 
-| บั๊ก | สถานะ ณ ฉบับ 1.4 |
+| บั๊ก | สถานะ ณ ฉบับ 1.5 |
 |---|---|
 | B1 หยิบคิวไม่มี lock | 🟡 มี implementation บน branch — sender เรียก `rpc_claim_line_outbound_batch` (`index.ts:740-744`), `FOR UPDATE SKIP LOCKED`, reclaim ตาม timeout, fencing ด้วย `claim_token` — ขาดหลักฐานเทสต์ 2 client |
 | B2 service role บันทึกผลไม่ได้ | ✅ มี implementation บน branch — ตรวจ service context จาก SQL role (`current_setting('role')`) ไม่ใช่ JWT; ด่านของผู้ใช้ไม่ถูกผ่อน |
@@ -156,7 +158,7 @@ MONOLITH ใช้ LINE เป็นช่องทางหลักติด�
 
 ### P0 — ต้องมีก่อนเปิดส่งลูกค้าจริง (แก้ B1–B8)
 
-| Req | รายละเอียด | Acceptance criteria (เทสต์ชน Postgres จริง, RED ก่อน) | สถานะ (1.4) |
+| Req | รายละเอียด | Acceptance criteria (เทสต์ชน Postgres จริง, RED ก่อน) | สถานะ (1.5) |
 |---|---|---|---|
 | P0-1 | **Claim คิวแบบ atomic:** เพิ่ม `claimed_at/claimed_by` + `rpc_claim_line_outbound_batch` — `UPDATE ... WHERE id IN (SELECT ... FOR UPDATE SKIP LOCKED) RETURNING` (ไม่เพิ่มค่า enum ใหม่ เพื่อเลี่ยงข้อจำกัด `ALTER TYPE` และผลกระทบต่อผู้อ่าน status) | สอง client claim พร้อมกัน → ไม่มีแถวซ้ำ; แถว claim ค้างเกิน timeout → ถูก re-claim ได้ | 🟡 มี implementation (0193 + ต่อสาย sender) — ขาดหลักฐานเทสต์ 2 client |
 | P0-2 | **Service context บันทึกผลได้:** grant + ให้ `rpc_record_line_send_result` รู้จัก service role เป็น system actor โดยไม่อ่อนด่าน role ของผู้ใช้ | เรียกด้วย service role → บันทึกได้; ผู้ใช้ไร้ role → ถูกปฏิเสธเหมือนเดิม | ✅ มี implementation + หลักฐาน pgTAP (0193) |
@@ -248,7 +250,9 @@ MONOLITH ใช้ LINE เป็นช่องทางหลักติด�
 
 > **ข้อห้ามทุกขั้น:** ไม่เปิด cron ใด ๆ, ไม่ deploy, ไม่ส่งข้อความหาลูกค้าจริง, ไม่ push โดยไม่ได้รับอนุมัติจากเจ้าของ และไม่แก้ manufacturing OS — ฟังก์ชัน retry/sweep ที่สร้างใหม่เรียกได้จากเทสต์หรือด้วยมือเท่านั้นจนถึง Phase C
 >
-> **รูปแบบหลักฐานที่รับ:** raw output ใน repo พร้อม SHA ของ commit ที่ทดสอบ, คำสั่งที่ใช้, เวลา UTC, exit code และ snapshot ก่อน/หลังรันเมื่อแตะฐานข้อมูล ตามรูปแบบของชุด `docs/governance/evidence/line-phase-a-2026-09-30/` — ผลที่ "รายงานไว้" อย่างเดียวไม่นับเป็นหลักฐานปิดงาน
+> **รูปแบบหลักฐานที่รับ:** raw output ใน repo พร้อม SHA ของ commit ที่ทดสอบ, คำสั่งที่ใช้, เวลา UTC, exit code และ `SHA256SUMS` — ผลที่ "รายงานไว้" อย่างเดียวไม่นับเป็นหลักฐานปิดงาน
+>
+> **ต้องรันซ้ำได้โดยอิสระ (เพิ่มจากชุด 2026-09-30):** wrapper และคำสั่งทั้งหมดรันจาก repository root ด้วย path แบบ relative (เช่น `\ir` ใน psql) โดยไม่มี absolute path ของเครื่องที่รัน; บันทึก baseline ของฐานข้อมูลก่อนทดสอบ คือรายการ migration ที่ apply แล้ว (`supabase_migrations.schema_migrations`) และ fingerprint ของ schema (sha256 ของ `pg_dump --schema-only`) หรือสร้างฐานข้อมูลจากศูนย์ด้วย migration chain ของ SHA ที่ทดสอบ; บันทึกค่าตรวจก่อน/หลังรันโดยระบุชัดว่าตรวจอะไรบ้าง และอ้างผลเฉพาะในขอบเขตที่ตรวจ
 
 #### ขั้นที่ 1 — ปิดหลักฐานทดสอบที่ค้างของ P0-1 ถึง P0-6 (เริ่มได้ทันที ไม่ขึ้นกับมติ)
 

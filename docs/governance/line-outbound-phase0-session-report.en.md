@@ -106,7 +106,7 @@ The findings were recorded as a new PRD — Thai `docs/PRD-LINE-OA.th.md` · Eng
 
 - **pgTAP 70/70** under the rollback wrapper `BEGIN; 0193; 0194; 0195; 0196; suite; ROLLBACK` — including regressions executed under `set local timezone='Asia/Bangkok'` for both backoff and `sent_at`
 - **vitest: 18 files / 73 tests** passing
-- **No leaks on the shared stack** (post-run column check = 0)
+- **Nothing left behind on the shared stack within the scope checked** (only the A1–A4 columns were checked after the run = 0 — not a whole-database check)
 - **No cron** (`cron.schedule`) in 0193–0196 and no activation of live sending
 
 ### 3.4 What is **not** proven (stated by Sol — do not overstate)
