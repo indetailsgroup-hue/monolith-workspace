@@ -16,22 +16,15 @@ on:
       - '.github/workflows/notify-slack-deploy.yml'
       - '.github/workflows/auto-update-changelog.yml'
       - '.github/workflows/auto-deploy-scispace.yml'
+  # No paths filter on pull_request, on purpose. "Validate Site Files" is a
+  # required status check on main. A path-filtered PR never starts the job, so
+  # the required check waits for ever and every PR outside these paths needs a
+  # bypass. The job takes about 20 seconds and does real validation, so it runs
+  # in full on every PR. There is no skip step that reports a pass without
+  # checking.
   pull_request:
     branches:
       - main
-    paths:
-      - '.github/chapter-cache.json'
-      - 'docs/manufacturing-os-site/**'
-      - 'docs/chapters/**'
-      - 'scripts/docs/**'
-      - 'tests/docs/**'
-      - '.github/workflows/*docs*.yml'
-      - '.github/workflows/*chapter*.yml'
-      - '.github/workflows/generate-site-data.yml'
-      - '.github/workflows/lighthouse-audit.yml'
-      - '.github/workflows/notify-slack-deploy.yml'
-      - '.github/workflows/auto-update-changelog.yml'
-      - '.github/workflows/auto-deploy-scispace.yml'
   workflow_dispatch:
 
 jobs:
