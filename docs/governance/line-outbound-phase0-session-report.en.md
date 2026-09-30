@@ -57,7 +57,7 @@ The findings were recorded as a new PRD — Thai `docs/PRD-LINE-OA.th.md` · Eng
 | B8 | **A failed handler is counted as processed + the event is lost permanently** (`handler_error`) | `0097:281` (return), `0097:437-438` (skip list misses the prefix), `0097:454` (counts processed), `0097:429-433` (dedupe swallows redelivery) |
 | B9 | `line-login` consumes no OAuth `state` / OIDC `nonce` | `supabase/functions/line-login/index.ts:2,9` |
 
-> B8 and B9 surfaced first in the product repo's 31 July 2026 research document and were then confirmed present here as well — the defects match line-for-line, so both repos carry the same code lineage.
+> B8 and B9 surfaced first in the 31 July 2026 research on branch `codex/line-trust-wave1-main` and were then confirmed on this branch as well — both are branches of the same product repo descending from the same base, which is why the defects match line-for-line (the first edition of this report wrongly called them two repos — corrected 30 Sep 2026).
 
 ### 2.3 ⚫ Complete code, passing tests, **zero callers**
 
@@ -77,7 +77,7 @@ The findings were recorded as a new PRD — Thai `docs/PRD-LINE-OA.th.md` · Eng
 
 ### 2.5 Correcting previously overstated records
 
-`docs/PRD.md:512` and `docs/LINE-Architecture-System-Complete.md:40` claimed "LINE OA Commerce ✅ complete 20/20", which **does not hold for the live path**. Both files (Markdown and HTML) now carry a ⚠️ banner pointing to `docs/PRD-LINE-OA.th.md` / `docs/PRD-LINE-OA.en.md`.
+`docs/PRD.md:514` and `docs/LINE-Architecture-System-Complete.md:41` (line numbers after the banners were added) claimed "LINE OA Commerce ✅ complete 20/20", which **does not hold for the live path**. Both files (Markdown and HTML) now carry a ⚠️ banner pointing to `docs/PRD-LINE-OA.th.md` / `docs/PRD-LINE-OA.en.md`.
 
 ---
 
@@ -162,9 +162,9 @@ The findings were recorded as a new PRD — Thai `docs/PRD-LINE-OA.th.md` · Eng
 | 4 | Is sending to customers without a consent gate acceptable for now (PDPA)? | P0-8 / P1 |
 | 5 | Dead subsystems (ordering/forecast/R-03/auto-close/TCCK): keep or remove? | P2 |
 | 6 | Is an admin UI for templates needed? | P2 |
-| 7 | Which repo is authoritative for the LINE subsystem (this one vs the product repo with Trust Kernel `0171–0179`)? | Cross-repo adoption of this work |
+| 7 | Branch integration plan: this branch and `codex/line-trust-wave1-main` (the same product repo) — integration order, canonical tenant model, ownership of overlapping work | P0-9, pushing/merging, Phase C |
 
-**New information on #7:** the product repo's 26 July 2026 amendment confirms the product repo owns the LINE Trust Kernel roadmap, where `0178` = atomic outbox, overlapping our P0-1. Phase A work here is therefore built as **portable per-defect patches** and does not claim reserved migration numbers.
+**Question 7 (corrected 30 Sep 2026):** git confirms both worktrees share the same `.git` of `determined-williams` — so this is a **branch integration** question, not a choice between repos. The findings on duplicated migrations and behaviour (two tenant models, `0178` overlapping P0-1–P0-6, `0175` overlapping P0-9, `0176` overlapping B9, 7 conflicting files, 2 broken refs) are in PRD §8.1.
 
 ---
 

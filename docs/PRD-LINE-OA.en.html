@@ -9,34 +9,36 @@
 <body>
 <main>
 <h1>PRD — The Complete LINE OA Communication System (MONOLITH Repair Intelligence)</h1>
-<blockquote><p><strong>Language:</strong> English · Thai edition: <code>docs/PRD-LINE-OA.th.md</code> · HTML: <code>docs/PRD-LINE-OA.en.html</code> / <code>docs/PRD-LINE-OA.th.html</code></p><p><strong>Edition:</strong> 1.2 · 30 September 2026 (1.1 = 1 Aug 2026 · 1.0 = 26 Jul 2026)</p><p><strong>What changed in 1.2:</strong> added §0 implementation status after Phase A, added a status column to the §6 P0 table, corrected the guard evidence filename in §2.1, marked the B1 evidence as pre-fix code, added the amendment information to question 7 — the original §2 findings are kept intact as the verification record</p><p><strong>Document status:</strong> awaiting the owner's (Dave's) decisions on the open questions in §8 before Phases B–D</p><p><strong>Writing rule:</strong> every row separates &quot;actually working / code present but not wired / spec only&quot; and cites file:line — status verified against real code on 26 Jul and 1 Aug 2026 unless marked &quot;from the earlier audit&quot;</p><p><strong>Truth note:</strong> older documents (<code>docs/LINE-Architecture-System-Complete.md:40</code>, <code>docs/PRD.md:512</code>) claim &quot;LINE OA Commerce ✅ 20/20&quot;, which is overstated for the live path — this document is the more truthful status record</p></blockquote>
+<blockquote><p><strong>Language:</strong> English · Thai edition: <code>docs/PRD-LINE-OA.th.md</code> · HTML: <code>docs/PRD-LINE-OA.en.html</code> / <code>docs/PRD-LINE-OA.th.html</code></p><p><strong>Edition:</strong> 1.3 · 30 September 2026 (1.2 = 30 Sep 2026 · 1.1 = 1 Aug 2026 · 1.0 = 26 Jul 2026)</p><p><strong>What changed in 1.3:</strong> corrected the &quot;two repos&quot; claim — this is one product repo with two branches; §8 question 7 became a branch integration plan with the findings on duplicated migrations and behaviour; §0 and §9 now state plainly that Phase A is not closed; added next steps with acceptance criteria; fixed citation line numbers that had drifted; re-ran the tests to confirm the evidence on 30 Sep 2026</p><p><strong>Document status:</strong> awaiting the owner's (Dave's) decisions on the open questions in §8 — no step proposed in §9 enables cron or sends messages to real customers</p><p><strong>Writing rule:</strong> every row separates &quot;actually working / code present but not wired / spec only&quot; and cites file:line — status verified against real code on 26 Jul, 1 Aug and 30 Sep 2026 unless marked &quot;from the earlier audit&quot;</p><p><strong>Truth note:</strong> older documents (<code>docs/LINE-Architecture-System-Complete.md:41</code>, <code>docs/PRD.md:514</code>) claim &quot;LINE OA Commerce ✅ 20/20&quot;, which is overstated for the live path — this document is the more truthful status record</p></blockquote>
 <hr>
-<h2>0. Implementation status (edition 1.2)</h2>
-<p><strong>Phase A (P0-1 to P0-6) is built and has passed cross-vendor review — but only on a branch: not pushed and not deployed</strong></p>
-<ul><li><strong>Branch:</strong> <code>codex/repair-intelligence-phase0-trust</code> · accepted commit: <code>46a203a6</code> (1 Aug 2026)</li><li><strong>Migrations:</strong> <code>0193_line_outbound_claim_and_record.sql</code>, <code>0194_line_outbound_retry_and_claim_fencing.sql</code>, <code>0195_line_outbound_timezone_safe_backoff.sql</code>, <code>0196_line_outbound_timezone_safe_sent_at.sql</code> plus changes to <code>supabase/functions/line-outbound-sender/index.ts</code></li><li><strong>Cross-vendor review:</strong> rounds A1, A2 and A3 were rejected (each with file:line evidence) → round A4 received <code>SOL VERDICT: ACCEPT PHASE A4</code></li><li><strong>Evidence run by the acceptance gate itself:</strong> pgTAP 70/70 in a rollback wrapper (0193→0196, including tests executed under the <code>Asia/Bangkok</code> timezone) · vitest 18 files / 73 tests · no leakage into the shared stack · no <code>cron.schedule</code> in 0193–0196</li><li><strong>Effect on real environments:</strong> because nothing is deployed, every environment running the old code still has defects B1–B6</li></ul>
+<h2>0. Implementation status (edition 1.3)</h2>
+<p><strong>P0-1 to P0-6 are implemented on the branch and have passed cross-vendor review — but Phase A is not closed</strong></p>
+<ul><li><strong>Branch:</strong> <code>codex/repair-intelligence-phase0-trust</code> · accepted commit: <code>46a203a6</code> (1 Aug 2026) · not pushed and not deployed</li><li><strong>Migrations:</strong> <code>0193_line_outbound_claim_and_record.sql</code>, <code>0194_line_outbound_retry_and_claim_fencing.sql</code>, <code>0195_line_outbound_timezone_safe_backoff.sql</code>, <code>0196_line_outbound_timezone_safe_sent_at.sql</code> plus changes to <code>supabase/functions/line-outbound-sender/index.ts</code></li><li><strong>Cross-vendor review:</strong> rounds A1, A2 and A3 were rejected (each with file:line evidence) → round A4 received <code>SOL VERDICT: ACCEPT PHASE A4</code></li><li><strong>Evidence run by the acceptance gate itself (re-run 30 Sep 2026):</strong> pgTAP 70/70 in a rollback wrapper (0193→0196, including tests executed under the <code>Asia/Bangkok</code> timezone) · vitest 18 files / 73 tests · no leakage into the shared stack · no <code>cron.schedule</code> in 0193–0196</li><li><strong>Effect on real environments:</strong> because nothing is deployed, every environment running the old code still has defects B1–B6</li></ul>
+<p><strong>Why Phase A is not closed:</strong></p>
+<ul><li><strong>P0-9 (B8) has not been built</strong> — and it overlaps <code>0175</code> unified ingress, reserved by branch <code>codex/line-trust-wave1-main</code>, so ownership must be decided first (§8 question 7)</li><li><strong>Part of the test evidence is still outstanding:</strong> the two-client claim race test has never actually run (the harness skips without an ephemeral stack DSN) · the Python property suites have never run (the machine used has no python) · no CI run including the <code>line_outbound_claim_record</code> suite has happened</li><li><strong>Not yet integrated with the other branch of the same repo</strong> — see the integration findings in §8</li></ul>
 <div class="table-wrap"><table><thead><tr>
 <th>Defect</th>
-<th>Status as of edition 1.2</th>
+<th>Status as of edition 1.3</th>
 </tr></thead><tbody>
 <tr>
 <td>B1 queue pickup without a lock</td>
-<td>✅ fixed on the branch — the sender calls <code>rpc_claim_line_outbound_batch</code> (<code>index.ts:676-687</code>), <code>FOR UPDATE SKIP LOCKED</code>, timeout-based reclaim, <code>claim_token</code> fencing</td>
+<td>✅ implemented on the branch — the sender calls <code>rpc_claim_line_outbound_batch</code> (<code>index.ts:740-744</code>), <code>FOR UPDATE SKIP LOCKED</code>, timeout-based reclaim, <code>claim_token</code> fencing — the two-client test has not been run</td>
 </tr>
 <tr>
 <td>B2 service role cannot record results</td>
-<td>✅ fixed on the branch — service context is detected from the SQL role (<code>current_setting('role')</code>), not the JWT; user checks are not relaxed</td>
+<td>✅ implemented on the branch — service context is detected from the SQL role (<code>current_setting('role')</code>), not the JWT; user checks are not relaxed</td>
 </tr>
 <tr>
 <td>B3 group rows cannot record results</td>
-<td>✅ fixed on the branch — LEFT JOIN + vertical from <code>line_groups</code> + the 0097 <code>monolith</code> fallback</td>
+<td>✅ implemented on the branch — LEFT JOIN + vertical from <code>line_groups</code> + the 0097 <code>monolith</code> fallback</td>
 </tr>
 <tr>
 <td>B4 no transition guard</td>
-<td>✅ fixed on the branch — only still-<code>pending</code> rows can be recorded; finished rows return <code>recorded=false</code> with no duplicate audit</td>
+<td>✅ implemented on the branch — only still-<code>pending</code> rows can be recorded; finished rows return <code>recorded=false</code> with no duplicate audit</td>
 </tr>
 <tr>
 <td>B5 one failure is permanently terminal</td>
-<td>✅ fixed on the branch — transient/permanent split + exponential backoff (1 second × 2^n, capped at 5 minutes) + a 5-attempt bound</td>
+<td>✅ implemented on the branch — transient/permanent split + exponential backoff (1 second × 2^n, capped at 5 minutes) + a 5-attempt bound</td>
 </tr>
 <tr>
 <td>B6 no cron</td>
@@ -48,14 +50,14 @@
 </tr>
 <tr>
 <td>B8 <code>handler_error</code> counted as success</td>
-<td>🔴 not fixed — P0-9 has not been built</td>
+<td>🔴 not fixed — P0-9 has not been built; overlaps line-trust <code>0175</code></td>
 </tr>
 <tr>
 <td>B9 <code>line-login</code> without state/nonce</td>
-<td>🔴 not fixed — in P1</td>
+<td>🔴 not fixed — in P1; overlaps line-trust <code>0176</code></td>
 </tr>
 </tbody></table></div>
-<p><strong>Not yet proven (do not overstate):</strong> Python property suites were never executed (the machine used has no python) · the two-client claim race test was skipped because it requires an explicitly designated ephemeral stack DSN · no CI run, real Edge Function run or real LINE API run has happened · <code>X-Line-Retry-Key</code> behaviour on the LINE side is an external guarantee — the database fence alone does not stop two lease-expired workers from both reaching LINE</p>
+<p><strong>Not yet proven (do not overstate):</strong> the two-client claim test · the Python property suites · CI · any real Edge Function or LINE API run · <code>X-Line-Retry-Key</code> behaviour on the LINE side is an external guarantee — the database fence alone does not stop two lease-expired workers from both reaching LINE</p>
 <p><strong>Additional defects found and fixed during Phase A:</strong> <code>next_attempt_at</code> and <code>sent_at</code> were assigned <code>timezone('utc', now())</code> (a timestamp without time zone) into <code>timestamptz</code> columns, so in Thailand the backoff collapsed to zero and send times were recorded ~7 hours early — fixed in 0195/0196 with tests under <code>Asia/Bangkok</code></p>
 <hr>
 <h2>1. Problem Statement</h2>
@@ -148,7 +150,7 @@
 </tr>
 <tr>
 <td>B8</td>
-<td><strong>A failed handler is counted as processed and the event is lost forever</strong> — <code>fn_line_handle_group_event</code> catches the exception and returns <code>'handler_error:...'</code>, but the ingest skip list does not include that prefix → the inbound row, audit entry and <code>events_processed</code> count are written as normal, and because the inbound row now exists, a LINE redelivery is dropped as a duplicate → the failed event disappears permanently while being reported as success (first found in the product repo's 31 Jul 2026 research, confirmed in this repo on 1 Aug)</td>
+<td><strong>A failed handler is counted as processed and the event is lost forever</strong> — <code>fn_line_handle_group_event</code> catches the exception and returns <code>'handler_error:...'</code>, but the ingest skip list does not include that prefix → the inbound row, audit entry and <code>events_processed</code> count are written as normal, and because the inbound row now exists, a LINE redelivery is dropped as a duplicate → the failed event disappears permanently while being reported as success (first found in the 31 Jul 2026 research on branch <code>codex/line-trust-wave1-main</code>, confirmed on this branch on 1 Aug — both branches descend from the same base, so they share the defect)</td>
 <td><code>0097:281</code> (return), <code>0097:437-438</code> (skip list), <code>0097:454</code> (counts processed), <code>0097:429-433</code> (dedupe)</td>
 </tr>
 <tr>
@@ -200,7 +202,7 @@
 <h2>3. Goals</h2>
 <ol><li><strong>Zero duplicate messages:</strong> switch on the customer sender only after proving with tests against real Postgres that overlapping runs or mid-run failures cause no duplicate sends</li><li><strong>Every message reaches an outcome:</strong> every queue row ends as <code>sent</code> or <code>failed</code> with a reason — nothing stays <code>pending</code> beyond SLA, and transient failures are retried</li><li><strong>Spec matches reality:</strong> every subsystem in <code>.kiro/specs/line-oa-commerce/tasks.md</code> is marked with its real status (live / dead / removed) — no &quot;✅ 20/20&quot; that does not hold for the live path</li><li><strong>PDPA has an owner:</strong> a written owner decision on whether a customer consent gate is required before expansion, or the temporary risk is accepted</li><li><strong>Ops can verify:</strong> a clear list of the crons and deployments that must exist in the real environment (building on <code>docs/OPS-RUNBOOK-Wave2.md</code>)</li></ol>
 <h2>4. Non-Goals</h2>
-<ol><li><strong>No free-text / LLM replies to customers</strong> — the template-only iron rule stays (fix the wiring, never relax the criteria)</li><li><strong>No revival of ordering/forecast/TCCK in this phase</strong> — awaiting the keep-or-remove decision (§8 question 5); no silent wiring</li><li><strong>No template admin UI in this phase</strong> — awaiting a decision (§8 question 6)</li><li><strong>No changes to the manufacturing OS repo</strong> — a separate system</li><li><strong>No relaxation of user-level RLS or permissions</strong> — fixing B2 means teaching the system to recognise the service context, not removing human checks</li></ol>
+<ol><li><strong>No free-text / LLM replies to customers</strong> — the template-only iron rule stays (fix the wiring, never relax the criteria)</li><li><strong>No revival of ordering/forecast/TCCK in this phase</strong> — awaiting the keep-or-remove decision (§8 question 5); no silent wiring</li><li><strong>No template admin UI in this phase</strong> — awaiting a decision (§8 question 6)</li><li><strong>No changes outside this branch</strong> — no other checkout or worktree (including <code>codex/line-trust-wave1-main</code>) is touched in this work; integration with other branches happens only through the §8 question 7 plan after owner approval</li><li><strong>No relaxation of user-level RLS or permissions</strong> — fixing B2 means teaching the system to recognise the service context, not removing human checks</li></ol>
 <hr>
 <h2>5. User Stories</h2>
 <p><strong>Customer (message recipient):</strong></p>
@@ -218,43 +220,43 @@
 <th>Req</th>
 <th>Description</th>
 <th>Acceptance criteria (tests against real Postgres, RED first)</th>
-<th>Status (1.2)</th>
+<th>Status (1.3)</th>
 </tr></thead><tbody>
 <tr>
 <td>P0-1</td>
 <td><strong>Atomic queue claim:</strong> add <code>claimed_at/claimed_by</code> + <code>rpc_claim_line_outbound_batch</code> — <code>UPDATE ... WHERE id IN (SELECT ... FOR UPDATE SKIP LOCKED) RETURNING</code> (no new enum value, to avoid the <code>ALTER TYPE</code> limitation and the impact on status readers)</td>
 <td>Two clients claiming at once → no duplicated rows; a claim stuck past the timeout → re-claimable</td>
-<td>✅ on the branch (0193 + sender wiring) — the two-client test has not been run</td>
+<td>🟡 implemented (0193 + sender wiring) — no evidence yet for the two-client part of the AC</td>
 </tr>
 <tr>
 <td>P0-2</td>
 <td><strong>Service context can record results:</strong> grant + teach <code>rpc_record_line_send_result</code> to recognise the service role as a system actor without relaxing user role checks</td>
 <td>Called with the service role → recorded; a user without a role → rejected as before</td>
-<td>✅ on the branch (0193)</td>
+<td>✅ implemented + pgTAP evidence (0193)</td>
 </tr>
 <tr>
 <td>P0-3</td>
 <td><strong>Group rows can record results:</strong> LEFT JOIN + take vertical/audit data from <code>line_groups</code> when <code>conversation_id</code> is NULL</td>
 <td>A group row → recordResult succeeds with a complete audit</td>
-<td>✅ on the branch (0193 + 0196 fallback)</td>
+<td>✅ implemented + evidence (0193 + 0196 fallback)</td>
 </tr>
 <tr>
 <td>P0-4</td>
 <td><strong>Transition guard:</strong> results can be recorded only for rows still <code>pending</code>; finished rows → <code>recorded=false</code> no-op</td>
 <td>Duplicate recording / a <code>sent</code>→<code>failed</code> flip → rejected, no duplicate audit</td>
-<td>✅ on the branch (0193 + 0194 fencing)</td>
+<td>✅ implemented + evidence (0193 + 0194 fencing)</td>
 </tr>
 <tr>
 <td>P0-5</td>
 <td><strong>LINE-level dedupe:</strong> set <code>X-Line-Retry-Key</code> = outbound id on push</td>
 <td>Closes the duplicate-send window across a timeout (sent but recording failed)</td>
-<td>✅ on the branch — LINE-side behaviour not yet proven</td>
+<td>🟡 implemented + unit test — LINE-side behaviour not yet proven</td>
 </tr>
 <tr>
 <td>P0-6</td>
 <td><strong>Bounded retry for transient failures</strong> (following the 0084 claim v3 pattern) + dead-letter</td>
 <td>LINE answers 5xx → retried with backoff; over the bound → <code>failed</code> with a reason</td>
-<td>✅ on the branch (0194–0196)</td>
+<td>✅ implemented + pgTAP evidence (0194–0196)</td>
 </tr>
 <tr>
 <td>P0-7</td>
@@ -272,11 +274,11 @@
 <td>P0-9</td>
 <td><strong>A failed handler must not count as processed (B8):</strong> for <code>handler_error</code>, events whose handler failed need our own retry state (retry rows + a sweep like the 0084 claim v3) — never rely on LINE redelivery, which LINE does not guarantee — not counted as processed and never dropped by dedupe</td>
 <td>Simulate a handler failure → the event enters an internal retry queue and is reprocessed until success or the bound → dead-letter + audit; no false success</td>
-<td>🔴 not built</td>
+<td>🔴 not built — overlaps line-trust <code>0175</code>, awaiting decision 7</td>
 </tr>
 </tbody></table></div>
 <h3>P1 — should follow soon</h3>
-<ul><li><strong>B9 — make staff login use state and nonce:</strong> change <code>line-login</code> to bind a server-issued state, single use, short expiry — AC: replayed <code>code</code> or callback swap is rejected, normal login passes (P1 rather than P0 because it is the staff login path, not the customer send path, but it blocks the trustworthiness of identity/audit and must be done soon)</li><li><strong>Customer consent gate before sending</strong> (if §8 question 4 = required): a customer-side consent field + a check in claim/send</li><li><strong>Human approval before sending to customers</strong> (if §8 question 2 = required)</li><li><strong>Metrics/alerts:</strong> <code>pending</code> rows beyond SLA, <code>failed</code> rate, dead-letter</li><li><strong>LINE quota/cost awareness:</strong> push/multicast consume quota (reply does not) — a monthly counter plus an alert before hitting the cap</li></ul>
+<ul><li><strong>B9 — make staff login use state and nonce:</strong> change <code>line-login</code> to bind a server-issued state, single use, short expiry — AC: replayed <code>code</code> or callback swap is rejected, normal login passes (P1 rather than P0 because it is the staff login path, not the customer send path; overlaps line-trust <code>0176</code> identity step-up)</li><li><strong>Customer consent gate before sending</strong> (if §8 question 4 = required): a customer-side consent field + a check in claim/send</li><li><strong>Human approval before sending to customers</strong> (if §8 question 2 = required)</li><li><strong>Metrics/alerts:</strong> <code>pending</code> rows beyond SLA, <code>failed</code> rate, dead-letter</li><li><strong>LINE quota/cost awareness:</strong> push/multicast consume quota (reply does not) — a monthly counter plus an alert before hitting the cap</li></ul>
 <blockquote><p><strong>Interim SLA definition (until ops sets the real one):</strong> a <code>pending</code> row must be picked up within 15 minutes of the cron being enabled — wherever this document says &quot;SLA&quot;, use this value for now</p></blockquote>
 <h3>P2 — future (not before a decision)</h3>
 <ul><li>Revive or remove ordering / forecast / R-03 / auto-close / TCCK (§8 question 5)</li><li>Template admin UI (§8 question 6)</li></ul>
@@ -329,16 +331,119 @@
 </tr>
 <tr>
 <td>7</td>
-<td><strong>Two-repo coordination:</strong> the LINE code in this repo and in the product repo (<code>determined-williams</code>, worktree <code>line-trust-wave1-main</code>) share one lineage (defects match line-for-line, e.g. <code>0097:281</code>) — which repo is authoritative for the LINE subsystem: fix here and port, wait for the Trust Kernel, or keep them independent?</td>
+<td><strong>Branch integration plan:</strong> this branch (<code>codex/repair-intelligence-phase0-trust</code>) and <code>codex/line-trust-wave1-main</code> are branches of the same product repo — approve the integration order, choose the canonical tenant model, and decide ownership of the overlapping work (P0-1–P0-6 versus <code>0178</code>, P0-9 versus <code>0175</code>, B9 versus <code>0176</code>) based on the findings below</td>
 <td>Architecture/business</td>
-<td>Does not block Phase A, but blocks merging or adopting the work across repos</td>
+<td>P0-9, pushing/merging both branches, Phase C</td>
 </tr>
 </tbody></table></div>
-<p><strong>Additional information for question 7:</strong> the product repo's amendment plan (26 Jul 2026, <code>docs/superpowers/plans/2026-07-26-line-trust-kernel-wave-1-amendment.th.md</code>) confirms that the product repo owns the LINE Trust Kernel roadmap — it allocates <code>0171</code>–<code>0174</code> to Wave 1 and reserves <code>0175</code>–<code>0179</code>, where <code>0178</code> = atomic outbox, which overlaps our P0-1. Phase A work in this repo therefore uses numbers <code>0193</code>–<code>0196</code> (outside the reserved band) and is built as clean per-defect patches so it can be ported.</p>
+<h3>8.1 Branch integration findings (question 7) — checked 30 Sep 2026 from local git refs, without fetching and without touching any other worktree</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Topic</th>
+<th>Finding</th>
+</tr></thead><tbody>
+<tr>
+<td>Repo</td>
+<td>Both worktrees use the same <code>.git</code> of <code>determined-williams</code> and the same origin <code>github.com/indetailsgroup-hue/monolith-workspace</code></td>
+</tr>
+<tr>
+<td>Merge-base</td>
+<td><code>dd1119af</code> (18 Jul 2026) — this branch is 64 commits ahead, line-trust is 129 commits ahead</td>
+</tr>
+<tr>
+<td>Against <code>origin/main</code></td>
+<td>local ref at <code>57b69513</code> (1 Aug 2026 — not fetched): this branch 64 ahead / 118 behind · line-trust 47 ahead / 36 behind</td>
+</tr>
+<tr>
+<td>Direct migration number collisions</td>
+<td>none — this branch has <code>0180</code>–<code>0196</code>, line-trust has <code>0171</code>–<code>0173</code> (plus <code>0163</code>, <code>0170</code> from main)</td>
+</tr>
+<tr>
+<td>Migrations this branch lacks</td>
+<td><code>0163_storage_hash_verdict_semantics.sql</code> and <code>0170_factory_jobs_list_real_fields.sql</code> (already on main)</td>
+</tr>
+<tr>
+<td>Trust Kernel <code>0180</code>–<code>0188</code></td>
+<td>exist only on this branch — not on main and not on line-trust</td>
+</tr>
+<tr>
+<td>In-memory trial merge (<code>git merge-tree</code>)</td>
+<td>7 conflicting files: <code>.github/workflows/db-verify.yml</code>, <code>.gitignore</code>, <code>package.json</code>, <code>package-lock.json</code>, <code>server/src/api/routes/factory.ts</code>, <code>supabase/functions/factory-api/index.ts</code>, <code>supabase/functions/factory-api/index.test.ts</code> — <code>tests/line-oa-commerce/py/test_secret_non_exposure_property.py</code>, changed on both sides, merges cleanly</td>
+</tr>
+<tr>
+<td>Broken git refs</td>
+<td>duplicate refs <code>refs/heads/codex/repair-intelligence-phase0-trust (1)</code> and <code>refs/remotes/origin/main (1)</code> (probably created by a file-sync tool) — git warns and skips them; not deleted here, the repo owner must remove them before integrating</td>
+</tr>
+<tr>
+<td>LINE runtime</td>
+<td>line-trust does not modify <code>line-outbound-sender</code>, <code>line-webhook</code>, <code>line-login</code> or <code>_shared/line-oa</code> — no conflicts in the LINE runtime files</td>
+</tr>
+</tbody></table></div>
+<p><strong>Duplicated or overlapping behaviour</strong></p>
+<div class="table-wrap"><table><thead><tr>
+<th>Topic</th>
+<th>This branch</th>
+<th>line-trust</th>
+<th>Integration risk</th>
+</tr></thead><tbody>
+<tr>
+<td>Tenant / organization / site / membership model</td>
+<td><code>monolith_tenant</code>, <code>monolith_organization</code>, <code>monolith_site</code>, <code>monolith_membership*</code>, <code>verified_action_context</code> (0180, 0189)</td>
+<td><code>tenants</code>, <code>organizations</code>, <code>sites</code>, <code>tenant_memberships</code>, <code>access_grants</code>, <code>auth_subjects</code>, <code>project_parties</code> (0171)</td>
+<td><strong>Conceptual duplicate</strong> — two sources of truth for tenancy and permissions; table names do not collide but the data would diverge; a canonical model must be chosen before integrating</td>
+</tr>
+<tr>
+<td>Authority of service callers</td>
+<td>checks the SQL role <code>current_setting('role')</code> = <code>service_role</code> (0193)</td>
+<td><code>service_principals</code> table + <code>rpc_authorize_business_action</code> (0173)</td>
+<td>Two mechanisms for granting service authority — decide whether the sender must pass the 0173 policy decision</td>
+</tr>
+<tr>
+<td>LINE outbound queue</td>
+<td>claim, fencing, backoff on <code>line_oa_outbound_messages</code> (0193–0196)</td>
+<td>not touched yet, but reserves <code>0178</code> = atomic outbox</td>
+<td>If line-trust later builds a new outbox there will be two queue designs; and 0194 drops the 3-argument <code>rpc_record_line_send_result</code> that line-trust's schema still has</td>
+</tr>
+<tr>
+<td>Failed ingest lost (B8)</td>
+<td>P0-9 not built</td>
+<td>reserves <code>0175</code> = unified ingress with processing state, retry, dead letter</td>
+<td>Building both would produce two ingest retry mechanisms — needs a single owner</td>
+</tr>
+<tr>
+<td>Staff login (B9)</td>
+<td>P1 not built</td>
+<td>reserves <code>0176</code> = identity binding + step-up</td>
+<td>Should be done on one side only</td>
+</tr>
+<tr>
+<td>Shared LINE tables</td>
+<td>the sender reads <code>line_groups.vertical_context</code> and <code>line_oa_channels.channel_access_token_ref</code></td>
+<td>0171/0172 add <code>tenant_id</code> (nullable, FK NOT VALID) to <code>line_oa_channels</code>, and <code>tenant_id</code>, <code>canonical_site_id</code> + a constraint to <code>line_groups</code></td>
+<td>Probably compatible because columns are only added, but unproven — this branch's pgTAP must run on the integrated schema</td>
+</tr>
+<tr>
+<td>Migration number order</td>
+<td><code>0180</code>–<code>0196</code></td>
+<td><code>0171</code>–<code>0173</code> and reserves <code>0174</code>–<code>0179</code></td>
+<td>If any environment applies this branch's <code>0180</code>+ first and line-trust's <code>0174</code>–<code>0179</code> arrive later, they would apply out of order — requires a line-trust amendment, or a ban on applying <code>0180</code>+ until the order is agreed</td>
+</tr>
+</tbody></table></div>
 <hr>
 <h2>9. Phasing</h2>
-<ol><li><strong>Phase A — ✅ built on the branch except P0-9:</strong> P0-1 to P0-6 have passed cross-vendor review (§0); P0-9 remains — built as portable patches (migration + a clean diff per defect) so no work is wasted if decision 7 makes the product repo authoritative</li><li><strong>Phase B (after decision 3):</strong> P0-7 — wire or remove the autonomy gate + correct the spec</li><li><strong>Phase C (after decisions 1, 2, 4):</strong> push + deploy the Phase A work, register the real cron, add the consent gate and human approval if decided → switch on customer messaging</li><li><strong>Phase D (after decisions 5, 6):</strong> clean up the dead subsystems + admin UI</li></ol>
+<ol><li><strong>Phase A — 🟡 not closed:</strong> P0-1 to P0-6 are implemented and have passed cross-vendor review (§0), but P0-9 has not been built and part of the test evidence is outstanding — see §9.1 for the closure steps</li><li><strong>Phase B (after decision 3):</strong> P0-7 — wire or remove the autonomy gate + correct the spec</li><li><strong>Phase C (after decisions 1, 2, 4 and after Phase A closes):</strong> push + deploy the Phase A work, register the real cron, add the consent gate and human approval if decided → switch on customer messaging</li><li><strong>Phase D (after decisions 5, 6):</strong> clean up the dead subsystems + admin UI</li></ol>
 <p><strong>Exit conditions for every phase:</strong> real test output attached, no claims accepted on assertion; never log tokens; never relax security rules to make something pass; every wave passes cross-vendor review before acceptance</p>
+<h3>9.1 Proposed next steps to close Phase A (awaiting approval)</h3>
+<blockquote><p><strong>Prohibited in every step:</strong> enabling any cron, deploying, sending messages to real customers, or pushing without the owner's approval — any new retry/sweep function is callable only from tests or by hand until Phase C</p></blockquote>
+<h4>Step 1 — close the outstanding test evidence for P0-1 to P0-6 (can start now, independent of the decisions)</h4>
+<ul><li>Run <code>tests/line-oa-commerce/concurrency/claim-race.mjs</code> against an ephemeral Postgres created from zero, not the shared stack</li><li><strong>Acceptance criteria:</strong> two connections claim the same set of pending rows at once → overlapping rows = 0 and the union of claimed rows = the total row count; no objects left behind afterwards; raw output attached to the ledger</li><li>Run the Python property suites in <code>tests/line-oa-commerce/py/</code> on a machine with python</li><li><strong>Acceptance criteria:</strong> all pass, or skip only for a clearly stated environmental reason — no skips caused by a mismatched function signature</li><li><strong>Overall criterion:</strong> the acceptance gate re-runs everything itself and gets the same result</li></ul>
+<h4>Step 2 — decide the branch integration plan (§8 question 7)</h4>
+<ul><li>Delete the two broken git refs (done by the repo owner)</li><li>Choose the canonical tenant model: <code>monolith_*</code> or <code>tenants/organizations/sites</code></li><li>Decide ownership of the overlapping work: outbound queue (0193–0196 versus 0178), ingest retry (P0-9 versus 0175), staff login (B9 versus 0176)</li><li>Decide the migration number order (a line-trust amendment, or a temporary ban on applying <code>0180</code>+)</li><li><strong>Acceptance criteria:</strong> all four decisions recorded in writing in both Thai and English and referenced from this document</li></ul>
+<h4>Step 3 — build P0-9 on the branch chosen in step 2</h4>
+<ul><li><strong>Acceptance criteria:</strong> RED first — simulate a handler failure and prove that today it produces an inbound row + an <code>events_processed</code> increment (false success); GREEN — the failed event is not counted as processed, is not deduplicated away, enters an internal retry queue, is reprocessed until success or the bound, then goes to dead-letter with an audit entry; no reliance on LINE redelivery; no new cron; passes cross-vendor review</li></ul>
+<h4>Step 4 — integrate the branches locally and verify on the integrated schema</h4>
+<ul><li><strong>Acceptance criteria:</strong> the 7 conflicts resolved (the suite list in <code>db-verify.yml</code> must contain both sides' suites); the whole migration chain applies from zero in number order; both branches' pgTAP suites and vitest pass on the integrated schema; the integration result passes cross-vendor review before a push is requested</li></ul>
+<h4>Step 5 — close Phase A</h4>
+<ul><li><strong>Acceptance criteria:</strong> steps 1–4 pass; after the owner approves a push, CI (<code>db-verify.yml</code> including the <code>line_outbound_claim_record</code> suite) actually runs green; no cron and no customer messages — switching on real sending remains Phase C</li></ul>
 </main>
 </body>
 </html>

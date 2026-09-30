@@ -9,34 +9,36 @@
 <body>
 <main>
 <h1>PRD — ระบบสื่อสาร LINE OA ทั้งหมด (MONOLITH Repair Intelligence)</h1>
-<blockquote><p><strong>ภาษา:</strong> ไทย · ฉบับภาษาอังกฤษ: <code>docs/PRD-LINE-OA.en.md</code> · HTML: <code>docs/PRD-LINE-OA.th.html</code> / <code>docs/PRD-LINE-OA.en.html</code></p><p><strong>ฉบับ:</strong> 1.2 · 30 กันยายน 2026 (1.1 = 1 ส.ค. 2026 · 1.0 = 26 ก.ค. 2026)</p><p><strong>สิ่งที่เปลี่ยนในฉบับ 1.2:</strong> เพิ่ม §0 สถานะการดำเนินการหลัง Phase A, เพิ่มคอลัมน์สถานะใน §6 P0, แก้ชื่อไฟล์หลักฐาน guard ใน §2.1, ระบุว่าหลักฐาน B1 เป็นโค้ดก่อนแก้, เพิ่มข้อมูลแผน amendment ในคำถามข้อ 7 — ข้อค้นพบเดิมใน §2 คงไว้ทั้งหมดเป็นบันทึกการตรวจ</p><p><strong>สถานะเอกสาร:</strong> รอเจ้าของ (คุณเดฟ) ตัดสินคำถามเปิดใน §8 ก่อนเข้าสู่ Phase B–D</p><p><strong>หลักการเขียน:</strong> ทุกแถวแยก &quot;ทำงานจริง / มีโค้ดแต่ไม่ต่อสาย / อยู่แค่ spec&quot; พร้อมอ้าง file:line — สถานะ verify จากโค้ดจริงเมื่อ 26 ก.ค. และ 1 ส.ค. 2026 ยกเว้นที่ระบุว่า &quot;จากรอบตรวจก่อน&quot;</p><p><strong>หมายเหตุความจริง:</strong> เอกสารเดิม (<code>docs/LINE-Architecture-System-Complete.md:40</code>, <code>docs/PRD.md:512</code>) ระบุ &quot;LINE OA Commerce ✅ 20/20&quot; ซึ่งเกินจริงสำหรับ live path — เอกสารนี้คือบันทึกสถานะที่ตรงความจริงกว่า</p></blockquote>
+<blockquote><p><strong>ภาษา:</strong> ไทย · ฉบับภาษาอังกฤษ: <code>docs/PRD-LINE-OA.en.md</code> · HTML: <code>docs/PRD-LINE-OA.th.html</code> / <code>docs/PRD-LINE-OA.en.html</code></p><p><strong>ฉบับ:</strong> 1.3 · 30 กันยายน 2026 (1.2 = 30 ก.ย. 2026 · 1.1 = 1 ส.ค. 2026 · 1.0 = 26 ก.ค. 2026)</p><p><strong>สิ่งที่เปลี่ยนในฉบับ 1.3:</strong> แก้ข้อเท็จจริงเรื่อง &quot;สองเรโป&quot; — ที่จริงเป็น product repo เดียวกันสอง branch; §8 ข้อ 7 เปลี่ยนเป็นแผนรวม branch พร้อมผลตรวจ migration และพฤติกรรมที่ซ้ำกัน; §0 และ §9 ระบุชัดว่า Phase A ยังไม่ปิด; เพิ่มขั้นตอนถัดไปพร้อมเกณฑ์รับงาน; แก้เลขบรรทัดอ้างอิงที่เลื่อน; รันเทสต์ซ้ำเพื่อยืนยันหลักฐานวันที่ 30 ก.ย. 2026</p><p><strong>สถานะเอกสาร:</strong> รอเจ้าของ (คุณเดฟ) ตัดสินคำถามเปิดใน §8 — ทุกขั้นที่เสนอใน §9 ไม่เปิด cron และไม่ส่งข้อความหาลูกค้าจริง</p><p><strong>หลักการเขียน:</strong> ทุกแถวแยก &quot;ทำงานจริง / มีโค้ดแต่ไม่ต่อสาย / อยู่แค่ spec&quot; พร้อมอ้าง file:line — สถานะ verify จากโค้ดจริงเมื่อ 26 ก.ค., 1 ส.ค. และ 30 ก.ย. 2026 ยกเว้นที่ระบุว่า &quot;จากรอบตรวจก่อน&quot;</p><p><strong>หมายเหตุความจริง:</strong> เอกสารเดิม (<code>docs/LINE-Architecture-System-Complete.md:41</code>, <code>docs/PRD.md:514</code>) ระบุ &quot;LINE OA Commerce ✅ 20/20&quot; ซึ่งเกินจริงสำหรับ live path — เอกสารนี้คือบันทึกสถานะที่ตรงความจริงกว่า</p></blockquote>
 <hr>
-<h2>0. สถานะการดำเนินการ (ฉบับ 1.2)</h2>
-<p><strong>Phase A (P0-1 ถึง P0-6) สร้างเสร็จและผ่านรีวิวข้ามค่ายแล้ว — แต่อยู่บน branch เท่านั้น ยังไม่ push และยังไม่ deploy</strong></p>
-<ul><li><strong>Branch:</strong> <code>codex/repair-intelligence-phase0-trust</code> · commit ที่ผ่านรีวิว: <code>46a203a6</code> (1 ส.ค. 2026)</li><li><strong>Migrations:</strong> <code>0193_line_outbound_claim_and_record.sql</code>, <code>0194_line_outbound_retry_and_claim_fencing.sql</code>, <code>0195_line_outbound_timezone_safe_backoff.sql</code>, <code>0196_line_outbound_timezone_safe_sent_at.sql</code> + การแก้ <code>supabase/functions/line-outbound-sender/index.ts</code></li><li><strong>ผลรีวิวข้ามค่าย:</strong> รอบ A1, A2, A3 ถูกปฏิเสธ (มีหลักฐาน file:line ทุกครั้ง) → รอบ A4 ได้ <code>SOL VERDICT: ACCEPT PHASE A4</code></li><li><strong>หลักฐานที่ผู้ตรวจรับรันเอง:</strong> pgTAP 70/70 ใน rollback wrapper (0193→0196 รวมเทสต์ที่รันใต้ timezone <code>Asia/Bangkok</code>) · vitest 18 ไฟล์ / 73 เทสต์ · ไม่มีการรั่วไปยัง stack ที่แชร์ · ไม่มี <code>cron.schedule</code> ใน 0193–0196</li><li><strong>ผลต่อ environment จริง:</strong> เพราะยังไม่ deploy ทุก environment ที่รันโค้ดเดิมยังมีบั๊ก B1–B6 อยู่ครบ</li></ul>
+<h2>0. สถานะการดำเนินการ (ฉบับ 1.3)</h2>
+<p><strong>P0-1 ถึง P0-6 มี implementation แล้วบน branch และผ่านรีวิวข้ามค่าย — แต่ Phase A ยังไม่ปิด</strong></p>
+<ul><li><strong>Branch:</strong> <code>codex/repair-intelligence-phase0-trust</code> · commit ที่ผ่านรีวิว: <code>46a203a6</code> (1 ส.ค. 2026) · ยังไม่ push และยังไม่ deploy</li><li><strong>Migrations:</strong> <code>0193_line_outbound_claim_and_record.sql</code>, <code>0194_line_outbound_retry_and_claim_fencing.sql</code>, <code>0195_line_outbound_timezone_safe_backoff.sql</code>, <code>0196_line_outbound_timezone_safe_sent_at.sql</code> + การแก้ <code>supabase/functions/line-outbound-sender/index.ts</code></li><li><strong>ผลรีวิวข้ามค่าย:</strong> รอบ A1, A2, A3 ถูกปฏิเสธ (มีหลักฐาน file:line ทุกครั้ง) → รอบ A4 ได้ <code>SOL VERDICT: ACCEPT PHASE A4</code></li><li><strong>หลักฐานที่ผู้ตรวจรับรันเอง (รันซ้ำ 30 ก.ย. 2026):</strong> pgTAP 70/70 ใน rollback wrapper (0193→0196 รวมเทสต์ที่รันใต้ timezone <code>Asia/Bangkok</code>) · vitest 18 ไฟล์ / 73 เทสต์ · ไม่มีการรั่วไปยัง stack ที่แชร์ · ไม่มี <code>cron.schedule</code> ใน 0193–0196</li><li><strong>ผลต่อ environment จริง:</strong> เพราะยังไม่ deploy ทุก environment ที่รันโค้ดเดิมยังมีบั๊ก B1–B6 อยู่ครบ</li></ul>
+<p><strong>ทำไม Phase A ยังไม่ปิด:</strong></p>
+<ul><li><strong>P0-9 (B8) ยังไม่ได้สร้าง</strong> — และทับซ้อนกับ <code>0175</code> unified ingress ที่ branch <code>codex/line-trust-wave1-main</code> จองไว้ จึงต้องตัดสินเจ้าของงานก่อน (§8 ข้อ 7)</li><li><strong>หลักฐานทดสอบยังค้างบางส่วน:</strong> เทสต์ claim แข่งกัน 2 client ยังไม่เคยรันจริง (harness ข้ามเพราะต้องมี DSN ของ stack ชั่วคราว) · Python property suites ไม่เคยรัน (เครื่องที่ใช้ไม่มี python) · ยังไม่มีการรัน CI ที่มี suite <code>line_outbound_claim_record</code></li><li><strong>ยังไม่ได้รวมกับ branch อื่นของ repo เดียวกัน</strong> — ดูผลตรวจการรวมใน §8</li></ul>
 <div class="table-wrap"><table><thead><tr>
 <th>บั๊ก</th>
-<th>สถานะ ณ ฉบับ 1.2</th>
+<th>สถานะ ณ ฉบับ 1.3</th>
 </tr></thead><tbody>
 <tr>
 <td>B1 หยิบคิวไม่มี lock</td>
-<td>✅ แก้บน branch — sender เรียก <code>rpc_claim_line_outbound_batch</code> (<code>index.ts:676-687</code>), <code>FOR UPDATE SKIP LOCKED</code>, reclaim ตาม timeout, fencing ด้วย <code>claim_token</code></td>
+<td>✅ มี implementation บน branch — sender เรียก <code>rpc_claim_line_outbound_batch</code> (<code>index.ts:740-744</code>), <code>FOR UPDATE SKIP LOCKED</code>, reclaim ตาม timeout, fencing ด้วย <code>claim_token</code> — เทสต์ 2 client ยังไม่ได้รัน</td>
 </tr>
 <tr>
 <td>B2 service role บันทึกผลไม่ได้</td>
-<td>✅ แก้บน branch — ตรวจ service context จาก SQL role (<code>current_setting('role')</code>) ไม่ใช่ JWT; ด่านของผู้ใช้ไม่ถูกผ่อน</td>
+<td>✅ มี implementation บน branch — ตรวจ service context จาก SQL role (<code>current_setting('role')</code>) ไม่ใช่ JWT; ด่านของผู้ใช้ไม่ถูกผ่อน</td>
 </tr>
 <tr>
 <td>B3 แถวกลุ่มบันทึกผลไม่ได้</td>
-<td>✅ แก้บน branch — LEFT JOIN + vertical จาก <code>line_groups</code> + fallback <code>monolith</code> ตาม 0097</td>
+<td>✅ มี implementation บน branch — LEFT JOIN + vertical จาก <code>line_groups</code> + fallback <code>monolith</code> ตาม 0097</td>
 </tr>
 <tr>
 <td>B4 ไม่มี transition guard</td>
-<td>✅ แก้บน branch — บันทึกได้เฉพาะแถวที่ยัง <code>pending</code>; แถวจบแล้วคืน <code>recorded=false</code> ไม่มี audit ซ้ำ</td>
+<td>✅ มี implementation บน branch — บันทึกได้เฉพาะแถวที่ยัง <code>pending</code>; แถวจบแล้วคืน <code>recorded=false</code> ไม่มี audit ซ้ำ</td>
 </tr>
 <tr>
 <td>B5 ล้มครั้งเดียวตายถาวร</td>
-<td>✅ แก้บน branch — แยก transient/permanent + exponential backoff (1 วินาที × 2^n สูงสุด 5 นาที) + เพดาน 5 ครั้ง</td>
+<td>✅ มี implementation บน branch — แยก transient/permanent + exponential backoff (1 วินาที × 2^n สูงสุด 5 นาที) + เพดาน 5 ครั้ง</td>
 </tr>
 <tr>
 <td>B6 ไม่มี cron</td>
@@ -48,14 +50,14 @@
 </tr>
 <tr>
 <td>B8 <code>handler_error</code> นับว่าสำเร็จ</td>
-<td>🔴 ยังไม่แก้ — P0-9 ยังไม่ได้สร้าง</td>
+<td>🔴 ยังไม่แก้ — P0-9 ยังไม่ได้สร้าง; ทับซ้อนกับ <code>0175</code> ของ line-trust</td>
 </tr>
 <tr>
 <td>B9 <code>line-login</code> ไม่ใช้ state/nonce</td>
-<td>🔴 ยังไม่แก้ — อยู่ใน P1</td>
+<td>🔴 ยังไม่แก้ — อยู่ใน P1; ทับซ้อนกับ <code>0176</code> ของ line-trust</td>
 </tr>
 </tbody></table></div>
-<p><strong>ยังไม่ได้พิสูจน์ (ห้ามอ้างเกิน):</strong> Python property suites ไม่เคยรัน (เครื่องที่ใช้ไม่มี python) · เทสต์ claim แข่งกัน 2 client ถูกข้ามเพราะต้องระบุ DSN ของ stack ชั่วคราวโดยเฉพาะ · ยังไม่มีการรัน CI, Edge Function จริง หรือ LINE API จริง · พฤติกรรม <code>X-Line-Retry-Key</code> ฝั่ง LINE เป็นการรับประกันภายนอก — ด่านใน DB อย่างเดียวไม่กัน worker 2 ตัวที่ lease หมดอายุยิงถึง LINE พร้อมกัน</p>
+<p><strong>ยังไม่ได้พิสูจน์ (ห้ามอ้างเกิน):</strong> เทสต์ claim 2 client · Python property suites · CI · การรัน Edge Function จริงหรือ LINE API จริง · พฤติกรรม <code>X-Line-Retry-Key</code> ฝั่ง LINE เป็นการรับประกันภายนอก — ด่านใน DB อย่างเดียวไม่กัน worker 2 ตัวที่ lease หมดอายุยิงถึง LINE พร้อมกัน</p>
 <p><strong>บั๊กเพิ่มเติมที่พบและแก้ระหว่าง Phase A:</strong> <code>next_attempt_at</code> และ <code>sent_at</code> เคยรับค่า <code>timezone('utc', now())</code> (timestamp ไม่มี time zone) ใส่คอลัมน์ <code>timestamptz</code> ทำให้ในไทย backoff กลายเป็นศูนย์และเวลาส่งถูกบันทึกเร็วไป ~7 ชั่วโมง — แก้ใน 0195/0196 พร้อมเทสต์ใต้ <code>Asia/Bangkok</code></p>
 <hr>
 <h2>1. ปัญหา (Problem Statement)</h2>
@@ -148,7 +150,7 @@
 </tr>
 <tr>
 <td>B8</td>
-<td><strong>Handler ล้มถูกนับเป็น processed + เหตุการณ์หายถาวร</strong> — <code>fn_line_handle_group_event</code> จับ exception แล้วคืน <code>'handler_error:...'</code> แต่ skip list ใน ingest ไม่รวม prefix นี้ → insert inbound row + audit + นับ <code>events_processed</code> และเพราะ inbound row เกิดแล้ว การ redeliver จาก LINE จะโดน dedupe → เหตุการณ์ที่ล้มหายถาวรแบบรายงานว่าสำเร็จ (พบครั้งแรกใน research 31 ก.ค. 2026 ของเรโป product แล้วยืนยันในเรโปนี้ 1 ส.ค.)</td>
+<td><strong>Handler ล้มถูกนับเป็น processed + เหตุการณ์หายถาวร</strong> — <code>fn_line_handle_group_event</code> จับ exception แล้วคืน <code>'handler_error:...'</code> แต่ skip list ใน ingest ไม่รวม prefix นี้ → insert inbound row + audit + นับ <code>events_processed</code> และเพราะ inbound row เกิดแล้ว การ redeliver จาก LINE จะโดน dedupe → เหตุการณ์ที่ล้มหายถาวรแบบรายงานว่าสำเร็จ (พบครั้งแรกใน research 31 ก.ค. 2026 บน branch <code>codex/line-trust-wave1-main</code> แล้วยืนยันบน branch นี้ 1 ส.ค. — ทั้งสอง branch แตกมาจาก base เดียวกันจึงมีบั๊กเดียวกัน)</td>
 <td><code>0097:281</code> (คืนค่า), <code>0097:437-438</code> (skip list), <code>0097:454</code> (นับ processed), <code>0097:429-433</code> (dedupe)</td>
 </tr>
 <tr>
@@ -200,7 +202,7 @@
 <h2>3. เป้าหมาย (Goals)</h2>
 <ol><li><strong>ศูนย์ข้อความซ้ำ:</strong> เปิดตัวส่งลูกค้าได้โดยพิสูจน์ด้วยเทสต์ชน Postgres จริงว่ารันคาบกันหรือล้มกลางทางแล้วไม่เกิดส่งซ้ำ</li><li><strong>ทุกข้อความมีผลจบ:</strong> แถวคิวทุกแถวจบที่ <code>sent</code> หรือ <code>failed</code> พร้อมเหตุผล — ไม่มีค้าง <code>pending</code> เกิน SLA และความล้มเหลวชั่วคราวได้ retry</li><li><strong>สเปกตรงความจริง:</strong> ทุก subsystem ใน <code>.kiro/specs/line-oa-commerce/tasks.md</code> ถูก mark ตามสถานะจริง (live / dead / removed) — ไม่มี &quot;✅ 20/20&quot; ที่ไม่ตรง live path</li><li><strong>PDPA มีเจ้าภาพ:</strong> มีมติเจ้าของเป็นลายลักษณ์อักษรว่า consent gate ลูกค้าต้องมีก่อนขยาย หรือยอมรับความเสี่ยงชั่วคราว</li><li><strong>Ops ตรวจสอบได้:</strong> มีรายการ cron/deploy ที่ต้องมีบน environment จริงชัดเจน (ต่อยอด <code>docs/OPS-RUNBOOK-Wave2.md</code>)</li></ol>
 <h2>4. นอกขอบเขต (Non-Goals)</h2>
-<ol><li><strong>ไม่ทำ free-text/LLM ตอบลูกค้า</strong> — หลักเหล็ก template-only คงเดิม (แก้ที่การต่อสาย ไม่อ่อนเกณฑ์)</li><li><strong>ไม่ฟื้น ordering/forecast/TCCK ในเฟสนี้</strong> — รอมติเก็บหรือลบ (§8 ข้อ 5) ห้ามต่อสายเงียบ ๆ</li><li><strong>ไม่ทำหน้า admin template ในเฟสนี้</strong> — รอมติ (§8 ข้อ 6)</li><li><strong>ไม่แตะ repo manufacturing OS</strong> — คนละระบบ</li><li><strong>ไม่ผ่อน RLS/สิทธิ์ระดับผู้ใช้</strong> — การแก้ B2 คือให้ระบบรู้จัก service context ไม่ใช่ถอดด่านของมนุษย์</li></ol>
+<ol><li><strong>ไม่ทำ free-text/LLM ตอบลูกค้า</strong> — หลักเหล็ก template-only คงเดิม (แก้ที่การต่อสาย ไม่อ่อนเกณฑ์)</li><li><strong>ไม่ฟื้น ordering/forecast/TCCK ในเฟสนี้</strong> — รอมติเก็บหรือลบ (§8 ข้อ 5) ห้ามต่อสายเงียบ ๆ</li><li><strong>ไม่ทำหน้า admin template ในเฟสนี้</strong> — รอมติ (§8 ข้อ 6)</li><li><strong>ไม่แก้ไขนอก branch นี้</strong> — ไม่แตะ checkout หรือ worktree อื่น (รวม <code>codex/line-trust-wave1-main</code>) ในงานนี้; การรวมกับ branch อื่นทำตามแผน §8 ข้อ 7 หลังเจ้าของอนุมัติเท่านั้น</li><li><strong>ไม่ผ่อน RLS/สิทธิ์ระดับผู้ใช้</strong> — การแก้ B2 คือให้ระบบรู้จัก service context ไม่ใช่ถอดด่านของมนุษย์</li></ol>
 <hr>
 <h2>5. User Stories</h2>
 <p><strong>ลูกค้า (ผู้รับข้อความ):</strong></p>
@@ -218,43 +220,43 @@
 <th>Req</th>
 <th>รายละเอียด</th>
 <th>Acceptance criteria (เทสต์ชน Postgres จริง, RED ก่อน)</th>
-<th>สถานะ (1.2)</th>
+<th>สถานะ (1.3)</th>
 </tr></thead><tbody>
 <tr>
 <td>P0-1</td>
 <td><strong>Claim คิวแบบ atomic:</strong> เพิ่ม <code>claimed_at/claimed_by</code> + <code>rpc_claim_line_outbound_batch</code> — <code>UPDATE ... WHERE id IN (SELECT ... FOR UPDATE SKIP LOCKED) RETURNING</code> (ไม่เพิ่มค่า enum ใหม่ เพื่อเลี่ยงข้อจำกัด <code>ALTER TYPE</code> และผลกระทบต่อผู้อ่าน status)</td>
 <td>สอง client claim พร้อมกัน → ไม่มีแถวซ้ำ; แถว claim ค้างเกิน timeout → ถูก re-claim ได้</td>
-<td>✅ บน branch (0193 + ต่อสาย sender) — เทสต์ 2 client ยังไม่ได้รัน</td>
+<td>🟡 มี implementation (0193 + ต่อสาย sender) — AC ส่วน 2 client ยังไม่มีหลักฐาน</td>
 </tr>
 <tr>
 <td>P0-2</td>
 <td><strong>Service context บันทึกผลได้:</strong> grant + ให้ <code>rpc_record_line_send_result</code> รู้จัก service role เป็น system actor โดยไม่อ่อนด่าน role ของผู้ใช้</td>
 <td>เรียกด้วย service role → บันทึกได้; ผู้ใช้ไร้ role → ถูกปฏิเสธเหมือนเดิม</td>
-<td>✅ บน branch (0193)</td>
+<td>✅ มี implementation + หลักฐาน pgTAP (0193)</td>
 </tr>
 <tr>
 <td>P0-3</td>
 <td><strong>แถวกลุ่มบันทึกผลได้:</strong> LEFT JOIN + ดึง vertical/audit จาก <code>line_groups</code> เมื่อ <code>conversation_id</code> เป็น NULL</td>
 <td>แถว group → recordResult สำเร็จ + audit ครบ</td>
-<td>✅ บน branch (0193 + fallback 0196)</td>
+<td>✅ มี implementation + หลักฐาน (0193 + fallback 0196)</td>
 </tr>
 <tr>
 <td>P0-4</td>
 <td><strong>Transition guard:</strong> บันทึกผลได้เฉพาะแถวที่ยัง <code>pending</code>; แถวจบแล้ว → <code>recorded=false</code> no-op</td>
 <td>บันทึกซ้ำ / flip <code>sent</code>→<code>failed</code> → ถูกปฏิเสธ, audit ไม่ซ้ำ</td>
-<td>✅ บน branch (0193 + fencing 0194)</td>
+<td>✅ มี implementation + หลักฐาน (0193 + fencing 0194)</td>
 </tr>
 <tr>
 <td>P0-5</td>
 <td><strong>LINE-level dedupe:</strong> ใส่ <code>X-Line-Retry-Key</code> = outbound id ในการ push</td>
 <td>ปิดหน้าต่างส่งซ้ำข้าม timeout (ส่งแล้วแต่บันทึกพลาด)</td>
-<td>✅ บน branch — พฤติกรรมฝั่ง LINE ยังไม่ได้พิสูจน์</td>
+<td>🟡 มี implementation + unit test — พฤติกรรมฝั่ง LINE ยังไม่ได้พิสูจน์</td>
 </tr>
 <tr>
 <td>P0-6</td>
 <td><strong>Retry จำกัดครั้งสำหรับความล้มเหลวชั่วคราว</strong> (แนว claim v3 ของ 0084) + dead-letter</td>
 <td>LINE ตอบ 5xx → retry ตาม backoff; เกินเพดาน → <code>failed</code> พร้อมเหตุผล</td>
-<td>✅ บน branch (0194–0196)</td>
+<td>✅ มี implementation + หลักฐาน pgTAP (0194–0196)</td>
 </tr>
 <tr>
 <td>P0-7</td>
@@ -272,11 +274,11 @@
 <td>P0-9</td>
 <td><strong>Handler ที่ล้มต้องไม่นับเป็น processed (B8):</strong> <code>handler_error</code> — เหตุการณ์ที่ handler ล้มต้องมี retry state ของเราเอง (แถว retry + sweep แบบ claim v3 ของ 0084) — ห้ามพึ่ง LINE redelivery เพราะ LINE ไม่รับประกัน — ไม่นับ processed และไม่ทำให้แถวที่ล้มโดน dedupe</td>
 <td>จำลอง handler ล้ม → event เข้าคิว retry ภายในระบบและถูกประมวลผลซ้ำจนสำเร็จหรือครบเพดาน → dead-letter + audit; ไม่มี false success</td>
-<td>🔴 ยังไม่ได้สร้าง</td>
+<td>🔴 ยังไม่ได้สร้าง — ทับซ้อนกับ <code>0175</code> ของ line-trust รอมติข้อ 7</td>
 </tr>
 </tbody></table></div>
 <h3>P1 — ควรมีเร็ว ๆ นี้</h3>
-<ul><li><strong>B9 — ให้ login ของพนักงานใช้ state และ nonce:</strong> แก้ <code>line-login</code> ให้ผูก state ที่ server ออก ใช้ครั้งเดียว หมดอายุสั้น — AC: replay <code>code</code> หรือ callback swap ถูกปฏิเสธ, login ปกติผ่าน (อยู่ P1 ไม่ใช่ P0 เพราะเป็นเส้น login พนักงาน ไม่ได้อยู่บนทางส่งลูกค้า แต่บล็อกความน่าเชื่อถือของ identity/audit จึงต้องทำเร็ว)</li><li><strong>Consent gate ลูกค้าก่อนส่ง</strong> (ถ้ามติ §8 ข้อ 4 = ต้องมี): ช่อง consent ฝั่งลูกค้า + ด่านเช็คใน claim/ส่ง</li><li><strong>Human-approval ก่อนส่งหาลูกค้า</strong> (ถ้ามติ §8 ข้อ 2 = ต้องมี)</li><li><strong>Metric/alert:</strong> แถว <code>pending</code> ค้างเกิน SLA, อัตรา <code>failed</code>, dead-letter</li><li><strong>LINE quota/cost awareness:</strong> push/multicast กิน quota (reply ไม่กิน) — ควรมี counter ต่อเดือน + แจ้งเตือนก่อนชนเพดาน</li></ul>
+<ul><li><strong>B9 — ให้ login ของพนักงานใช้ state และ nonce:</strong> แก้ <code>line-login</code> ให้ผูก state ที่ server ออก ใช้ครั้งเดียว หมดอายุสั้น — AC: replay <code>code</code> หรือ callback swap ถูกปฏิเสธ, login ปกติผ่าน (อยู่ P1 ไม่ใช่ P0 เพราะเป็นเส้น login พนักงาน ไม่ได้อยู่บนทางส่งลูกค้า; ทับซ้อนกับ <code>0176</code> identity step-up ของ line-trust)</li><li><strong>Consent gate ลูกค้าก่อนส่ง</strong> (ถ้ามติ §8 ข้อ 4 = ต้องมี): ช่อง consent ฝั่งลูกค้า + ด่านเช็คใน claim/ส่ง</li><li><strong>Human-approval ก่อนส่งหาลูกค้า</strong> (ถ้ามติ §8 ข้อ 2 = ต้องมี)</li><li><strong>Metric/alert:</strong> แถว <code>pending</code> ค้างเกิน SLA, อัตรา <code>failed</code>, dead-letter</li><li><strong>LINE quota/cost awareness:</strong> push/multicast กิน quota (reply ไม่กิน) — ควรมี counter ต่อเดือน + แจ้งเตือนก่อนชนเพดาน</li></ul>
 <blockquote><p><strong>นิยาม SLA ชั่วคราว (จนกว่า ops จะกำหนดจริง):</strong> แถว <code>pending</code> ต้องถูกหยิบภายใน 15 นาทีหลังเปิด cron — ทุกที่ที่เอกสารนี้อ้าง &quot;SLA&quot; ให้ใช้ค่านี้ไปก่อน</p></blockquote>
 <h3>P2 — อนาคต (ห้ามทำก่อนมีมติ)</h3>
 <ul><li>ฟื้นหรือลบ ordering / forecast / R-03 / auto-close / TCCK (§8 ข้อ 5)</li><li>หน้า admin จัดการ template (§8 ข้อ 6)</li></ul>
@@ -329,16 +331,119 @@
 </tr>
 <tr>
 <td>7</td>
-<td><strong>การประสานสองเรโป:</strong> โค้ด LINE ในเรโปนี้กับเรโป product (<code>determined-williams</code>, worktree <code>line-trust-wave1-main</code>) เป็นสายพันธุ์เดียวกัน (บั๊กตรงกันถึงระดับบรรทัด เช่น <code>0097:281</code>) — จะให้เรโปไหนเป็น authoritative ของ LINE subsystem: แก้ที่นี่แล้ว port ไป, รอ Trust Kernel, หรือแยกอิสระ</td>
+<td><strong>แผนรวม branch:</strong> branch นี้ (<code>codex/repair-intelligence-phase0-trust</code>) กับ <code>codex/line-trust-wave1-main</code> เป็น branch ของ product repo เดียวกัน — ต้องอนุมัติลำดับการรวม, เลือกโมเดล tenant ที่เป็น canonical, และตัดสินเจ้าของงานที่ทับซ้อน (P0-1–P0-6 เทียบ <code>0178</code>, P0-9 เทียบ <code>0175</code>, B9 เทียบ <code>0176</code>) ตามผลตรวจด้านล่าง</td>
 <td>สถาปัตย์/ธุรกิจ</td>
-<td>ไม่บล็อก Phase A แต่บล็อกการ merge หรือนำไปใช้ข้ามเรโป</td>
+<td>P0-9, การ push/merge ของทั้งสอง branch, Phase C</td>
 </tr>
 </tbody></table></div>
-<p><strong>ข้อมูลเพิ่มเติมสำหรับข้อ 7:</strong> แผน amendment ของเรโป product (26 ก.ค. 2026, <code>docs/superpowers/plans/2026-07-26-line-trust-kernel-wave-1-amendment.th.md</code>) ยืนยันว่าเรโป product เป็นเจ้าของ roadmap LINE Trust Kernel — จัดสรร <code>0171</code>–<code>0174</code> ให้ Wave 1 และจอง <code>0175</code>–<code>0179</code> ไว้ โดย <code>0178</code> = atomic outbox ซึ่งทับกับ P0-1 ของเรา งาน Phase A ในเรโปนี้จึงใช้เลข <code>0193</code>–<code>0196</code> (นอกช่วงที่จองไว้) และทำเป็น patch แยกชัดต่อบั๊กเพื่อ port ไปได้</p>
+<h3>8.1 ผลตรวจการรวม branch (ข้อ 7) — ตรวจ 30 ก.ย. 2026 จาก git ref ในเครื่อง ไม่ได้ fetch และไม่ได้แตะ worktree อื่น</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>หัวข้อ</th>
+<th>ผลตรวจ</th>
+</tr></thead><tbody>
+<tr>
+<td>Repo</td>
+<td>ทั้งสอง worktree ใช้ <code>.git</code> เดียวกันของ <code>determined-williams</code> และ origin เดียวกัน <code>github.com/indetailsgroup-hue/monolith-workspace</code></td>
+</tr>
+<tr>
+<td>Merge-base</td>
+<td><code>dd1119af</code> (18 ก.ค. 2026) — branch นี้นำหน้า 64 commit, line-trust นำหน้า 129 commit</td>
+</tr>
+<tr>
+<td>เทียบ <code>origin/main</code></td>
+<td>ref ในเครื่องล่าสุด <code>57b69513</code> (1 ส.ค. 2026 — ยังไม่ fetch): branch นี้นำหน้า 64 / ตามหลัง 118 · line-trust นำหน้า 47 / ตามหลัง 36</td>
+</tr>
+<tr>
+<td>เลข migration ชนกันตรง ๆ</td>
+<td>ไม่มี — branch นี้มี <code>0180</code>–<code>0196</code>, line-trust มี <code>0171</code>–<code>0173</code> (และ <code>0163</code>, <code>0170</code> ที่มาจาก main)</td>
+</tr>
+<tr>
+<td>Migration ที่ branch นี้ยังขาด</td>
+<td><code>0163_storage_hash_verdict_semantics.sql</code> และ <code>0170_factory_jobs_list_real_fields.sql</code> (อยู่บน main แล้ว)</td>
+</tr>
+<tr>
+<td>Trust Kernel <code>0180</code>–<code>0188</code></td>
+<td>มีเฉพาะบน branch นี้ — ไม่อยู่บน main และไม่อยู่บน line-trust</td>
+</tr>
+<tr>
+<td>ลองรวมในหน่วยความจำ (<code>git merge-tree</code>)</td>
+<td>conflict 7 ไฟล์: <code>.github/workflows/db-verify.yml</code>, <code>.gitignore</code>, <code>package.json</code>, <code>package-lock.json</code>, <code>server/src/api/routes/factory.ts</code>, <code>supabase/functions/factory-api/index.ts</code>, <code>supabase/functions/factory-api/index.test.ts</code> — ส่วน <code>tests/line-oa-commerce/py/test_secret_non_exposure_property.py</code> ที่ทั้งสองฝั่งแก้ รวมเองได้</td>
+</tr>
+<tr>
+<td>Git ref เสีย</td>
+<td>มี ref ชื่อซ้ำ <code>refs/heads/codex/repair-intelligence-phase0-trust (1)</code> และ <code>refs/remotes/origin/main (1)</code> (น่าจะเกิดจากโปรแกรม sync ไฟล์) — git เตือนและข้าม ยังไม่ได้ลบ ต้องให้เจ้าของ repo ลบก่อนรวม</td>
+</tr>
+<tr>
+<td>Runtime ของ LINE</td>
+<td>line-trust ยังไม่แก้ <code>line-outbound-sender</code>, <code>line-webhook</code>, <code>line-login</code> หรือ <code>_shared/line-oa</code> — ไม่มี conflict ในไฟล์ runtime ของ LINE</td>
+</tr>
+</tbody></table></div>
+<p><strong>พฤติกรรมที่ซ้ำกันหรือทับซ้อน</strong></p>
+<div class="table-wrap"><table><thead><tr>
+<th>เรื่อง</th>
+<th>branch นี้</th>
+<th>line-trust</th>
+<th>ความเสี่ยงเมื่อรวม</th>
+</tr></thead><tbody>
+<tr>
+<td>โมเดล tenant / organization / site / membership</td>
+<td><code>monolith_tenant</code>, <code>monolith_organization</code>, <code>monolith_site</code>, <code>monolith_membership*</code>, <code>verified_action_context</code> (0180, 0189)</td>
+<td><code>tenants</code>, <code>organizations</code>, <code>sites</code>, <code>tenant_memberships</code>, <code>access_grants</code>, <code>auth_subjects</code>, <code>project_parties</code> (0171)</td>
+<td><strong>ซ้ำเชิงแนวคิด</strong> — แหล่งความจริงเรื่อง tenant และสิทธิ์สองชุด ชื่อตารางไม่ชนแต่ข้อมูลจะแยกกัน ต้องเลือกชุด canonical ก่อนรวม</td>
+</tr>
+<tr>
+<td>สิทธิ์ของผู้เรียกฝั่ง service</td>
+<td>ตรวจ SQL role <code>current_setting('role')</code> = <code>service_role</code> (0193)</td>
+<td>ตาราง <code>service_principals</code> + <code>rpc_authorize_business_action</code> (0173)</td>
+<td>กลไกให้สิทธิ์ service สองแบบ — ต้องตัดสินว่า sender ต้องผ่าน policy decision ของ 0173 หรือไม่</td>
+</tr>
+<tr>
+<td>คิวขาออก LINE</td>
+<td>claim, fencing, backoff บน <code>line_oa_outbound_messages</code> (0193–0196)</td>
+<td>ยังไม่แตะ แต่จอง <code>0178</code> = atomic outbox</td>
+<td>ถ้า line-trust สร้าง outbox ใหม่ภายหลังจะมีคิวสองแบบ; และ 0194 ลบ <code>rpc_record_line_send_result</code> แบบ 3 argument ที่ line-trust ยังใช้ schema เดิมอยู่</td>
+</tr>
+<tr>
+<td>ingest ที่ล้มแล้วหาย (B8)</td>
+<td>P0-9 ยังไม่ได้สร้าง</td>
+<td>จอง <code>0175</code> = unified ingress พร้อม processing state, retry, dead letter</td>
+<td>ถ้าสร้างทั้งสองฝั่งจะได้ retry ของ ingest สองชุด — ต้องมีเจ้าของเดียว</td>
+</tr>
+<tr>
+<td>login พนักงาน (B9)</td>
+<td>P1 ยังไม่ได้สร้าง</td>
+<td>จอง <code>0176</code> = identity binding + step-up</td>
+<td>ควรทำฝั่งเดียว</td>
+</tr>
+<tr>
+<td>ตาราง LINE ที่ใช้ร่วมกัน</td>
+<td>sender อ่าน <code>line_groups.vertical_context</code> และ <code>line_oa_channels.channel_access_token_ref</code></td>
+<td>0171/0172 เพิ่ม <code>tenant_id</code> (nullable, FK NOT VALID) ใน <code>line_oa_channels</code> และ <code>tenant_id</code>, <code>canonical_site_id</code> + constraint ใน <code>line_groups</code></td>
+<td>น่าจะเข้ากันได้เพราะเป็นการเพิ่มคอลัมน์ แต่ยังไม่ได้พิสูจน์ — ต้องรัน pgTAP ของ branch นี้บน schema ที่รวมแล้ว</td>
+</tr>
+<tr>
+<td>ลำดับเลข migration</td>
+<td><code>0180</code>–<code>0196</code></td>
+<td><code>0171</code>–<code>0173</code> และจอง <code>0174</code>–<code>0179</code></td>
+<td>ถ้า environment ใด apply <code>0180</code>+ ของ branch นี้ก่อน แล้ว <code>0174</code>–<code>0179</code> ของ line-trust ตามมาทีหลัง จะเป็นการ apply ย้อนลำดับ — ต้องออก amendment ของ line-trust หรือห้าม apply <code>0180</code>+ จนกว่าจะตกลงลำดับ</td>
+</tr>
+</tbody></table></div>
 <hr>
 <h2>9. ลำดับงาน (Phasing)</h2>
-<ol><li><strong>Phase A — ✅ สร้างเสร็จบน branch ยกเว้น P0-9:</strong> P0-1 ถึง P0-6 ผ่านรีวิวข้ามค่ายแล้ว (§0); P0-9 ยังค้าง — ทำเป็น patch ที่ port ได้ (migration + diff แยกชัดต่อบั๊ก) เพื่อไม่ทำงานทิ้งถ้ามติข้อ 7 ให้เรโป product เป็น authoritative</li><li><strong>Phase B (หลังมติข้อ 3):</strong> P0-7 — wire หรือลบ autonomy gate + แก้ spec ให้ตรง</li><li><strong>Phase C (หลังมติข้อ 1, 2, 4):</strong> push + deploy งาน Phase A, ตั้ง cron จริง, เพิ่ม consent gate และ human-approval ถ้ามีมติ → เปิดส่งลูกค้า</li><li><strong>Phase D (หลังมติข้อ 5, 6):</strong> เก็บกวาด subsystem ที่ตาย + admin UI</li></ol>
+<ol><li><strong>Phase A — 🟡 ยังไม่ปิด:</strong> P0-1 ถึง P0-6 มี implementation และผ่านรีวิวข้ามค่ายแล้ว (§0) แต่ P0-9 ยังไม่ได้สร้าง และหลักฐานทดสอบยังค้างบางส่วน — ขั้นปิด Phase A ดู §9.1</li><li><strong>Phase B (หลังมติข้อ 3):</strong> P0-7 — wire หรือลบ autonomy gate + แก้ spec ให้ตรง</li><li><strong>Phase C (หลังมติข้อ 1, 2, 4 และหลังปิด Phase A):</strong> push + deploy งาน Phase A, ตั้ง cron จริง, เพิ่ม consent gate และ human-approval ถ้ามีมติ → เปิดส่งลูกค้า</li><li><strong>Phase D (หลังมติข้อ 5, 6):</strong> เก็บกวาด subsystem ที่ตาย + admin UI</li></ol>
 <p><strong>เงื่อนไขปิดทุก Phase:</strong> แนบผลเทสต์จริง ไม่รับคำกล่าวอ้าง; ห้าม log token; ห้ามอ่อนกฎความปลอดภัยเพื่อให้ผ่าน; ทุก wave ต้องผ่านรีวิวข้ามค่ายก่อนรับ</p>
+<h3>9.1 ขั้นตอนถัดไปที่เสนอเพื่อปิด Phase A (รออนุมัติ)</h3>
+<blockquote><p><strong>ข้อห้ามทุกขั้น:</strong> ไม่เปิด cron ใด ๆ, ไม่ deploy, ไม่ส่งข้อความหาลูกค้าจริง และไม่ push โดยไม่ได้รับอนุมัติจากเจ้าของ — ฟังก์ชัน retry/sweep ที่สร้างใหม่เรียกได้จากเทสต์หรือด้วยมือเท่านั้นจนถึง Phase C</p></blockquote>
+<h4>ขั้นที่ 1 — ปิดหลักฐานทดสอบที่ค้างของ P0-1 ถึง P0-6 (เริ่มได้ทันที ไม่ขึ้นกับมติ)</h4>
+<ul><li>รัน <code>tests/line-oa-commerce/concurrency/claim-race.mjs</code> บน Postgres ชั่วคราวที่สร้างจากศูนย์ ไม่ใช่ stack ที่แชร์</li><li><strong>เกณฑ์รับงาน:</strong> สอง connection claim แถว pending ชุดเดียวกันพร้อมกัน → แถวที่ซ้ำกัน = 0 และแถวที่ถูก claim รวมกัน = จำนวนแถวทั้งหมด; หลังรันไม่มี object ค้าง; ผลดิบแนบใน ledger</li><li>รัน Python property suites ใน <code>tests/line-oa-commerce/py/</code> บนเครื่องที่มี python</li><li><strong>เกณฑ์รับงาน:</strong> ผ่านทั้งหมด หรือ skip ได้เฉพาะเหตุผลด้านสภาพแวดล้อมที่ระบุชัด — ห้ามมี skip เพราะ signature ของ function ไม่ตรง</li><li><strong>เกณฑ์รวม:</strong> ผู้ตรวจรับรันซ้ำเองได้ผลเดียวกัน</li></ul>
+<h4>ขั้นที่ 2 — ตัดสินแผนรวม branch (§8 ข้อ 7)</h4>
+<ul><li>ลบ git ref ที่เสียสองตัว (เจ้าของ repo ทำ)</li><li>เลือกโมเดล tenant canonical ระหว่าง <code>monolith_*</code> กับ <code>tenants/organizations/sites</code></li><li>ตัดสินเจ้าของงานที่ทับซ้อน: คิวขาออก (0193–0196 เทียบ 0178), ingest retry (P0-9 เทียบ 0175), login พนักงาน (B9 เทียบ 0176)</li><li>ตัดสินลำดับเลข migration (amendment ของ line-trust หรือห้าม apply <code>0180</code>+ ชั่วคราว)</li><li><strong>เกณฑ์รับงาน:</strong> มติทั้งสี่ข้อบันทึกเป็นลายลักษณ์อักษรทั้งไทยและอังกฤษ และอ้างถึงได้จากเอกสารนี้</li></ul>
+<h4>ขั้นที่ 3 — สร้าง P0-9 ใน branch ที่มติขั้นที่ 2 กำหนด</h4>
+<ul><li><strong>เกณฑ์รับงาน:</strong> RED ก่อน — จำลอง handler ล้มแล้วพิสูจน์ว่าปัจจุบันได้ inbound row + <code>events_processed</code> เพิ่ม (false success); GREEN — event ที่ล้มไม่ถูกนับ processed, ไม่ถูก dedupe, เข้าคิว retry ภายในระบบ, ประมวลผลซ้ำจนสำเร็จหรือครบเพดาน แล้วไป dead-letter พร้อม audit; ไม่พึ่ง LINE redelivery; ไม่มี cron ใหม่; ผ่านรีวิวข้ามค่าย</li></ul>
+<h4>ขั้นที่ 4 — รวม branch ในเครื่องและตรวจบน schema ที่รวมแล้ว</h4>
+<ul><li><strong>เกณฑ์รับงาน:</strong> conflict 7 ไฟล์แก้แล้ว (suite list ใน <code>db-verify.yml</code> ต้องมีครบทั้งสองฝั่ง); migration chain ทั้งหมด apply จากศูนย์ได้ตามลำดับเลข; pgTAP ของทั้งสอง branch และ vitest ผ่านบน schema ที่รวมแล้ว; ผลลองรวมผ่านรีวิวข้ามค่ายก่อนขอ push</li></ul>
+<h4>ขั้นที่ 5 — ปิด Phase A</h4>
+<ul><li><strong>เกณฑ์รับงาน:</strong> ขั้นที่ 1–4 ผ่าน; หลังเจ้าของอนุมัติ push แล้ว CI (<code>db-verify.yml</code> ที่มี suite <code>line_outbound_claim_record</code>) รันเขียวจริง; ไม่มี cron และไม่มีการส่งข้อความหาลูกค้า — การเปิดส่งจริงยังเป็นของ Phase C</li></ul>
 </main>
 </body>
 </html>

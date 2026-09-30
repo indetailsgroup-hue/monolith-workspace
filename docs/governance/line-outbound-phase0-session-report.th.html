@@ -129,7 +129,7 @@
 <td><code>supabase/functions/line-login/index.ts:2,9</code></td>
 </tr>
 </tbody></table></div>
-<blockquote><p>B8 และ B9 พบครั้งแรกจากเอกสาร research 31 ก.ค. 2026 ของเรโป product แล้วยืนยันว่ามีในเรโปนี้ด้วย (บั๊กตรงกันถึงระดับเลขบรรทัด — โค้ดสายพันธุ์เดียวกัน)</p></blockquote>
+<blockquote><p>B8 และ B9 พบครั้งแรกจากเอกสาร research 31 ก.ค. 2026 บน branch <code>codex/line-trust-wave1-main</code> แล้วยืนยันว่ามีบน branch นี้ด้วย — ทั้งสองเป็น branch ของ product repo เดียวกันที่แตกมาจาก base เดียวกัน จึงมีบั๊กตรงกันถึงระดับเลขบรรทัด (ฉบับแรกของรายงานนี้เขียนผิดว่าเป็นสองเรโป — แก้แล้ว 30 ก.ย. 2026)</p></blockquote>
 <h3>2.3 ⚫ โค้ดครบ เทสต์ผ่าน แต่ <strong>ไม่มีผู้เรียกเลย</strong></h3>
 <div class="table-wrap"><table><thead><tr>
 <th>ระบบ</th>
@@ -170,7 +170,7 @@
 <h3>2.4 📝 อยู่แค่ spec</h3>
 <ul><li><strong>Consent ฝั่งลูกค้า</strong> — ไม่มีช่องเก็บเลย และไม่มีด่านเช็คก่อนส่ง (พนักงานมี <code>identity_binding.consent_at</code>, <code>0088:10</code>)</li><li>หน้า admin จัดการ template (ตอนนี้ seed ผ่าน migration เท่านั้น)</li></ul>
 <h3>2.5 การแก้บันทึกที่เคยเกินจริง</h3>
-<p>เอกสารเดิม <code>docs/PRD.md:512</code> และ <code>docs/LINE-Architecture-System-Complete.md:40</code> ระบุ &quot;LINE OA Commerce ✅ เสร็จ 20/20&quot; ซึ่ง<strong>ไม่ตรง live path</strong> — ได้ใส่ banner ⚠️ ชี้ไป <code>docs/PRD-LINE-OA.th.md</code> / <code>docs/PRD-LINE-OA.en.md</code> ในทั้งสองไฟล์ (ทั้ง Markdown และ HTML) แล้ว</p>
+<p>เอกสารเดิม <code>docs/PRD.md:514</code> และ <code>docs/LINE-Architecture-System-Complete.md:41</code> (เลขบรรทัดหลังใส่ banner) ระบุ &quot;LINE OA Commerce ✅ เสร็จ 20/20&quot; ซึ่ง<strong>ไม่ตรง live path</strong> — ได้ใส่ banner ⚠️ ชี้ไป <code>docs/PRD-LINE-OA.th.md</code> / <code>docs/PRD-LINE-OA.en.md</code> ในทั้งสองไฟล์ (ทั้ง Markdown และ HTML) แล้ว</p>
 <hr>
 <h2>3. ส่วนที่ 2 — LINE Phase A: แก้บั๊กขาออก (อนุมัติโดยเจ้าของ)</h2>
 <h3>3.1 ลำดับการทำงานและผลรีวิว</h3>
@@ -339,11 +339,11 @@
 </tr>
 <tr>
 <td>7</td>
-<td>เรโปไหนเป็น authoritative ของ LINE subsystem (เรโปนี้ vs เรโป product ที่มี Trust Kernel <code>0171–0179</code>)</td>
-<td>การนำงานไปใช้ข้ามเรโป</td>
+<td>แผนรวม branch: branch นี้กับ <code>codex/line-trust-wave1-main</code> (product repo เดียวกัน) — ลำดับการรวม, โมเดล tenant canonical, เจ้าของงานที่ทับซ้อน</td>
+<td>P0-9, การ push/merge, Phase C</td>
 </tr>
 </tbody></table></div>
-<p><strong>ข้อ 7 มีข้อมูลใหม่:</strong> แผน amendment ของเรโป product (26 ก.ค. 2026) ยืนยันว่าเรโป product เป็นเจ้าของ roadmap LINE Trust Kernel โดย <code>0178</code> = atomic outbox ซึ่งทับกับ P0-1 ของเรา — งาน Phase A ในเรโปนี้จึงทำเป็น <strong>patch แยกชัดต่อบั๊ก</strong> เพื่อ port ไปได้ ไม่แย่งเลข migration</p>
+<p><strong>ข้อ 7 (แก้ 30 ก.ย. 2026):</strong> ตรวจจาก git แล้วว่าทั้งสอง worktree ใช้ <code>.git</code> เดียวกันของ <code>determined-williams</code> — จึงเป็นเรื่อง <strong>การรวม branch</strong> ไม่ใช่การเลือกเรโป ผลตรวจ migration และพฤติกรรมที่ซ้ำกัน (โมเดล tenant สองชุด, <code>0178</code> ทับ P0-1–P0-6, <code>0175</code> ทับ P0-9, <code>0176</code> ทับ B9, conflict 7 ไฟล์, ref เสีย 2 ตัว) อยู่ใน PRD §8.1</p>
 <hr>
 <h2>7. คิวงานถัดไป</h2>
 <ol><li><strong>P0-9 (B8)</strong> — <code>handler_error</code> ต้องไม่ถูกนับว่าสำเร็จ และต้องมี <strong>retry state ของเราเอง</strong> (ห้ามพึ่ง LINE redelivery เพราะ LINE ไม่รับประกัน)</li><li><strong>Wave 3.5</strong> — issuer ต้อง re-derive ผล pass/fail จากไบต์ report จริง + pin ตัวเอง/โมดูล integrity + บังคับ tracked tree สะอาด</li><li><strong>Phase C (ต้องรอคำตอบข้อ 1, 2, 4)</strong> — ตั้ง cron จริง + consent gate + human-approval ก่อนเปิดส่งลูกค้า</li><li><strong>Phase D (รอคำตอบข้อ 5, 6)</strong> — เก็บกวาด subsystem ที่ตาย + admin UI</li></ol>

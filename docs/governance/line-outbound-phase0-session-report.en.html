@@ -129,7 +129,7 @@
 <td><code>supabase/functions/line-login/index.ts:2,9</code></td>
 </tr>
 </tbody></table></div>
-<blockquote><p>B8 and B9 surfaced first in the product repo's 31 July 2026 research document and were then confirmed present here as well — the defects match line-for-line, so both repos carry the same code lineage.</p></blockquote>
+<blockquote><p>B8 and B9 surfaced first in the 31 July 2026 research on branch <code>codex/line-trust-wave1-main</code> and were then confirmed on this branch as well — both are branches of the same product repo descending from the same base, which is why the defects match line-for-line (the first edition of this report wrongly called them two repos — corrected 30 Sep 2026).</p></blockquote>
 <h3>2.3 ⚫ Complete code, passing tests, <strong>zero callers</strong></h3>
 <div class="table-wrap"><table><thead><tr>
 <th>Subsystem</th>
@@ -170,7 +170,7 @@
 <h3>2.4 📝 Spec only</h3>
 <ul><li><strong>Customer-side consent</strong> — no column exists at all, and no pre-send consent check anywhere (staff have <code>identity_binding.consent_at</code>, <code>0088:10</code>)</li><li>Admin UI for message templates (today templates are seeded by migration only)</li></ul>
 <h3>2.5 Correcting previously overstated records</h3>
-<p><code>docs/PRD.md:512</code> and <code>docs/LINE-Architecture-System-Complete.md:40</code> claimed &quot;LINE OA Commerce ✅ complete 20/20&quot;, which <strong>does not hold for the live path</strong>. Both files (Markdown and HTML) now carry a ⚠️ banner pointing to <code>docs/PRD-LINE-OA.th.md</code> / <code>docs/PRD-LINE-OA.en.md</code>.</p>
+<p><code>docs/PRD.md:514</code> and <code>docs/LINE-Architecture-System-Complete.md:41</code> (line numbers after the banners were added) claimed &quot;LINE OA Commerce ✅ complete 20/20&quot;, which <strong>does not hold for the live path</strong>. Both files (Markdown and HTML) now carry a ⚠️ banner pointing to <code>docs/PRD-LINE-OA.th.md</code> / <code>docs/PRD-LINE-OA.en.md</code>.</p>
 <hr>
 <h2>3. Part 2 — LINE Phase A: fixing the outbound path (owner-approved)</h2>
 <h3>3.1 Sequence and review outcomes</h3>
@@ -339,11 +339,11 @@
 </tr>
 <tr>
 <td>7</td>
-<td>Which repo is authoritative for the LINE subsystem (this one vs the product repo with Trust Kernel <code>0171–0179</code>)?</td>
-<td>Cross-repo adoption of this work</td>
+<td>Branch integration plan: this branch and <code>codex/line-trust-wave1-main</code> (the same product repo) — integration order, canonical tenant model, ownership of overlapping work</td>
+<td>P0-9, pushing/merging, Phase C</td>
 </tr>
 </tbody></table></div>
-<p><strong>New information on #7:</strong> the product repo's 26 July 2026 amendment confirms the product repo owns the LINE Trust Kernel roadmap, where <code>0178</code> = atomic outbox, overlapping our P0-1. Phase A work here is therefore built as <strong>portable per-defect patches</strong> and does not claim reserved migration numbers.</p>
+<p><strong>Question 7 (corrected 30 Sep 2026):</strong> git confirms both worktrees share the same <code>.git</code> of <code>determined-williams</code> — so this is a <strong>branch integration</strong> question, not a choice between repos. The findings on duplicated migrations and behaviour (two tenant models, <code>0178</code> overlapping P0-1–P0-6, <code>0175</code> overlapping P0-9, <code>0176</code> overlapping B9, 7 conflicting files, 2 broken refs) are in PRD §8.1.</p>
 <hr>
 <h2>7. Next queue</h2>
 <ol><li><strong>P0-9 (B8)</strong> — <code>handler_error</code> must not count as processed, and needs <strong>its own retry state</strong> (LINE redelivery is not guaranteed and must not be relied upon)</li><li><strong>Wave 3.5</strong> — the issuer must re-derive pass/fail from real report bytes, pin itself and the integrity module, and require a clean tracked tree</li><li><strong>Phase C (needs answers to #1, #2, #4)</strong> — register the real cron + consent gate + human approval before enabling customer sends</li><li><strong>Phase D (needs answers to #5, #6)</strong> — retire or wire the dead subsystems + admin UI</li></ol>

@@ -57,7 +57,7 @@
 | B8 | **Handler ที่ล้มถูกนับว่าสำเร็จ + เหตุการณ์หายถาวร** (`handler_error`) | `0097:281` (คืนค่า), `0097:437-438` (skip list ไม่ครอบ), `0097:454` (นับ processed), `0097:429-433` (dedupe) |
 | B9 | `line-login` ไม่ consume OAuth `state`/OIDC `nonce` | `supabase/functions/line-login/index.ts:2,9` |
 
-> B8 และ B9 พบครั้งแรกจากเอกสาร research 31 ก.ค. 2026 ของเรโป product แล้วยืนยันว่ามีในเรโปนี้ด้วย (บั๊กตรงกันถึงระดับเลขบรรทัด — โค้ดสายพันธุ์เดียวกัน)
+> B8 และ B9 พบครั้งแรกจากเอกสาร research 31 ก.ค. 2026 บน branch `codex/line-trust-wave1-main` แล้วยืนยันว่ามีบน branch นี้ด้วย — ทั้งสองเป็น branch ของ product repo เดียวกันที่แตกมาจาก base เดียวกัน จึงมีบั๊กตรงกันถึงระดับเลขบรรทัด (ฉบับแรกของรายงานนี้เขียนผิดว่าเป็นสองเรโป — แก้แล้ว 30 ก.ย. 2026)
 
 ### 2.3 ⚫ โค้ดครบ เทสต์ผ่าน แต่ **ไม่มีผู้เรียกเลย**
 
@@ -77,7 +77,7 @@
 
 ### 2.5 การแก้บันทึกที่เคยเกินจริง
 
-เอกสารเดิม `docs/PRD.md:512` และ `docs/LINE-Architecture-System-Complete.md:40` ระบุ "LINE OA Commerce ✅ เสร็จ 20/20" ซึ่ง**ไม่ตรง live path** — ได้ใส่ banner ⚠️ ชี้ไป `docs/PRD-LINE-OA.th.md` / `docs/PRD-LINE-OA.en.md` ในทั้งสองไฟล์ (ทั้ง Markdown และ HTML) แล้ว
+เอกสารเดิม `docs/PRD.md:514` และ `docs/LINE-Architecture-System-Complete.md:41` (เลขบรรทัดหลังใส่ banner) ระบุ "LINE OA Commerce ✅ เสร็จ 20/20" ซึ่ง**ไม่ตรง live path** — ได้ใส่ banner ⚠️ ชี้ไป `docs/PRD-LINE-OA.th.md` / `docs/PRD-LINE-OA.en.md` ในทั้งสองไฟล์ (ทั้ง Markdown และ HTML) แล้ว
 
 ---
 
@@ -162,9 +162,9 @@
 | 4 | ส่งลูกค้าโดยไม่มี consent gate รับได้ชั่วคราวไหม (PDPA) | P0-8 / P1 |
 | 5 | Subsystem ที่ตายสนิท (ordering/forecast/R-03/auto-close/TCCK) เก็บหรือลบ | P2 |
 | 6 | ต้องมีหน้า admin จัดการ template ไหม | P2 |
-| 7 | เรโปไหนเป็น authoritative ของ LINE subsystem (เรโปนี้ vs เรโป product ที่มี Trust Kernel `0171–0179`) | การนำงานไปใช้ข้ามเรโป |
+| 7 | แผนรวม branch: branch นี้กับ `codex/line-trust-wave1-main` (product repo เดียวกัน) — ลำดับการรวม, โมเดล tenant canonical, เจ้าของงานที่ทับซ้อน | P0-9, การ push/merge, Phase C |
 
-**ข้อ 7 มีข้อมูลใหม่:** แผน amendment ของเรโป product (26 ก.ค. 2026) ยืนยันว่าเรโป product เป็นเจ้าของ roadmap LINE Trust Kernel โดย `0178` = atomic outbox ซึ่งทับกับ P0-1 ของเรา — งาน Phase A ในเรโปนี้จึงทำเป็น **patch แยกชัดต่อบั๊ก** เพื่อ port ไปได้ ไม่แย่งเลข migration
+**ข้อ 7 (แก้ 30 ก.ย. 2026):** ตรวจจาก git แล้วว่าทั้งสอง worktree ใช้ `.git` เดียวกันของ `determined-williams` — จึงเป็นเรื่อง **การรวม branch** ไม่ใช่การเลือกเรโป ผลตรวจ migration และพฤติกรรมที่ซ้ำกัน (โมเดล tenant สองชุด, `0178` ทับ P0-1–P0-6, `0175` ทับ P0-9, `0176` ทับ B9, conflict 7 ไฟล์, ref เสีย 2 ตัว) อยู่ใน PRD §8.1
 
 ---
 
