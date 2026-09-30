@@ -11,6 +11,7 @@
 import React, { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react';
 import { useTenantStore } from './tenantStore';
 import type { Organization, OrgMember, TenantContext, TenantPermissions } from './types';
+import { appPath } from '../core/config/basePath';
 
 // ============================================================================
 // Context
@@ -141,7 +142,7 @@ export function FeatureGate({ feature, children, fallback }: { feature: string; 
   if (!available) {
     return fallback ? <>{fallback}</> : (
       <div className="p-4 bg-yellow-50 border border-yellow-200 rounded text-yellow-800 text-sm">
-        ฟีเจอร์นี้ไม่รวมอยู่ในแพลนปัจจุบัน — <a href="/settings/billing" className="underline">อัปเกรด</a>
+        ฟีเจอร์นี้ไม่รวมอยู่ในแพลนปัจจุบัน — <a href={appPath('/settings/billing')} className="underline">อัปเกรด</a>
       </div>
     );
   }

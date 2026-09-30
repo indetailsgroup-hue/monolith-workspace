@@ -43,6 +43,7 @@ import { useMemo, useEffect, useState, useCallback, Suspense, lazy, type Compone
 import { createBrowserRouter, RouterProvider, Navigate, Link, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { isPitchMode, withSearchParams } from '../core/ui/pitch';
 import { useJobStore } from '../jobs/jobStore';
+import { appPath, routerBasename } from '../core/config/basePath';
 import { useQuotationStore } from '../quotation/quotationStore';
 
 // ============================================================================
@@ -381,7 +382,7 @@ function ProjectHomePage() {
 
   // Copy link to clipboard - separate Project and Factory links
   const copyProjectLink = useCallback(async () => {
-    const url = `${window.location.origin}/projects/${effectiveProjectId}`;
+    const url = `${window.location.origin}${appPath(`/projects/${effectiveProjectId}`)}`;
     try {
       await navigator.clipboard.writeText(url);
     } catch (err) {
@@ -390,7 +391,7 @@ function ProjectHomePage() {
   }, [effectiveProjectId]);
 
   const copyFactoryLink = useCallback(async () => {
-    const url = `${window.location.origin}/factory/jobs/${jobId}`;
+    const url = `${window.location.origin}${appPath(`/factory/jobs/${jobId}`)}`;
     try {
       await navigator.clipboard.writeText(url);
     } catch (err) {
@@ -795,7 +796,7 @@ function ProjectHomePage() {
         requiredRoles={roleGateTarget?.requiredRoles ?? ['FACTORY', 'ADMIN']}
         title="Factory Access Required"
         description="Export to Factory requires Factory or Admin role. Share this project link with your Factory team."
-        shareableUrl={`${window.location.origin}/projects/${effectiveProjectId}`}
+        shareableUrl={`${window.location.origin}${appPath(`/projects/${effectiveProjectId}`)}`}
       />
     </div>
   );
@@ -1134,7 +1135,7 @@ function ReleasePage() {
     <div className="min-h-screen bg-[#0a0a0a] text-white p-8">
       <h1 className="text-2xl font-bold mb-4">Release Wizard</h1>
       <p className="text-gray-400">DRAFT → FROZEN → RELEASED workflow - Coming soon</p>
-      <a href="/" className="text-green-400 hover:underline mt-4 inline-block">
+      <a href={appPath('/')} className="text-green-400 hover:underline mt-4 inline-block">
         ← Back to Designer
       </a>
     </div>
@@ -1146,7 +1147,7 @@ function PacketViewerPage() {
     <div className="min-h-screen bg-[#0a0a0a] text-white p-8">
       <h1 className="text-2xl font-bold mb-4">Packet Viewer</h1>
       <p className="text-gray-400">View released spec packet - Coming soon</p>
-      <a href="/" className="text-green-400 hover:underline mt-4 inline-block">
+      <a href={appPath('/')} className="text-green-400 hover:underline mt-4 inline-block">
         ← Back to Designer
       </a>
     </div>
@@ -1161,7 +1162,7 @@ function FinanceComingSoon() {
     <div className="min-h-screen bg-[#0a0a0a] text-white p-8">
       <h1 className="text-2xl font-bold mb-4">Finance</h1>
       <p className="text-gray-400">Cost breakdowns and invoicing - Coming soon</p>
-      <a href="/" className="text-green-400 hover:underline mt-4 inline-block">
+      <a href={appPath('/')} className="text-green-400 hover:underline mt-4 inline-block">
         ← Back to Designer
       </a>
     </div>
@@ -1174,9 +1175,9 @@ function NotFoundPage() {
       <div className="text-center">
         <h1 className="text-6xl font-bold text-gray-700 mb-4">404</h1>
         <p className="text-gray-400 mb-6">Page not found</p>
-        <a href="/" className="px-4 py-2 bg-green-500 text-black rounded-lg hover:bg-green-400 transition-colors">
+        <Link to="/" className="px-4 py-2 bg-green-500 text-black rounded-lg hover:bg-green-400 transition-colors">
           Go to Designer
-        </a>
+        </Link>
       </div>
     </div>
   );
@@ -1354,7 +1355,7 @@ export const router = createBrowserRouter([
           userId="pending"
           userEmail="pending@monolith.app"
           userDisplayName="New User"
-          onComplete={() => { window.location.href = '/jobs'; }}
+          onComplete={() => { window.location.href = appPath('/jobs'); }}
         />
       </Suspense>
     ),
@@ -1519,7 +1520,7 @@ export const router = createBrowserRouter([
     path: '*',
     element: <NotFoundPage />,
   },
-]);
+], { basename: routerBasename() });
 
 // ============================================================================
 // Router Provider Component

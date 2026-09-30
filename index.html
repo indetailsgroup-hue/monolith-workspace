@@ -5,6 +5,32 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MONOLITH Designer Workspace</title>
+    <script id="deep-link-restore">
+      // GitHub Pages has no SPA fallback: a deep link or refresh such as
+      // /designer/projects/42 hits the site's 404.html (.github/pages/404.html),
+      // which sends it here as /designer/?__deeplink=projects%2F42 (the #hash
+      // rides along untouched). Put the real path back before any module runs:
+      // the router and the Supabase client both read the URL at import time.
+      (function () {
+        var l = window.location;
+        var m = /[?&]__deeplink=([^&]*)/.exec(l.search);
+        if (!m) return;
+        // Vite fills in the Designer's base ('/monolith-workspace/designer/' on Pages).
+        var home = '%BASE_URL%';
+        var next = home;
+        try {
+          // Resolve with the URL parser, so dot segments (plain or percent-encoded)
+          // and backslashes are normalised exactly as the browser will. Accept the
+          // result only if it is same-origin and still under the Designer;
+          // anything else, or a malformed value, lands on the Designer start page.
+          var u = new URL(decodeURIComponent(m[1]), l.origin + home);
+          if (u.origin === l.origin && u.pathname.indexOf(home) === 0) {
+            next = u.pathname + u.search + l.hash;
+          }
+        } catch (e) { /* keep the start page */ }
+        history.replaceState(history.state, '', next);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

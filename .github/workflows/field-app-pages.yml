@@ -2,6 +2,9 @@
 #   /           Field PWA            (ADR-040 มติ 5)
 #   /designer/  Designer Workspace   (ADR-057)
 #   /docs/      Manufacturing OS docs (docs/manufacturing-os-site)
+#   /404.html   .github/pages/404.html: Pages has no SPA fallback, so this page
+#               sends Designer deep links and refreshes back into the app;
+#               every other missing path stays a 404
 # A Pages deploy replaces the whole site, so a second deploying workflow would
 # wipe the other two. From 2026-09-21 the docs-only deploys did exactly that,
 # which left /designer/ and the Field PWA returning 404.
@@ -10,7 +13,7 @@ name: Deploy GitHub Pages
 on:
   push:
     branches: [main]
-    paths: ['packages/field-app/**', 'src/**', 'public/**', 'index.html', 'vite.config.*', 'docs/manufacturing-os-site/**', '.github/workflows/field-app-pages.yml']
+    paths: ['packages/field-app/**', 'src/**', 'public/**', 'index.html', 'vite.config.*', 'docs/manufacturing-os-site/**', '.github/workflows/field-app-pages.yml', '.github/pages/**']
   workflow_dispatch:
 permissions:
   contents: read
@@ -22,6 +25,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: { name: github-pages, url: "${{ steps.deployment.outputs.page_url }}" }
+    # Where the project site is served. The Designer's Vite base and the links in
+    # 404.html both come from it, so a custom domain changes this one value ('/').
+    env: { SITE_BASE: /monolith-workspace/ }
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -36,7 +42,7 @@ jobs:
           VITE_LINE_LOGIN_CHANNEL_ID: ${{ vars.VITE_LINE_LOGIN_CHANNEL_ID }}
           VITE_MONOLITH_URL: ${{ vars.VITE_MONOLITH_URL }}
       # MONOLITH (ADR-057): เสิร์ฟใต้ /designer/ ใน Pages เดียวกัน — deep link จาก DesignerHome
-      - run: npm run build -- --base=/monolith-workspace/designer/
+      - run: npm run build -- --base="${SITE_BASE}designer/"
         env:
           VITE_SUPABASE_URL: ${{ secrets.FIELD_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.FIELD_SUPABASE_ANON_KEY }}
@@ -52,11 +58,14 @@ jobs:
           python3 -c "import json,sys; d=json.load(open('$SITE_DIR/chapters.json')); sys.exit(0 if len(d) else 'chapters.json is empty')"
           python3 -c "import json; json.load(open('$SITE_DIR/search_index.json'))"
       - run: mkdir -p packages/field-app/dist/docs && cp -r docs/manufacturing-os-site/. packages/field-app/dist/docs/
+      # Pages uses only the site-root 404.html; the Designer's deep links depend on it.
+      - run: sed "s#__SITE_BASE__#${SITE_BASE}#g" .github/pages/404.html > packages/field-app/dist/404.html
       - name: Verify all three sites are in the artifact
         run: |
-          for f in index.html designer/index.html docs/index.html docs/chapters.json; do
+          for f in index.html 404.html designer/index.html docs/index.html docs/chapters.json; do
             [ -f "packages/field-app/dist/$f" ] || { echo "::error::artifact is missing $f"; exit 1; }
           done
+          if grep -q __SITE_BASE__ packages/field-app/dist/404.html; then echo "::error::404.html still has the __SITE_BASE__ placeholder"; exit 1; fi
       - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with: { path: packages/field-app/dist }

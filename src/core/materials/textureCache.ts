@@ -9,6 +9,8 @@
  * @version 1.0.0
  */
 
+import { withBase } from '../config/basePath';
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -77,7 +79,7 @@ export class TextureLRUCache {
    * Internal fetch implementation
    */
   private async doFetch(url: string): Promise<CacheEntry> {
-    const response = await fetch(url);
+    const response = await fetch(withBase(url));
     if (!response.ok) {
       throw new Error(`Texture fetch failed: ${response.status} ${response.statusText}`);
     }
