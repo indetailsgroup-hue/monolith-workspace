@@ -1,0 +1,80 @@
+checked_utc: 2026-09-30T04:52:57Z
+method: read-only git (no fetch, no checkout, no ref change; merge-tree writes only unreferenced objects)
+
+## repositories
+this_worktree_git_common_dir: C:/Users/thai3/determined-williams (2)/determined-williams/.git
+line_trust_worktree_git_common_dir: C:/Users/thai3/determined-williams (2)/determined-williams/.git
+governance_root_git_dir: C:/Users/thai3/determined-williams (2)/.git  (separate repository)
+origin: https://github.com/indetailsgroup-hue/monolith-workspace.git
+
+## bound SHAs
+A (this branch) = 5aa52315cea6ce8d3e7cb8a63a211c3a5bd20260
+B (codex/line-trust-wave1-main) = 69c879304cc2d6c4fcdcf4070105e5a8fc4e25cd
+merge-base = dd1119af6d0bcba0e38d38516ed1b11125bcf19f (2026-07-18)
+A ahead of merge-base: 65
+B ahead of merge-base: 129
+origin/main (local ref, not fetched) = 57b69513ba0a5f0624ea3a40f9b5cea0b04992fb (2026-08-01)
+A vs origin/main: ahead 65 / behind 118
+B vs origin/main: ahead 47 / behind 36
+
+## migrations >= 0160
+A:
+  0160_floorplan_claim_update.sql
+  0161_factory_packet_store.sql
+  0162_factory_server_identity_released_only.sql
+  0180_trust_kernel_tenancy_action_context.sql
+  0181_trust_kernel_profile_exception.sql
+  0182_trust_kernel_release_authority.sql
+  0183_trust_kernel_bundles_publication.sql
+  0184_trust_kernel_legacy_containment.sql
+  0185_trust_kernel_revocation_reason_class.sql
+  0186_trust_kernel_content_revocation_registry.sql
+  0187_trust_kernel_commit_deny_check.sql
+  0188_trust_kernel_content_unblock.sql
+  0189_repair_phase0_organization_scope.sql
+  0190_repair_phase0_legacy_containment.sql
+  0191_repair_phase0_revoke_legacy_mutation_authority.sql
+  0192_repair_phase0_consume_org_recheck.sql
+  0193_line_outbound_claim_and_record.sql
+  0194_line_outbound_retry_and_claim_fencing.sql
+  0195_line_outbound_timezone_safe_backoff.sql
+  0196_line_outbound_timezone_safe_sent_at.sql
+B:
+  0160_floorplan_claim_update.sql
+  0161_factory_packet_store.sql
+  0162_factory_server_identity_released_only.sql
+  0163_storage_hash_verdict_semantics.sql
+  0170_factory_jobs_list_real_fields.sql
+  0171_line_trust_tenant_foundation.sql
+  0172_line_trust_tenant_bridge_constraints.sql
+  0173_line_trust_policy_decision.sql
+origin/main:
+  0160_floorplan_claim_update.sql
+  0161_factory_packet_store.sql
+  0162_factory_server_identity_released_only.sql
+  0163_storage_hash_verdict_semantics.sql
+  0170_factory_jobs_list_real_fields.sql
+
+## trial merge: git merge-tree --write-tree --name-only A B
+CONFLICT (content): Merge conflict in .github/workflows/db-verify.yml
+CONFLICT (content): Merge conflict in .gitignore
+CONFLICT (content): Merge conflict in package-lock.json
+CONFLICT (content): Merge conflict in package.json
+CONFLICT (content): Merge conflict in server/src/api/routes/factory.ts
+CONFLICT (content): Merge conflict in supabase/functions/factory-api/index.test.ts
+CONFLICT (content): Merge conflict in supabase/functions/factory-api/index.ts
+
+## B touches LINE runtime since merge-base?
+[] (empty = no)
+
+## line-trust reservations (from B's amendment plan)
+| `0175_line_trust_unified_ingress.sql` | Wave 2 | Unified ingress | Downstream reservation |
+| `0176_line_trust_identity_step_up.sql` | Wave 3 | Identity binding และ step-up | Downstream reservation |
+| `0177_line_trust_group_quarantine.sql` | Wave 4 | Group authorization และ quarantine | Downstream reservation |
+| `0178_line_trust_atomic_outbox.sql` | Wave 5 | Atomic outbox | Downstream reservation |
+
+## duplicate-name refs
+warning: ignoring ref with broken name refs/heads/codex/repair-intelligence-phase0-trust (1)
+warning: ignoring ref with broken name refs/remotes/origin/main (1)
+refs/heads/codex/repair-intelligence-phase0-trust (1)
+refs/remotes/origin/main (1)

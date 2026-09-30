@@ -1,0 +1,66 @@
+
+ RUN  v3.2.7 C:/Users/thai3/determined-williams (2)/MONOLITH Repair Intelligence/.worktrees/repair-intelligence-phase0-trust
+
+ ✓ tests/line-oa-commerce/ts/dbVerifyLineOutboundSuite.unit.test.ts (2 tests) 3ms
+ ✓ tests/line-oa-commerce/ts/senderProductionClaimWiring.unit.test.ts (1 test) 2ms
+ ✓ tests/line-oa-commerce/ts/senderPropertyProbeSignature.unit.test.ts (4 tests) 3ms
+ ✓ tests/line-oa-commerce/ts/senderClaimTokenFencing.unit.test.ts (3 tests) 3ms
+ ✓ tests/line-oa-commerce/ts/templateCrud.unit.test.ts (14 tests) 4ms
+ ✓ tests/line-oa-commerce/ts/senderFlexMessage.unit.test.ts (6 tests) 4ms
+ ✓ tests/line-oa-commerce/ts/senderRetryKey.unit.test.ts (2 tests) 5ms
+ ✓ tests/line-oa-commerce/ts/senderSupabaseLookupFailures.unit.test.ts (9 tests) 8ms
+ ✓ tests/line-oa-commerce/ts/senderFailureClassification.unit.test.ts (13 tests) 13ms
+stdout | tests/line-oa-commerce/ts/senderResolvedToken.integration.test.ts > line-outbound-sender — reply/push send via Vault-resolved token (mocked LINE API) > sends a REPLY using the Channel_Access_Token resolved from Vault (Req 4.1)
+line-outbound-sender: claimed 1 pending row(s)
+
+stdout | tests/line-oa-commerce/ts/senderResolvedToken.integration.test.ts > line-outbound-sender — reply/push send via Vault-resolved token (mocked LINE API) > sends a REPLY using the Channel_Access_Token resolved from Vault (Req 4.1)
+line-outbound-sender: sent ob-reply via reply
+
+stdout | tests/line-oa-commerce/ts/senderResolvedToken.integration.test.ts > line-outbound-sender — reply/push send via Vault-resolved token (mocked LINE API) > sends a REPLY using the Channel_Access_Token resolved from Vault (Req 4.1)
+line-outbound-sender: batch complete (sent=1, failed=0)
+
+stdout | tests/line-oa-commerce/ts/senderResolvedToken.integration.test.ts > line-outbound-sender — reply/push send via Vault-resolved token (mocked LINE API) > sends a PUSH using the Channel_Access_Token resolved from Vault (Req 4.2)
+line-outbound-sender: claimed 1 pending row(s)
+
+stdout | tests/line-oa-commerce/ts/senderResolvedToken.integration.test.ts > line-outbound-sender — reply/push send via Vault-resolved token (mocked LINE API) > sends a PUSH using the Channel_Access_Token resolved from Vault (Req 4.2)
+line-outbound-sender: sent ob-push via push
+
+stdout | tests/line-oa-commerce/ts/senderResolvedToken.integration.test.ts > line-outbound-sender — reply/push send via Vault-resolved token (mocked LINE API) > sends a PUSH using the Channel_Access_Token resolved from Vault (Req 4.2)
+line-outbound-sender: batch complete (sent=1, failed=0)
+
+ ✓ tests/line-oa-commerce/ts/senderClaimAndRecord.integration.test.ts (3 tests) 6ms
+stdout | tests/line-oa-commerce/ts/senderResolvedToken.integration.test.ts > line-outbound-sender — reply/push send via Vault-resolved token (mocked LINE API) > a reply row with no usable reply token falls back to PUSH, still using the resolved token (Req 4.2/4.5)
+line-outbound-sender: claimed 1 pending row(s)
+
+stdout | tests/line-oa-commerce/ts/senderResolvedToken.integration.test.ts > line-outbound-sender — reply/push send via Vault-resolved token (mocked LINE API) > a reply row with no usable reply token falls back to PUSH, still using the resolved token (Req 4.2/4.5)
+line-outbound-sender: sent ob-fallback via push
+
+stdout | tests/line-oa-commerce/ts/senderResolvedToken.integration.test.ts > line-outbound-sender — reply/push send via Vault-resolved token (mocked LINE API) > a reply row with no usable reply token falls back to PUSH, still using the resolved token (Req 4.2/4.5)
+line-outbound-sender: batch complete (sent=1, failed=0)
+
+stdout | tests/line-oa-commerce/ts/senderResolvedToken.integration.test.ts > line-outbound-sender — reply/push send via Vault-resolved token (mocked LINE API) > resolves a DISTINCT token per channel reference across reply and push in one batch (Req 4.1/4.2)
+line-outbound-sender: claimed 2 pending row(s)
+
+stdout | tests/line-oa-commerce/ts/senderResolvedToken.integration.test.ts > line-outbound-sender — reply/push send via Vault-resolved token (mocked LINE API) > resolves a DISTINCT token per channel reference across reply and push in one batch (Req 4.1/4.2)
+line-outbound-sender: sent ob-reply via reply
+
+stdout | tests/line-oa-commerce/ts/senderResolvedToken.integration.test.ts > line-outbound-sender — reply/push send via Vault-resolved token (mocked LINE API) > resolves a DISTINCT token per channel reference across reply and push in one batch (Req 4.1/4.2)
+line-outbound-sender: sent ob-push via push
+
+stdout | tests/line-oa-commerce/ts/senderResolvedToken.integration.test.ts > line-outbound-sender — reply/push send via Vault-resolved token (mocked LINE API) > resolves a DISTINCT token per channel reference across reply and push in one batch (Req 4.1/4.2)
+line-outbound-sender: batch complete (sent=2, failed=0)
+
+ ✓ tests/line-oa-commerce/ts/senderResolvedToken.integration.test.ts (4 tests) 8ms
+ ✓ tests/line-oa-commerce/ts/harness.smoke.test.ts (5 tests) 5ms
+ ✓ tests/line-oa-commerce/ts/property12.templateVerticalIsolation.test.ts (1 test) 8ms
+ ✓ tests/line-oa-commerce/ts/property13.templateBoundClassification.test.ts (1 test) 19ms
+ ✓ tests/line-oa-commerce/ts/property25.failSafeGate.test.ts (1 test) 12ms
+ ✓ tests/line-oa-commerce/ts/autonomyTierOrdering.property.test.ts (1 test) 15ms
+ ✓ tests/line-oa-commerce/ts/orderNormalization.property.test.ts (2 tests) 21ms
+ ✓ tests/line-oa-commerce/ts/brandVoice.property.test.ts (1 test) 35ms
+
+ Test Files  18 passed (18)
+      Tests  73 passed (73)
+   Start at  11:46:35
+   Duration  1.61s (transform 898ms, setup 4.81s, collect 3.95s, tests 174ms, environment 3ms, prepare 2.86s)
+
