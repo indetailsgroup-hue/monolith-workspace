@@ -1,0 +1,22 @@
+{
+  "suite": "repair_phase0_organization",
+  "stdout": "tap/repair_phase0_organization.tap",
+  "stderr": "tap/repair_phase0_organization.stderr",
+  "tapSha256": "56d5c581f1be230f11604f9e0c3f02238eb7df44e7859b6e878519d59a530662",
+  "runId": "20260930T144132Z-130184",
+  "origin": "local",
+  "checkedAt": "2026-09-30T14:41:35.412Z",
+  "pass": true,
+  "exitCode": 0,
+  "plan": 21,
+  "planLines": 1,
+  "results": 21,
+  "ok": 21,
+  "notOk": 0,
+  "skip": 0,
+  "todo": 0,
+  "bailOut": false,
+  "sqlErrorLines": 0,
+  "finishDiagnostics": [],
+  "failures": []
+}

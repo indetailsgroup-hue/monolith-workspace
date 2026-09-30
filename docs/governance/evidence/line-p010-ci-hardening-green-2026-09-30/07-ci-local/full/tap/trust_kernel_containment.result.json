@@ -1,0 +1,22 @@
+{
+  "suite": "trust_kernel_containment",
+  "stdout": "tap/trust_kernel_containment.tap",
+  "stderr": "tap/trust_kernel_containment.stderr",
+  "tapSha256": "8e125f2d51c02e8c04f1092427fb1b55f56c4cc6f390febe30113172f12e9118",
+  "runId": "20260930T144132Z-130184",
+  "origin": "local",
+  "checkedAt": "2026-09-30T14:41:34.581Z",
+  "pass": true,
+  "exitCode": 0,
+  "plan": 16,
+  "planLines": 1,
+  "results": 16,
+  "ok": 16,
+  "notOk": 0,
+  "skip": 0,
+  "todo": 0,
+  "bailOut": false,
+  "sqlErrorLines": 0,
+  "finishDiagnostics": [],
+  "failures": []
+}

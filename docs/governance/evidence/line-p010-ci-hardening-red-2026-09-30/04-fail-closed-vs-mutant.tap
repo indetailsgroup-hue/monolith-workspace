@@ -1,0 +1,457 @@
+BEGIN
+# migration under test: C:/Users/thai3/determined-williams (2)/MONOLITH Repair Intelligence/.worktrees/repair-intelligence-phase0-trust/docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/mutant-0198-no-residual-check.sql
+CREATE EXTENSION
+1..28
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+ok 1 - scope guard: 8 tables and anon exist, and anon starts without write privilege (0198 applied)
+SAVEPOINT
+CREATE ROLE
+GRANT
+GRANT ROLE
+GRANT
+SAVEPOINT
+DO
+ROLLBACK
+RELEASE
+ok 2 - case A precondition: anon has INSERT on line_oa_orders only through role membership, and a direct INSERT on line_oa_channels
+not ok 3 - case A: the migration raises SQLSTATE 42501 when an inherited write privilege survives
+# Failed test 3: "case A: the migration raises SQLSTATE 42501 when an inherited write privilege survives"
+#         have: 00000
+#         want: 42501
+not ok 4 - case A: the error message starts with "P0-10: write privileges remain after revoke" and names anon:line_oa_orders
+# Failed test 4: "case A: the error message starts with "P0-10: write privileges remain after revoke" and names anon:line_oa_orders"
+not ok 5 - case A: after the error every table ACL, column ACL and membership is exactly as before
+# Failed test 5: "case A: after the error every table ACL, column ACL and membership is exactly as before"
+#         have: line_oa_audit_log={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_channels={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_conversations={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_customer_identity={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_inbound_messages={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_message_templates={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_orders={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres,p010_fc_writer=aw/postgres}
+# line_oa_outbound_messages={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# anon>p010_fc_writer admin=false inherit=true set=true grantor=postgres
+# authenticator>anon admin=false inherit=false set=true grantor=supabase_admin
+# authenticator>authenticated admin=false inherit=false set=true grantor=supabase_admin
+# authenticator>service_role admin=false inherit=false set=true grantor=supabase_admin
+# pg_monitor>pg_read_all_settings admin=false inherit=true set=true grantor=supabase_admin
+# pg_monitor>pg_read_all_stats admin=false inherit=true set=true grantor=supabase_admin
+# pg_monitor>pg_stat_scan_tables admin=false inherit=true set=true grantor=supabase_admin
+# postgres>anon admin=true inherit=true set=true grantor=supabase_admin
+# postgres>authenticated admin=true inherit=true set=true grantor=supabase_admin
+# postgres>authenticator admin=true inherit=true set=true grantor=supabase_admin
+# postgres>monolith_p2_workload admin=true inherit=false set=false grantor=supabase_admin
+# postgres>p010_fc_writer admin=true inherit=false set=false grantor=supabase_admin
+# postgres>pg_create_subscription admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_monitor admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_read_all_data admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_signal_backend admin=true inherit=true set=true grantor=supabase_admin
+# postgres>service_role admin=true inherit=true set=true grantor=supabase_admin
+# postgres>supabase_privileged_role admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>pg_monitor admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>pg_read_all_data admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>supabase_privileged_role admin=false inherit=true set=true grantor=supabase_admin
+# supabase_read_only_user>pg_monitor admin=false inherit=true set=true grantor=supabase_admin
+# supabase_read_only_user>pg_read_all_data admin=false inherit=true set=true grantor=supabase_admin
+# supabase_storage_admin>authenticator admin=false inherit=false set=true grantor=supabase_admin
+#         want: line_oa_audit_log={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_channels={postgres=arwdDxtm/postgres,anon=arxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_conversations={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_customer_identity={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_inbound_messages={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_message_templates={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_orders={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres,p010_fc_writer=aw/postgres}
+# line_oa_outbound_messages={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# anon>p010_fc_writer admin=false inherit=true set=true grantor=postgres
+# authenticator>anon admin=false inherit=false set=true grantor=supabase_admin
+# authenticator>authenticated admin=false inherit=false set=true grantor=supabase_admin
+# authenticator>service_role admin=false inherit=false set=true grantor=supabase_admin
+# pg_monitor>pg_read_all_settings admin=false inherit=true set=true grantor=supabase_admin
+# pg_monitor>pg_read_all_stats admin=false inherit=true set=true grantor=supabase_admin
+# pg_monitor>pg_stat_scan_tables admin=false inherit=true set=true grantor=supabase_admin
+# postgres>anon admin=true inherit=true set=true grantor=supabase_admin
+# postgres>authenticated admin=true inherit=true set=true grantor=supabase_admin
+# postgres>authenticator admin=true inherit=true set=true grantor=supabase_admin
+# postgres>monolith_p2_workload admin=true inherit=false set=false grantor=supabase_admin
+# postgres>p010_fc_writer admin=true inherit=false set=false grantor=supabase_admin
+# postgres>pg_create_subscription admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_monitor admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_read_all_data admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_signal_backend admin=true inherit=true set=true grantor=supabase_admin
+# postgres>service_role admin=true inherit=true set=true grantor=supabase_admin
+# postgres>supabase_privileged_role admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>pg_monitor admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>pg_read_all_data admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>supabase_privileged_role admin=false inherit=true set=true grantor=supabase_admin
+# supabase_read_only_user>pg_monitor admin=false inherit=true set=true grantor=supabase_admin
+# supabase_read_only_user>pg_read_all_data admin=false inherit=true set=true grantor=supabase_admin
+# supabase_storage_admin>authenticator admin=false inherit=false set=true grantor=supabase_admin
+not ok 6 - case A: the direct INSERT that 0198 revoked on line_oa_channels is back after the error
+# Failed test 6: "case A: the direct INSERT that 0198 revoked on line_oa_channels is back after the error"
+SAVEPOINT
+CREATE ROLE
+GRANT ROLE
+GRANT
+GRANT
+SET
+GRANT
+RESET
+GRANT
+SAVEPOINT
+DO
+ROLLBACK
+RELEASE
+ok 7 - case B precondition: anon has a direct column UPDATE on line_oa_message_templates.body from another grantor, and a direct INSERT on line_oa_channels
+not ok 8 - case B: the migration raises SQLSTATE 42501 when a column-level UPDATE survives
+# Failed test 8: "case B: the migration raises SQLSTATE 42501 when a column-level UPDATE survives"
+#         have: 00000
+#         want: 42501
+not ok 9 - case B: the error message starts with "P0-10: write privileges remain after revoke" and names anon:line_oa_message_templates
+# Failed test 9: "case B: the error message starts with "P0-10: write privileges remain after revoke" and names anon:line_oa_message_templates"
+not ok 10 - case B: after the error every table ACL, column ACL and membership is exactly as before
+# Failed test 10: "case B: after the error every table ACL, column ACL and membership is exactly as before"
+#         have: line_oa_audit_log={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_channels={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_conversations={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_customer_identity={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_inbound_messages={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_message_templates={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_orders={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_outbound_messages={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_message_templates.body={p010_fc_grantor=w*/postgres,anon=w/p010_fc_grantor}
+# authenticator>anon admin=false inherit=false set=true grantor=supabase_admin
+# authenticator>authenticated admin=false inherit=false set=true grantor=supabase_admin
+# authenticator>service_role admin=false inherit=false set=true grantor=supabase_admin
+# pg_monitor>pg_read_all_settings admin=false inherit=true set=true grantor=supabase_admin
+# pg_monitor>pg_read_all_stats admin=false inherit=true set=true grantor=supabase_admin
+# pg_monitor>pg_stat_scan_tables admin=false inherit=true set=true grantor=supabase_admin
+# postgres>anon admin=true inherit=true set=true grantor=supabase_admin
+# postgres>authenticated admin=true inherit=true set=true grantor=supabase_admin
+# postgres>authenticator admin=true inherit=true set=true grantor=supabase_admin
+# postgres>monolith_p2_workload admin=true inherit=false set=false grantor=supabase_admin
+# postgres>p010_fc_grantor admin=false inherit=false set=true grantor=postgres
+# postgres>p010_fc_grantor admin=true inherit=false set=false grantor=supabase_admin
+# postgres>pg_create_subscription admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_monitor admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_read_all_data admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_signal_backend admin=true inherit=true set=true grantor=supabase_admin
+# postgres>service_role admin=true inherit=true set=true grantor=supabase_admin
+# postgres>supabase_privileged_role admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>pg_monitor admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>pg_read_all_data admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>supabase_privileged_role admin=false inherit=true set=true grantor=supabase_admin
+# supabase_read_only_user>pg_monitor admin=false inherit=true set=true grantor=supabase_admin
+# supabase_read_only_user>pg_read_all_data admin=false inherit=true set=true grantor=supabase_admin
+# supabase_storage_admin>authenticator admin=false inherit=false set=true grantor=supabase_admin
+#         want: line_oa_audit_log={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_channels={postgres=arwdDxtm/postgres,anon=arxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_conversations={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_customer_identity={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_inbound_messages={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_message_templates={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_orders={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_outbound_messages={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_message_templates.body={p010_fc_grantor=w*/postgres,anon=w/p010_fc_grantor}
+# authenticator>anon admin=false inherit=false set=true grantor=supabase_admin
+# authenticator>authenticated admin=false inherit=false set=true grantor=supabase_admin
+# authenticator>service_role admin=false inherit=false set=true grantor=supabase_admin
+# pg_monitor>pg_read_all_settings admin=false inherit=true set=true grantor=supabase_admin
+# pg_monitor>pg_read_all_stats admin=false inherit=true set=true grantor=supabase_admin
+# pg_monitor>pg_stat_scan_tables admin=false inherit=true set=true grantor=supabase_admin
+# postgres>anon admin=true inherit=true set=true grantor=supabase_admin
+# postgres>authenticated admin=true inherit=true set=true grantor=supabase_admin
+# postgres>authenticator admin=true inherit=true set=true grantor=supabase_admin
+# postgres>monolith_p2_workload admin=true inherit=false set=false grantor=supabase_admin
+# postgres>p010_fc_grantor admin=false inherit=false set=true grantor=postgres
+# postgres>p010_fc_grantor admin=true inherit=false set=false grantor=supabase_admin
+# postgres>pg_create_subscription admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_monitor admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_read_all_data admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_signal_backend admin=true inherit=true set=true grantor=supabase_admin
+# postgres>service_role admin=true inherit=true set=true grantor=supabase_admin
+# postgres>supabase_privileged_role admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>pg_monitor admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>pg_read_all_data admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>supabase_privileged_role admin=false inherit=true set=true grantor=supabase_admin
+# supabase_read_only_user>pg_monitor admin=false inherit=true set=true grantor=supabase_admin
+# supabase_read_only_user>pg_read_all_data admin=false inherit=true set=true grantor=supabase_admin
+# supabase_storage_admin>authenticator admin=false inherit=false set=true grantor=supabase_admin
+not ok 11 - case B: the direct INSERT that 0198 revoked on line_oa_channels is back after the error
+# Failed test 11: "case B: the direct INSERT that 0198 revoked on line_oa_channels is back after the error"
+SAVEPOINT
+GRANT
+GRANT
+SAVEPOINT
+DO
+ROLLBACK
+RELEASE
+ok 12 - case C: with no surviving privilege the migration completes without error
+ok 13 - case C: the direct INSERT and the owner-granted column UPDATE are revoked and anon holds no write privilege
+SAVEPOINT
+CREATE ROLE
+GRANT
+GRANT ROLE
+GRANT
+SAVEPOINT
+DO
+ROLLBACK
+RELEASE
+ok 14 - case D precondition: authenticated has only DELETE on line_oa_orders, only through an INHERIT membership, and a direct INSERT on line_oa_channels
+not ok 15 - case D: the migration raises SQLSTATE 42501 when an inherited DELETE survives
+# Failed test 15: "case D: the migration raises SQLSTATE 42501 when an inherited DELETE survives"
+#         have: 00000
+#         want: 42501
+not ok 16 - case D: the error message names exactly authenticated:line_oa_orders
+# Failed test 16: "case D: the error message names exactly authenticated:line_oa_orders"
+#         have: 
+#         want: P0-10: write privileges remain after revoke: authenticated:line_oa_orders
+not ok 17 - case D: after the error every table ACL, column ACL and membership is exactly as before
+# Failed test 17: "case D: after the error every table ACL, column ACL and membership is exactly as before"
+#         have: line_oa_audit_log={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_channels={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_conversations={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_customer_identity={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_inbound_messages={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_message_templates={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_orders={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres,p010_fc_deleter=d/postgres}
+# line_oa_outbound_messages={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# authenticated>p010_fc_deleter admin=false inherit=true set=true grantor=postgres
+# authenticator>anon admin=false inherit=false set=true grantor=supabase_admin
+# authenticator>authenticated admin=false inherit=false set=true grantor=supabase_admin
+# authenticator>service_role admin=false inherit=false set=true grantor=supabase_admin
+# pg_monitor>pg_read_all_settings admin=false inherit=true set=true grantor=supabase_admin
+# pg_monitor>pg_read_all_stats admin=false inherit=true set=true grantor=supabase_admin
+# pg_monitor>pg_stat_scan_tables admin=false inherit=true set=true grantor=supabase_admin
+# postgres>anon admin=true inherit=true set=true grantor=supabase_admin
+# postgres>authenticated admin=true inherit=true set=true grantor=supabase_admin
+# postgres>authenticator admin=true inherit=true set=true grantor=supabase_admin
+# postgres>monolith_p2_workload admin=true inherit=false set=false grantor=supabase_admin
+# postgres>p010_fc_deleter admin=true inherit=false set=false grantor=supabase_admin
+# postgres>pg_create_subscription admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_monitor admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_read_all_data admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_signal_backend admin=true inherit=true set=true grantor=supabase_admin
+# postgres>service_role admin=true inherit=true set=true grantor=supabase_admin
+# postgres>supabase_privileged_role admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>pg_monitor admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>pg_read_all_data admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>supabase_privileged_role admin=false inherit=true set=true grantor=supabase_admin
+# supabase_read_only_user>pg_monitor admin=false inherit=true set=true grantor=supabase_admin
+# supabase_read_only_user>pg_read_all_data admin=false inherit=true set=true grantor=supabase_admin
+# supabase_storage_admin>authenticator admin=false inherit=false set=true grantor=supabase_admin
+#         want: line_oa_audit_log={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_channels={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=arxtm/postgres,service_role=rxtm/postgres}
+# line_oa_conversations={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_customer_identity={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_inbound_messages={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_message_templates={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_orders={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres,p010_fc_deleter=d/postgres}
+# line_oa_outbound_messages={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# authenticated>p010_fc_deleter admin=false inherit=true set=true grantor=postgres
+# authenticator>anon admin=false inherit=false set=true grantor=supabase_admin
+# authenticator>authenticated admin=false inherit=false set=true grantor=supabase_admin
+# authenticator>service_role admin=false inherit=false set=true grantor=supabase_admin
+# pg_monitor>pg_read_all_settings admin=false inherit=true set=true grantor=supabase_admin
+# pg_monitor>pg_read_all_stats admin=false inherit=true set=true grantor=supabase_admin
+# pg_monitor>pg_stat_scan_tables admin=false inherit=true set=true grantor=supabase_admin
+# postgres>anon admin=true inherit=true set=true grantor=supabase_admin
+# postgres>authenticated admin=true inherit=true set=true grantor=supabase_admin
+# postgres>authenticator admin=true inherit=true set=true grantor=supabase_admin
+# postgres>monolith_p2_workload admin=true inherit=false set=false grantor=supabase_admin
+# postgres>p010_fc_deleter admin=true inherit=false set=false grantor=supabase_admin
+# postgres>pg_create_subscription admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_monitor admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_read_all_data admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_signal_backend admin=true inherit=true set=true grantor=supabase_admin
+# postgres>service_role admin=true inherit=true set=true grantor=supabase_admin
+# postgres>supabase_privileged_role admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>pg_monitor admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>pg_read_all_data admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>supabase_privileged_role admin=false inherit=true set=true grantor=supabase_admin
+# supabase_read_only_user>pg_monitor admin=false inherit=true set=true grantor=supabase_admin
+# supabase_read_only_user>pg_read_all_data admin=false inherit=true set=true grantor=supabase_admin
+# supabase_storage_admin>authenticator admin=false inherit=false set=true grantor=supabase_admin
+not ok 18 - case D: the direct INSERT that 0198 revoked on line_oa_channels is back after the error
+# Failed test 18: "case D: the direct INSERT that 0198 revoked on line_oa_channels is back after the error"
+SAVEPOINT
+CREATE ROLE
+GRANT
+GRANT ROLE
+GRANT
+SAVEPOINT
+DO
+ROLLBACK
+RELEASE
+ok 19 - case E precondition: service_role has only TRUNCATE on line_oa_orders, only through an INHERIT membership, and a direct INSERT on line_oa_channels
+not ok 20 - case E: the migration raises SQLSTATE 42501 when an inherited TRUNCATE survives
+# Failed test 20: "case E: the migration raises SQLSTATE 42501 when an inherited TRUNCATE survives"
+#         have: 00000
+#         want: 42501
+not ok 21 - case E: the error message names exactly service_role:line_oa_orders
+# Failed test 21: "case E: the error message names exactly service_role:line_oa_orders"
+#         have: 
+#         want: P0-10: write privileges remain after revoke: service_role:line_oa_orders
+not ok 22 - case E: after the error every table ACL, column ACL and membership is exactly as before
+# Failed test 22: "case E: after the error every table ACL, column ACL and membership is exactly as before"
+#         have: line_oa_audit_log={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_channels={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_conversations={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_customer_identity={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_inbound_messages={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_message_templates={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_orders={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres,p010_fc_truncater=D/postgres}
+# line_oa_outbound_messages={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# authenticator>anon admin=false inherit=false set=true grantor=supabase_admin
+# authenticator>authenticated admin=false inherit=false set=true grantor=supabase_admin
+# authenticator>service_role admin=false inherit=false set=true grantor=supabase_admin
+# pg_monitor>pg_read_all_settings admin=false inherit=true set=true grantor=supabase_admin
+# pg_monitor>pg_read_all_stats admin=false inherit=true set=true grantor=supabase_admin
+# pg_monitor>pg_stat_scan_tables admin=false inherit=true set=true grantor=supabase_admin
+# postgres>anon admin=true inherit=true set=true grantor=supabase_admin
+# postgres>authenticated admin=true inherit=true set=true grantor=supabase_admin
+# postgres>authenticator admin=true inherit=true set=true grantor=supabase_admin
+# postgres>monolith_p2_workload admin=true inherit=false set=false grantor=supabase_admin
+# postgres>p010_fc_truncater admin=true inherit=false set=false grantor=supabase_admin
+# postgres>pg_create_subscription admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_monitor admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_read_all_data admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_signal_backend admin=true inherit=true set=true grantor=supabase_admin
+# postgres>service_role admin=true inherit=true set=true grantor=supabase_admin
+# postgres>supabase_privileged_role admin=false inherit=true set=true grantor=supabase_admin
+# service_role>p010_fc_truncater admin=false inherit=true set=true grantor=postgres
+# supabase_etl_admin>pg_monitor admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>pg_read_all_data admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>supabase_privileged_role admin=false inherit=true set=true grantor=supabase_admin
+# supabase_read_only_user>pg_monitor admin=false inherit=true set=true grantor=supabase_admin
+# supabase_read_only_user>pg_read_all_data admin=false inherit=true set=true grantor=supabase_admin
+# supabase_storage_admin>authenticator admin=false inherit=false set=true grantor=supabase_admin
+#         want: line_oa_audit_log={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_channels={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=arxtm/postgres}
+# line_oa_conversations={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_customer_identity={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_inbound_messages={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_message_templates={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_orders={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres,p010_fc_truncater=D/postgres}
+# line_oa_outbound_messages={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# authenticator>anon admin=false inherit=false set=true grantor=supabase_admin
+# authenticator>authenticated admin=false inherit=false set=true grantor=supabase_admin
+# authenticator>service_role admin=false inherit=false set=true grantor=supabase_admin
+# pg_monitor>pg_read_all_settings admin=false inherit=true set=true grantor=supabase_admin
+# pg_monitor>pg_read_all_stats admin=false inherit=true set=true grantor=supabase_admin
+# pg_monitor>pg_stat_scan_tables admin=false inherit=true set=true grantor=supabase_admin
+# postgres>anon admin=true inherit=true set=true grantor=supabase_admin
+# postgres>authenticated admin=true inherit=true set=true grantor=supabase_admin
+# postgres>authenticator admin=true inherit=true set=true grantor=supabase_admin
+# postgres>monolith_p2_workload admin=true inherit=false set=false grantor=supabase_admin
+# postgres>p010_fc_truncater admin=true inherit=false set=false grantor=supabase_admin
+# postgres>pg_create_subscription admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_monitor admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_read_all_data admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_signal_backend admin=true inherit=true set=true grantor=supabase_admin
+# postgres>service_role admin=true inherit=true set=true grantor=supabase_admin
+# postgres>supabase_privileged_role admin=false inherit=true set=true grantor=supabase_admin
+# service_role>p010_fc_truncater admin=false inherit=true set=true grantor=postgres
+# supabase_etl_admin>pg_monitor admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>pg_read_all_data admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>supabase_privileged_role admin=false inherit=true set=true grantor=supabase_admin
+# supabase_read_only_user>pg_monitor admin=false inherit=true set=true grantor=supabase_admin
+# supabase_read_only_user>pg_read_all_data admin=false inherit=true set=true grantor=supabase_admin
+# supabase_storage_admin>authenticator admin=false inherit=false set=true grantor=supabase_admin
+not ok 23 - case E: the direct INSERT that 0198 revoked on line_oa_channels is back after the error
+# Failed test 23: "case E: the direct INSERT that 0198 revoked on line_oa_channels is back after the error"
+SAVEPOINT
+CREATE ROLE
+GRANT ROLE
+GRANT
+GRANT
+SET
+GRANT
+RESET
+GRANT
+SAVEPOINT
+DO
+ROLLBACK
+RELEASE
+ok 24 - case F precondition: anon has only a column INSERT on line_oa_message_templates.body from another grantor, and a direct INSERT on line_oa_channels
+not ok 25 - case F: the migration raises SQLSTATE 42501 when a column-level INSERT survives
+# Failed test 25: "case F: the migration raises SQLSTATE 42501 when a column-level INSERT survives"
+#         have: 00000
+#         want: 42501
+not ok 26 - case F: the error message names exactly anon:line_oa_message_templates
+# Failed test 26: "case F: the error message names exactly anon:line_oa_message_templates"
+#         have: 
+#         want: P0-10: write privileges remain after revoke: anon:line_oa_message_templates
+not ok 27 - case F: after the error every table ACL, column ACL and membership is exactly as before
+# Failed test 27: "case F: after the error every table ACL, column ACL and membership is exactly as before"
+#         have: line_oa_audit_log={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_channels={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_conversations={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_customer_identity={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_inbound_messages={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_message_templates={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_orders={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_outbound_messages={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_message_templates.body={p010_fc_col_grantor=a*/postgres,anon=a/p010_fc_col_grantor}
+# authenticator>anon admin=false inherit=false set=true grantor=supabase_admin
+# authenticator>authenticated admin=false inherit=false set=true grantor=supabase_admin
+# authenticator>service_role admin=false inherit=false set=true grantor=supabase_admin
+# pg_monitor>pg_read_all_settings admin=false inherit=true set=true grantor=supabase_admin
+# pg_monitor>pg_read_all_stats admin=false inherit=true set=true grantor=supabase_admin
+# pg_monitor>pg_stat_scan_tables admin=false inherit=true set=true grantor=supabase_admin
+# postgres>anon admin=true inherit=true set=true grantor=supabase_admin
+# postgres>authenticated admin=true inherit=true set=true grantor=supabase_admin
+# postgres>authenticator admin=true inherit=true set=true grantor=supabase_admin
+# postgres>monolith_p2_workload admin=true inherit=false set=false grantor=supabase_admin
+# postgres>p010_fc_col_grantor admin=false inherit=false set=true grantor=postgres
+# postgres>p010_fc_col_grantor admin=true inherit=false set=false grantor=supabase_admin
+# postgres>pg_create_subscription admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_monitor admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_read_all_data admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_signal_backend admin=true inherit=true set=true grantor=supabase_admin
+# postgres>service_role admin=true inherit=true set=true grantor=supabase_admin
+# postgres>supabase_privileged_role admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>pg_monitor admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>pg_read_all_data admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>supabase_privileged_role admin=false inherit=true set=true grantor=supabase_admin
+# supabase_read_only_user>pg_monitor admin=false inherit=true set=true grantor=supabase_admin
+# supabase_read_only_user>pg_read_all_data admin=false inherit=true set=true grantor=supabase_admin
+# supabase_storage_admin>authenticator admin=false inherit=false set=true grantor=supabase_admin
+#         want: line_oa_audit_log={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_channels={postgres=arwdDxtm/postgres,anon=arxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_conversations={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_customer_identity={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_inbound_messages={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_message_templates={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_orders={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_outbound_messages={postgres=arwdDxtm/postgres,anon=rxtm/postgres,authenticated=rxtm/postgres,service_role=rxtm/postgres}
+# line_oa_message_templates.body={p010_fc_col_grantor=a*/postgres,anon=a/p010_fc_col_grantor}
+# authenticator>anon admin=false inherit=false set=true grantor=supabase_admin
+# authenticator>authenticated admin=false inherit=false set=true grantor=supabase_admin
+# authenticator>service_role admin=false inherit=false set=true grantor=supabase_admin
+# pg_monitor>pg_read_all_settings admin=false inherit=true set=true grantor=supabase_admin
+# pg_monitor>pg_read_all_stats admin=false inherit=true set=true grantor=supabase_admin
+# pg_monitor>pg_stat_scan_tables admin=false inherit=true set=true grantor=supabase_admin
+# postgres>anon admin=true inherit=true set=true grantor=supabase_admin
+# postgres>authenticated admin=true inherit=true set=true grantor=supabase_admin
+# postgres>authenticator admin=true inherit=true set=true grantor=supabase_admin
+# postgres>monolith_p2_workload admin=true inherit=false set=false grantor=supabase_admin
+# postgres>p010_fc_col_grantor admin=false inherit=false set=true grantor=postgres
+# postgres>p010_fc_col_grantor admin=true inherit=false set=false grantor=supabase_admin
+# postgres>pg_create_subscription admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_monitor admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_read_all_data admin=true inherit=true set=true grantor=supabase_admin
+# postgres>pg_signal_backend admin=true inherit=true set=true grantor=supabase_admin
+# postgres>service_role admin=true inherit=true set=true grantor=supabase_admin
+# postgres>supabase_privileged_role admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>pg_monitor admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>pg_read_all_data admin=false inherit=true set=true grantor=supabase_admin
+# supabase_etl_admin>supabase_privileged_role admin=false inherit=true set=true grantor=supabase_admin
+# supabase_read_only_user>pg_monitor admin=false inherit=true set=true grantor=supabase_admin
+# supabase_read_only_user>pg_read_all_data admin=false inherit=true set=true grantor=supabase_admin
+# supabase_storage_admin>authenticator admin=false inherit=false set=true grantor=supabase_admin
+not ok 28 - case F: the direct INSERT that 0198 revoked on line_oa_channels is back after the error
+# Failed test 28: "case F: the direct INSERT that 0198 revoked on line_oa_channels is back after the error"
+# Looks like you failed 20 tests of 28
+ROLLBACK

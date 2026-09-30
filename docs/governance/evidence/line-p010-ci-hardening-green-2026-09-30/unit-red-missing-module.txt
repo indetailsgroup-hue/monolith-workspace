@@ -1,0 +1,35 @@
+node:internal/modules/esm/resolve:274
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module 'C:\Users\thai3\determined-williams (2)\MONOLITH Repair Intelligence\.worktrees\repair-intelligence-phase0-trust\scripts\line-ci-tap.mjs' imported from C:\Users\thai3\determined-williams (2)\MONOLITH Repair Intelligence\.worktrees\repair-intelligence-phase0-trust\tests\line-oa-commerce\ci\tap-evidence.test.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:274:11)
+    at moduleResolve (node:internal/modules/esm/resolve:864:10)
+    at defaultResolve (node:internal/modules/esm/resolve:990:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:712:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:729:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:758:52)
+    at #resolve (node:internal/modules/esm/loader:694:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:614:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:143:33)
+    at ModuleJob.link (node:internal/modules/esm/module_job:228:17) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///C:/Users/thai3/determined-williams%20(2)/MONOLITH%20Repair%20Intelligence/.worktrees/repair-intelligence-phase0-trust/scripts/line-ci-tap.mjs'
+}
+
+Node.js v25.2.1
+✖ tests\line-oa-commerce\ci\tap-evidence.test.mjs (43.7235ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 48.6935
+
+✖ failing tests:
+
+test at tests\line-oa-commerce\ci\tap-evidence.test.mjs:1:1
+✖ tests\line-oa-commerce\ci\tap-evidence.test.mjs (43.7235ms)
+  'test failed'

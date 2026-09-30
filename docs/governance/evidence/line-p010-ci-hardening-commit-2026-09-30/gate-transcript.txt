@@ -1,0 +1,168 @@
+written_utc: 2026-09-30T14:50:39Z
+base: a0ea86320879b44c334c37c8a06127443ba5d59f
+gated_tree: c017d016f5880a8204055bcc4652f280ce5d7223
+wrapper_staged_sha256: 2097ec7f9adb49e6c44d912df19e9c50a6209d879cb03a399a33d0a239d83d01
+gate_staged_sha256: 38b0d8acef58b4286ae2ea8d28ce0e3494e7b5a0cab8e93f237fac5036df8520
+PASS: expected base HEAD
+PASS: exact authorized change set
+PASS: 0198 remains unchanged
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30: complete checksums
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30: Git and disk checksum match
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30: fresh evidence verification
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30: complete checksums
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30: Git and disk checksum match
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30: fresh evidence verification
+PASS: .github/workflows/db-verify.yml: source identity
+PASS: scripts/line-ci-tap.mjs: source identity
+PASS: scripts/run-line-db-suites.sh: source identity
+PASS: tests/line-oa-commerce/ci/tap-evidence.test.mjs: source identity
+PASS: supabase/tests/line_oa_client_write_revoke_fail_closed.sql: source identity
+PASS: docs/PRD-LINE-OA.en.md: source identity
+PASS: docs/PRD-LINE-OA.en.html: source identity
+PASS: docs/PRD-LINE-OA.th.md: source identity
+PASS: docs/PRD-LINE-OA.th.html: source identity
+PASS: .github/workflows/db-verify.yml: identical to tested docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30
+PASS: .github/workflows/db-verify.yml: identical to tested docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30
+PASS: scripts/line-ci-tap.mjs: identical to tested docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30
+PASS: scripts/line-ci-tap.mjs: identical to tested docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30
+PASS: scripts/run-line-db-suites.sh: identical to tested docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30
+PASS: scripts/run-line-db-suites.sh: identical to tested docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30
+PASS: tests/line-oa-commerce/ci/tap-evidence.test.mjs: identical to tested docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30
+PASS: tests/line-oa-commerce/ci/tap-evidence.test.mjs: identical to tested docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30
+PASS: supabase/tests/line_oa_client_write_revoke_fail_closed.sql: identical to tested docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30
+PASS: supabase/tests/line_oa_client_write_revoke_fail_closed.sql: identical to tested docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30
+PASS: fresh TAP validator tests
+PASS: docs/PRD-LINE-OA.en.html: renderer matches
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/REPORT.en.html: renderer matches
+PASS: docs/PRD-LINE-OA.th.html: renderer matches
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/REPORT.th.html: renderer matches
+PASS: secret scanner positive controls
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/ci-step-2.log: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/trust_kernel_containment.result.json: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/source-0198_line_oa_revoke_client_write_grants.sql: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/ci-step-3.log: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/source-db-verify.yml: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/09-teardown.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/00-context.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/repair_phase0_containment.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/repair_phase0_organization.stderr: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/10a-credential-scan.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/line_oa_client_write_revoke_fail_closed.result.json: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/trust_kernel_safety.stderr: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/08-baseline-after-tests.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/trust_kernel_governance.result.json: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/trust_kernel_containment.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/source-tap-evidence.test.mjs: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/gate-ci-hardening.py: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/source-0198_line_oa_revoke_client_write_grants.sql: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/line_oa_client_write_revoke.stderr: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/05-claim-race-output.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/trust_kernel_release.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/01b-service-bootstrap-output.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/.gitattributes: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/trust_kernel_release.result.json: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/REPLAY.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/source-run-line-db-suites.sh: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/03-baseline-after-migrations.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/ci-step-3.sh: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/logs-line-p010hard-db.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/source-db-verify.diff: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/source-db-verify.diff: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/line_oa_client_write_revoke.result.json: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/trust_kernel_bundles.stderr: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/run-p010-failclosed.sh: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/10a-credential-scan.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/04a-fail-closed-vs-0198.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/trust_kernel_bundles.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/run-p010-failclosed.sh: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/logs-line-p010hard-auth.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/line_oa_client_write_revoke_fail_closed.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/REPORT.th.md: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/line_outbound_claim_record.stderr: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/01b-service-bootstrap.sql: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/SHA256SUMS.run: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/REPORT.en.html: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/trust_kernel_bundles.result.json: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/logs-line-p010hard-db.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/01b-service-bootstrap.sql: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/verify-p010-failclosed.py: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/mutant-0198-no-residual-check.sql: credential-shaped scan
+PASS: tests/line-oa-commerce/ci/tap-evidence.test.mjs: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/db-verify-evidence.json: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/unit-red-legacy.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/REPLAY.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/04c-pgtap-original.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/trust_kernel_tenancy.result.json: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/trust_kernel_safety.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/ci-step-1.log: credential-shaped scan
+PASS: scripts/line-ci-tap.mjs: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/logs-line-p010hard-storage.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/REPORT.en.md: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/SHA256SUMS: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/unit-red-missing-module.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/ci-step-1.sh: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/repair_phase0_containment.result.json: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/commit-ci-hardening.sh: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/ci-step-4.sh: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/source-tap-evidence.test.mjs: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/verifier-negative-control.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/09-teardown.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/08-baseline-after-tests.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/02-migrations-applied.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/repair_phase0_organization.result.json: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/10b-verification.txt: credential-shaped scan
+PASS: docs/PRD-LINE-OA.en.html: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/trust_kernel_tenancy.tap: credential-shaped scan
+PASS: docs/PRD-LINE-OA.en.md: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/ci-replica.py: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/.gitattributes: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/workflow_db_invariants.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/source-line_oa_client_write_revoke_fail_closed.sql: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/logs-line-p010hard-auth.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/10b-verification.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/06-pytest-output.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/verify-p010-failclosed.py: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/logs-line-p010hard-storage.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/ci-step-2.sh: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/source-line-ci-tap.mjs: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/workflow_db_invariants.result.json: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/line_outbound_claim_record.result.json: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/unit-green.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/SHA256SUMS: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/repair_phase0_containment.stderr: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/line_outbound_claim_record.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/00-context.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/ci-step-5.sh: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/ci-step-4.log: credential-shaped scan
+PASS: docs/PRD-LINE-OA.th.html: credential-shaped scan
+PASS: .github/workflows/db-verify.yml: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/summary.txt: credential-shaped scan
+PASS: supabase/tests/line_oa_client_write_revoke_fail_closed.sql: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/REPORT.th.html: credential-shaped scan
+PASS: scripts/run-line-db-suites.sh: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/source-run-line-db-suites.sh: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/03-baseline-after-migrations.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/04-fail-closed-vs-mutant.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/02-migrations-applied.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/ci-replica.py: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/line_oa_client_write_revoke_fail_closed.stderr: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/06-pytest-junit.xml: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/repair_phase0_organization.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/trust_kernel_governance.stderr: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/line_oa_client_write_revoke.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/01b-service-bootstrap-output.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/trust_kernel_governance.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/04b-pgtap-p010.tap: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/trust_kernel_release.stderr: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/source-line-ci-tap.mjs: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/source-db-verify.yml: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/workflow_db_invariants.stderr: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/source-line_oa_client_write_revoke_fail_closed.sql: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/SHA256SUMS.run: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-red-2026-09-30/mutant-vs-0198.diff: credential-shaped scan
+PASS: docs/PRD-LINE-OA.th.md: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/trust_kernel_safety.result.json: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/ci-step-5.log: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/trust_kernel_containment.stderr: credential-shaped scan
+PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/07-ci-local/full/tap/trust_kernel_tenancy.stderr: credential-shaped scan
+RESULT: GATE PASS (local evidence; full CI remains separately reported)

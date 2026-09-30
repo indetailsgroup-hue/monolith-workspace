@@ -1,0 +1,106 @@
+BEGIN
+# migration under test: ../migrations/0198_line_oa_revoke_client_write_grants.sql
+CREATE EXTENSION
+1..28
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+ok 1 - scope guard: 8 tables and anon exist, and anon starts without write privilege (0198 applied)
+SAVEPOINT
+CREATE ROLE
+GRANT
+GRANT ROLE
+GRANT
+SAVEPOINT
+psql:supabase/migrations/0198_line_oa_revoke_client_write_grants.sql:65: ERROR:  P0-10: write privileges remain after revoke: anon:line_oa_orders
+CONTEXT:  PL/pgSQL function inline_code_block line 36 at RAISE
+ROLLBACK
+ROLLBACK
+RELEASE
+ok 2 - case A precondition: anon has INSERT on line_oa_orders only through role membership, and a direct INSERT on line_oa_channels
+ok 3 - case A: the migration raises SQLSTATE 42501 when an inherited write privilege survives
+ok 4 - case A: the error message starts with "P0-10: write privileges remain after revoke" and names anon:line_oa_orders
+ok 5 - case A: after the error every table ACL, column ACL and membership is exactly as before
+ok 6 - case A: the direct INSERT that 0198 revoked on line_oa_channels is back after the error
+SAVEPOINT
+CREATE ROLE
+GRANT ROLE
+GRANT
+GRANT
+SET
+GRANT
+RESET
+GRANT
+SAVEPOINT
+psql:supabase/migrations/0198_line_oa_revoke_client_write_grants.sql:65: ERROR:  P0-10: write privileges remain after revoke: anon:line_oa_message_templates
+CONTEXT:  PL/pgSQL function inline_code_block line 36 at RAISE
+ROLLBACK
+ROLLBACK
+RELEASE
+ok 7 - case B precondition: anon has a direct column UPDATE on line_oa_message_templates.body from another grantor, and a direct INSERT on line_oa_channels
+ok 8 - case B: the migration raises SQLSTATE 42501 when a column-level UPDATE survives
+ok 9 - case B: the error message starts with "P0-10: write privileges remain after revoke" and names anon:line_oa_message_templates
+ok 10 - case B: after the error every table ACL, column ACL and membership is exactly as before
+ok 11 - case B: the direct INSERT that 0198 revoked on line_oa_channels is back after the error
+SAVEPOINT
+GRANT
+GRANT
+SAVEPOINT
+DO
+ROLLBACK
+RELEASE
+ok 12 - case C: with no surviving privilege the migration completes without error
+ok 13 - case C: the direct INSERT and the owner-granted column UPDATE are revoked and anon holds no write privilege
+SAVEPOINT
+CREATE ROLE
+GRANT
+GRANT ROLE
+GRANT
+SAVEPOINT
+psql:supabase/migrations/0198_line_oa_revoke_client_write_grants.sql:65: ERROR:  P0-10: write privileges remain after revoke: authenticated:line_oa_orders
+CONTEXT:  PL/pgSQL function inline_code_block line 36 at RAISE
+ROLLBACK
+ROLLBACK
+RELEASE
+ok 14 - case D precondition: authenticated has only DELETE on line_oa_orders, only through an INHERIT membership, and a direct INSERT on line_oa_channels
+ok 15 - case D: the migration raises SQLSTATE 42501 when an inherited DELETE survives
+ok 16 - case D: the error message names exactly authenticated:line_oa_orders
+ok 17 - case D: after the error every table ACL, column ACL and membership is exactly as before
+ok 18 - case D: the direct INSERT that 0198 revoked on line_oa_channels is back after the error
+SAVEPOINT
+CREATE ROLE
+GRANT
+GRANT ROLE
+GRANT
+SAVEPOINT
+psql:supabase/migrations/0198_line_oa_revoke_client_write_grants.sql:65: ERROR:  P0-10: write privileges remain after revoke: service_role:line_oa_orders
+CONTEXT:  PL/pgSQL function inline_code_block line 36 at RAISE
+ROLLBACK
+ROLLBACK
+RELEASE
+ok 19 - case E precondition: service_role has only TRUNCATE on line_oa_orders, only through an INHERIT membership, and a direct INSERT on line_oa_channels
+ok 20 - case E: the migration raises SQLSTATE 42501 when an inherited TRUNCATE survives
+ok 21 - case E: the error message names exactly service_role:line_oa_orders
+ok 22 - case E: after the error every table ACL, column ACL and membership is exactly as before
+ok 23 - case E: the direct INSERT that 0198 revoked on line_oa_channels is back after the error
+SAVEPOINT
+CREATE ROLE
+GRANT ROLE
+GRANT
+GRANT
+SET
+GRANT
+RESET
+GRANT
+SAVEPOINT
+psql:supabase/migrations/0198_line_oa_revoke_client_write_grants.sql:65: ERROR:  P0-10: write privileges remain after revoke: anon:line_oa_message_templates
+CONTEXT:  PL/pgSQL function inline_code_block line 36 at RAISE
+ROLLBACK
+ROLLBACK
+RELEASE
+ok 24 - case F precondition: anon has only a column INSERT on line_oa_message_templates.body from another grantor, and a direct INSERT on line_oa_channels
+ok 25 - case F: the migration raises SQLSTATE 42501 when a column-level INSERT survives
+ok 26 - case F: the error message names exactly anon:line_oa_message_templates
+ok 27 - case F: after the error every table ACL, column ACL and membership is exactly as before
+ok 28 - case F: the direct INSERT that 0198 revoked on line_oa_channels is back after the error
+ROLLBACK

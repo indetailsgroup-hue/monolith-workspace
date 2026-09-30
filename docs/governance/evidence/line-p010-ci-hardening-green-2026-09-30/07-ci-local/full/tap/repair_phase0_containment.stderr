@@ -1,0 +1,1 @@
+psql:C:/Users/thai3/AppData/Local/Temp/line-p010-ci-workdir.zT6V1I/supabase/tests/repair_phase0_containment.sql:74: ERROR:  function "public.rpc_factory_job_record_packet(text,text,text,text,text,text[],text[],text,text,text,text,integer)" does not exist

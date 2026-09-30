@@ -1,0 +1,22 @@
+{
+  "suite": "trust_kernel_bundles",
+  "stdout": "tap/trust_kernel_bundles.tap",
+  "stderr": "tap/trust_kernel_bundles.stderr",
+  "tapSha256": "8e828330d3c2764fdafb57a25fcf83e9c9300fd348a58526dbd325b2c6955d68",
+  "runId": "20260930T144132Z-130184",
+  "origin": "local",
+  "checkedAt": "2026-09-30T14:41:34.233Z",
+  "pass": true,
+  "exitCode": 0,
+  "plan": 27,
+  "planLines": 1,
+  "results": 27,
+  "ok": 27,
+  "notOk": 0,
+  "skip": 0,
+  "todo": 0,
+  "bailOut": false,
+  "sqlErrorLines": 0,
+  "finishDiagnostics": [],
+  "failures": []
+}

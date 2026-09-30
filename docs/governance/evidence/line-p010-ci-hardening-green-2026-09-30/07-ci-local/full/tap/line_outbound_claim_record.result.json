@@ -1,0 +1,22 @@
+{
+  "suite": "line_outbound_claim_record",
+  "stdout": "tap/line_outbound_claim_record.tap",
+  "stderr": "tap/line_outbound_claim_record.stderr",
+  "tapSha256": "9f5870b5d688d1128d5f07e5b85a324541043b103a8aaa5224aa56138cb40c54",
+  "runId": "20260930T144132Z-130184",
+  "origin": "local",
+  "checkedAt": "2026-09-30T14:41:36.225Z",
+  "pass": true,
+  "exitCode": 0,
+  "plan": 107,
+  "planLines": 1,
+  "results": 107,
+  "ok": 107,
+  "notOk": 0,
+  "skip": 0,
+  "todo": 0,
+  "bailOut": false,
+  "sqlErrorLines": 0,
+  "finishDiagnostics": [],
+  "failures": []
+}

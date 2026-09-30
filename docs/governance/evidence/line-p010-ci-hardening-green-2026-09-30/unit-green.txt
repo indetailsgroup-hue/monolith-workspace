@@ -1,0 +1,30 @@
+✔ suite list is the twelve db-verify suites with the three LINE suites last (1.6238ms)
+✔ plan 8 with 6 ok and psql exit 3 fails (the stopped containment suite) (1.0109ms)
+✔ plan 8 with 6 ok fails even when psql exits 0 (0.2328ms)
+✔ fail-closed suite: 13 of 13 with psql noise and exit 0 passes (0.2393ms)
+✔ expected SQL errors are noise, not results, whether stderr is separate or merged (0.236ms)
+✔ a nonzero or unrecorded psql exit fails even with a complete TAP (0.2964ms)
+✔ exactly one valid nonzero plan is required (0.1697ms)
+✔ the plan may come first or last, not in the middle (0.1002ms)
+✔ plan-like text in comments, data rows and descriptions is not a plan (0.118ms)
+✔ result numbers must be unique, sequential and inside the plan (0.1417ms)
+✔ not ok, bail out, SKIP and TODO never count as a pass (0.1323ms)
+✔ pgTAP finish diagnostics fail, and a silent finish does not excuse a missing plan or results (0.0982ms)
+✔ summary passes only when all twelve suites have passing evidence (1.2732ms)
+✔ a suite without result JSON is missing evidence and fails the summary (0.2194ms)
+✔ linePass can be true while fullPass is false, and the top-level pass follows fullPass (0.1618ms)
+✔ summary does not trust a pass flag that the recorded facts contradict (0.3048ms)
+✔ summary rejects evidence filed under the wrong suite, twice, or for an unknown suite (0.4803ms)
+✔ metadata: a local run is labelled local and does not claim an Ubuntu runner (0.3441ms)
+✔ metadata: github-actions is reported only when GITHUB_ACTIONS=true (0.1008ms)
+✔ CLI check writes the result file and exits 1 for failing evidence (447.3086ms)
+✔ CLI assemble writes the artifact even when suites fail or are missing (208.7494ms)
+✔ CLI assemble passes only with twelve fresh passing results (694.294ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 22
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1429.3241

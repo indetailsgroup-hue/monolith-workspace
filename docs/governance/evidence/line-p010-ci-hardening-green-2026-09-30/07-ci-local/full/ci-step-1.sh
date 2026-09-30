@@ -1,0 +1,1 @@
+bash scripts/run-line-db-suites.sh

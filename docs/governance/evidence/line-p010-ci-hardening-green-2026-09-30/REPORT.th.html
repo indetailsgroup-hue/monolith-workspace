@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>P0-10 ปรับการตรวจหลักฐาน CI — รายงานส่งมอบ</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>P0-10 ปรับการตรวจหลักฐาน CI — รายงานส่งมอบ</h1>
+<p>30 กันยายน 2026 ฐาน <code>a0ea86320879b44c334c37c8a06127443ba5d59f</code> branch ผลิตภัณฑ์ <code>codex/repair-intelligence-phase0-trust</code></p>
+<h2>ผลลัพธ์</h2>
+<p>การตรวจ LINE ในเครื่องผ่าน แต่ชุดทดสอบฐานข้อมูลเต็มยังไม่ผ่าน หลักฐานรายงานผลนี้ถูกต้องแล้ว Phase A ยังเป็น <code>EVIDENCE_INCOMPLETE</code> และรอผู้ตรวจอิสระ</p>
+<h2>สิ่งที่แก้</h2>
+<p>รัน pgTAP ครบ 12 suite แยก stdout, stderr, exit status และผลแต่ละ suite ตัวตรวจบังคับให้มี plan เดียว ผลครบตามลำดับ exit ศูนย์ ไม่มี fail, skip หรือ TODO ค่า <code>pass</code> รวมตาม <code>fullPass</code> โดยแยกจาก <code>linePass</code> Metadata ระบุผลในเครื่องตามจริง</p>
+<p>ตัวตรวจหลัง 0198 บังคับให้พบครบ 8 ตารางและ 3 role เพิ่ม fail-closed จาก 13 เป็น 28 assertions: ระบุ inheritance ชัดเจน เพิ่ม inherited DELETE/TRUNCATE และ column INSERT จากเดิมที่มี inherited INSERT/UPDATE และ column UPDATE เทสต์รัน 0198 จริงผ่าน savepoint และเทียบ ACL ของตาราง/คอลัมน์ รวม options/grantor ของ membership หลัง rollback ผลนี้พิสูจน์ขอบเขตของชุดทดสอบ ไม่ใช่ migration runner ทุกชนิด</p>
+<p>0198 ไม่เปลี่ยนแม้แต่ byte เดียว PRD 1.10 บันทึกผลและรักษาหลักฐานย้อนหลัง Wrapper ตรวจขอบเขต staged files ข้อมูลลับ checksum และ tree ก่อน commit</p>
+<h2>การทดสอบ</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>รายการ</th>
+<th>ผล</th>
+</tr></thead><tbody>
+<tr>
+<td>Migration จากศูนย์ RED และ GREEN</td>
+<td>รอบละ 193</td>
+</tr>
+<tr>
+<td>RED ใช้ mutant ที่ตัด guard</td>
+<td>ล้มตรง 20 ข้อที่คาด อีกแปดข้อผ่าน</td>
+</tr>
+<tr>
+<td>GREEN fail-closed</td>
+<td>28/28</td>
+</tr>
+<tr>
+<td>LINE suites เดิม</td>
+<td>107/107 และ 133/133</td>
+</tr>
+<tr>
+<td>Python 12 ไฟล์</td>
+<td>72/72 ไม่มี fail หรือ skip</td>
+</tr>
+<tr>
+<td>Claim race สอง client</td>
+<td>10 + 10 แถว ซ้ำศูนย์</td>
+</tr>
+<tr>
+<td>Unit tests ตัวตรวจ TAP</td>
+<td>22/22</td>
+</tr>
+<tr>
+<td>pgTAP เต็มในเครื่อง</td>
+<td>รันครบ 12 ผ่าน 11 ส่วน containment ล้ม</td>
+</tr>
+<tr>
+<td>สรุป</td>
+<td>linePass=true; fullPass=false; pass=false</td>
+</tr>
+<tr>
+<td>เก็บกวาด</td>
+<td>ไม่มี container/network ค้าง cron ไม่ได้รัน</td>
+</tr>
+</tbody></table></div>
+<p>Containment จบด้วย exit 3 ที่ <code>repair_phase0_containment.sql:74</code> มีผล 6 จาก 8 เพราะไม่มี <code>rpc_factory_job_record_packet</code> แบบ 12 arguments ไม่แก้โค้ดหรือเทสต์ manufacturing ตัวตรวจหลักฐานยอมรับเฉพาะ failure นี้และบังคับให้ suite อื่นผ่าน Exit ศูนย์ของตัวตรวจหมายถึงหลักฐานตรงตามที่คาด ไม่ใช่ CI เต็มผ่าน ยังไม่ได้รัน GitHub Actions</p>
+<h2>หลักฐานและที่มา</h2>
+<p>ชุด GREEN นี้และชุด RED ข้างกันเก็บ source ที่ทดสอบ คำสั่ง เวลา UTC exit code fingerprint และผลดิบ <code>SHA256SUMS.run</code> คง manifest ตอนจบรัน ส่วน <code>SHA256SUMS</code> ครอบคลุมชุดส่งมอบ <code>REPLAY.txt</code> บันทึก GREEN ครั้งแรกที่ preflight ปฏิเสธและการใช้พอร์ตเฉพาะที่ว่างในครั้งถัดมา ไม่แก้ชุดหลักฐานเก่า</p>
+<p>Claude Opus 5.5 สร้างฉบับเสนอของตัวตรวจ runner unit tests และ SQL ส่วนขยายผ่าน CLI ส่งเฉพาะเนื้อหาที่คัดเลือกและปิดข้อมูลลับ ไม่มีไฟล์ลับและไม่มีสิทธิ์เครื่องมือ/filesystem Codex ตรวจ รวม และทดสอบ โดยแก้รายการเหตุผลที่คาดใน unit test ใหม่หนึ่งจุด พร้อมปรับ workflow/เอกสาร จึงไม่ใช่การตรวจรับอิสระของงานที่เราร่วมกันสร้าง</p>
+<p>Wrapper และ transcript เปิดให้ตรวจ tree ที่ผ่าน gate ได้ เป็นบันทึกการทำงาน ไม่ใช่คำรับรองจากภายนอก การตรวจข้อมูลลับมี positive controls แต่ไม่พิสูจน์ว่าจะตรวจพบข้อมูลลับทุกรูปแบบ</p>
+<h2>งานที่ยังเหลือ</h2>
+<p>รอผู้ตรวจอิสระ แก้ dependency ของ containment แยก และอนุมัติ push ก่อน CI จริง ส่วน P0-9, B12/0199 และ production catalog เป็นงานแยก ไม่ได้ push, deploy, ต่อ shared/production, เปิด cron หรือส่งข้อความจริง Stack ชั่วคราวนี้ไม่ได้พิสูจน์สิทธิ์ใน production</p>
+</main>
+</body>
+</html>
