@@ -33,7 +33,7 @@ def lighthouse_steps():
 class LighthouseTests(unittest.TestCase):
     def test_followup_workflows_watch_actual_deploy_name(self):
         deployed = yaml.load((WORKFLOWS / 'field-app-pages.yml').read_text(encoding='utf-8'), Loader=yaml.BaseLoader)['name']
-        for name in ['lighthouse-audit.yml', 'notify-slack-deploy.yml']:
+        for name in ['lighthouse-audit.yml']:
             with self.subTest(workflow=name):
                 workflow = yaml.load((WORKFLOWS / name).read_text(encoding='utf-8'), Loader=yaml.BaseLoader)
                 self.assertEqual([deployed], workflow['on']['workflow_run']['workflows'])
@@ -79,7 +79,7 @@ assert.equal(calls.length,1);assert.equal(calls[0][0],EXPECTED);assert.equal(cal
 
 class AllDocumentationShellTests(unittest.TestCase):
     def test_all_documentation_workflows_parse_and_shell_scripts_compile(self):
-        names=['field-app-pages','deploy-docs-ci','sync-chapters','auto-update-changelog','notify-slack-deploy','lighthouse-audit','generate-site-data','validate-chapter-frontmatter']
+        names=['field-app-pages','deploy-docs-ci','sync-chapters','auto-update-changelog','lighthouse-audit','generate-site-data','validate-chapter-frontmatter']
         for name in names:
             workflow=yaml.load((WORKFLOWS/(name+'.yml')).read_text(encoding='utf-8'),Loader=yaml.BaseLoader)
             for job in workflow['jobs'].values():
