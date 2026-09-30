@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="72" time="12.348" timestamp="2026-09-30T12:39:47.752743+07:00" hostname="Santi"><properties><property name="hypothesis-statistics-test_ai_action_audit_property.py::test_ai_action_audit" value="dGVzdF9haV9hY3Rpb25fYXVkaXRfcHJvcGVydHkucHk6OnRlc3RfYWlfYWN0aW9uX2F1ZGl0OgoKICAtIGR1cmluZyBnZW5lcmF0ZSBwaGFzZSAoMC42MiBzZWNvbmRzKToKICAgIC0gVHlwaWNhbCBydW50aW1lczogfiAwLTggbXMsIG9mIHdoaWNoIDwgMW1zIGluIGRhdGEgZ2VuZXJhdGlvbgogICAgLSAxMDAgcGFzc2luZyBleGFtcGxlcywgMCBmYWlsaW5nIGV4YW1wbGVzLCAyMiBpbnZhbGlkIGV4YW1wbGVzCgogIC0gU3RvcHBlZCBiZWNhdXNlIHNldHRpbmdzLm1heF9leGFtcGxlcz0xMDA=" /><property name="hypothesis-statistics-test_failure_handling_property.py::test_failure_handling" value="dGVzdF9mYWlsdXJlX2hhbmRsaW5nX3Byb3BlcnR5LnB5Ojp0ZXN0X2ZhaWx1cmVfaGFuZGxpbmc6CgogIC0gZHVyaW5nIGdlbmVyYXRlIHBoYXNlICgwLjEzIHNlY29uZHMpOgogICAgLSBUeXBpY2FsIHJ1bnRpbWVzOiB+IDYtMjYgbXMsIG9mIHdoaWNoIH4gMC05IG1zIGluIGRhdGEgZ2VuZXJhdGlvbgogICAgLSA4IHBhc3NpbmcgZXhhbXBsZXMsIDIgZmFpbGluZyBleGFtcGxlcywgMCBpbnZhbGlkIGV4YW1wbGVzCiAgICAtIEZvdW5kIDEgZGlzdGluY3QgZXJyb3IgaW4gdGhpcyBwaGFzZQoKICAtIGR1cmluZyBzaHJpbmsgcGhhc2UgKDAuMTUgc2Vjb25kcyk6CiAgICAtIFR5cGljYWwgcnVudGltZXM6IH4gNi0yMSBtcywgb2Ygd2hpY2ggPCAxbXMgaW4gZGF0YSBnZW5lcmF0aW9uCiAgICAtIDMgcGFzc2luZyBleGFtcGxlcywgOCBmYWlsaW5nIGV4YW1wbGVzLCAwIGludmFsaWQgZXhhbXBsZXMKICAgIC0gVHJpZWQgMTEgc2hyaW5rcyBvZiB3aGljaCA3IHdlcmUgc3VjY2Vzc2Z1bAoKICAtIFN0b3BwZWQgYmVjYXVzZSBub3RoaW5nIGxlZnQgdG8gZG8=" /><property name="hypothesis-statistics-test_idempotent_processing_property.py::test_idempotent_processing" value="dGVzdF9pZGVtcG90ZW50X3Byb2Nlc3NpbmdfcHJvcGVydHkucHk6OnRlc3RfaWRlbXBvdGVudF9wcm9jZXNzaW5nOgoKICAtIGR1cmluZyBnZW5lcmF0ZSBwaGFzZSAoMS4wMSBzZWNvbmRzKToKICAgIC0gVHlwaWNhbCBydW50aW1lczogfiA3LTEzIG1zLCBvZiB3aGljaCA8IDFtcyBpbiBkYXRhIGdlbmVyYXRpb24KICAgIC0gMTAwIHBhc3NpbmcgZXhhbXBsZXMsIDAgZmFpbGluZyBleGFtcGxlcywgMCBpbnZhbGlkIGV4YW1wbGVzCgogIC0gU3RvcHBlZCBiZWNhdXNlIHNldHRpbmdzLm1heF9leGFtcGxlcz0xMDA=" /><property name="hypothesis-statistics-test_outbound_status_recording_property.py::test_outbound_status_recording" value="dGVzdF9vdXRib3VuZF9zdGF0dXNfcmVjb3JkaW5nX3Byb3BlcnR5LnB5Ojp0ZXN0X291dGJvdW5kX3N0YXR1c19yZWNvcmRpbmc6CgogIC0gZHVyaW5nIGdlbmVyYXRlIHBoYXNlICgwLjUyIHNlY29uZHMpOgogICAgLSBUeXBpY2FsIHJ1bnRpbWVzOiB+IDAtNSBtcywgb2Ygd2hpY2ggPCAxbXMgaW4gZGF0YSBnZW5lcmF0aW9uCiAgICAtIDEwMCBwYXNzaW5nIGV4YW1wbGVzLCAwIGZhaWxpbmcgZXhhbXBsZXMsIDIxIGludmFsaWQgZXhhbXBsZXMKCiAgLSBTdG9wcGVkIGJlY2F1c2Ugc2V0dGluZ3MubWF4X2V4YW1wbGVzPTEwMA==" /><property name="hypothesis-statistics-test_reply_push_fallback_property.py::test_reply_push_fallback" value="dGVzdF9yZXBseV9wdXNoX2ZhbGxiYWNrX3Byb3BlcnR5LnB5Ojp0ZXN0X3JlcGx5X3B1c2hfZmFsbGJhY2s6CgogIC0gZHVyaW5nIGdlbmVyYXRlIHBoYXNlICgwLjU5IHNlY29uZHMpOgogICAgLSBUeXBpY2FsIHJ1bnRpbWVzOiB+IDMtOSBtcywgb2Ygd2hpY2ggPCAxbXMgaW4gZGF0YSBnZW5lcmF0aW9uCiAgICAtIDEwMCBwYXNzaW5nIGV4YW1wbGVzLCAwIGZhaWxpbmcgZXhhbXBsZXMsIDAgaW52YWxpZCBleGFtcGxlcwoKICAtIFN0b3BwZWQgYmVjYXVzZSBzZXR0aW5ncy5tYXhfZXhhbXBsZXM9MTAw" /><property name="hypothesis-statistics-test_rls_read_scoping_property.py::test_rls_read_scoping" value="dGVzdF9ybHNfcmVhZF9zY29waW5nX3Byb3BlcnR5LnB5Ojp0ZXN0X3Jsc19yZWFkX3Njb3Bpbmc6CgogIC0gZHVyaW5nIGdlbmVyYXRlIHBoYXNlICgyLjM1IHNlY29uZHMpOgogICAgLSBUeXBpY2FsIHJ1bnRpbWVzOiB+IDAtMzUgbXMsIG9mIHdoaWNoIDwgMW1zIGluIGRhdGEgZ2VuZXJhdGlvbgogICAgLSAxMDAgcGFzc2luZyBleGFtcGxlcywgMCBmYWlsaW5nIGV4YW1wbGVzLCA3IGludmFsaWQgZXhhbXBsZXMKCiAgLSBTdG9wcGVkIGJlY2F1c2Ugc2V0dGluZ3MubWF4X2V4YW1wbGVzPTEwMA==" /><property name="hypothesis-statistics-test_secret_non_exposure_property.py::test_secret_non_exposure" value="dGVzdF9zZWNyZXRfbm9uX2V4cG9zdXJlX3Byb3BlcnR5LnB5Ojp0ZXN0X3NlY3JldF9ub25fZXhwb3N1cmU6CgogIC0gZHVyaW5nIGdlbmVyYXRlIHBoYXNlICgyLjE4IHNlY29uZHMpOgogICAgLSBUeXBpY2FsIHJ1bnRpbWVzOiB+IDE3LTMzIG1zLCBvZiB3aGljaCA8IDFtcyBpbiBkYXRhIGdlbmVyYXRpb24KICAgIC0gMTAwIHBhc3NpbmcgZXhhbXBsZXMsIDAgZmFpbGluZyBleGFtcGxlcywgMCBpbnZhbGlkIGV4YW1wbGVzCgogIC0gU3RvcHBlZCBiZWNhdXNlIHNldHRpbmdzLm1heF9leGFtcGxlcz0xMDA=" /><property name="hypothesis-statistics-test_signature_verification_property.py::test_signature_verification" value="dGVzdF9zaWduYXR1cmVfdmVyaWZpY2F0aW9uX3Byb3BlcnR5LnB5Ojp0ZXN0X3NpZ25hdHVyZV92ZXJpZmljYXRpb246CgogIC0gZHVyaW5nIGdlbmVyYXRlIHBoYXNlICgxLjIzIHNlY29uZHMpOgogICAgLSBUeXBpY2FsIHJ1bnRpbWVzOiB+IDEwLTE1IG1zLCBvZiB3aGljaCA8IDFtcyBpbiBkYXRhIGdlbmVyYXRpb24KICAgIC0gMTAwIHBhc3NpbmcgZXhhbXBsZXMsIDAgZmFpbGluZyBleGFtcGxlcywgMCBpbnZhbGlkIGV4YW1wbGVzCgogIC0gU3RvcHBlZCBiZWNhdXNlIHNldHRpbmdzLm1heF9leGFtcGxlcz0xMDA=" /><property name="hypothesis-statistics-test_strict_consistency_property.py::test_strict_consistency_on_persistence_failure" value="dGVzdF9zdHJpY3RfY29uc2lzdGVuY3lfcHJvcGVydHkucHk6OnRlc3Rfc3RyaWN0X2NvbnNpc3RlbmN5X29uX3BlcnNpc3RlbmNlX2ZhaWx1cmU6CgogIC0gZHVyaW5nIGdlbmVyYXRlIHBoYXNlICgxLjYyIHNlY29uZHMpOgogICAgLSBUeXBpY2FsIHJ1bnRpbWVzOiB+IDExLTI1IG1zLCBvZiB3aGljaCA8IDFtcyBpbiBkYXRhIGdlbmVyYXRpb24KICAgIC0gMTAwIHBhc3NpbmcgZXhhbXBsZXMsIDAgZmFpbGluZyBleGFtcGxlcywgMCBpbnZhbGlkIGV4YW1wbGVzCgogIC0gU3RvcHBlZCBiZWNhdXNlIHNldHRpbmdzLm1heF9leGFtcGxlcz0xMDA=" /><property name="hypothesis-statistics-test_unauthorized_mutation_denial_property.py::test_unauthorized_mutation_denial" value="dGVzdF91bmF1dGhvcml6ZWRfbXV0YXRpb25fZGVuaWFsX3Byb3BlcnR5LnB5Ojp0ZXN0X3VuYXV0aG9yaXplZF9tdXRhdGlvbl9kZW5pYWw6CgogIC0gZHVyaW5nIGdlbmVyYXRlIHBoYXNlICgxLjAwIHNlY29uZHMpOgogICAgLSBUeXBpY2FsIHJ1bnRpbWVzOiB+IDctMTcgbXMsIG9mIHdoaWNoIDwgMW1zIGluIGRhdGEgZ2VuZXJhdGlvbgogICAgLSAxMDAgcGFzc2luZyBleGFtcGxlcywgMCBmYWlsaW5nIGV4YW1wbGVzLCAwIGludmFsaWQgZXhhbXBsZXMKCiAgLSBTdG9wcGVkIGJlY2F1c2Ugc2V0dGluZ3MubWF4X2V4YW1wbGVzPTEwMA==" /></properties><testcase classname="test_access_control_config_smoke" name="test_rls_enabled_on_every_table[line_oa_channels]" time="0.095" /><testcase classname="test_access_control_config_smoke" name="test_rls_enabled_on_every_table[line_oa_conversations]" time="0.002" /><testcase classname="test_access_control_config_smoke" name="test_rls_enabled_on_every_table[line_oa_inbound_messages]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_rls_enabled_on_every_table[line_oa_outbound_messages]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_rls_enabled_on_every_table[line_oa_customer_identity]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_rls_enabled_on_every_table[line_oa_message_templates]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_rls_enabled_on_every_table[line_oa_orders]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_rls_enabled_on_every_table[line_oa_audit_log]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_select_policy_is_gated_to_authenticated[line_oa_channels]" time="0.002" /><testcase classname="test_access_control_config_smoke" name="test_select_policy_is_gated_to_authenticated[line_oa_conversations]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_select_policy_is_gated_to_authenticated[line_oa_inbound_messages]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_select_policy_is_gated_to_authenticated[line_oa_outbound_messages]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_select_policy_is_gated_to_authenticated[line_oa_customer_identity]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_select_policy_is_gated_to_authenticated[line_oa_message_templates]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_select_policy_is_gated_to_authenticated[line_oa_orders]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_select_policy_is_gated_to_authenticated[line_oa_audit_log]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_site_scoped_select_policy_reuses_c12_helpers[line_oa_conversations]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_site_scoped_select_policy_reuses_c12_helpers[line_oa_inbound_messages]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_site_scoped_select_policy_reuses_c12_helpers[line_oa_outbound_messages]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_site_scoped_select_policy_reuses_c12_helpers[line_oa_customer_identity]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_site_scoped_select_policy_reuses_c12_helpers[line_oa_orders]" time="0.003" /><testcase classname="test_access_control_config_smoke" name="test_site_scoped_select_policy_reuses_c12_helpers[line_oa_audit_log]" time="0.004" /><testcase classname="test_access_control_config_smoke" name="test_governance_only_select_policy_reuses_c12_helper[line_oa_channels]" time="0.002" /><testcase classname="test_access_control_config_smoke" name="test_open_read_select_policy_present[line_oa_message_templates]" time="0.004" /><testcase classname="test_access_control_config_smoke" name="test_no_client_write_policies[line_oa_channels]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_no_client_write_policies[line_oa_conversations]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_no_client_write_policies[line_oa_inbound_messages]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_no_client_write_policies[line_oa_outbound_messages]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_no_client_write_policies[line_oa_customer_identity]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_no_client_write_policies[line_oa_message_templates]" time="0.002" /><testcase classname="test_access_control_config_smoke" name="test_no_client_write_policies[line_oa_orders]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_no_client_write_policies[line_oa_audit_log]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_no_policy_targets_client_roles[line_oa_channels]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_no_policy_targets_client_roles[line_oa_conversations]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_no_policy_targets_client_roles[line_oa_inbound_messages]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_no_policy_targets_client_roles[line_oa_outbound_messages]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_no_policy_targets_client_roles[line_oa_customer_identity]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_no_policy_targets_client_roles[line_oa_message_templates]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_no_policy_targets_client_roles[line_oa_orders]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_no_policy_targets_client_roles[line_oa_audit_log]" time="0.001" /><testcase classname="test_access_control_config_smoke" name="test_clients_hold_no_write_grants[line_oa_channels]" time="0.004"><failure message="AssertionError: public.line_oa_channels grants write privileges to client roles: [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ('authenticated', 'DELETE'), ('authenticated', 'TRUNCATE'), ('service_role', 'INSERT'), ('service_role', 'UPDATE'), ('service_role', 'DELETE'), ('service_role', 'TRUNCATE')]; writes must be RPC-only&#10;assert not [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ...]">db_conn = &lt;psycopg.Connection [INTRANS] (host=127.0.0.1 port=55442 database=postgres) at 0x1f198a2e7b0&gt;
+table = 'line_oa_channels'
+
+    @pytest.mark.parametrize("table", ALL_TABLES)
+    def test_clients_hold_no_write_grants(db_conn: Any, table: str) -&gt; None:
+        """authenticated / anon / public must hold no INSERT/UPDATE/DELETE/TRUNCATE grant.
+    
+        Confirms write access is not handed to clients at the table-grant level
+        either; every mutation flows through SECURITY DEFINER RPCs.
+        """
+        rows = _fetchall(
+            db_conn,
+            """
+            select grantee, privilege_type
+            from information_schema.role_table_grants
+            where table_schema = 'public'
+              and table_name = %s
+              and grantee = any(%s)
+              and privilege_type = any(%s)
+            """,
+            (table, sorted(CLIENT_ROLES | {"authenticated"}), sorted(WRITE_PRIVILEGES)),
+        )
+        offending = [(g, p) for g, p in rows]
+&gt;       assert not offending, (
+            f"public.{table} grants write privileges to client roles: {offending}; "
+            f"writes must be RPC-only"
+        )
+E       AssertionError: public.line_oa_channels grants write privileges to client roles: [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ('authenticated', 'DELETE'), ('authenticated', 'TRUNCATE'), ('service_role', 'INSERT'), ('service_role', 'UPDATE'), ('service_role', 'DELETE'), ('service_role', 'TRUNCATE')]; writes must be RPC-only
+E       assert not [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ...]
+
+tests\line-oa-commerce\py\test_access_control_config_smoke.py:292: AssertionError</failure></testcase><testcase classname="test_access_control_config_smoke" name="test_clients_hold_no_write_grants[line_oa_conversations]" time="0.002"><failure message="AssertionError: public.line_oa_conversations grants write privileges to client roles: [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ('authenticated', 'DELETE'), ('authenticated', 'TRUNCATE'), ('service_role', 'INSERT'), ('service_role', 'UPDATE'), ('service_role', 'DELETE'), ('service_role', 'TRUNCATE')]; writes must be RPC-only&#10;assert not [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ...]">db_conn = &lt;psycopg.Connection [INTRANS] (host=127.0.0.1 port=55442 database=postgres) at 0x1f198a2e7b0&gt;
+table = 'line_oa_conversations'
+
+    @pytest.mark.parametrize("table", ALL_TABLES)
+    def test_clients_hold_no_write_grants(db_conn: Any, table: str) -&gt; None:
+        """authenticated / anon / public must hold no INSERT/UPDATE/DELETE/TRUNCATE grant.
+    
+        Confirms write access is not handed to clients at the table-grant level
+        either; every mutation flows through SECURITY DEFINER RPCs.
+        """
+        rows = _fetchall(
+            db_conn,
+            """
+            select grantee, privilege_type
+            from information_schema.role_table_grants
+            where table_schema = 'public'
+              and table_name = %s
+              and grantee = any(%s)
+              and privilege_type = any(%s)
+            """,
+            (table, sorted(CLIENT_ROLES | {"authenticated"}), sorted(WRITE_PRIVILEGES)),
+        )
+        offending = [(g, p) for g, p in rows]
+&gt;       assert not offending, (
+            f"public.{table} grants write privileges to client roles: {offending}; "
+            f"writes must be RPC-only"
+        )
+E       AssertionError: public.line_oa_conversations grants write privileges to client roles: [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ('authenticated', 'DELETE'), ('authenticated', 'TRUNCATE'), ('service_role', 'INSERT'), ('service_role', 'UPDATE'), ('service_role', 'DELETE'), ('service_role', 'TRUNCATE')]; writes must be RPC-only
+E       assert not [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ...]
+
+tests\line-oa-commerce\py\test_access_control_config_smoke.py:292: AssertionError</failure></testcase><testcase classname="test_access_control_config_smoke" name="test_clients_hold_no_write_grants[line_oa_inbound_messages]" time="0.002"><failure message="AssertionError: public.line_oa_inbound_messages grants write privileges to client roles: [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ('authenticated', 'DELETE'), ('authenticated', 'TRUNCATE'), ('service_role', 'INSERT'), ('service_role', 'UPDATE'), ('service_role', 'DELETE'), ('service_role', 'TRUNCATE')]; writes must be RPC-only&#10;assert not [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ...]">db_conn = &lt;psycopg.Connection [INTRANS] (host=127.0.0.1 port=55442 database=postgres) at 0x1f198a2e7b0&gt;
+table = 'line_oa_inbound_messages'
+
+    @pytest.mark.parametrize("table", ALL_TABLES)
+    def test_clients_hold_no_write_grants(db_conn: Any, table: str) -&gt; None:
+        """authenticated / anon / public must hold no INSERT/UPDATE/DELETE/TRUNCATE grant.
+    
+        Confirms write access is not handed to clients at the table-grant level
+        either; every mutation flows through SECURITY DEFINER RPCs.
+        """
+        rows = _fetchall(
+            db_conn,
+            """
+            select grantee, privilege_type
+            from information_schema.role_table_grants
+            where table_schema = 'public'
+              and table_name = %s
+              and grantee = any(%s)
+              and privilege_type = any(%s)
+            """,
+            (table, sorted(CLIENT_ROLES | {"authenticated"}), sorted(WRITE_PRIVILEGES)),
+        )
+        offending = [(g, p) for g, p in rows]
+&gt;       assert not offending, (
+            f"public.{table} grants write privileges to client roles: {offending}; "
+            f"writes must be RPC-only"
+        )
+E       AssertionError: public.line_oa_inbound_messages grants write privileges to client roles: [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ('authenticated', 'DELETE'), ('authenticated', 'TRUNCATE'), ('service_role', 'INSERT'), ('service_role', 'UPDATE'), ('service_role', 'DELETE'), ('service_role', 'TRUNCATE')]; writes must be RPC-only
+E       assert not [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ...]
+
+tests\line-oa-commerce\py\test_access_control_config_smoke.py:292: AssertionError</failure></testcase><testcase classname="test_access_control_config_smoke" name="test_clients_hold_no_write_grants[line_oa_outbound_messages]" time="0.002"><failure message="AssertionError: public.line_oa_outbound_messages grants write privileges to client roles: [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ('authenticated', 'DELETE'), ('authenticated', 'TRUNCATE'), ('service_role', 'INSERT'), ('service_role', 'UPDATE'), ('service_role', 'DELETE'), ('service_role', 'TRUNCATE')]; writes must be RPC-only&#10;assert not [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ...]">db_conn = &lt;psycopg.Connection [INTRANS] (host=127.0.0.1 port=55442 database=postgres) at 0x1f198a2e7b0&gt;
+table = 'line_oa_outbound_messages'
+
+    @pytest.mark.parametrize("table", ALL_TABLES)
+    def test_clients_hold_no_write_grants(db_conn: Any, table: str) -&gt; None:
+        """authenticated / anon / public must hold no INSERT/UPDATE/DELETE/TRUNCATE grant.
+    
+        Confirms write access is not handed to clients at the table-grant level
+        either; every mutation flows through SECURITY DEFINER RPCs.
+        """
+        rows = _fetchall(
+            db_conn,
+            """
+            select grantee, privilege_type
+            from information_schema.role_table_grants
+            where table_schema = 'public'
+              and table_name = %s
+              and grantee = any(%s)
+              and privilege_type = any(%s)
+            """,
+            (table, sorted(CLIENT_ROLES | {"authenticated"}), sorted(WRITE_PRIVILEGES)),
+        )
+        offending = [(g, p) for g, p in rows]
+&gt;       assert not offending, (
+            f"public.{table} grants write privileges to client roles: {offending}; "
+            f"writes must be RPC-only"
+        )
+E       AssertionError: public.line_oa_outbound_messages grants write privileges to client roles: [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ('authenticated', 'DELETE'), ('authenticated', 'TRUNCATE'), ('service_role', 'INSERT'), ('service_role', 'UPDATE'), ('service_role', 'DELETE'), ('service_role', 'TRUNCATE')]; writes must be RPC-only
+E       assert not [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ...]
+
+tests\line-oa-commerce\py\test_access_control_config_smoke.py:292: AssertionError</failure></testcase><testcase classname="test_access_control_config_smoke" name="test_clients_hold_no_write_grants[line_oa_customer_identity]" time="0.002"><failure message="AssertionError: public.line_oa_customer_identity grants write privileges to client roles: [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ('authenticated', 'DELETE'), ('authenticated', 'TRUNCATE'), ('service_role', 'INSERT'), ('service_role', 'UPDATE'), ('service_role', 'DELETE'), ('service_role', 'TRUNCATE')]; writes must be RPC-only&#10;assert not [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ...]">db_conn = &lt;psycopg.Connection [INTRANS] (host=127.0.0.1 port=55442 database=postgres) at 0x1f198a2e7b0&gt;
+table = 'line_oa_customer_identity'
+
+    @pytest.mark.parametrize("table", ALL_TABLES)
+    def test_clients_hold_no_write_grants(db_conn: Any, table: str) -&gt; None:
+        """authenticated / anon / public must hold no INSERT/UPDATE/DELETE/TRUNCATE grant.
+    
+        Confirms write access is not handed to clients at the table-grant level
+        either; every mutation flows through SECURITY DEFINER RPCs.
+        """
+        rows = _fetchall(
+            db_conn,
+            """
+            select grantee, privilege_type
+            from information_schema.role_table_grants
+            where table_schema = 'public'
+              and table_name = %s
+              and grantee = any(%s)
+              and privilege_type = any(%s)
+            """,
+            (table, sorted(CLIENT_ROLES | {"authenticated"}), sorted(WRITE_PRIVILEGES)),
+        )
+        offending = [(g, p) for g, p in rows]
+&gt;       assert not offending, (
+            f"public.{table} grants write privileges to client roles: {offending}; "
+            f"writes must be RPC-only"
+        )
+E       AssertionError: public.line_oa_customer_identity grants write privileges to client roles: [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ('authenticated', 'DELETE'), ('authenticated', 'TRUNCATE'), ('service_role', 'INSERT'), ('service_role', 'UPDATE'), ('service_role', 'DELETE'), ('service_role', 'TRUNCATE')]; writes must be RPC-only
+E       assert not [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ...]
+
+tests\line-oa-commerce\py\test_access_control_config_smoke.py:292: AssertionError</failure></testcase><testcase classname="test_access_control_config_smoke" name="test_clients_hold_no_write_grants[line_oa_message_templates]" time="0.003"><failure message="AssertionError: public.line_oa_message_templates grants write privileges to client roles: [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ('authenticated', 'DELETE'), ('authenticated', 'TRUNCATE'), ('service_role', 'INSERT'), ('service_role', 'UPDATE'), ('service_role', 'DELETE'), ('service_role', 'TRUNCATE')]; writes must be RPC-only&#10;assert not [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ...]">db_conn = &lt;psycopg.Connection [INTRANS] (host=127.0.0.1 port=55442 database=postgres) at 0x1f198a2e7b0&gt;
+table = 'line_oa_message_templates'
+
+    @pytest.mark.parametrize("table", ALL_TABLES)
+    def test_clients_hold_no_write_grants(db_conn: Any, table: str) -&gt; None:
+        """authenticated / anon / public must hold no INSERT/UPDATE/DELETE/TRUNCATE grant.
+    
+        Confirms write access is not handed to clients at the table-grant level
+        either; every mutation flows through SECURITY DEFINER RPCs.
+        """
+        rows = _fetchall(
+            db_conn,
+            """
+            select grantee, privilege_type
+            from information_schema.role_table_grants
+            where table_schema = 'public'
+              and table_name = %s
+              and grantee = any(%s)
+              and privilege_type = any(%s)
+            """,
+            (table, sorted(CLIENT_ROLES | {"authenticated"}), sorted(WRITE_PRIVILEGES)),
+        )
+        offending = [(g, p) for g, p in rows]
+&gt;       assert not offending, (
+            f"public.{table} grants write privileges to client roles: {offending}; "
+            f"writes must be RPC-only"
+        )
+E       AssertionError: public.line_oa_message_templates grants write privileges to client roles: [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ('authenticated', 'DELETE'), ('authenticated', 'TRUNCATE'), ('service_role', 'INSERT'), ('service_role', 'UPDATE'), ('service_role', 'DELETE'), ('service_role', 'TRUNCATE')]; writes must be RPC-only
+E       assert not [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ...]
+
+tests\line-oa-commerce\py\test_access_control_config_smoke.py:292: AssertionError</failure></testcase><testcase classname="test_access_control_config_smoke" name="test_clients_hold_no_write_grants[line_oa_orders]" time="0.002"><failure message="AssertionError: public.line_oa_orders grants write privileges to client roles: [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ('authenticated', 'DELETE'), ('authenticated', 'TRUNCATE'), ('service_role', 'INSERT'), ('service_role', 'UPDATE'), ('service_role', 'DELETE'), ('service_role', 'TRUNCATE')]; writes must be RPC-only&#10;assert not [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ...]">db_conn = &lt;psycopg.Connection [INTRANS] (host=127.0.0.1 port=55442 database=postgres) at 0x1f198a2e7b0&gt;
+table = 'line_oa_orders'
+
+    @pytest.mark.parametrize("table", ALL_TABLES)
+    def test_clients_hold_no_write_grants(db_conn: Any, table: str) -&gt; None:
+        """authenticated / anon / public must hold no INSERT/UPDATE/DELETE/TRUNCATE grant.
+    
+        Confirms write access is not handed to clients at the table-grant level
+        either; every mutation flows through SECURITY DEFINER RPCs.
+        """
+        rows = _fetchall(
+            db_conn,
+            """
+            select grantee, privilege_type
+            from information_schema.role_table_grants
+            where table_schema = 'public'
+              and table_name = %s
+              and grantee = any(%s)
+              and privilege_type = any(%s)
+            """,
+            (table, sorted(CLIENT_ROLES | {"authenticated"}), sorted(WRITE_PRIVILEGES)),
+        )
+        offending = [(g, p) for g, p in rows]
+&gt;       assert not offending, (
+            f"public.{table} grants write privileges to client roles: {offending}; "
+            f"writes must be RPC-only"
+        )
+E       AssertionError: public.line_oa_orders grants write privileges to client roles: [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ('authenticated', 'DELETE'), ('authenticated', 'TRUNCATE'), ('service_role', 'INSERT'), ('service_role', 'UPDATE'), ('service_role', 'DELETE'), ('service_role', 'TRUNCATE')]; writes must be RPC-only
+E       assert not [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ...]
+
+tests\line-oa-commerce\py\test_access_control_config_smoke.py:292: AssertionError</failure></testcase><testcase classname="test_access_control_config_smoke" name="test_clients_hold_no_write_grants[line_oa_audit_log]" time="0.002"><failure message="AssertionError: public.line_oa_audit_log grants write privileges to client roles: [('anon', 'INSERT'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'TRUNCATE'), ('service_role', 'INSERT'), ('service_role', 'TRUNCATE')]; writes must be RPC-only&#10;assert not [('anon', 'INSERT'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'TRUNCATE'), ('service_role', 'INSERT'), ('service_role', 'TRUNCATE')]">db_conn = &lt;psycopg.Connection [INTRANS] (host=127.0.0.1 port=55442 database=postgres) at 0x1f198a2e7b0&gt;
+table = 'line_oa_audit_log'
+
+    @pytest.mark.parametrize("table", ALL_TABLES)
+    def test_clients_hold_no_write_grants(db_conn: Any, table: str) -&gt; None:
+        """authenticated / anon / public must hold no INSERT/UPDATE/DELETE/TRUNCATE grant.
+    
+        Confirms write access is not handed to clients at the table-grant level
+        either; every mutation flows through SECURITY DEFINER RPCs.
+        """
+        rows = _fetchall(
+            db_conn,
+            """
+            select grantee, privilege_type
+            from information_schema.role_table_grants
+            where table_schema = 'public'
+              and table_name = %s
+              and grantee = any(%s)
+              and privilege_type = any(%s)
+            """,
+            (table, sorted(CLIENT_ROLES | {"authenticated"}), sorted(WRITE_PRIVILEGES)),
+        )
+        offending = [(g, p) for g, p in rows]
+&gt;       assert not offending, (
+            f"public.{table} grants write privileges to client roles: {offending}; "
+            f"writes must be RPC-only"
+        )
+E       AssertionError: public.line_oa_audit_log grants write privileges to client roles: [('anon', 'INSERT'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'TRUNCATE'), ('service_role', 'INSERT'), ('service_role', 'TRUNCATE')]; writes must be RPC-only
+E       assert not [('anon', 'INSERT'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'TRUNCATE'), ('service_role', 'INSERT'), ('service_role', 'TRUNCATE')]
+
+tests\line-oa-commerce\py\test_access_control_config_smoke.py:292: AssertionError</failure></testcase><testcase classname="test_access_control_config_smoke" name="test_channels_store_vault_references_only" time="0.003" /><testcase classname="test_ai_action_audit_property" name="test_ai_action_audit" time="0.651" /><testcase classname="test_failure_handling_property" name="test_failure_handling" time="0.324"><failure message="AssertionError: a reported failure must carry a non-empty error_detail (even when the supplied detail is 'whitespace'='\r'); got '\r'&#10;assert ('\r' is not None and '' != '')&#10; +  where '' = &lt;built-in method strip of str object at 0x00007FF9C42E6938&gt;()&#10; +    where &lt;built-in method strip of str object at 0x00007FF9C42E6938&gt; = '\r'.strip&#10;Falsifying example: test_failure_handling(&#10;    db_conn=&lt;psycopg.Connection [INTRANS] (host=127.0.0.1 port=55442 database=postgres) at 0x1f198967390&gt;,&#10;    case={'vertical': 'monolith', 'kind': 'whitespace', 'detail': '\r'},&#10;)&#10;Explanation:&#10;    These lines were always and only run by failing examples:&#10;        C:\Users\thai3\determined-williams (2)\MONOLITH Repair Intelligence\.worktrees\repair-intelligence-phase0-trust\tests\line-oa-commerce\py\test_failure_handling_property.py:359&#10;        C:\Users\thai3\determined-williams (2)\MONOLITH Repair Intelligence\.worktrees\repair-intelligence-phase0-trust\tests\line-oa-commerce\py\test_failure_handling_property.py:361">db_conn = &lt;psycopg.Connection [INTRANS] (host=127.0.0.1 port=55442 database=postgres) at 0x1f198967390&gt;
+
+    @property(
+&gt;       10,
+            
+        "A reported failure sets status=failed with non-empty error_detail and is "
+        "never marked sent",
+    )
+
+tests\line-oa-commerce\py\test_failure_handling_property.py:315: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+db_conn = &lt;psycopg.Connection [INTRANS] (host=127.0.0.1 port=55442 database=postgres) at 0x1f198967390&gt;
+case = {'detail': '\r', 'kind': 'whitespace', 'vertical': 'monolith'}
+
+    @property(
+        10,
+        "A reported failure sets status=failed with non-empty error_detail and is "
+        "never marked sent",
+    )
+    @given(case=_failure_case())
+    @settings(max_examples=PROPERTY_RUNS, deadline=None)
+    def test_failure_handling(db_conn: Any, case: dict[str, Any]) -&gt; None:
+        """**Validates: Requirements 4.4**"""
+        vertical: str = case["vertical"]
+        kind: str = case["kind"]
+        detail: str | None = case["detail"]
+    
+        # Namespace the userId so it can never collide with pre-existing rows.
+        line_user_id = f"failrec-{uuid.uuid4().hex}"
+    
+        with db_conn.cursor() as cur:
+            cur.execute("savepoint prop10")
+            try:
+                active = _active_site_codes(cur)
+                if not active:
+                    pytest.skip("no active Site_Code available for this example.")
+                site_code = active[0]
+    
+                conversation_id = _seed_open(cur, line_user_id, vertical, site_code)
+                template_key = _seed_template(cur, vertical)
+    
+                staged = _stage_pending(cur, conversation_id, template_key)
+                assert staged["staged"] is True, (
+                    f"a bound, slot-free, in-voice outbound must stage a pending row; got {staged!r}"
+                )
+                outbound_id = staged["outbound_id"]
+                assert outbound_id is not None, "a staged compose must return the outbound_id"
+    
+                # Report a FAILURE with the generated (possibly empty/None) error_detail.
+                result = _record_failure(cur, outbound_id, detail)
+    
+                # --- OUT values returned by the RPC ---------------------------------
+                assert result["recorded"] is True, (
+                    f"recording a failure must succeed; got {result!r}"
+                )
+                assert result["status"] == "failed", (
+                    f"a reported failure must set status='failed'; got {result['status']!r}"
+                )
+&gt;               assert result["error_detail"] is not None and result["error_detail"].strip() != "", (
+                    "a reported failure must carry a non-empty error_detail (even when the "
+                    f"supplied detail is {kind!r}={detail!r}); got {result['error_detail']!r}"
+                )
+E               AssertionError: a reported failure must carry a non-empty error_detail (even when the supplied detail is 'whitespace'='\r'); got '\r'
+E               assert ('\r' is not None and '' != '')
+E                +  where '' = &lt;built-in method strip of str object at 0x00007FF9C42E6938&gt;()
+E                +    where &lt;built-in method strip of str object at 0x00007FF9C42E6938&gt; = '\r'.strip
+E               Falsifying example: test_failure_handling(
+E                   db_conn=&lt;psycopg.Connection [INTRANS] (host=127.0.0.1 port=55442 database=postgres) at 0x1f198967390&gt;,
+E                   case={'vertical': 'monolith', 'kind': 'whitespace', 'detail': '\r'},
+E               )
+E               Explanation:
+E                   These lines were always and only run by failing examples:
+E                       C:\Users\thai3\determined-williams (2)\MONOLITH Repair Intelligence\.worktrees\repair-intelligence-phase0-trust\tests\line-oa-commerce\py\test_failure_handling_property.py:359
+E                       C:\Users\thai3\determined-williams (2)\MONOLITH Repair Intelligence\.worktrees\repair-intelligence-phase0-trust\tests\line-oa-commerce\py\test_failure_handling_property.py:361
+
+tests\line-oa-commerce\py\test_failure_handling_property.py:358: AssertionError</failure></testcase><testcase classname="test_idempotent_processing_property" name="test_idempotent_processing" time="1.028" /><testcase classname="test_outbound_status_recording_property" name="test_outbound_status_recording" time="0.542" /><testcase classname="test_reply_push_fallback_property" name="test_reply_push_fallback" time="0.640" /><testcase classname="test_rls_read_scoping_property" name="test_rls_read_scoping" time="2.371" /><testcase classname="test_schema_structure_smoke" name="test_all_eight_line_oa_tables_exist" time="0.010" /><testcase classname="test_schema_structure_smoke" name="test_enum_exists_with_documented_values[line_oa_conversation_status-labels0]" time="0.001" /><testcase classname="test_schema_structure_smoke" name="test_enum_exists_with_documented_values[line_oa_send_type-labels1]" time="0.001" /><testcase classname="test_schema_structure_smoke" name="test_enum_exists_with_documented_values[line_oa_outbound_status-labels2]" time="0.001" /><testcase classname="test_schema_structure_smoke" name="test_conversations_partial_unique_index_exists" time="0.002" /><testcase classname="test_schema_structure_smoke" name="test_unique_constraint_exists[line_oa_inbound_messages_webhook_event_id_uniq-columns0]" time="0.001" /><testcase classname="test_schema_structure_smoke" name="test_unique_constraint_exists[line_oa_customer_identity_user_vertical_uniq-columns1]" time="0.001" /><testcase classname="test_schema_structure_smoke" name="test_unique_constraint_exists[line_oa_orders_webhook_event_id_uniq-columns2]" time="0.001" /><testcase classname="test_schema_structure_smoke" name="test_unique_constraint_exists[line_oa_message_templates_key_vertical_uniq-columns3]" time="0.001" /><testcase classname="test_schema_structure_smoke" name="test_check_constraint_exists[line_oa_customer_identity_match_confidence_range_chk-match_confidence]" time="0.001" /><testcase classname="test_schema_structure_smoke" name="test_check_constraint_exists[line_oa_orders_origin_channel_id_chk-origin_channel_id]" time="0.002" /><testcase classname="test_schema_structure_smoke" name="test_match_confidence_check_covers_full_range" time="0.001" /><testcase classname="test_schema_structure_smoke" name="test_channels_store_vault_references" time="0.003" /><testcase classname="test_secret_non_exposure_property" name="test_secret_non_exposure" time="2.219" /><testcase classname="test_signature_verification_property" name="test_signature_verification" time="1.247" /><testcase classname="test_strict_consistency_property" name="test_strict_consistency_on_persistence_failure" time="1.637" /><testcase classname="test_unauthorized_mutation_denial_property" name="test_unauthorized_mutation_denial" time="1.023" /></testsuite></testsuites>
