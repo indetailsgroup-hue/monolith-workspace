@@ -1,0 +1,23 @@
+# ที่มาของ source ใน Actions — รายงานส่งมอบ
+
+30 กันยายน 2026 ฐาน `e7e2c52ce169b07978802c026255f08f71221d39` ชุดนี้เป็นการทดสอบ source/การต่อ workflow ในเครื่องเท่านั้น ไม่มีผลฐานข้อมูลหรือ GitHub Actions รอบใหม่
+
+## สิ่งที่แก้และการทดสอบ
+
+Actions เก็บ source manifest แบบแน่นอนหลัง checkout และก่อนเริ่ม Supabase ตัวช่วยอ่านเฉพาะ source ในขอบเขตที่กำหนด ปฏิเสธไฟล์บังคับที่หาย path traversal และ symlink แปลง CRLF เป็น LF แล้วบันทึก path กับ SHA256 ส่ง digest ของ manifest ผ่าน GITHUB_ENV ใช้ run_id/run_attempt ร่วมทุกขั้น และแนบ manifest กับจำนวน migration พร้อมหลักฐาน TAP
+
+ทดสอบก่อนเขียน helper แล้วล้มเพราะยังไม่มี module จากนั้นผ่าน 46 ข้อไม่มี skip แบ่งเป็นตัวตรวจเดิม 33 และ manifest ใหม่ 13 ข้อ การทดสอบการต่อ workflow ในเครื่องผ่าน 27/27 รวมการเก็บ source จริงและส่งค่าผ่าน environment file ถึง assembler แต่ TAP ทั้งสิบสองชุดใน wiring test เป็นข้อมูลจำลอง ผลผ่านจึงไม่ยืนยันพฤติกรรมฐานข้อมูลหรือ CI
+
+ตัวช่วยตั้งใจปฏิเสธการทับ output ที่มีอยู่แล้ว Detached checkout จะบันทึก ref เป็น HEAD ใน manifest ส่วน summary เดิมใช้ GITHUB_REF ค่า SHA และ source hashes ระบุข้อมูลที่เก็บ ส่วนชื่อ branch มีหน้าที่ต่างกัน
+
+## การตรวจรับและข้อมูลส่งต่อ
+
+ผู้ตรวจ Codex แยกแบบอ่านอย่างเดียวรับ E1/E2/E3 ที่ e7e2c52ce ด้าน source และหลักฐาน local ตามข้อจำกัดแล้ว และไม่พบ blocker ใน diff Actions ใหม่ ทั้งสองการตรวจไม่ได้รันฐานข้อมูลซ้ำหรือรับรองข้ามค่าย/production บันทึกใน REVIEW.txt
+
+PRD 1.12 บันทึกการรับตามขอบเขตนี้ ทะเบียนผู้เรียกสองภาษามีเส้นทาง source/ใช้งานมือที่พบและช่องให้ ops ยืนยัน environment ผู้ใช้ schedule และ RPC จริง ผู้เรียกภายนอกยัง UNKNOWN และยังไม่ระบุเจ้าของ manufacturing/integration การสร้างทะเบียนไม่ได้ส่งข้อความให้ ops หรือเข้าระบบภายนอก
+
+## ด่านที่ยังเหลือ
+
+ไม่ได้ push หรือรัน Actions จริง หลักฐานฐานข้อมูลเดิมไม่เปลี่ยน: LINE ผ่าน แต่ containment ล้มเพราะไม่มีฟังก์ชัน factory แบบ 12 arguments Patch นี้ไม่ได้แก้ containment สร้าง P0-9 เลือก tenant/รวม branch สร้าง 0199 เปลี่ยน default ACL หรืออนุมัติตรวจ production/deploy Phase A ยัง EVIDENCE_INCOMPLETE
+
+การต่อ metadata รอบนี้ตรวจในเครื่องแล้ว แต่ยังไม่ยืนยันบน runner ของ GitHub การตรวจ source/code และสแกนข้อมูลลับตาม pattern ไม่ใช่คำรับรองการรันจากภายนอกหรือหลักฐานว่าตรวจพบข้อมูลลับได้ทุกรูปแบบ Opus สร้าง helper/เทสต์จากข้อกำหนดเท่านั้น Codex รวมและตรวจผล ไม่ส่งไฟล์ลับให้ Opus

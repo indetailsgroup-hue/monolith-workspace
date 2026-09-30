@@ -1,15 +1,15 @@
 # PRD — ระบบสื่อสาร LINE OA ทั้งหมด (MONOLITH Repair Intelligence)
 
 > **ภาษา:** ไทย · ฉบับภาษาอังกฤษ: `docs/PRD-LINE-OA.en.md` · HTML: `docs/PRD-LINE-OA.th.html` / `docs/PRD-LINE-OA.en.html`
-> **ฉบับ:** 1.11 · 30 กันยายน 2026 (1.10, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4, 1.3 และ 1.2 = 30 ก.ย. 2026 · 1.1 = 1 ส.ค. 2026 · 1.0 = 26 ก.ค. 2026)
-> **สิ่งที่เปลี่ยนในฉบับ 1.11:** งานหลักฐาน E1/E2/E3 ตรวจ stderr ว่ามีจริง ชื่อตรงและ hash ไม่เปลี่ยน เพิ่ม base/ref/run ID/จำนวน migration/source digest ของรอบ local พร้อมผลความครบแยก ระบุชัดว่าผลตัดสินครอบคลุม pgTAP เท่านั้น ไม่แก้ 0198, workflow หรือ SQL tests เพิ่มเอกสารตัดสินใจ integration/B12 โดยไม่เลือกสถาปัตยกรรมหรือเปลี่ยน EXECUTE
+> **ฉบับ:** 1.12 · 30 กันยายน 2026 (1.11, 1.10, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4, 1.3 และ 1.2 = 30 ก.ย. 2026 · 1.1 = 1 ส.ค. 2026 · 1.0 = 26 ก.ค. 2026)
+> **สิ่งที่เปลี่ยนในฉบับ 1.12:** ต่อการเก็บ source manifest ก่อนเริ่มฐานข้อมูลใน Actions ใช้ run ID ร่วมกันและแนบ manifest/จำนวน migration ใน artifact รับ E1/E2/E3 ด้าน source/หลักฐาน local ตามข้อจำกัดแล้ว เพิ่มทะเบียนผู้เรียกสำหรับ ops ไม่ push ไม่สร้าง 0199 ไม่รวม manufacturing และไม่ปิด Phase A
 > **สถานะเอกสาร:** รอเจ้าของ (คุณเดฟ) ตัดสินคำถามเปิดใน §8 — ทุกขั้นที่เสนอใน §9 ไม่เปิด cron และไม่ส่งข้อความหาลูกค้าจริง
 > **หลักการเขียน:** ทุกแถวแยก "ทำงานจริง / มีโค้ดแต่ไม่ต่อสาย / อยู่แค่ spec" พร้อมอ้าง file:line และแยกหลักฐาน "ตรวจซ้ำได้ (มี raw output ใน repo)" ออกจาก "รายงานไว้ (ไม่มี raw output ใน repo)"
 > **หมายเหตุความจริง:** เอกสารเดิม (`docs/LINE-Architecture-System-Complete.md:41`, `docs/PRD.md:514`) ระบุ "LINE OA Commerce ✅ 20/20" ซึ่งเกินจริงสำหรับ live path — เอกสารนี้คือบันทึกสถานะที่ตรงความจริงกว่า
 
 ---
 
-## 0. สถานะการดำเนินการ (ฉบับ 1.11)
+## 0. สถานะการดำเนินการ (ฉบับ 1.12)
 
 **P0-1 ถึง P0-6 ฉบับเดิมมี implementation และผ่านรีวิวข้ามค่ายแล้ว ส่วนการแก้ P0-11 ที่ 00651a6cd ผ่านการตรวจรับข้ามค่ายแล้ว P0-10 (0198) ผ่านการตรวจโค้ดและหลักฐานโดยผู้ตรวจอิสระที่ 87930836a (ผู้ตรวจไม่ได้รันซ้ำ) และงานติดตามรอผู้ตรวจ — Phase A ยังไม่ปิด**
 
@@ -65,7 +65,7 @@
 - **B12 ยังเปิดอยู่:** client role ยังเรียก EXECUTE ฟังก์ชัน SECURITY DEFINER ที่เขียนข้อมูลได้ 0198 ไม่ได้ปิดทางนี้ (ผลสำรวจแบบอ่านอย่างเดียว: `docs/governance/line-p010-execute-survey.th.md`)
 - **CI ยังไม่ผ่าน:** ในเครื่องรันครบ 12 suite รวม LINE ทั้งสามแล้ว แต่ยังเก็บ containment ที่ล้มเป็นไม่ผ่าน ไม่ได้นับว่าผ่าน การแก้ dependency ต้องผ่านมติรวม branch หรือขอบเขตแก้แยก งานนี้ไม่แก้ source ฝั่ง manufacturing
 
-| บั๊ก | สถานะ ณ ฉบับ 1.11 |
+| บั๊ก | สถานะ ณ ฉบับ 1.12 |
 |---|---|
 | B1 หยิบคิวไม่มี lock | ✅ มี implementation บน branch — sender เรียก `rpc_claim_line_outbound_batch` (`index.ts:740-744`), `FOR UPDATE SKIP LOCKED`, reclaim ตาม timeout, fencing ด้วย `claim_token` — เทสต์ 2 client ผ่านบน stack ชั่วคราว (รอบ 2 และ 3: 10+10 แถว ซ้ำ 0) ยังไม่มีผล CI |
 | B2 service role บันทึกผลไม่ได้ | ✅ มี implementation บน branch — ตรวจ service context จาก SQL role (`current_setting('role')`) ไม่ใช่ JWT; ด่านของผู้ใช้ไม่ถูกผ่อน |
@@ -89,6 +89,8 @@
 ---
 
 **งานติดตามหลักฐาน (30 กันยายน 2026, ฐาน 3bdd6f3e):** เทสต์ตัวตรวจชุดใหม่ได้ 22 ผ่าน / 11 ล้มกับ implementation เดิม แล้วผ่าน 33/33 หลังแก้ เก็บรอบ local ใหม่ใน `docs/governance/evidence/line-p010-evidence-followup-2026-09-30/` ไม่แก้ bundle เก่า ระบุ `fullPgTapPass` ว่าครอบคลุม pgTAP เท่านั้น alias เดิม `fullPass/pass` มีความหมายเดียวกัน ส่วน `workflowPass=null` หมายถึงยังไม่ได้ประเมิน `provenanceComplete` ตรวจรูปแบบข้อมูลที่ส่งมา ไม่ใช่รับรองความแท้จากภายนอก Runner local ส่งข้อมูลที่มาครบ ส่วน Actions workflow ที่ไม่แก้ยังไม่ส่ง source digest มี Codex agent แยกรายงานผลรีวิวโค้ด/หลักฐานของ 3bdd6f3e และ patch ติดตาม ไม่ใช่รันฐานข้อมูลซ้ำหรือรับรองข้ามค่าย เอกสาร `docs/governance/line-p010-integration-b12-followup.th.md` บันทึกความเสี่ยง grant หากลง 0170 หลัง 0191 และการตัดสินใจผู้เรียก B12 งานนี้ไม่ได้แก้ containment หรือ B12
+
+**Actions provenance และการรับหลักฐาน local:** ผู้ตรวจ Codex แยกแบบอ่านอย่างเดียวให้ accept-with-limits แก่ E1/E2/E3 ที่ `e7e2c52ce169b07978802c026255f08f71221d39` ตรวจ checksum หลักฐาน 93 รายการ source 252 แถว และผลที่บันทึก unit 33/33 กับ Python 72 ข้อจาก Git เป็นการรับ source และหลักฐาน local ไม่ใช่ผู้ตรวจรันฐานข้อมูลซ้ำหรือรับรองข้ามค่าย/production Patch ถัดมาเก็บ manifest แบบกำหนดขอบเขตและเรียงลำดับก่อนเริ่มฐานข้อมูล ส่ง digest ผ่าน GITHUB_ENV และแนบพร้อมจำนวน migration ตรวจการต่อ workflow ในเครื่อง ยังไม่มีผล Actions ย่อหน้าก่อนหน้าเป็นสถานะก่อนต่อข้อมูล ทะเบียน `docs/governance/line-rpc-caller-register.th.md` พร้อมให้ ops เติม ผู้เรียกภายนอกและเจ้าของ manufacturing/integration ยังไม่ยืนยัน Containment, B12 และ P0-9 ยังเปิดอยู่
 
 ## 1. ปัญหา (Problem Statement)
 
@@ -195,7 +197,7 @@ MONOLITH ใช้ LINE เป็นช่องทางหลักติด�
 
 ### P0 — ต้องมีก่อนเปิดส่งลูกค้าจริง (แก้ B1–B8, B10, B11; B12 เป็นข้อเสนอ)
 
-| Req | รายละเอียด | Acceptance criteria (เทสต์ชน Postgres จริง, RED ก่อน) | สถานะ (1.11) |
+| Req | รายละเอียด | Acceptance criteria (เทสต์ชน Postgres จริง, RED ก่อน) | สถานะ (1.12) |
 |---|---|---|---|
 | P0-1 | **Claim คิวแบบ atomic:** เพิ่ม `claimed_at/claimed_by` + `rpc_claim_line_outbound_batch` — `UPDATE ... WHERE id IN (SELECT ... FOR UPDATE SKIP LOCKED) RETURNING` (ไม่เพิ่มค่า enum ใหม่ เพื่อเลี่ยงข้อจำกัด `ALTER TYPE` และผลกระทบต่อผู้อ่าน status) | สอง client claim พร้อมกัน → ไม่มีแถวซ้ำ; แถว claim ค้างเกิน timeout → ถูก re-claim ได้ | ✅ มี implementation (0193 + ต่อสาย sender) + หลักฐาน 2 client บน stack ชั่วคราว (ขั้นที่ 1 รอบ 2–3) — ผล CI รอขั้นที่ 5 |
 | P0-2 | **Service context บันทึกผลได้:** grant + ให้ `rpc_record_line_send_result` รู้จัก service role เป็น system actor โดยไม่อ่อนด่าน role ของผู้ใช้ | เรียกด้วย service role → บันทึกได้; ผู้ใช้ไร้ role → ถูกปฏิเสธเหมือนเดิม | ✅ มี implementation + หลักฐาน pgTAP (0193) |
@@ -298,7 +300,7 @@ MONOLITH ใช้ LINE เป็นช่องทางหลักติด�
 
 #### ขั้นที่ 1 — ปิดหลักฐานทดสอบที่ค้างของ P0-1 ถึง P0-6 (เริ่มได้ทันที ไม่ขึ้นกับมติ)
 
-- **สถานะ (1.11):** pgTAP LINE ในเครื่อง 107/133/28 และ Python 72/72 ผ่าน claim race 10+10 ซ้ำ 0 รันครบทั้ง 12 suite แต่ pgTAP เต็มยังไม่ผ่านเพราะ containment รันไม่ครบ ยังไม่มีผล GitHub Actions ขั้นที่ 1 ยังไม่ปิด
+- **สถานะ (1.12):** pgTAP LINE ในเครื่อง 107/133/28 และ Python 72/72 ผ่าน claim race 10+10 ซ้ำ 0 รันครบทั้ง 12 suite แต่ pgTAP เต็มยังไม่ผ่านเพราะ containment รันไม่ครบ ยังไม่มีผล GitHub Actions ขั้นที่ 1 ยังไม่ปิด
 
 - รัน `tests/line-oa-commerce/concurrency/claim-race.mjs` บน Postgres ชั่วคราวที่สร้างจากศูนย์ ไม่ใช่ stack ที่แชร์
 - **เกณฑ์รับงาน:** สอง connection claim แถว pending ชุดเดียวกันพร้อมกัน → แถวที่ซ้ำกัน = 0 และแถวที่ถูก claim รวมกัน = จำนวนแถวทั้งหมด; cleanup ยืนยันว่าแถว outbound และ conversation ที่ harness สร้างเหลือ 0 ไม่ใช่การรับรองทั้งฐานข้อมูล
@@ -346,7 +348,7 @@ MONOLITH ใช้ LINE เป็นช่องทางหลักติด�
 
 #### ขั้นที่ 5 — ปิด Phase A
 
-- **สถานะ (1.11):** full loop ในเครื่องรันครบ 12 suite เก็บ failure ของ containment ตามจริง ขณะที่ LINE ผ่าน ไม่ใช้ผลรันที่กรอง suite แทน CI เต็ม ยังไม่ได้รัน GitHub Actions และยังไม่อนุมัติ push
+- **สถานะ (1.12):** full loop ในเครื่องรันครบ 12 suite เก็บ failure ของ containment ตามจริง ขณะที่ LINE ผ่าน ไม่ใช้ผลรันที่กรอง suite แทน CI เต็ม ยังไม่ได้รัน GitHub Actions และยังไม่อนุมัติ push
 - **เกณฑ์รับงาน:** ขั้นที่ 1, 1b และ 2–4 ผ่าน โดย suite ที่จำเป็นไม่มีทั้ง skip และ fail; หลังเจ้าของอนุมัติ push แล้ว CI (`db-verify.yml` ที่มี suite `line_outbound_claim_record`) รันเขียวจริง; สถานะหลักฐานจึงเปลี่ยนจาก `EVIDENCE_INCOMPLETE` ได้ — พฤติกรรมฝั่ง LINE ของ P0-5 ไม่ใช่เกณฑ์ปิด Phase A (อยู่ที่ G-C1 ใน §9.2); ไม่มี cron และไม่มีการส่งข้อความหาลูกค้า
 
 ### 9.2 Gate ก่อนเปิดส่งจริง (Phase C)

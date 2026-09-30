@@ -1,0 +1,45 @@
+{
+  "base": "e7e2c52ce169b07978802c026255f08f71221d39",
+  "commands": [
+    [
+      "node",
+      "scripts/line-ci-source.mjs",
+      "C:\\Users\\thai3\\determined-williams (2)\\MONOLITH Repair Intelligence\\.worktrees\\repair-intelligence-phase0-trust\\docs\\governance\\evidence\\line-ci-source-2026-09-30\\source-manifest.json"
+    ]
+  ],
+  "sourceRows": 217,
+  "sourceDigest": "d696d02b475595adc997ffb555229be8ba4540e4fedc1de27862d57496e48009",
+  "captureExit": 0,
+  "wiringExit": 0,
+  "checks": [
+    "reviewed manifest command is wired",
+    "source capture precedes database startup",
+    "shared run ID includes attempt",
+    "both validator suites registered",
+    "both triggers include helper",
+    "artifact upload includes manifest and migration count",
+    "actual helper capture exit zero",
+    "GITHUB_ENV exports exact artifact digest",
+    "stdout is digest and file count only",
+    "all source rows match current bytes",
+    "manifest binds current base SHA",
+    "synthetic fixture checked: workflow_db_invariants",
+    "synthetic fixture checked: trust_kernel_tenancy",
+    "synthetic fixture checked: trust_kernel_governance",
+    "synthetic fixture checked: trust_kernel_release",
+    "synthetic fixture checked: trust_kernel_bundles",
+    "synthetic fixture checked: trust_kernel_containment",
+    "synthetic fixture checked: trust_kernel_safety",
+    "synthetic fixture checked: repair_phase0_organization",
+    "synthetic fixture checked: repair_phase0_containment",
+    "synthetic fixture checked: line_outbound_claim_record",
+    "synthetic fixture checked: line_oa_client_write_revoke",
+    "synthetic fixture checked: line_oa_client_write_revoke_fail_closed",
+    "synthetic assembly exit zero",
+    "exported digest reaches complete synthetic metadata",
+    "synthetic assembly cannot claim actual CI",
+    "synthetic fixtures remain explicitly scoped"
+  ],
+  "scope": "LOCAL SYNTHETIC WIRING ONLY; no database or GitHub Actions run",
+  "workflowCommandAdjustment": "Only output path redirected to bundle; actual helper invoked from repo root"
+}

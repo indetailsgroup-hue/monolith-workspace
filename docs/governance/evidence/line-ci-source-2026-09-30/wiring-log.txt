@@ -1,0 +1,28 @@
+PASS: reviewed manifest command is wired
+PASS: source capture precedes database startup
+PASS: shared run ID includes attempt
+PASS: both validator suites registered
+PASS: both triggers include helper
+PASS: artifact upload includes manifest and migration count
+PASS: actual helper capture exit zero
+PASS: GITHUB_ENV exports exact artifact digest
+PASS: stdout is digest and file count only
+PASS: all source rows match current bytes
+PASS: manifest binds current base SHA
+PASS: synthetic fixture checked: workflow_db_invariants
+PASS: synthetic fixture checked: trust_kernel_tenancy
+PASS: synthetic fixture checked: trust_kernel_governance
+PASS: synthetic fixture checked: trust_kernel_release
+PASS: synthetic fixture checked: trust_kernel_bundles
+PASS: synthetic fixture checked: trust_kernel_containment
+PASS: synthetic fixture checked: trust_kernel_safety
+PASS: synthetic fixture checked: repair_phase0_organization
+PASS: synthetic fixture checked: repair_phase0_containment
+PASS: synthetic fixture checked: line_outbound_claim_record
+PASS: synthetic fixture checked: line_oa_client_write_revoke
+PASS: synthetic fixture checked: line_oa_client_write_revoke_fail_closed
+PASS: synthetic assembly exit zero
+PASS: exported digest reaches complete synthetic metadata
+PASS: synthetic assembly cannot claim actual CI
+PASS: synthetic fixtures remain explicitly scoped
+RESULT: local wiring checks passed; no DB/Actions result claimed

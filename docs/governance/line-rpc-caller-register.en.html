@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LINE RPC caller register — ops completion required</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>LINE RPC caller register — ops completion required</h1>
+<p>30 September 2026. Source survey at e7e2c52ce. Owner instruction: external RPC callers are not confirmed; survey first. Status: SOURCE INVENTORY / EXTERNAL UNKNOWN. This document does not authorize 0199 or access to external/production systems.</p>
+<h2>Known source paths</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Register ID</th>
+<th>Source-observed path</th>
+<th>Required access indicated</th>
+<th>Operational owner</th>
+<th>Environments / active use / last use</th>
+<th>Ops evidence</th>
+</tr></thead><tbody>
+<tr>
+<td>RPC-01</td>
+<td>line-webhook → rpc_ingest_line_webhook</td>
+<td>service_role</td>
+<td>UNASSIGNED</td>
+<td>UNKNOWN</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>RPC-02</td>
+<td>customer-design-view → line_oa_resolve_customer_identity</td>
+<td>service_role</td>
+<td>UNASSIGNED</td>
+<td>UNKNOWN</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>RPC-03</td>
+<td>line-outbound-sender → rpc_claim_line_outbound_batch / rpc_record_line_send_result</td>
+<td>service_role; authenticated recorder boundary undecided</td>
+<td>UNASSIGNED</td>
+<td>UNKNOWN</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>RPC-04</td>
+<td>field-app LeadPanel → rpc_request_customer_acceptance</td>
+<td>Authenticated user with business guards</td>
+<td>UNASSIGNED</td>
+<td>UNKNOWN</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>RPC-05</td>
+<td>field-app SaleHome → rpc_field_close_lead / rpc_field_set_lead_source</td>
+<td>Authenticated user with business guards</td>
+<td>UNASSIGNED</td>
+<td>UNKNOWN</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>RPC-06</td>
+<td>field-app PhotoSendCard / DesignerToolsPanel → photo send / drawing revision RPCs</td>
+<td>Authenticated user with business guards</td>
+<td>UNASSIGNED</td>
+<td>UNKNOWN</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>RPC-07</td>
+<td>Ingress → fn_line_handle_group_event</td>
+<td>DEFINER owner chain</td>
+<td>UNASSIGNED</td>
+<td>UNKNOWN</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>RPC-08</td>
+<td>Manufacturing/business functions → fn_prod_curated</td>
+<td>DEFINER owner chain; manufacturing coordination</td>
+<td>UNASSIGNED</td>
+<td>UNKNOWN</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>RPC-09</td>
+<td>Binding trigger → fn_welcome_on_group_bind</td>
+<td>Trigger/owner execution</td>
+<td>UNASSIGNED</td>
+<td>UNKNOWN</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>RPC-10</td>
+<td>Registered database cron → fn_lead_followup_sweep</td>
+<td>Actual deployed scheduler principal must be confirmed</td>
+<td>UNASSIGNED</td>
+<td>UNKNOWN</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>RPC-11</td>
+<td>Dogfood runbook Field Operator → rpc_create_line_order</td>
+<td>Actual manual credential class unknown</td>
+<td>UNASSIGNED</td>
+<td>UNKNOWN</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>RPC-12</td>
+<td>Other writers with no executable callsite found in bounded scan</td>
+<td>Do not infer unused; see survey</td>
+<td>UNASSIGNED</td>
+<td>UNKNOWN</td>
+<td>Pending</td>
+</tr>
+</tbody></table></div>
+<p>Paths, line references and exact writer names are in <a href="line-p010-integration-b12-followup.en.md">the integration/B12 packet</a>. These rows establish source/documented paths, not production deployment or external absence. No n8n/Make/Zapier match was found in the bounded tracked scan; that is not a hosted-system inventory.</p>
+<h2>Per-environment confirmation fields</h2>
+<p>For each row, record application/job and accountable operator; environment; active/disabled status and last use; exact RPC name/signature or endpoint; call chain and scheduler; authentication class only (user JWT/service/database role); required business capability; retain/retire/migrate decision; redacted configuration or log reference with time/outcome. Add rows for systems not listed.</p>
+<p>Explicitly inventory hosted automation, backend services, dashboards, admin/BI scripts, ad hoc SQL tools and manual dogfood work. Include sender, timeout sweeps and lead follow-up schedules. Supply no tokens, keys, authorization headers, credential-bearing URLs, customer identifiers or request bodies. Store a redacted evidence reference rather than raw logs with customer data.</p>
+<p>Non-response remains UNKNOWN. A claim of absence needs defined system/environment coverage, accountable confirmation and corroborating evidence; it cannot be inferred from repository search. Existing ops attestation about direct table writes does not answer this RPC question.</p>
+<h2>Decisions before grants or integration</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Decision</th>
+<th>Current state</th>
+<th>Minimum decision needed</th>
+</tr></thead><tbody>
+<tr>
+<td>Manufacturing/integration owner</td>
+<td>UNASSIGNED; owner asked to name a person/session</td>
+<td>Named accountable owner for 0170/0191 order, final privileges and factory compatibility</td>
+</tr>
+<tr>
+<td>External/manual RPC callers</td>
+<td>UNKNOWN</td>
+<td>Completed register and redacted supporting references</td>
+</tr>
+<tr>
+<td>B12 function/role matrix</td>
+<td>PROPOSED, not approved</td>
+<td>Exact signatures, retained access, authenticated recorder policy and factory coordination</td>
+</tr>
+<tr>
+<td>Tenant/service authority and overlapping work</td>
+<td>UNDECIDED</td>
+<td>Canonical model and owners for 0175/0176/0178 overlap before P0-9</td>
+</tr>
+<tr>
+<td>Push and actual CI</td>
+<td>NOT APPROVED</td>
+<td>Owner authorization after reviewed local changes; actual Actions conclusion required</td>
+</tr>
+</tbody></table></div>
+<p>No grant, migration, ref, branch integration, deployment or external message is performed by creating this register. The E1/E2/E3 evidence acceptance does not decide these questions.</p>
+</main>
+</body>
+</html>

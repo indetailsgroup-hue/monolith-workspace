@@ -1,0 +1,8 @@
+Base e7e2c52ce169b07978802c026255f08f71221d39 plus reviewed local patch.
+Unit RED before helper: node --test tests/line-oa-commerce/ci/source-evidence.test.mjs, exit1 ERR_MODULE_NOT_FOUND (new module).
+Unit GREEN: node --test tests/line-oa-commerce/ci/tap-evidence.test.mjs tests/line-oa-commerce/ci/source-evidence.test.mjs, exit0 46/46.
+Wiring: python verify-workflow-wiring.py <NEW output directory>, run from repository root; requires PyYAML, Git and Node. It invokes real manifest helper with only output-path redirection, then checks metadata with synthetic TAP in a bounded temporary directory. No DB, credentials or Actions connection.
+Manifest hashes LF-normalized allowlisted source, and GITHUB_ENV contains only its digest. Capture refuses existing manifest output. Workflow captures before DB startup; this local run validates wiring only.
+Artifact existing database evidence remains under prior immutable bundles. No database results are claimed for this bundle.
+Windows gate verification may need process-local core.longpaths=true when using full commit SHA.
+Opus model claude-opus-5-5 authored helper/tests from a requirements-only packet, no repository content or secrets sent. CLI tools/MCP disabled; exit0. Codex integrated workflow/docs, ran tests, created gates.

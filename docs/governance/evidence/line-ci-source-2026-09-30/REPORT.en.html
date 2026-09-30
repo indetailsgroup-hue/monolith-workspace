@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Actions source provenance — delivery</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>Actions source provenance — delivery</h1>
+<p>30 September 2026. Base: <code>e7e2c52ce169b07978802c026255f08f71221d39</code>. This bundle contains local source/wiring tests only. It contains no new database or GitHub Actions result.</p>
+<h2>Changes and validation</h2>
+<p>Actions captures a deterministic source manifest after checkout and before starting Supabase. The helper reads only required/allowlisted source files, rejects missing required files, traversal and symlinks, normalizes CRLF to LF, and records paths with SHA256. It exports the exact manifest digest through GITHUB_ENV. The workflow shares run_id/run_attempt across steps and uploads the manifest and migration count alongside TAP evidence.</p>
+<p>Tests first failed because the new helper did not exist. After implementation, all 46 tests passed with zero skips: 33 existing validator tests and 13 new manifest tests. Local workflow wiring checks passed 27/27, including actual source capture and environment-file handoff to the assembler. The twelve TAP inputs in that wiring check are synthetic fixtures; their passing verdict does not establish any database behavior or CI success.</p>
+<p>The manifest refusal to overwrite an existing output is deliberate. A detached checkout records manifest ref HEAD, while the existing summary uses GITHUB_REF. The commit SHA and source hashes identify the captured inputs; the branch labels serve different purposes.</p>
+<h2>Acceptance and operational handoff</h2>
+<p>A separate read-only Codex reviewer accepted E1/E2/E3 at e7e2c52ce for source and recorded local evidence, with limits. The reviewer also found no blocking issue in the new Actions diff. Neither review reran a database or provided cross-vendor/production acceptance. Details are recorded in REVIEW.txt.</p>
+<p>PRD 1.12 records that bounded acceptance. The bilingual caller register lists known source/manual paths and fields for ops to confirm real environments, users, schedules and exact RPC access. External callers remain UNKNOWN, and the manufacturing/integration owner has not been identified. Creating the register does not contact ops or access external systems.</p>
+<h2>Remaining gates</h2>
+<p>No push or actual Actions run occurred. Prior database evidence remains unchanged: LINE checks passed but containment failed on the missing 12-argument factory function. This patch does not fix containment, implement P0-9, decide tenant/branch integration, create 0199, change default ACLs or authorize production inspection/deployment. Phase A stays EVIDENCE_INCOMPLETE.</p>
+<p>The current source metadata wiring is locally validated, not yet confirmed on GitHub's runner. Source/code checks and pattern-based secret scanning are not independent execution attestation or proof of detecting every possible secret format. Opus authored helper/tests from requirements only; Codex integrated and verified them. No secret files were supplied to Opus.</p>
+</main>
+</body>
+</html>

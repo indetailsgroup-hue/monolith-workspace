@@ -1,0 +1,3 @@
+Reported findings from a separate read-only Codex reviewer, not a database rerun or cross-vendor acceptance.
+E1/E2/E3 at e7e2c52ce: ACCEPT WITH LIMITS for source and captured local evidence; 93 checksums and 252 source entries matched immutable blobs; captured unit33/Python72 verified, tree and wrapper/gate digests matched.
+Actions follow-up: no blocking issue found. Capture before Supabase start, allowlisted sources, traversal/symlink rejection, LF hashes, GITHUB_ENV export, shared run ID and artifact paths reviewed. Actual GitHub execution unverified; detached manifest ref HEAD differs intentionally from GITHUB_REF. Optional untracked files excluded.

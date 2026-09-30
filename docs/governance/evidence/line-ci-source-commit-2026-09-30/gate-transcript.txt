@@ -1,0 +1,85 @@
+written_utc: 2026-09-30T15:37:01Z
+base: e7e2c52ce169b07978802c026255f08f71221d39
+gated_tree: 9a98f3375bb09156c7bd94d9f0fb41a94f4ce45f
+wrapper_staged_sha256: 5aa665abc2b09f869a3408139a48fd8d1a81f4e77f227bfaa453d19823de1e07
+gate_staged_sha256: 5229f4ac7c180116c6a3ce10a9b0b898d7898c9dbb733ec4892870a3db7cf729
+PASS: expected base HEAD
+PASS: exact authorized change set
+PASS: 0198 remains unchanged
+PASS: docs/governance/evidence/line-ci-source-2026-09-30: complete checksums
+PASS: docs/governance/evidence/line-ci-source-2026-09-30: Git and disk checksum match
+PASS: local synthetic workflow wiring verified
+PASS: recorded 46/46 unit tests without skip
+PASS: new-module RED captured
+PASS: tested source manifest format
+PASS: entire tested source manifest matches Git
+PASS: raw run unchanged: *.gitattributes
+PASS: raw run unchanged: *capture-stderr.txt
+PASS: raw run unchanged: *capture-stdout.txt
+PASS: raw run unchanged: *github-env.txt
+PASS: raw run unchanged: *source-db-verify.yml
+PASS: raw run unchanged: *source-line-ci-source.mjs
+PASS: raw run unchanged: *source-manifest.json
+PASS: raw run unchanged: *source-source-evidence.test.mjs
+PASS: raw run unchanged: *unit-green.txt
+PASS: raw run unchanged: *unit-red.txt
+PASS: raw run unchanged: *verify-workflow-wiring.py
+PASS: raw run unchanged: *wiring-log.txt
+PASS: raw run unchanged: *wiring-result.json
+PASS: .github/workflows/db-verify.yml: source identity
+PASS: scripts/line-ci-source.mjs: source identity
+PASS: tests/line-oa-commerce/ci/source-evidence.test.mjs: source identity
+PASS: docs/PRD-LINE-OA.en.md: source identity
+PASS: docs/PRD-LINE-OA.en.html: source identity
+PASS: docs/PRD-LINE-OA.th.md: source identity
+PASS: docs/PRD-LINE-OA.th.html: source identity
+PASS: docs/governance/line-rpc-caller-register.en.md: source identity
+PASS: docs/governance/line-rpc-caller-register.en.html: source identity
+PASS: docs/governance/line-rpc-caller-register.th.md: source identity
+PASS: docs/governance/line-rpc-caller-register.th.html: source identity
+PASS: .github/workflows/db-verify.yml: identical to tested docs/governance/evidence/line-ci-source-2026-09-30
+PASS: scripts/line-ci-source.mjs: identical to tested docs/governance/evidence/line-ci-source-2026-09-30
+PASS: tests/line-oa-commerce/ci/source-evidence.test.mjs: identical to tested docs/governance/evidence/line-ci-source-2026-09-30
+PASS: fresh TAP validator tests
+PASS: docs/PRD-LINE-OA.en.html: renderer matches
+PASS: docs/governance/line-rpc-caller-register.en.html: renderer matches
+PASS: docs/governance/evidence/line-ci-source-2026-09-30/REPORT.en.html: renderer matches
+PASS: docs/PRD-LINE-OA.th.html: renderer matches
+PASS: docs/governance/line-rpc-caller-register.th.html: renderer matches
+PASS: docs/governance/evidence/line-ci-source-2026-09-30/REPORT.th.html: renderer matches
+PASS: secret scanner positive controls
+PASS: docs/governance/line-rpc-caller-register.en.html: credential-shaped scan
+PASS: docs/governance/evidence/line-ci-source-2026-09-30/unit-red.txt: credential-shaped scan
+PASS: docs/PRD-LINE-OA.th.html: credential-shaped scan
+PASS: docs/PRD-LINE-OA.th.md: credential-shaped scan
+PASS: docs/governance/line-rpc-caller-register.th.html: credential-shaped scan
+PASS: docs/governance/evidence/line-ci-source-2026-09-30/source-manifest.json: credential-shaped scan
+PASS: docs/governance/evidence/line-ci-source-2026-09-30/unit-green.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-ci-source-2026-09-30/wiring-log.txt: credential-shaped scan
+PASS: scripts/line-ci-source.mjs: credential-shaped scan
+PASS: docs/governance/evidence/line-ci-source-2026-09-30/REPORT.en.html: credential-shaped scan
+PASS: docs/PRD-LINE-OA.en.md: credential-shaped scan
+PASS: docs/governance/evidence/line-ci-source-2026-09-30/gate-ci-source.py: credential-shaped scan
+PASS: docs/governance/evidence/line-ci-source-2026-09-30/source-db-verify.yml: credential-shaped scan
+PASS: docs/governance/evidence/line-ci-source-2026-09-30/source-line-ci-source.mjs: credential-shaped scan
+PASS: docs/governance/line-rpc-caller-register.th.md: credential-shaped scan
+PASS: docs/governance/evidence/line-ci-source-2026-09-30/capture-stdout.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-ci-source-2026-09-30/SHA256SUMS.run: credential-shaped scan
+PASS: docs/governance/evidence/line-ci-source-2026-09-30/commit-ci-source.sh: credential-shaped scan
+PASS: tests/line-oa-commerce/ci/source-evidence.test.mjs: credential-shaped scan
+PASS: docs/governance/evidence/line-ci-source-2026-09-30/capture-stderr.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-ci-source-2026-09-30/wiring-result.json: credential-shaped scan
+PASS: docs/governance/evidence/line-ci-source-2026-09-30/SHA256SUMS: credential-shaped scan
+PASS: .github/workflows/db-verify.yml: credential-shaped scan
+PASS: docs/PRD-LINE-OA.en.html: credential-shaped scan
+PASS: docs/governance/evidence/line-ci-source-2026-09-30/REPORT.en.md: credential-shaped scan
+PASS: docs/governance/evidence/line-ci-source-2026-09-30/REVIEW.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-ci-source-2026-09-30/github-env.txt: credential-shaped scan
+PASS: docs/governance/line-rpc-caller-register.en.md: credential-shaped scan
+PASS: docs/governance/evidence/line-ci-source-2026-09-30/REPLAY.txt: credential-shaped scan
+PASS: docs/governance/evidence/line-ci-source-2026-09-30/source-source-evidence.test.mjs: credential-shaped scan
+PASS: docs/governance/evidence/line-ci-source-2026-09-30/REPORT.th.md: credential-shaped scan
+PASS: docs/governance/evidence/line-ci-source-2026-09-30/.gitattributes: credential-shaped scan
+PASS: docs/governance/evidence/line-ci-source-2026-09-30/verify-workflow-wiring.py: credential-shaped scan
+PASS: docs/governance/evidence/line-ci-source-2026-09-30/REPORT.th.html: credential-shaped scan
+RESULT: GATE PASS (local source/wiring evidence; no Actions or database rerun)
