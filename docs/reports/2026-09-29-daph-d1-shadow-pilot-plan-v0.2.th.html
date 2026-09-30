@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>แผนงานขั้น 1: Daph D1 Shadow Pilot — v0.2</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1>แผนงานขั้น 1: Daph D1 Shadow Pilot — v0.2</h1>
+<ul>
+<li><strong>วันที่:</strong> 29 กันยายน 2026</li>
+<li><strong>สถานะ:</strong> ร่างสำหรับวางแผนและขอราคา ยังไม่ใช่ใบเสนอราคาหรือการอนุมัติจ่าย</li>
+<li><strong>ฐานโค้ดที่ตรวจ:</strong> <code>main</code> @ <code>5dc57e10</code></li>
+<li><strong>อัปเดตสถานะ Pages/Designer:</strong> 30 กันยายน 2026 ที่ <code>main</code> @ <code>12ef2dc6</code> หลัง PR #127 และ PR #130 deploy แล้ว แก้เฉพาะแถว Pages ในหัวข้อ 2, WP0 ข้อ 0.2 และ WP1 ข้อ 1.2 ส่วนอื่นยังเป็นผลตรวจที่ <code>5dc57e10</code></li>
+<li><strong>ขอบเขต:</strong> Daph ใช้ Monolith ติดตามบ้านจริง 1 หลัง ข้อมูลเก็บบน server ส่วนโรงงานยังตัดตามใบสั่งเดิม (<code>SHADOW_MODE_NOT_FOR_PRODUCTION = true</code>, packet ออกผลได้เฉพาะ <code>NO_CUT</code>)</li>
+</ul>
+<blockquote><p>แผนนี้ต่อยอดจากรายงาน <a href="DAPH-SHADOW-PILOT-READINESS-v0.1.1.th.html">DAPH-SHADOW-PILOT-READINESS-v0.1.1</a> (<a href="DAPH-SHADOW-PILOT-READINESS-v0.1.1.en.html">EN</a>) ซึ่งอยู่ใน PR เดียวกัน v0.1.1 ปรับเฉพาะถ้อยคำจาก v0.1 ให้ผ่าน guardrail ของ repo เนื้อหาเดิมไม่เปลี่ยน รายงานนั้นเป็นการตรวจย้อนหลังที่ baseline <code>5dc57e10</code> และไม่ได้แก้ไข สถานะ Pages/Designer หลัง baseline นั้นบันทึกไว้ในแผนนี้</p></blockquote>
+<h2>1. ใช้แผนนี้อย่างไร</h2>
+<ul>
+<li>เป็น<strong>กรอบสำรวจและเตรียม pilot</strong> ไม่ใช่คำรับปากขอบเขตหรืองบ</li>
+<li><strong>WP1 คือจุดตัดสินใจ:</strong> หลังตรวจระบบจริงใน WP1 ต้องประเมินขอบเขตและงบใหม่ ก่อนรับปาก WP2–WP4 ทั้งชุด</li>
+<li>ทุกตัวเลขวันและเงินเป็นการประเมินล่วงหน้า <strong>ยังไม่ได้ยืนยันว่าประเมินเวลาพอ</strong></li>
+</ul>
+<h2>2. ข้อเท็จจริงที่แผนนี้อ้างอิง</h2>
+<div class="tablewrap"><table><thead><tr><th>ข้อเท็จจริง</th><th>หลักฐาน</th></tr></thead><tbody>
+<tr><td>องค์กร, งาน และใบเสนอราคาเก็บใน browser (Zustand <code>persist</code>)</td><td><code>src/tenant/tenantStore.ts</code> (<code>monolith-tenant-store</code>), <code>src/jobs/jobStore.ts</code> (<code>monolith-jobs-store</code>), <code>src/quotation/quotationStore.ts</code> (<code>monolith-quotation-store</code>)</td></tr>
+<tr><td>หน้าสร้างงานเรียก <code>createJob</code> ของ store ในเครื่อง</td><td><code>src/jobs/CreateJobWizard.tsx:57</code>, <code>:146</code></td></tr>
+<tr><td>ใน source มีตาราง <code>customers</code>, <code>jobs</code>, <code>job_panels</code>, <code>quotations</code>, <code>quotation_lines</code> พร้อม RLS</td><td><code>supabase/migrations/0172_jobs_quotations_invoices.sql</code>; มีการเพิ่ม <code>org_id</code> ใน 0173, 0179 และ 0183</td></tr>
+<tr><td><code>jobs</code> และ <code>quotations</code> บังคับ <code>customer_id</code> และ <code>created_by</code> (<code>NOT NULL</code>)</td><td><code>0172_jobs_quotations_invoices.sql</code> บรรทัด 58–76 และ 106–125</td></tr>
+<tr><td>realtime 3 จุดฟังตาราง <code>job</code> (เอกพจน์) แต่ migration สร้าง <code>jobs</code></td><td><code>src/jobs/JobDetailPage.tsx:330</code>, <code>src/jobs/useJobBoardRealtime.ts:140</code>, <code>src/jobs/useSupabaseRealtimeChannel.ts:205</code></td></tr>
+<tr><td><code>jobs</code> ถูกถอดออกจาก realtime โดยตั้งใจ เพื่อกันข้อมูลรั่วข้ามองค์กร</td><td><code>supabase/migrations/0173_rls_isolation_hardening.sql</code> หัวข้อ F6</td></tr>
+<tr><td><code>useCreateJobSubmit.ts</code> ส่งไป <code>/rest/v1/job</code> โดยใช้ anon key เป็น Bearer และ source อ้างถึง hook นี้เฉพาะใน <code>src/jobs/index.ts</code></td><td><code>src/jobs/useCreateJobSubmit.ts:133–139</code>; ค้นด้วย <code>git grep useCreateJobSubmit -- src</code></td></tr>
+<tr><td>migration <code>0190</code> ซ้ำ 3 ไฟล์ และ CI รวมไฟล์ซ้ำให้ก่อนทดสอบ</td><td><code>scripts/prepare_supabase_migrations_ci.sh --merge-duplicates</code> ใน <code>pgtap-tests.yml</code> และ <code>db-verify.yml</code></td></tr>
+<tr><td>ที่ <code>5dc57e10</code>: มี workflow 3 ตัว deploy GitHub Pages ทับกัน ทำให้ <code>/designer/</code> และ Field PWA ขึ้น 404 (แก้แล้ว ดูแถวถัดไป)</td><td>ประวัติ deploy ของ environment <code>github-pages</code> (Deployments API): field-app ครั้งสุดท้าย 2026-09-13 <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34731453999" target="_blank" rel="noopener">run 34731453999</a> บน <code>13de5d1b</code>; เว็บเอกสาร deploy ทับ 2026-09-21 <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/35594892612" target="_blank" rel="noopener">run 35594892612</a> บน <code>62651733</code>. ตรวจหน้าเว็บ 2026-09-29T12:59Z: <code>/</code> = 200 (title เว็บเอกสาร v2.0.0), <code>/designer/</code> = 404, <code>/manifest.webmanifest</code> = 404. คำสั่ง: <code>gh api repos/indetailsgroup-hue/monolith-workspace/deployments?environment=github-pages</code> และ <code>curl -s -o /dev/null -w %{http_code}</code> ต่อ URL — แก้โค้ดใน PR #127</td></tr>
+<tr><td>ตั้งแต่ 30 ก.ย.: workflow ตัวเดียว deploy Field PWA, แอปออกแบบ และเอกสารพร้อมกัน (PR #127) และแอปออกแบบทำงานได้ใต้ sub-path ของ Pages (PR #130)</td><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/pull/127" target="_blank" rel="noopener">PR #127</a> merge เมื่อ 2026-09-30T01:25Z เป็น <code>c8e5380c</code>; deploy <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/36655069520" target="_blank" rel="noopener">run 36655069520</a> สำเร็จ (deployment 6749271888). ตรวจหน้าเว็บ 01:32Z: <code>/designer/</code> ตอบ 200 แต่แสดงหน้า "Page not found" ของแอปเอง เพราะ router ไม่มี basename. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/pull/130" target="_blank" rel="noopener">PR #130</a> merge เมื่อ 03:20Z เป็น <code>12ef2dc6</code>; deploy <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/36663972596" target="_blank" rel="noopener">run 36663972596</a> สำเร็จ (deployment 6750700437). GitHub แสดง <code>verified=true</code> ทั้ง merge commit สองตัวและ HEAD ของทั้งสอง PR (<code>293a2b20</code>, <code>1472311d</code>). ตรวจหน้าเว็บ 2026-09-30T03:54:55Z: <code>/</code>, <code>/designer/</code>, <code>/docs/</code> และ <code>/manifest.webmanifest</code> = 200; deep link ของแอปออกแบบ เช่น <code>/designer/jobs</code> = 404 ในคำขอแรก แล้ว <code>404.html</code> ของเว็บส่งกลับเข้าแอปออกแบบ. ผลที่แสดงบนเบราว์เซอร์ 03:55:10Z: <code>/</code> เป็นหน้า login ของ Field PWA, <code>/designer/</code> เป็น workspace พร้อม canvas 3D, <code>/designer/jobs?view=list#top</code> เป็น job board และ URL คงเดิม, <code>/docs/</code> เป็นบทที่ 1. คำสั่ง: <code>gh run view &lt;run id&gt;</code>, <code>gh api repos/indetailsgroup-hue/monolith-workspace/deployments?environment=github-pages</code>, <code>curl -s -o /dev/null -w %{http_code}</code> ต่อ URL และอ่าน title กับข้อความของหน้าในเบราว์เซอร์</td></tr>
+<tr><td>ด่านอนุญาตตัดจริง 0/4</td><td><code>node scripts/readiness-status.mjs --json</code> รันเมื่อ 29 ก.ย.</td></tr>
+</tbody></table></div>
+<p><strong>สิ่งที่ยังไม่ได้ยืนยัน:</strong> Supabase ที่จะใช้จริงลง migration ครบหรือไม่, RLS บน server ทำงานตรงกับ source หรือไม่, และความสัมพันธ์ของข้อมูลกับ revision พอสำหรับ pilot หรือไม่ จึงยังสรุปไม่ได้ว่า "ฐานข้อมูลพร้อมแล้ว"</p>
+<h2>3. WP0 — สิ่งที่เจ้าของต้องตัดสินใจก่อน</h2>
+<div class="tablewrap"><table><thead><tr><th>#</th><th>เรื่อง</th><th>เหตุผล</th></tr></thead><tbody>
+<tr><td>0.1</td><td>ใช้ Supabase project ไหน</td><td>source อ้างถึง 2 project</td></tr>
+<tr><td>0.2</td><td>ยืนยันที่อยู่ของแต่ละส่วน</td><td>ใช้งานจริงตั้งแต่ 30 ก.ย. (PR #127, PR #130): Field PWA ที่ <code>/</code>, แอปออกแบบที่ <code>/designer/</code>, เอกสารที่ <code>/docs/</code> เจ้าของยังต้องยืนยันการจัดวางนี้สำหรับ pilot</td></tr>
+<tr><td>0.3</td><td>ใช้บ้านหลังไหนเป็นบ้านทดลอง</td><td>ต่อจาก house-01 หรือเริ่มหลังใหม่</td></tr>
+<tr><td>0.4</td><td>ผู้ใช้ 3–5 คนและผู้ตรวจ</td><td>ขาย, designer, โรงงาน, การเงิน</td></tr>
+<tr><td>0.5</td><td>นโยบายข้อมูลลูกค้าจริง (PII)</td><td>เก็บบน server ได้แค่ไหน</td></tr>
+<tr><td>0.6</td><td>อนุมัติเปิด realtime ของ <code>jobs</code> คืนหรือไม่</td><td>เป็นการตัดสินใจด้านความปลอดภัยตาม 0173 F6</td></tr>
+</tbody></table></div>
+<h2>4. WP1 — ระบบและการ deploy (วิศวกร 2.75–3.75 วัน)</h2>
+<div class="tablewrap"><table><thead><tr><th>งาน</th><th>วัน</th><th>เสร็จเมื่อ</th></tr></thead><tbody>
+<tr><td>1.1 ตรวจรายการ migration บน server เทียบกับ source และระบุผู้ถือ secret แต่ละตัว <strong>โดยไม่เปลี่ยนเลขไฟล์</strong></td><td>1–1.5</td><td>มีรายการ migration และ secret owner ที่ตรงกับของจริง</td></tr>
+<tr><td>1.2 แก้ Pages ทับกัน</td><td><strong>เสร็จ 30 ก.ย.:</strong> PR #127 merge และ deploy แล้ว ส่วน 404 ภายในแอปที่ <code>/designer/</code> ซึ่งพบหลังจากนั้นแก้ใน PR #130 และ deploy แล้วเช่นกัน ตรวจ URL เมื่อ 03:55Z (หัวข้อ 2) 0.25 วัน คงไว้ในยอด WP1 เป็นงานที่ใช้ไปแล้ว</td><td><code>/</code>, <code>/designer/</code>, <code>/docs/</code> เปิดได้ทั้งสาม: ผ่านเมื่อ 30 ก.ย.</td></tr>
+<tr><td>1.3 ตั้งค่า auth redirect, TLS และ env ของ pilot</td><td>0.5</td><td>login และ logout ได้จากเครื่องอื่น</td></tr>
+<tr><td>1.4 ซ้อม backup และ restore ทั้ง DB และไฟล์ใน storage</td><td>1–1.5</td><td>มีบันทึกการกู้คืนที่สำเร็จ</td></tr>
+</tbody></table></div>
+<p><strong>จุดตัดสินใจหลัง WP1:</strong> ประเมินขอบเขตและงบของ WP2–WP4 ใหม่จากผลตรวจจริง</p>
+<h2>5. WP2 — องค์กร Daph และผู้ใช้ (วิศวกร 2–3 วัน)</h2>
+<div class="tablewrap"><table><thead><tr><th>งาน</th><th>วัน</th><th>เสร็จเมื่อ</th></tr></thead><tbody>
+<tr><td>2.1 สร้างองค์กร Daph และ site ด้วย seed ที่ผ่านการตรวจทาน (ยังไม่ทำหน้าสมัครเอง)</td><td>0.5</td><td>มี org ในฐานข้อมูล</td></tr>
+<tr><td>2.2 เชิญผู้ใช้ 3–5 คนและกำหนดบทบาทใน <code>org_members</code></td><td>0.5</td><td>ทุกคน login แล้วเห็นองค์กร Daph</td></tr>
+<tr><td>2.3 ให้ <code>tenantStore</code> อ่านองค์กรจาก server และปิดการสร้างองค์กรใน browser</td><td>0.5–1</td><td>ล้าง browser แล้วองค์กรยังอยู่</td></tr>
+<tr><td>2.4 <strong>(บังคับ)</strong> เทสต์อ่านและเขียนข้ามองค์กร</td><td>0.5–1</td><td>ผู้ใช้จากองค์กรอื่นถูกปฏิเสธทั้งการอ่านและการเขียน</td></tr>
+</tbody></table></div>
+<h2>6. WP3 — งานและใบเสนอราคาบน server (วิศวกร 6–9.5 วัน)</h2>
+<div class="tablewrap"><table><thead><tr><th>งาน</th><th>วัน</th><th>เสร็จเมื่อ</th></tr></thead><tbody>
+<tr><td>3.0 ตรวจ data model: ลูกค้า (<code>customer_id</code>), ผู้สร้าง (<code>created_by</code>), revision และการบันทึกหัวเอกสารกับรายการย่อยให้สำเร็จหรือล้มเหลวพร้อมกัน</td><td>0.5–1</td><td>มีข้อสรุปเป็นลายลักษณ์อักษรว่าต้องเพิ่ม schema หรือ RPC อะไร</td></tr>
+<tr><td>3.1 <code>jobStore</code> บันทึกลง <code>jobs</code> และ <code>job_panels</code></td><td>1.5–2.5</td><td>สร้างงานที่เครื่อง A แล้วเห็นที่เครื่อง B</td></tr>
+<tr><td>3.2 realtime ใช้ client ที่ login แล้ว กรองตาม <code>org_id</code> และ migration เปิด realtime คืน (ต้องผ่าน 0.6 ก่อน)</td><td>1</td><td>อัปเดตข้ามเครื่องได้ และองค์กรอื่นไม่ได้รับ event</td></tr>
+<tr><td>3.3 <code>quotationStore</code> บันทึกลง <code>quotations</code> และ <code>quotation_lines</code> พร้อม revision และผู้อนุมัติ</td><td>1.5–2.5</td><td>reload แล้วใบเสนอราคาและ revision ยังอยู่</td></tr>
+<tr><td>3.4 เชื่อม project (Field app) กับงานและใบเสนอราคา</td><td>0.5–1</td><td>เปิดจาก project แล้วไปถึงงานและใบเสนอราคาได้</td></tr>
+<tr><td>3.5 เขียน <code>e2e/jobs-quotation.spec.ts</code> ใหม่ให้ใช้ server แทน localStorage</td><td>0.5–1</td><td>ผ่านบน CI</td></tr>
+<tr><td>3.6 ใช้ session ของผู้ใช้แทน anon key และแก้หรือลบ <code>useCreateJobSubmit.ts</code></td><td>0.5</td><td>ทุกการเขียนลงฐานข้อมูลใช้ JWT ของผู้ใช้</td></tr>
+</tbody></table></div>
+<h2>7. WP4 — จากแบบถึง packet ภายใต้ NO_CUT (วิศวกร 2–3.5 วัน)</h2>
+<div class="tablewrap"><table><thead><tr><th>งาน</th><th>วัน</th><th>เสร็จเมื่อ</th></tr></thead><tbody>
+<tr><td>4.1 บันทึกแบบ 3D ผูกกับงานและ revision บน server</td><td>1–1.5</td><td>เปิดแบบเดิมได้จากเครื่องอื่น</td></tr>
+<tr><td>4.2 เลือก packet path เดียว (packet เดิม หรือ <code>server/src/packet/v2</code>) แล้ว upload ผ่าน factory-api</td><td>0.5–1</td><td>มีใบรับจาก server พร้อม hash</td></tr>
+<tr><td>4.3 <strong>(บังคับ)</strong> ทดสอบไฟล์ปกติ, ไฟล์ที่ต้องถูกปฏิเสธ และไฟล์ที่ถูกแก้ไข</td><td>0.5–1</td><td>ไฟล์ที่ถูกแก้ไขถูกปฏิเสธจริง ป้าย NO_CUT อย่างเดียวไม่นับว่าผ่าน</td></tr>
+</tbody></table></div>
+<h2>8. WP5 — เตรียมการฝั่งโรงงาน (พนักงาน Daph 5–9 วัน ทำคู่ขนานได้)</h2>
+<div class="tablewrap"><table><thead><tr><th>งาน</th><th>วัน</th><th>เสร็จเมื่อ</th></tr></thead><tbody>
+<tr><td>5.1 จับคู่รหัสวัสดุและอุปกรณ์เฉพาะที่บ้านทดลองใช้</td><td>1.5–2.5</td><td>ทุกชิ้นของบ้านทดลองมีรหัสในระบบ</td></tr>
+<tr><td>5.2 อบรมผู้ใช้ 3–5 คน</td><td>1–2</td><td>แต่ละคนทำขั้นตอนของตัวเองได้</td></tr>
+<tr><td>5.3 แบบฟอร์มบันทึกส่วนต่าง (ตามหัวข้อ 8 ของรายงาน v0.1.1)</td><td>0.5</td><td>พร้อมใช้</td></tr>
+<tr><td>5.4 ซ้อม UAT 17 ขั้น (ตามหัวข้อ 9 ของรายงาน v0.1.1)</td><td>1.5–3</td><td>ทุกขั้นมีหลักฐาน และไม่นับขั้นที่ถูกข้ามว่าผ่าน</td></tr>
+<tr><td>5.5 ซ้อมเทียบยอดการเงินกับบัญชีเดิม</td><td>0.5–1</td><td>ยอดตรงกัน หรืออธิบายส่วนต่างได้</td></tr>
+</tbody></table></div>
+<h2>9. WP6 — เงินเผื่อแก้ข้อบกพร่องระหว่าง UAT (วิศวกร 3–6 วัน)</h2>
+<h2>10. สรุปวันและงบ</h2>
+<div class="tablewrap"><table><thead><tr><th>หมวด</th><th>วัน</th><th>อัตรา (สมมติ)</th><th>เงิน (บาท)</th></tr></thead><tbody>
+<tr><td>วิศวกร WP1–WP4</td><td>12.75–19.75</td><td>3,000–5,000 บาท/วัน</td><td>38,250–98,750</td></tr>
+<tr><td>เงินเผื่อ WP6</td><td>3–6</td><td>3,000–5,000 บาท/วัน</td><td>9,000–30,000</td></tr>
+<tr><td>พนักงาน WP5 (ถ้าจ้างเพิ่ม)</td><td>5–9</td><td>1,000–2,000 บาท/วัน</td><td>5,000–18,000</td></tr>
+<tr><td><strong>รวมครั้งเดียว</strong></td><td>วิศวกร 15.75–25.75</td><td></td><td><strong>52,250–146,750</strong></td></tr>
+<tr><td>ค่าระบบรายเดือน</td><td></td><td></td><td>900–2,000 บาท/เดือน</td></tr>
+</tbody></table></div>
+<ul>
+<li>อัตราค่าแรงเป็น<strong>ค่าสมมติ</strong> ยังไม่ได้สำรวจราคาตลาด ถ้าใช้ 5,000–8,000 บาท/วัน ยอดรวมจะอยู่ราว 84,000–224,000 บาท</li>
+<li>ถ้าเจ้าของทำเองกับ AI จะ<strong>ลดค่าจ้างภายนอกได้ แต่ยังมีต้นทุนเวลาและค่าระบบ</strong></li>
+<li>ไม่รวม VAT, ค่าเดินทาง, เงินเดือนเดิม, ค่าเครื่องจักร และ PITR (ถ้าต้องใช้ ต้องบวกเพิ่มรายเดือน)</li>
+</ul>
+<h2>11. จุดส่งมอบสองจุด</h2>
+<p><strong>จุดที่ 1 — พร้อมเริ่ม D1</strong> (ประมาณ 4–6 สัปดาห์ ถ้ามีวิศวกร 1 คนทำต่อเนื่อง)</p>
+<ol>
+<li>ผู้ใช้ 2 คนจาก 2 เครื่องเห็นงาน, ใบเสนอราคา และแบบชุดเดียวกัน</li>
+<li>เทสต์ข้ามองค์กร (2.4) และเทสต์ packet ที่ถูกแก้ไข (4.3) ผ่าน</li>
+<li>ซ้อม restore สำเร็จ</li>
+<li>ซ้อม UAT ครบ 17 ขั้นโดยมีหลักฐานทุกขั้น</li>
+</ol>
+<p><strong>จุดที่ 2 — D1 สำเร็จ</strong> (ขึ้นกับตารางโรงงานและหน้างาน ไม่อยู่ในกรอบเวลาของจุดที่ 1)</p>
+<ol>
+<li>บ้านจริงมีบันทึกครบสาย: ใบเสนอราคา → แบบ → BOM และ cutlist → packet (NO_CUT) → QC → ติดตั้ง → รับมอบ → เทียบยอดเงิน</li>
+<li>บันทึกส่วนต่างระหว่างระบบกับโรงงานทุกรายการมีข้อสรุป</li>
+<li>ข้อมูลจากบ้านทดลองใช้ประเมินขั้นถัดไป (ตัดจริง) แทนการเดา</li>
+</ol>
+<h2>12. นอกขอบเขต</h2>
+<p>การตัดจริงและการ calibrate เครื่อง, การลงนาม ADR-064, การปิด S17, คลังสินค้า, บัญชีเต็มรูปแบบ (รวมถึงตารางที่ <code>src/hooks/useAccounting.ts</code> อ้างถึง), payroll, BI, IoT และ Phase 15</p>
+<h2>13. ประวัติการแก้ไข</h2>
+<p><strong>v0.1 → v0.2</strong> (ปรับตามรีวิวที่ตรวจกับโค้ด <code>5dc57e10</code> แล้ว)</p>
+<ol>
+<li>เพิ่ม 3.0 ตรวจ data model และ 3.6 เรื่อง authentication (พบ <code>useCreateJobSubmit.ts</code> ใช้ anon key)</li>
+<li>เทสต์ข้ามองค์กร (2.4) และ packet ที่ถูกแก้ไข (4.3) เป็นงานบังคับ อย่างน้อย 0.5 วัน</li>
+<li>แยก "พร้อมเริ่ม D1" ออกจาก "D1 สำเร็จ"</li>
+<li>แก้ยอดรวมให้ตรงกับรายการย่อย และประเมิน 3.2 ใหม่จาก 0.25 เป็น 1 วัน</li>
+<li>1.1 ไม่เปลี่ยนเลข migration <code>0190</code></li>
+<li>WP1 เป็นจุดตัดสินใจก่อนรับปาก WP2–WP4</li>
+<li>เปลี่ยนถ้อยคำ "ทำเองกับ AI เงินสดเกือบศูนย์" เป็น "ลดค่าจ้างภายนอกได้ แต่ยังมีต้นทุนเวลาและค่าระบบ"</li>
+</ol>
+<p><strong>v0.2 แก้ไขรอบ 2</strong> (ตามรีวิวรอบที่สอง)</p>
+<ol>
+<li>1.2 เปลี่ยนจาก "ทำแล้ว" เป็น "แก้โค้ดแล้วใน PR #127 รอ merge และ deploy" เพราะระบบจริงยังไม่เปลี่ยน</li>
+<li>แนบหลักฐาน Pages 404 เป็นลิงก์ run, SHA ที่ deploy และผลตรวจหน้าเว็บพร้อมเวลา แทนข้อความเล่าประวัติ</li>
+<li>เปลี่ยนการอ้างอิงรายงาน v0.1 (ซึ่งอยู่นอก repo) เป็นลิงก์ไปที่ v0.1.1 ใน PR เดียวกัน</li>
+</ol>
+<p><strong>v0.2 แก้ไขรอบ 3</strong> (30 ก.ย. หลัง PR #127 และ PR #130 deploy แล้ว)</p>
+<ol>
+<li>1.2 เปลี่ยนจาก "รอ merge และ deploy" เป็นเสร็จ พร้อมหลักฐาน merge, run ของ deploy และผลตรวจหน้าเว็บในหัวข้อ 2</li>
+<li>หัวข้อ 2 เก็บข้อเท็จจริงเรื่อง Pages ที่ <code>5dc57e10</code> ไว้เป็นประวัติ และเพิ่มแถวผลการแก้ ส่วน WP0 ข้อ 0.2 บันทึกการจัดวางที่ใช้งานจริง</li>
+<li>ไม่ได้แก้รายงาน readiness v0.1.1 รายงานนั้นยังเป็นการตรวจย้อนหลังที่ baseline <code>5dc57e10</code> และ hash ในหลักฐานยังตรงกับ commit นั้น</li>
+<li>ไม่มีตัวเลขเปลี่ยน: 0.25 วันของ 1.2 ยังอยู่ในยอด WP1 และยอดรวมครั้งเดียวยังเป็น 52,250–146,750 บาท</li>
+</ol>
+</main></body>
+</html>

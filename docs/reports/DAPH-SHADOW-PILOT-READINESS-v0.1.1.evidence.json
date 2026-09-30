@@ -1,0 +1,523 @@
+{
+  "schema": "daph-shadow-readiness-inspection@1",
+  "recorded_at": "2026-09-29T12:27:02.896236+00:00",
+  "primary_sha": "5dc57e10457641cacddf9d776800b0bc704b209a",
+  "primary_root": "C:\\Users\\thai3\\.codex\\worktrees\\daph-shadow-readiness\\determined-williams (2)",
+  "primary_version": "17.5.2",
+  "owner_baseline_decision": "GitHub main pinned; local dirty work compared separately",
+  "local_comparison_heads": {
+    "parent": "9bd52f36744693b154324a3bc772bf15796102a3",
+    "nested": "ccb47589de7d9980a59774aa168b7c50cb23f417"
+  },
+  "actions_query": {
+    "main_total_count": 0,
+    "nested_total_count": 0,
+    "pr_check_head": "dae8afd108444ae30ae7e9465cceb068f3ec49cc",
+    "ci_file": "DAPH-SHADOW-PILOT-READINESS-v0.1.1.ci.json"
+  },
+  "sources": [
+    {
+      "path": ".github/workflows/pgtap-tests.yml",
+      "sha256": "c39b2c2715fa223ecc1913ccce548197bba8311a56983349df2b75c417bb1d2e"
+    },
+    {
+      "path": ".github/workflows/verify-full.yml",
+      "sha256": "cbf05fd4bbf9129192b1e2089e752eb6670f6a007c0a106703c6da644ef66ef9"
+    },
+    {
+      "path": ".kiro/specs/installation-pm/tasks.md",
+      "sha256": "59eef93dee3c1f7d56b4b60207e193d41c86af75de3d34d0f6eca9fdc6e4a1f7"
+    },
+    {
+      "path": "docs/evidence/dogfood/house-01/started.json",
+      "sha256": "2eb42c6f1cdba60daa2f4e538608a239db5be2076872f032a754dae513520897"
+    },
+    {
+      "path": "docs/evidence/hosted/s17-1-2/s17-hosted-auth-evidence.json",
+      "sha256": "60a84080538328c20f4b68e7024a44c772b06050a64cbf3deb2100ff859e99cc"
+    },
+    {
+      "path": "docs/governance/adr-064-signoff-checklist.th.md",
+      "sha256": "0b6ad2dd9945835d4d543dc277f5c120d83daf1ab48b76fc42415f1ee6eeb29e"
+    },
+    {
+      "path": "docs/governance/adr-070-machine-onboarding.en.md",
+      "sha256": "566e5161cd0c7c18d2ac2a35cb79ab831a21471ab9bbcfaec1890d82b17baa99"
+    },
+    {
+      "path": "docs/governance/ct-dec-002-signoff-checklist.en.md",
+      "sha256": "91900849673bfa4d91fcd6ca2e472052e83da3e4b09fbd556587c0be6ab70200"
+    },
+    {
+      "path": "e2e/cabinet.spec.ts",
+      "sha256": "04f9842eab4816338539beab746d647db6d1bdfa8c7250a690ccdc0618ba02a3"
+    },
+    {
+      "path": "e2e/dxf-export.spec.ts",
+      "sha256": "7cf4f215860991d4d76930e35f636e2507ab3a04f7867dbd662e9a11fb95704d"
+    },
+    {
+      "path": "e2e/factory-verify-flow.spec.ts",
+      "sha256": "e1608a8232aaee3b02979bb022d0e80d29ea52a2221c5c088c48a4fc5e62d859"
+    },
+    {
+      "path": "e2e/jobs-quotation.spec.ts",
+      "sha256": "cfccd67adad76c925ba521d3e4e4247edfb429dea916d2b3ee81dbc765150cbb"
+    },
+    {
+      "path": "package.json",
+      "sha256": "f9d2cadc419af732d7d529fcbb1a0cf0e3df650ea2cb7960201462a9bf39d102"
+    },
+    {
+      "path": "packages/field-app/src/screens/FinanceHome.test.tsx",
+      "sha256": "ea77bc0714796f225d5f0b1bc089d32c4d90dcfd554076454dc291bb94dad960"
+    },
+    {
+      "path": "packages/field-app/src/screens/FinanceHome.tsx",
+      "sha256": "9c06e30a5a5ebe6bb00904e501d3c2e44cf91b737107127adecd09f7e01dcf41"
+    },
+    {
+      "path": "packages/field-app/src/screens/PlanPanel.tsx",
+      "sha256": "fbd76581e25ae32272a8d6d0cecde2e49fb246404606175e85694e808999f57b"
+    },
+    {
+      "path": "packages/field-app/src/screens/ProjectDetail.tsx",
+      "sha256": "a14d1fbb0e90f90ea85b6cdb0331798664ed10e3482711373798b65949569220"
+    },
+    {
+      "path": "scripts/dogfood-record.mjs",
+      "sha256": "8c2654d830e1c0c8bee6fe258607fd6d1dced55973f8bda5e54ba4381d0c2347"
+    },
+    {
+      "path": "scripts/readiness-status.mjs",
+      "sha256": "0a35d57a5f60ed95d2fa883294edc4d0e6b1c3c8352d838e6c91716383d849e0"
+    },
+    {
+      "path": "server/src/packet/v2/__tests__/generator.test.ts",
+      "sha256": "34af9a3e8161b5633669e39ad506e43767d30ffad71cf7667fd89743d57bad80"
+    },
+    {
+      "path": "src/__tests__/auth-jobs-quotation.test.tsx",
+      "sha256": "697a1f0593a87d61028d5f106718f46c0d07abae1ff8383c235bb5121ebf8d47"
+    },
+    {
+      "path": "src/__tests__/v16-0-multi-tenant.test.tsx",
+      "sha256": "833af36e17d63b0e365e945998acb6111d1e3c7399645cc8ea61747042d1f457"
+    },
+    {
+      "path": "src/cnc/bundle/buildCncBundleZip.ts",
+      "sha256": "0a2c476bc106988d992d3a6fefafd7ad51177971bb120a9379afe4ae3ede8300"
+    },
+    {
+      "path": "src/cnc/post/nfpHeader.ts",
+      "sha256": "ce735f11a4549e3aafa29f7ec9d899404471fc79f729a3b35bb81ac5e109759e"
+    },
+    {
+      "path": "src/components/ui/FactoryQCPanel.tsx",
+      "sha256": "73b9568175895ba1f0d1d35c61e877a46e0de4bda7514f417c88a83ca46bc4e8"
+    },
+    {
+      "path": "src/components/ui/MaterialSelector.tsx",
+      "sha256": "f61a96f25ee404fddf7d969d0543ecf8c16189f3b99df9a88bea419211ab6282"
+    },
+    {
+      "path": "src/components/ui/__tests__/MaterialSelector.test.tsx",
+      "sha256": "de6fd6f8aa8280a79519ca49f84227efec2deb6cdaa84c54581c4a3b4cc5e6c7"
+    },
+    {
+      "path": "src/core/auth/__tests__/configuredTransportSession.test.ts",
+      "sha256": "a6f6c1c0e949b8a10b4358500af7781891b5c48f126d5535f200f7110806b7f4"
+    },
+    {
+      "path": "src/core/auth/permissions.ts",
+      "sha256": "5beb33ef832081d99d2522745e532f1639d6199c3770bbba2ca7546e3766ff87"
+    },
+    {
+      "path": "src/core/auth/requestAuthHeaders.ts",
+      "sha256": "8a4ead12b5f39e7da183efac3434390f26faefc9b5a9f189ea66feffeb462873"
+    },
+    {
+      "path": "src/core/auth/roles.ts",
+      "sha256": "f397e9bc0635864325fb8e13f9b98fb8c6a9a75e376034f0843160ab9c69103b"
+    },
+    {
+      "path": "src/core/catalog/__tests__/MinifixHardware.test.ts",
+      "sha256": "753800aa756d42f7edd6460aa2589b169f2a155813f70f82e7756639c7e39b5d"
+    },
+    {
+      "path": "src/core/chainEvents/acceptanceStatus.ts",
+      "sha256": "9daa684e9f1241c874bd8829f6b7d886115dbf9f7a911d8016c673b698c6248e"
+    },
+    {
+      "path": "src/core/config/shadowMode.ts",
+      "sha256": "bb50142e4c6531ff279e38d33188c4744a6663b5204b4a432b9bbfc3e49de3fb"
+    },
+    {
+      "path": "src/core/export/__tests__/dxfZipG10Block.test.ts",
+      "sha256": "c63e7bcd6f2a4a2f2bcc3d309b9bba6f901d32a825e1bf3bbef61dc0b386d731"
+    },
+    {
+      "path": "src/core/export/dxfExportFromOperationGraph.ts",
+      "sha256": "95891f38ef78aadbcf7c377a6c7a9bebe4febb51c19a621d2c88e8e91aaed075"
+    },
+    {
+      "path": "src/core/hardware/__tests__/handleBom.test.ts",
+      "sha256": "306b3905872ccc9d67102f8dae17479631efe64e8190437d06d6560cc52afc67"
+    },
+    {
+      "path": "src/core/skills/generate/bom.ts",
+      "sha256": "4bff0e77bb8924c76019eebaecf4cff7d7b562e3dd25773fe6471578b582263e"
+    },
+    {
+      "path": "src/data/HardwareLibrary.ts",
+      "sha256": "c7cc463518b88a1b26156d737a0615bb050dc1f4eab0b3f4bbec4b9d72b28565"
+    },
+    {
+      "path": "src/factory/packet/__tests__/cutListCsv.test.ts",
+      "sha256": "7d67527b312cf17754274fc9cc671240a5bf7d13d1d53e5b3209a3e0449bddcb"
+    },
+    {
+      "path": "src/factory/packet/buildFactoryPacket.ts",
+      "sha256": "52adcaf472b44ee1016ce99d1ca71653823c68d93fb8f8ab7421c1920b14372d"
+    },
+    {
+      "path": "src/factory/packet/builders/buildCutList.ts",
+      "sha256": "020bfafb5ad1f5a411ad2677eeb0c6baff6518d2a4a02cc1bd0ec747b7e2063c"
+    },
+    {
+      "path": "src/installation/offline-queue/__tests__/queue.test.ts",
+      "sha256": "46677ca01657c4168918b557a1c4b267595cb6fe4e6b27ccce6536ca93143271"
+    },
+    {
+      "path": "src/jobs/CreateJobWizard.tsx",
+      "sha256": "43106cb287352af7fc5ab144e5e129a03a268c2c1d4cbc37481cc1fee5116bd5"
+    },
+    {
+      "path": "src/jobs/useCreateJobSubmit.ts",
+      "sha256": "54a9f2b5d9e004a2528e8396cebd88b681cb110c76f0882cebebcd84d6823b45"
+    },
+    {
+      "path": "src/nesting/__tests__/ffdh.test.ts",
+      "sha256": "ddc8b34179a07c9d22aa8b9fae478d53d7f53d27bbc3960add434649b05f26e0"
+    },
+    {
+      "path": "src/nesting/ffdh.ts",
+      "sha256": "5f1fdf9dccacd4deeac7dc89533cbd8bf98081b9aa04cd871436368cf06de672"
+    },
+    {
+      "path": "src/packet-verifier/codes.ts",
+      "sha256": "01d55295d5f607634586c6a58640bd65841ba60a5779a85e0329d0202145a834"
+    },
+    {
+      "path": "src/packet-verifier/verifyPacket.ts",
+      "sha256": "e5b46d51557dce939002913ee6b8cf3d21887cd2d0595a3b70be223d610d0d72"
+    },
+    {
+      "path": "src/quotation/quotationStore.ts",
+      "sha256": "8dd88a71071db0eb6bf3c67ba6795bf26030d79bedb6e48da54aa8a1b4b17ca3"
+    },
+    {
+      "path": "src/routes/index.tsx",
+      "sha256": "0c9a0d4b9ed5d5ab1bd6e938f7b2024b5b7d8c05b382107d58c8a5647b09cb8b"
+    },
+    {
+      "path": "src/tenant/TenantOnboarding.tsx",
+      "sha256": "4cc301d47b43eeba3b9d27a5f9b0569a49ec73e5e68499c94b2102c9d091d472"
+    },
+    {
+      "path": "src/tenant/tenantStore.ts",
+      "sha256": "592198b581b15daf58f3dd57277e5db6198d7c324139fab902583cc7a487f30f"
+    },
+    {
+      "path": "supabase/functions/factory-api/index.ts",
+      "sha256": "8369ecd51e4de9d9664f6893c6a0d1b9f5fb533cd868da3eb9c2840c2782af8f"
+    },
+    {
+      "path": "supabase/tests/cross_tenant_isolation.sql",
+      "sha256": "3215a00d9e01047b788f287eef718186cf1fa98b3a03ab8bfcd24ce3cf0a9077"
+    },
+    {
+      "path": "supabase/tests/workflow_db_invariants.sql",
+      "sha256": "151e8471e2eec8727605c629e018c5d643e5c3785129996b6482fd3c225e5191"
+    }
+  ],
+  "archives": [
+    {
+      "name": "agent-artifacts-zip_9c76194a-81d4-4bfc-ab6e-5d5c78e7763c_1790597608.zip",
+      "sha256": "5831ef4368325fe3b2c2df901a7df9f33159adbec238831de09bd9f57c7d16f9",
+      "file_entries": 695,
+      "entries_redacted": "File names removed in v0.1.1: they name Daph business documents and this repository is public. Name, SHA-256 and entry count retained."
+    },
+    {
+      "name": "oriverse_vs_monolith_analysis.zip",
+      "sha256": "0b45aabd21ec7e6435659cef4e716a7ad571c70e92715e43b8298af66ec9be76",
+      "file_entries": 36,
+      "entries": [
+        {
+          "name": "oriverse_vs_monolith_analysis.md",
+          "bytes": 14846,
+          "crc32": "94144e8b"
+        },
+        {
+          "name": "prisma_systematic_review_monolith_manufacturing_os.md",
+          "bytes": 62726,
+          "crc32": "0c602efa"
+        },
+        {
+          "name": "monolith_prd_rebuild.pdf",
+          "bytes": 340022,
+          "crc32": "41912861"
+        },
+        {
+          "name": "monolith_api_reference.pdf",
+          "bytes": 437334,
+          "crc32": "09e7ef04"
+        },
+        {
+          "name": "websocket_events_section.md",
+          "bytes": 9002,
+          "crc32": "42d744ef"
+        },
+        {
+          "name": "monolith_complete_documentation (3).html",
+          "bytes": 1256457,
+          "crc32": "364e8637"
+        },
+        {
+          "name": "monolith_business_ops.pdf",
+          "bytes": 316943,
+          "crc32": "6fbf6282"
+        },
+        {
+          "name": "monolith_complete_documentation.pdf",
+          "bytes": 622218,
+          "crc32": "98d63b82"
+        },
+        {
+          "name": "governance_presentation.pdf",
+          "bytes": 2627001,
+          "crc32": "ac4e1fb2"
+        },
+        {
+          "name": "monolith_workspace_github.md",
+          "bytes": 42607,
+          "crc32": "3d674a4b"
+        },
+        {
+          "name": "monolith_complete_documentation.tex",
+          "bytes": 937063,
+          "crc32": "7343d11e"
+        },
+        {
+          "name": "phase5_migration.pdf",
+          "bytes": 455122,
+          "crc32": "bd2ccf21"
+        },
+        {
+          "name": "phase6_analytics.pdf",
+          "bytes": 4667406,
+          "crc32": "460b7a80"
+        },
+        {
+          "name": "v3_release_highlights (1).pdf",
+          "bytes": 1636199,
+          "crc32": "f4a4c967"
+        },
+        {
+          "name": "monolith_persona_journey.pdf",
+          "bytes": 2397499,
+          "crc32": "0b2ca7a5"
+        },
+        {
+          "name": "phase7_supply_chain.pdf",
+          "bytes": 1637453,
+          "crc32": "d19bc9a7"
+        },
+        {
+          "name": "api-explorer.html",
+          "bytes": 85899,
+          "crc32": "0eb97d6d"
+        },
+        {
+          "name": "phase8_finance.pdf",
+          "bytes": 1231603,
+          "crc32": "17d7b8ab"
+        },
+        {
+          "name": "phase9_hr.pdf",
+          "bytes": 1114250,
+          "crc32": "40c84e36"
+        },
+        {
+          "name": "monolith_complete_documentation.md",
+          "bytes": 768660,
+          "crc32": "d84cce23"
+        },
+        {
+          "name": "phase10_document_esignature.pdf",
+          "bytes": 2394563,
+          "crc32": "54ca036a"
+        },
+        {
+          "name": "performance_benchmark_report.md",
+          "bytes": 12247,
+          "crc32": "b2b5721f"
+        },
+        {
+          "name": "phase11_compliance_audit.pdf",
+          "bytes": 1887924,
+          "crc32": "1b77910d"
+        },
+        {
+          "name": "monolith_documentation.tex",
+          "bytes": 773170,
+          "crc32": "22eae69e"
+        },
+        {
+          "name": "phase12_crm_aftersales.pdf",
+          "bytes": 2849614,
+          "crc32": "0bcc3549"
+        },
+        {
+          "name": "monolith_complete_documentation (1).docx",
+          "bytes": 419205,
+          "crc32": "1acf0228"
+        },
+        {
+          "name": "phase13_bi_reporting.pdf",
+          "bytes": 3083629,
+          "crc32": "b3711e15"
+        },
+        {
+          "name": "README.md",
+          "bytes": 3595,
+          "crc32": "dfb69947"
+        },
+        {
+          "name": "schema (1).graphql",
+          "bytes": 14535,
+          "crc32": "58f4dd5a"
+        },
+        {
+          "name": "vitest.config.ts",
+          "bytes": 404,
+          "crc32": "949f88d0"
+        },
+        {
+          "name": "phase14_iot_edge.pdf",
+          "bytes": 3618420,
+          "crc32": "9f943a5a"
+        },
+        {
+          "name": "phase14_iot_edge.pptx",
+          "bytes": 563452,
+          "crc32": "b732f989"
+        },
+        {
+          "name": "monolith_mcp_postman_collection.json",
+          "bytes": 108606,
+          "crc32": "2ca00a42"
+        },
+        {
+          "name": "monolith_openapi (1).yaml",
+          "bytes": 151986,
+          "crc32": "12acfbb8"
+        },
+        {
+          "name": "v3_release_highlights.pdf",
+          "bytes": 1636199,
+          "crc32": "f4a4c967"
+        },
+        {
+          "name": "monolith_complete_documentation (2).html",
+          "bytes": 1256457,
+          "crc32": "364e8637"
+        }
+      ]
+    }
+  ],
+  "read_only_commands": [
+    {
+      "command": "node scripts/readiness-status.mjs --json",
+      "exit_code": 0,
+      "stdout": "{\n  \"conditions\": [\n    {\n      \"id\": 1,\n      \"title\": \"S17-1..5 ปิดครบ (ledger)\",\n      \"status\": \"PENDING\",\n      \"detail\": \"S17-1=IN_PROGRESS · S17-2=IN_PROGRESS · S17-3=CLOSED · S17-4=OPEN · S17-5=IN_PROGRESS\",\n      \"remaining\": [\n        \"S17-1 ยัง IN_PROGRESS\",\n        \"S17-2 ยัง IN_PROGRESS\",\n        \"S17-4 ยัง OPEN\",\n        \"S17-5 ยัง IN_PROGRESS\"\n      ]\n    },\n    {\n      \"id\": 2,\n      \"title\": \"ADR-064 ลงชื่อครบ 4 (PO/TL/SO/FO)\",\n      \"status\": \"PENDING\",\n      \"detail\": \"SIGNED 0/4\",\n      \"remaining\": [\n        \"Product Owner ยัง PENDING\",\n        \"Tech Lead ยัง PENDING\",\n        \"Security Owner ยัง PENDING\",\n        \"Factory Owner ยัง PENDING\"\n      ]\n    },\n    {\n      \"id\": 3,\n      \"title\": \"dogfood เต็มสาย ≥1 งาน\",\n      \"status\": \"PENDING\",\n      \"detail\": \"house-01: STARTED (chain ยังไม่ครบ)\",\n      \"remaining\": [\n        \"house-01: เดิน chain ให้ครบ (ดู dogfood-record.mjs --status)\"\n      ]\n    },\n    {\n      \"id\": 4,\n      \"title\": \"machine profile calibrated (ADR-070)\",\n      \"status\": \"PENDING\",\n      \"detail\": \"ยังไม่มี machine ใน catalog (docs\\\\evidence\\\\machines)\",\n      \"remaining\": [\n        \"นำเข้า machine evidence + bench verification ตาม pattern ADR-070\"\n      ]\n    }\n  ],\n  \"ready\": false\n}\n",
+      "stderr": "",
+      "meaning": "read-only status report; not readiness PASS"
+    },
+    {
+      "command": "node scripts/dogfood-record.mjs house-01 --status",
+      "exit_code": 0,
+      "stdout": "house-01: started=true\n  contract        PENDING\n  payment         PENDING\n  install-plan    PENDING\n  variation       (optional)\n  production      PENDING\n  acceptance      PENDING\n  shadow-compare  0 record(s)\ncore chain not yet complete\n",
+      "stderr": "",
+      "meaning": "read-only status report; not readiness PASS"
+    }
+  ],
+  "scope_limits": [
+    "No product runtime or physical factory rerun",
+    "Selective content review of attachments; complete filename inventory",
+    "No dependency install, migration, deployment or source mutation"
+  ],
+  "deliverables": [
+    {
+      "file": "DAPH-SHADOW-PILOT-READINESS-v0.1.1.en.md",
+      "sha256": "b13ab0167ab9a65bb2b302ad341460ad4d5a82a545467639700bbe3997eb464c"
+    },
+    {
+      "file": "DAPH-SHADOW-PILOT-READINESS-v0.1.1.en.html",
+      "sha256": "4dd67ecd3bad66e928f36ae95c710725bb445d1385a7721a93b49e64d00290a1"
+    },
+    {
+      "file": "DAPH-SHADOW-PILOT-READINESS-v0.1.1.th.md",
+      "sha256": "2b1e30a09ef601af95cb60bd3aa54981329ce781719a110daa5c22c98982373f"
+    },
+    {
+      "file": "DAPH-SHADOW-PILOT-READINESS-v0.1.1.th.html",
+      "sha256": "2acdbd5b984b7e41a0ae178b4c9f3a287facc8e55007e3316496e2283f9c8d22"
+    },
+    {
+      "file": "DAPH-SHADOW-PILOT-READINESS-v0.1.1.ci.json",
+      "sha256": "e99cc53790c71cec23d5b122ee86a3f8e795fa8cfa861158a9262e43af172880"
+    }
+  ],
+  "revision": {
+    "version": "v0.1.1",
+    "base_version": "v0.1",
+    "inspected_by": "Codex (v0.1)",
+    "edited_by": "Claude (v0.1.1)",
+    "date": "2026-09-29",
+    "summary": "Wording only: passes tools/lint_claims.py and tools/lint_certifications.py; evidence negations now read \"not confirmed by the inspected evidence\"; evidence commands pinned to SHAs; no verdict, status, figure or recommendation changed; HTML regenerated with tools/render_docs.py; business ZIP file listing redacted.",
+    "current_planning_estimate": "2026-09-29-daph-d1-shadow-pilot-plan-v0.2 (52,250-146,750 THB)",
+    "rechecks": [
+      {
+        "at": "2026-09-29T13:12Z",
+        "by": "Claude",
+        "command": "git -C <codex worktree> rev-parse HEAD",
+        "result": "5dc57e10457641cacddf9d776800b0bc704b209a"
+      },
+      {
+        "at": "2026-09-29T13:12Z",
+        "by": "Claude",
+        "command": "git -C <codex worktree> status --porcelain | wc -l",
+        "result": "0"
+      },
+      {
+        "at": "2026-09-29T13:12Z",
+        "by": "Claude",
+        "command": "git ls-tree --name-only 5dc57e10457641cacddf9d776800b0bc704b209a docs/evidence/",
+        "result": "ci, dogfood, hosted, interop"
+      },
+      {
+        "at": "2026-09-29T13:12Z",
+        "by": "Claude",
+        "command": "git merge-base --is-ancestor d5a9ce5ecd4472cb16a34106faf256630241603b 5dc57e10457641cacddf9d776800b0bc704b209a",
+        "result": "exit 1 (not an ancestor); d5a9ce5e = origin/governance/s17-control-pack, contains docs/evidence/machines"
+      },
+      {
+        "at": "2026-09-29T13:12Z",
+        "by": "Claude",
+        "command": "git grep -nE 'realCutAllowed\"?\\s*[:=]\\s*true' 5dc57e10457641cacddf9d776800b0bc704b209a -- docs/evidence | wc -l",
+        "result": "0"
+      }
+    ]
+  }
+}

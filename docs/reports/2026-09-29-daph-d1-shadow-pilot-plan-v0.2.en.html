@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="tools/render_docs.py">
+<title>Stage 1 work plan: Daph D1 Shadow Pilot — v0.2</title>
+<style>
+:root{--fg:#1a1c1e;--muted:#5a6570;--bg:#fff;--surface:#f6f8fa;--border:#d5dbe1;
+--accent:#0b5fa5;--warn-bg:#fff8e6;--warn-bd:#e0a800;--code:#0f172a}
+@media(prefers-color-scheme:dark){:root{--fg:#e6e9ec;--muted:#9aa5b1;--bg:#14171a;
+--surface:#1d2126;--border:#333b44;--accent:#6ab0f3;--warn-bg:#2a2410;--warn-bd:#b8860b;--code:#dbe4ee}}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1.25rem 5rem;background:var(--bg);color:var(--fg);
+font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",
+"Sarabun",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+main{max-width:78ch;margin:0 auto}
+h1,h2,h3,h4{line-height:1.3;margin:2.2em 0 .7em;font-weight:650}
+h1{font-size:1.9rem;margin-top:0;border-bottom:2px solid var(--border);padding-bottom:.4em}
+h2{font-size:1.42rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+h3{font-size:1.16rem}h4{font-size:1rem}
+p,ul,ol{margin:0 0 1.05em}
+a{color:var(--accent);text-decoration-thickness:.08em;text-underline-offset:.15em}
+code{font:.88em/1.5 "SFMono-Regular",Consolas,"Liberation Mono",monospace;
+background:var(--surface);border:1px solid var(--border);border-radius:4px;
+padding:.12em .38em;color:var(--code);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;overflow-x:auto;margin:0 0 1.3em}
+pre code{background:none;border:0;padding:0;white-space:pre;word-break:normal}
+blockquote{margin:1.3em 0;padding:.9em 1.1em;background:var(--warn-bg);
+border-left:4px solid var(--warn-bd);border-radius:0 6px 6px 0}
+blockquote > :last-child{margin-bottom:0}
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--border);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{padding:.55em .8em;text-align:left;vertical-align:top;
+border-bottom:1px solid var(--border)}
+th{background:var(--surface);font-weight:650;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td[align=right],th[align=right]{text-align:right}
+hr{border:0;border-top:1px solid var(--border);margin:2.4em 0}
+del{opacity:.55}
+ul,ol{padding-left:1.5em}li{margin:.3em 0}
+@media print{
+  body{padding:0;font-size:11pt;background:#fff;color:#000}
+  main{max-width:none}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:.82em;color:#444}
+  pre,blockquote,.tablewrap{break-inside:avoid}
+  h1,h2,h3{break-after:avoid}
+  thead{display:table-header-group}
+}
+</style>
+</head>
+<body><main>
+<h1>Stage 1 work plan: Daph D1 Shadow Pilot — v0.2</h1>
+<ul>
+<li><strong>Date:</strong> 29 September 2026</li>
+<li><strong>Status:</strong> A draft for planning and quotes. It is not a quotation or a spending approval.</li>
+<li><strong>Code checked:</strong> <code>main</code> @ <code>5dc57e10</code></li>
+<li><strong>Pages/Designer status updated:</strong> 30 September 2026, <code>main</code> @ <code>12ef2dc6</code>, after PR #127 and PR #130 were deployed. Only section 2 (the Pages rows), WP0 0.2 and WP1 1.2 changed; everything else is still as checked at <code>5dc57e10</code>.</li>
+<li><strong>Scope:</strong> Daph uses Monolith to track one real house, with data stored on the server. The factory still cuts from its existing work orders (<code>SHADOW_MODE_NOT_FOR_PRODUCTION = true</code>; the packet verifier can only return <code>NO_CUT</code>).</li>
+</ul>
+<blockquote><p>This plan builds on <a href="DAPH-SHADOW-PILOT-READINESS-v0.1.1.en.html">DAPH-SHADOW-PILOT-READINESS-v0.1.1</a> (<a href="DAPH-SHADOW-PILOT-READINESS-v0.1.1.th.html">TH</a>), in the same PR. v0.1.1 only rewords v0.1 to pass the repo guardrails; its substance is unchanged. That report is a retrospective at baseline <code>5dc57e10</code> and is not updated; the Pages/Designer status after that baseline is recorded here.</p></blockquote>
+<h2>1. How to use this plan</h2>
+<ul>
+<li>It frames investigation and pilot preparation. It does not commit to scope or budget.</li>
+<li><strong>WP1 is a decision point.</strong> Once WP1 has checked the real system, re-estimate scope and budget before committing to all of WP2–WP4.</li>
+<li>Every day and baht figure is an up-front estimate. <strong>Nobody has yet confirmed that the time estimates are enough.</strong></li>
+</ul>
+<h2>2. Facts this plan relies on</h2>
+<div class="tablewrap"><table><thead><tr><th>Fact</th><th>Evidence</th></tr></thead><tbody>
+<tr><td>Organisations, jobs and quotations are stored in the browser (Zustand <code>persist</code>)</td><td><code>src/tenant/tenantStore.ts</code> (<code>monolith-tenant-store</code>), <code>src/jobs/jobStore.ts</code> (<code>monolith-jobs-store</code>), <code>src/quotation/quotationStore.ts</code> (<code>monolith-quotation-store</code>)</td></tr>
+<tr><td>The job wizard calls the local store's <code>createJob</code></td><td><code>src/jobs/CreateJobWizard.tsx:57</code>, <code>:146</code></td></tr>
+<tr><td>Source defines <code>customers</code>, <code>jobs</code>, <code>job_panels</code>, <code>quotations</code> and <code>quotation_lines</code> with RLS</td><td><code>supabase/migrations/0172_jobs_quotations_invoices.sql</code>; <code>org_id</code> added in 0173, 0179 and 0183</td></tr>
+<tr><td><code>jobs</code> and <code>quotations</code> require <code>customer_id</code> and <code>created_by</code> (<code>NOT NULL</code>)</td><td><code>0172_jobs_quotations_invoices.sql</code> lines 58–76 and 106–125</td></tr>
+<tr><td>Three realtime subscriptions listen on table <code>job</code> (singular), but the migration creates <code>jobs</code></td><td><code>src/jobs/JobDetailPage.tsx:330</code>, <code>src/jobs/useJobBoardRealtime.ts:140</code>, <code>src/jobs/useSupabaseRealtimeChannel.ts:205</code></td></tr>
+<tr><td><code>jobs</code> was removed from realtime on purpose, to stop cross-organisation leaks</td><td><code>supabase/migrations/0173_rls_isolation_hardening.sql</code>, section F6</td></tr>
+<tr><td><code>useCreateJobSubmit.ts</code> posts to <code>/rest/v1/job</code> with the anon key as the Bearer token, and in source only <code>src/jobs/index.ts</code> references the hook</td><td><code>src/jobs/useCreateJobSubmit.ts:133–139</code>; searched with <code>git grep useCreateJobSubmit -- src</code></td></tr>
+<tr><td>Three <code>0190</code> migrations share a number; CI merges duplicates before testing</td><td><code>scripts/prepare_supabase_migrations_ci.sh --merge-duplicates</code> in <code>pgtap-tests.yml</code> and <code>db-verify.yml</code></td></tr>
+<tr><td>At <code>5dc57e10</code>: three workflows deployed GitHub Pages over one another, so <code>/designer/</code> and the Field PWA returned 404 (fixed since; see the next row)</td><td><code>github-pages</code> deployment history (Deployments API): last field-app deploy 2026-09-13 <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/34731453999" target="_blank" rel="noopener">run 34731453999</a> at <code>13de5d1b</code>; docs deploy on top of it 2026-09-21 <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/35594892612" target="_blank" rel="noopener">run 35594892612</a> at <code>62651733</code>. Live check 2026-09-29T12:59Z: <code>/</code> = 200 (docs site v2.0.0 title), <code>/designer/</code> = 404, <code>/manifest.webmanifest</code> = 404. Commands: <code>gh api repos/indetailsgroup-hue/monolith-workspace/deployments?environment=github-pages</code> and <code>curl -s -o /dev/null -w %{http_code}</code> per URL. Code fix in PR #127</td></tr>
+<tr><td>Since 30 Sep: one workflow deploys the Field PWA, the Designer and the docs together (PR #127), and the Designer works under the Pages sub-path (PR #130)</td><td><a href="https://github.com/indetailsgroup-hue/monolith-workspace/pull/127" target="_blank" rel="noopener">PR #127</a> merged 2026-09-30T01:25Z as <code>c8e5380c</code>; deploy <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/36655069520" target="_blank" rel="noopener">run 36655069520</a> succeeded (deployment 6749271888). Live check 01:32Z: <code>/designer/</code> answered 200 but rendered the app's own "Page not found", because the router had no basename. <a href="https://github.com/indetailsgroup-hue/monolith-workspace/pull/130" target="_blank" rel="noopener">PR #130</a> merged 03:20Z as <code>12ef2dc6</code>; deploy <a href="https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/36663972596" target="_blank" rel="noopener">run 36663972596</a> succeeded (deployment 6750700437). GitHub reports <code>verified=true</code> for both merge commits and both PR heads (<code>293a2b20</code>, <code>1472311d</code>). Live check 2026-09-30T03:54:55Z: <code>/</code>, <code>/designer/</code>, <code>/docs/</code> and <code>/manifest.webmanifest</code> = 200; a Designer deep link such as <code>/designer/jobs</code> = 404 on the first request, and the site's <code>404.html</code> sends it back into the Designer. Rendered at 03:55:10Z: <code>/</code> shows the Field PWA login, <code>/designer/</code> the workspace with its 3D canvas, <code>/designer/jobs?view=list#top</code> the job board with the URL kept, <code>/docs/</code> chapter 1. Commands: <code>gh run view &lt;run id&gt;</code>, <code>gh api repos/indetailsgroup-hue/monolith-workspace/deployments?environment=github-pages</code>, <code>curl -s -o /dev/null -w %{http_code}</code> per URL, and the page title and text read in a browser</td></tr>
+<tr><td>Real-cut gates: 0/4</td><td><code>node scripts/readiness-status.mjs --json</code>, run 29 Sep</td></tr>
+</tbody></table></div>
+<p><strong>Not yet confirmed:</strong> whether the Supabase project we will use has every migration applied, whether server-side RLS behaves as the source says, and whether the data relationships and revisions are enough for the pilot. So "the database is ready" is not yet established.</p>
+<h2>3. WP0 — Owner decisions first</h2>
+<div class="tablewrap"><table><thead><tr><th>#</th><th>Decision</th><th>Why</th></tr></thead><tbody>
+<tr><td>0.1</td><td>Which Supabase project to use</td><td>Source references two projects</td></tr>
+<tr><td>0.2</td><td>Confirm where each site lives</td><td>Live since 30 Sep (PR #127, PR #130): Field PWA at <code>/</code>, Designer at <code>/designer/</code>, docs at <code>/docs/</code>. The owner still confirms this layout for the pilot</td></tr>
+<tr><td>0.3</td><td>Which house is the pilot</td><td>Continue house-01 or start a new one</td></tr>
+<tr><td>0.4</td><td>The 3–5 users and reviewers</td><td>Sales, designer, factory, finance</td></tr>
+<tr><td>0.5</td><td>Policy for real customer data (PII)</td><td>What may be stored on the server</td></tr>
+<tr><td>0.6</td><td>Whether to re-enable realtime on <code>jobs</code></td><td>A security decision under 0173 F6</td></tr>
+</tbody></table></div>
+<h2>4. WP1 — Environment and deploy (2.75–3.75 engineer-days)</h2>
+<div class="tablewrap"><table><thead><tr><th>Task</th><th>Days</th><th>Done when</th></tr></thead><tbody>
+<tr><td>1.1 Compare the server's applied migrations with source and name the owner of each secret, <strong>without renumbering files</strong></td><td>1–1.5</td><td>Migration and secret-owner lists match reality</td></tr>
+<tr><td>1.2 Fix the Pages collision</td><td><strong>Done 30 Sep:</strong> PR #127 merged and deployed; the in-app 404 on <code>/designer/</code> it exposed was fixed in PR #130, also deployed; URLs checked 03:55Z (section 2). 0.25, kept in the WP1 total as effort spent</td><td><code>/</code>, <code>/designer/</code> and <code>/docs/</code> all load: met on 30 Sep</td></tr>
+<tr><td>1.3 Configure auth redirects, TLS and the pilot env</td><td>0.5</td><td>Login and logout work from another machine</td></tr>
+<tr><td>1.4 Rehearse backup and restore for both the DB and storage objects</td><td>1–1.5</td><td>A successful restore is recorded</td></tr>
+</tbody></table></div>
+<p><strong>Decision after WP1:</strong> re-estimate the scope and budget of WP2–WP4 from what WP1 found.</p>
+<h2>5. WP2 — Daph organisation and users (2–3 engineer-days)</h2>
+<div class="tablewrap"><table><thead><tr><th>Task</th><th>Days</th><th>Done when</th></tr></thead><tbody>
+<tr><td>2.1 Create the Daph org and site with a reviewed seed (no self-serve signup yet)</td><td>0.5</td><td>The org exists in the database</td></tr>
+<tr><td>2.2 Invite 3–5 users and set roles in <code>org_members</code></td><td>0.5</td><td>Everyone logs in and sees the Daph org</td></tr>
+<tr><td>2.3 Make <code>tenantStore</code> read orgs from the server and disable in-browser org creation</td><td>0.5–1</td><td>The org survives clearing the browser</td></tr>
+<tr><td>2.4 <strong>(Mandatory)</strong> Cross-organisation read and write tests</td><td>0.5–1</td><td>A user from another org is refused both reads and writes</td></tr>
+</tbody></table></div>
+<h2>6. WP3 — Jobs and quotations on the server (6–9.5 engineer-days)</h2>
+<div class="tablewrap"><table><thead><tr><th>Task</th><th>Days</th><th>Done when</th></tr></thead><tbody>
+<tr><td>3.0 Review the data model: customer (<code>customer_id</code>), creator (<code>created_by</code>), revisions, and saving a header with its lines so both succeed or both fail</td><td>0.5–1</td><td>A written conclusion on which schema or RPC additions are needed</td></tr>
+<tr><td>3.1 <code>jobStore</code> writes to <code>jobs</code> and <code>job_panels</code></td><td>1.5–2.5</td><td>A job created on machine A appears on machine B</td></tr>
+<tr><td>3.2 Realtime uses the logged-in client, filters by <code>org_id</code>, plus a migration re-enabling realtime (needs 0.6 first)</td><td>1</td><td>Updates reach other machines; other orgs receive no events</td></tr>
+<tr><td>3.3 <code>quotationStore</code> writes to <code>quotations</code> and <code>quotation_lines</code> with revision and approver</td><td>1.5–2.5</td><td>Quotations and revisions survive a reload</td></tr>
+<tr><td>3.4 Link the Field-app project to the job and quotation</td><td>0.5–1</td><td>From a project you can reach its job and quotation</td></tr>
+<tr><td>3.5 Rewrite <code>e2e/jobs-quotation.spec.ts</code> to use the server instead of localStorage</td><td>0.5–1</td><td>Passes in CI</td></tr>
+<tr><td>3.6 Use the user's session instead of the anon key; fix or remove <code>useCreateJobSubmit.ts</code></td><td>0.5</td><td>Every database write carries the user's JWT</td></tr>
+</tbody></table></div>
+<h2>7. WP4 — Design to packet under NO_CUT (2–3.5 engineer-days)</h2>
+<div class="tablewrap"><table><thead><tr><th>Task</th><th>Days</th><th>Done when</th></tr></thead><tbody>
+<tr><td>4.1 Save the 3D design against the job and revision on the server</td><td>1–1.5</td><td>The same design opens on another machine</td></tr>
+<tr><td>4.2 Pick one packet path (the existing packet or <code>server/src/packet/v2</code>) and upload through factory-api</td><td>0.5–1</td><td>A server receipt with a hash</td></tr>
+<tr><td>4.3 <strong>(Mandatory)</strong> Test a valid file, a file that must be refused, and a tampered file</td><td>0.5–1</td><td>The tampered file is actually refused. A NO_CUT label alone does not count as a pass</td></tr>
+</tbody></table></div>
+<h2>8. WP5 — Factory-side preparation (5–9 Daph staff-days, can run in parallel)</h2>
+<div class="tablewrap"><table><thead><tr><th>Task</th><th>Days</th><th>Done when</th></tr></thead><tbody>
+<tr><td>5.1 Map material and hardware codes used by the pilot house</td><td>1.5–2.5</td><td>Every part of the pilot house has a code in the system</td></tr>
+<tr><td>5.2 Train 3–5 users</td><td>1–2</td><td>Each person can do their own steps</td></tr>
+<tr><td>5.3 Discrepancy record form (per section 8 of the v0.1.1 report)</td><td>0.5</td><td>Ready to use</td></tr>
+<tr><td>5.4 Rehearse the 17-step UAT (per section 9 of the v0.1.1 report)</td><td>1.5–3</td><td>Every step has evidence; a skipped step never counts as passed</td></tr>
+<tr><td>5.5 Rehearse reconciling finance against the existing ledger</td><td>0.5–1</td><td>Totals match, or the difference is explained</td></tr>
+</tbody></table></div>
+<h2>9. WP6 — Contingency for defects found in UAT (3–6 engineer-days)</h2>
+<h2>10. Days and budget</h2>
+<div class="tablewrap"><table><thead><tr><th>Item</th><th>Days</th><th>Rate (assumed)</th><th>THB</th></tr></thead><tbody>
+<tr><td>Engineering WP1–WP4</td><td>12.75–19.75</td><td>3,000–5,000 per day</td><td>38,250–98,750</td></tr>
+<tr><td>Contingency WP6</td><td>3–6</td><td>3,000–5,000 per day</td><td>9,000–30,000</td></tr>
+<tr><td>Staff WP5 (if hired)</td><td>5–9</td><td>1,000–2,000 per day</td><td>5,000–18,000</td></tr>
+<tr><td><strong>One-off total</strong></td><td>engineering 15.75–25.75</td><td></td><td><strong>52,250–146,750</strong></td></tr>
+<tr><td>Monthly running cost</td><td></td><td></td><td>900–2,000 per month</td></tr>
+</tbody></table></div>
+<ul>
+<li>The rates are <strong>assumptions</strong>; no market survey was done. At 5,000–8,000 THB/day the total is roughly 84,000–224,000 THB.</li>
+<li>If the owner does the work with AI, <strong>outside labour costs fall, but time and running costs remain.</strong></li>
+<li>Excludes VAT, travel, existing salaries, machinery and PITR (add a monthly cost if needed).</li>
+</ul>
+<h2>11. Two delivery points</h2>
+<p><strong>Point 1 — Ready to start D1</strong> (about 4–6 weeks with one engineer working continuously)</p>
+<ol>
+<li>Two users on two machines see the same jobs, quotations and designs.</li>
+<li>The cross-organisation tests (2.4) and the tampered-packet test (4.3) pass.</li>
+<li>A restore rehearsal succeeds.</li>
+<li>The 17-step UAT rehearsal is complete, with evidence for every step.</li>
+</ol>
+<p><strong>Point 2 — D1 complete</strong> (depends on the factory and site schedule, outside Point 1's timeframe)</p>
+<ol>
+<li>The real house has a full record: quotation → design → BOM and cut list → packet (NO_CUT) → QC → installation → handover → finance reconciliation.</li>
+<li>Every discrepancy between the system and the factory has a disposition.</li>
+<li>The pilot's data is used to estimate the next stage (real cutting) instead of guessing.</li>
+</ol>
+<h2>12. Out of scope</h2>
+<p>Real cutting and machine calibration, ADR-064 sign-off, S17 closure, inventory, full accounting (including the tables <code>src/hooks/useAccounting.ts</code> references), payroll, BI, IoT and Phase 15.</p>
+<h2>13. Revision history</h2>
+<p><strong>v0.1 → v0.2</strong> (after a review checked against code <code>5dc57e10</code>)</p>
+<ol>
+<li>Added 3.0 (data-model review) and 3.6 (authentication), after finding that <code>useCreateJobSubmit.ts</code> uses the anon key.</li>
+<li>The cross-organisation test (2.4) and tampered-packet test (4.3) are mandatory, at least 0.5 days each.</li>
+<li>Separated "ready to start D1" from "D1 complete".</li>
+<li>Totals now match the subtasks; 3.2 re-estimated from 0.25 to 1 day.</li>
+<li>1.1 does not renumber the <code>0190</code> migrations.</li>
+<li>WP1 is a decision point before committing to WP2–WP4.</li>
+<li>Reworded "doing it yourself with AI costs almost no cash" to "outside labour costs fall, but time and running costs remain".</li>
+</ol>
+<p><strong>v0.2 second revision</strong> (after the second review)</p>
+<ol>
+<li>1.2 changed from "Done" to "Code fixed in PR #127, awaiting merge and deploy", because the live system has not changed yet.</li>
+<li>The Pages 404 fact now cites run links, the deployed SHAs and a timestamped live check instead of a narrative.</li>
+<li>References to the v0.1 report (outside the repo) now link to v0.1.1 in the same PR.</li>
+</ol>
+<p><strong>v0.2 third revision</strong> (30 Sep, after PR #127 and PR #130 were deployed)</p>
+<ol>
+<li>1.2 changed from "awaiting merge and deploy" to done, with the merge, deploy-run and live-check evidence in section 2.</li>
+<li>Section 2 keeps the <code>5dc57e10</code> Pages fact as history and adds a row for the fix; WP0 0.2 now records the layout that is live.</li>
+<li>The readiness report v0.1.1 is unchanged. It stays a retrospective at baseline <code>5dc57e10</code>, and its evidence hashes still match that commit.</li>
+<li>No figure changed: the 0.25 day for 1.2 stays in the WP1 total and the one-off total is still 52,250–146,750 THB.</li>
+</ol>
+</main></body>
+</html>
