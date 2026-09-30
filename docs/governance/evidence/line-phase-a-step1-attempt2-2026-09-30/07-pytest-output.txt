@@ -1,0 +1,362 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.2, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\thai3\determined-williams (2)\MONOLITH Repair Intelligence\.worktrees\repair-intelligence-phase0-trust\tests\line-oa-commerce\py
+configfile: pytest.ini
+plugins: anyio-4.12.0, hypothesis-6.155.5
+collected 72 items
+
+tests\line-oa-commerce\py\test_access_control_config_smoke.py .......... [ 13%]
+..............................FFFFFFFF.                                  [ 68%]
+tests\line-oa-commerce\py\test_ai_action_audit_property.py s             [ 69%]
+tests\line-oa-commerce\py\test_failure_handling_property.py s            [ 70%]
+tests\line-oa-commerce\py\test_idempotent_processing_property.py s       [ 72%]
+tests\line-oa-commerce\py\test_outbound_status_recording_property.py s   [ 73%]
+tests\line-oa-commerce\py\test_reply_push_fallback_property.py s         [ 75%]
+tests\line-oa-commerce\py\test_rls_read_scoping_property.py .            [ 76%]
+tests\line-oa-commerce\py\test_schema_structure_smoke.py .............   [ 94%]
+tests\line-oa-commerce\py\test_secret_non_exposure_property.py s         [ 95%]
+tests\line-oa-commerce\py\test_signature_verification_property.py .      [ 97%]
+tests\line-oa-commerce\py\test_strict_consistency_property.py s          [ 98%]
+tests\line-oa-commerce\py\test_unauthorized_mutation_denial_property.py s [100%]
+
+================================== FAILURES ===================================
+_____________ test_clients_hold_no_write_grants[line_oa_channels] _____________
+
+db_conn = <psycopg.Connection [INTRANS] (host=127.0.0.1 port=55442 database=postgres) at 0x1480467e7b0>
+table = 'line_oa_channels'
+
+    @pytest.mark.parametrize("table", ALL_TABLES)
+    def test_clients_hold_no_write_grants(db_conn: Any, table: str) -> None:
+        """authenticated / anon / public must hold no INSERT/UPDATE/DELETE/TRUNCATE grant.
+    
+        Confirms write access is not handed to clients at the table-grant level
+        either; every mutation flows through SECURITY DEFINER RPCs.
+        """
+        rows = _fetchall(
+            db_conn,
+            """
+            select grantee, privilege_type
+            from information_schema.role_table_grants
+            where table_schema = 'public'
+              and table_name = %s
+              and grantee = any(%s)
+              and privilege_type = any(%s)
+            """,
+            (table, sorted(CLIENT_ROLES | {"authenticated"}), sorted(WRITE_PRIVILEGES)),
+        )
+        offending = [(g, p) for g, p in rows]
+>       assert not offending, (
+            f"public.{table} grants write privileges to client roles: {offending}; "
+            f"writes must be RPC-only"
+        )
+E       AssertionError: public.line_oa_channels grants write privileges to client roles: [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ('authenticated', 'DELETE'), ('authenticated', 'TRUNCATE'), ('service_role', 'INSERT'), ('service_role', 'UPDATE'), ('service_role', 'DELETE'), ('service_role', 'TRUNCATE')]; writes must be RPC-only
+E       assert not [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ...]
+
+tests\line-oa-commerce\py\test_access_control_config_smoke.py:292: AssertionError
+__________ test_clients_hold_no_write_grants[line_oa_conversations] ___________
+
+db_conn = <psycopg.Connection [INTRANS] (host=127.0.0.1 port=55442 database=postgres) at 0x1480467e7b0>
+table = 'line_oa_conversations'
+
+    @pytest.mark.parametrize("table", ALL_TABLES)
+    def test_clients_hold_no_write_grants(db_conn: Any, table: str) -> None:
+        """authenticated / anon / public must hold no INSERT/UPDATE/DELETE/TRUNCATE grant.
+    
+        Confirms write access is not handed to clients at the table-grant level
+        either; every mutation flows through SECURITY DEFINER RPCs.
+        """
+        rows = _fetchall(
+            db_conn,
+            """
+            select grantee, privilege_type
+            from information_schema.role_table_grants
+            where table_schema = 'public'
+              and table_name = %s
+              and grantee = any(%s)
+              and privilege_type = any(%s)
+            """,
+            (table, sorted(CLIENT_ROLES | {"authenticated"}), sorted(WRITE_PRIVILEGES)),
+        )
+        offending = [(g, p) for g, p in rows]
+>       assert not offending, (
+            f"public.{table} grants write privileges to client roles: {offending}; "
+            f"writes must be RPC-only"
+        )
+E       AssertionError: public.line_oa_conversations grants write privileges to client roles: [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ('authenticated', 'DELETE'), ('authenticated', 'TRUNCATE'), ('service_role', 'INSERT'), ('service_role', 'UPDATE'), ('service_role', 'DELETE'), ('service_role', 'TRUNCATE')]; writes must be RPC-only
+E       assert not [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ...]
+
+tests\line-oa-commerce\py\test_access_control_config_smoke.py:292: AssertionError
+_________ test_clients_hold_no_write_grants[line_oa_inbound_messages] _________
+
+db_conn = <psycopg.Connection [INTRANS] (host=127.0.0.1 port=55442 database=postgres) at 0x1480467e7b0>
+table = 'line_oa_inbound_messages'
+
+    @pytest.mark.parametrize("table", ALL_TABLES)
+    def test_clients_hold_no_write_grants(db_conn: Any, table: str) -> None:
+        """authenticated / anon / public must hold no INSERT/UPDATE/DELETE/TRUNCATE grant.
+    
+        Confirms write access is not handed to clients at the table-grant level
+        either; every mutation flows through SECURITY DEFINER RPCs.
+        """
+        rows = _fetchall(
+            db_conn,
+            """
+            select grantee, privilege_type
+            from information_schema.role_table_grants
+            where table_schema = 'public'
+              and table_name = %s
+              and grantee = any(%s)
+              and privilege_type = any(%s)
+            """,
+            (table, sorted(CLIENT_ROLES | {"authenticated"}), sorted(WRITE_PRIVILEGES)),
+        )
+        offending = [(g, p) for g, p in rows]
+>       assert not offending, (
+            f"public.{table} grants write privileges to client roles: {offending}; "
+            f"writes must be RPC-only"
+        )
+E       AssertionError: public.line_oa_inbound_messages grants write privileges to client roles: [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ('authenticated', 'DELETE'), ('authenticated', 'TRUNCATE'), ('service_role', 'INSERT'), ('service_role', 'UPDATE'), ('service_role', 'DELETE'), ('service_role', 'TRUNCATE')]; writes must be RPC-only
+E       assert not [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ...]
+
+tests\line-oa-commerce\py\test_access_control_config_smoke.py:292: AssertionError
+________ test_clients_hold_no_write_grants[line_oa_outbound_messages] _________
+
+db_conn = <psycopg.Connection [INTRANS] (host=127.0.0.1 port=55442 database=postgres) at 0x1480467e7b0>
+table = 'line_oa_outbound_messages'
+
+    @pytest.mark.parametrize("table", ALL_TABLES)
+    def test_clients_hold_no_write_grants(db_conn: Any, table: str) -> None:
+        """authenticated / anon / public must hold no INSERT/UPDATE/DELETE/TRUNCATE grant.
+    
+        Confirms write access is not handed to clients at the table-grant level
+        either; every mutation flows through SECURITY DEFINER RPCs.
+        """
+        rows = _fetchall(
+            db_conn,
+            """
+            select grantee, privilege_type
+            from information_schema.role_table_grants
+            where table_schema = 'public'
+              and table_name = %s
+              and grantee = any(%s)
+              and privilege_type = any(%s)
+            """,
+            (table, sorted(CLIENT_ROLES | {"authenticated"}), sorted(WRITE_PRIVILEGES)),
+        )
+        offending = [(g, p) for g, p in rows]
+>       assert not offending, (
+            f"public.{table} grants write privileges to client roles: {offending}; "
+            f"writes must be RPC-only"
+        )
+E       AssertionError: public.line_oa_outbound_messages grants write privileges to client roles: [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ('authenticated', 'DELETE'), ('authenticated', 'TRUNCATE'), ('service_role', 'INSERT'), ('service_role', 'UPDATE'), ('service_role', 'DELETE'), ('service_role', 'TRUNCATE')]; writes must be RPC-only
+E       assert not [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ...]
+
+tests\line-oa-commerce\py\test_access_control_config_smoke.py:292: AssertionError
+________ test_clients_hold_no_write_grants[line_oa_customer_identity] _________
+
+db_conn = <psycopg.Connection [INTRANS] (host=127.0.0.1 port=55442 database=postgres) at 0x1480467e7b0>
+table = 'line_oa_customer_identity'
+
+    @pytest.mark.parametrize("table", ALL_TABLES)
+    def test_clients_hold_no_write_grants(db_conn: Any, table: str) -> None:
+        """authenticated / anon / public must hold no INSERT/UPDATE/DELETE/TRUNCATE grant.
+    
+        Confirms write access is not handed to clients at the table-grant level
+        either; every mutation flows through SECURITY DEFINER RPCs.
+        """
+        rows = _fetchall(
+            db_conn,
+            """
+            select grantee, privilege_type
+            from information_schema.role_table_grants
+            where table_schema = 'public'
+              and table_name = %s
+              and grantee = any(%s)
+              and privilege_type = any(%s)
+            """,
+            (table, sorted(CLIENT_ROLES | {"authenticated"}), sorted(WRITE_PRIVILEGES)),
+        )
+        offending = [(g, p) for g, p in rows]
+>       assert not offending, (
+            f"public.{table} grants write privileges to client roles: {offending}; "
+            f"writes must be RPC-only"
+        )
+E       AssertionError: public.line_oa_customer_identity grants write privileges to client roles: [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ('authenticated', 'DELETE'), ('authenticated', 'TRUNCATE'), ('service_role', 'INSERT'), ('service_role', 'UPDATE'), ('service_role', 'DELETE'), ('service_role', 'TRUNCATE')]; writes must be RPC-only
+E       assert not [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ...]
+
+tests\line-oa-commerce\py\test_access_control_config_smoke.py:292: AssertionError
+________ test_clients_hold_no_write_grants[line_oa_message_templates] _________
+
+db_conn = <psycopg.Connection [INTRANS] (host=127.0.0.1 port=55442 database=postgres) at 0x1480467e7b0>
+table = 'line_oa_message_templates'
+
+    @pytest.mark.parametrize("table", ALL_TABLES)
+    def test_clients_hold_no_write_grants(db_conn: Any, table: str) -> None:
+        """authenticated / anon / public must hold no INSERT/UPDATE/DELETE/TRUNCATE grant.
+    
+        Confirms write access is not handed to clients at the table-grant level
+        either; every mutation flows through SECURITY DEFINER RPCs.
+        """
+        rows = _fetchall(
+            db_conn,
+            """
+            select grantee, privilege_type
+            from information_schema.role_table_grants
+            where table_schema = 'public'
+              and table_name = %s
+              and grantee = any(%s)
+              and privilege_type = any(%s)
+            """,
+            (table, sorted(CLIENT_ROLES | {"authenticated"}), sorted(WRITE_PRIVILEGES)),
+        )
+        offending = [(g, p) for g, p in rows]
+>       assert not offending, (
+            f"public.{table} grants write privileges to client roles: {offending}; "
+            f"writes must be RPC-only"
+        )
+E       AssertionError: public.line_oa_message_templates grants write privileges to client roles: [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ('authenticated', 'DELETE'), ('authenticated', 'TRUNCATE'), ('service_role', 'INSERT'), ('service_role', 'UPDATE'), ('service_role', 'DELETE'), ('service_role', 'TRUNCATE')]; writes must be RPC-only
+E       assert not [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ...]
+
+tests\line-oa-commerce\py\test_access_control_config_smoke.py:292: AssertionError
+______________ test_clients_hold_no_write_grants[line_oa_orders] ______________
+
+db_conn = <psycopg.Connection [INTRANS] (host=127.0.0.1 port=55442 database=postgres) at 0x1480467e7b0>
+table = 'line_oa_orders'
+
+    @pytest.mark.parametrize("table", ALL_TABLES)
+    def test_clients_hold_no_write_grants(db_conn: Any, table: str) -> None:
+        """authenticated / anon / public must hold no INSERT/UPDATE/DELETE/TRUNCATE grant.
+    
+        Confirms write access is not handed to clients at the table-grant level
+        either; every mutation flows through SECURITY DEFINER RPCs.
+        """
+        rows = _fetchall(
+            db_conn,
+            """
+            select grantee, privilege_type
+            from information_schema.role_table_grants
+            where table_schema = 'public'
+              and table_name = %s
+              and grantee = any(%s)
+              and privilege_type = any(%s)
+            """,
+            (table, sorted(CLIENT_ROLES | {"authenticated"}), sorted(WRITE_PRIVILEGES)),
+        )
+        offending = [(g, p) for g, p in rows]
+>       assert not offending, (
+            f"public.{table} grants write privileges to client roles: {offending}; "
+            f"writes must be RPC-only"
+        )
+E       AssertionError: public.line_oa_orders grants write privileges to client roles: [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ('authenticated', 'DELETE'), ('authenticated', 'TRUNCATE'), ('service_role', 'INSERT'), ('service_role', 'UPDATE'), ('service_role', 'DELETE'), ('service_role', 'TRUNCATE')]; writes must be RPC-only
+E       assert not [('anon', 'INSERT'), ('anon', 'UPDATE'), ('anon', 'DELETE'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'UPDATE'), ...]
+
+tests\line-oa-commerce\py\test_access_control_config_smoke.py:292: AssertionError
+____________ test_clients_hold_no_write_grants[line_oa_audit_log] _____________
+
+db_conn = <psycopg.Connection [INTRANS] (host=127.0.0.1 port=55442 database=postgres) at 0x1480467e7b0>
+table = 'line_oa_audit_log'
+
+    @pytest.mark.parametrize("table", ALL_TABLES)
+    def test_clients_hold_no_write_grants(db_conn: Any, table: str) -> None:
+        """authenticated / anon / public must hold no INSERT/UPDATE/DELETE/TRUNCATE grant.
+    
+        Confirms write access is not handed to clients at the table-grant level
+        either; every mutation flows through SECURITY DEFINER RPCs.
+        """
+        rows = _fetchall(
+            db_conn,
+            """
+            select grantee, privilege_type
+            from information_schema.role_table_grants
+            where table_schema = 'public'
+              and table_name = %s
+              and grantee = any(%s)
+              and privilege_type = any(%s)
+            """,
+            (table, sorted(CLIENT_ROLES | {"authenticated"}), sorted(WRITE_PRIVILEGES)),
+        )
+        offending = [(g, p) for g, p in rows]
+>       assert not offending, (
+            f"public.{table} grants write privileges to client roles: {offending}; "
+            f"writes must be RPC-only"
+        )
+E       AssertionError: public.line_oa_audit_log grants write privileges to client roles: [('anon', 'INSERT'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'TRUNCATE'), ('service_role', 'INSERT'), ('service_role', 'TRUNCATE')]; writes must be RPC-only
+E       assert not [('anon', 'INSERT'), ('anon', 'TRUNCATE'), ('authenticated', 'INSERT'), ('authenticated', 'TRUNCATE'), ('service_role', 'INSERT'), ('service_role', 'TRUNCATE')]
+
+tests\line-oa-commerce\py\test_access_control_config_smoke.py:292: AssertionError
+=================================== PASSES ====================================
+- generated xml file: C:\Users\thai3\determined-williams (2)\MONOLITH Repair Intelligence\.worktrees\repair-intelligence-phase0-trust\docs\governance\evidence\line-phase-a-step1-attempt2-2026-09-30\07-pytest-junit.xml -
+=========================== short test summary info ===========================
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_rls_enabled_on_every_table[line_oa_channels]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_rls_enabled_on_every_table[line_oa_conversations]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_rls_enabled_on_every_table[line_oa_inbound_messages]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_rls_enabled_on_every_table[line_oa_outbound_messages]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_rls_enabled_on_every_table[line_oa_customer_identity]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_rls_enabled_on_every_table[line_oa_message_templates]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_rls_enabled_on_every_table[line_oa_orders]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_rls_enabled_on_every_table[line_oa_audit_log]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_select_policy_is_gated_to_authenticated[line_oa_channels]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_select_policy_is_gated_to_authenticated[line_oa_conversations]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_select_policy_is_gated_to_authenticated[line_oa_inbound_messages]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_select_policy_is_gated_to_authenticated[line_oa_outbound_messages]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_select_policy_is_gated_to_authenticated[line_oa_customer_identity]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_select_policy_is_gated_to_authenticated[line_oa_message_templates]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_select_policy_is_gated_to_authenticated[line_oa_orders]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_select_policy_is_gated_to_authenticated[line_oa_audit_log]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_site_scoped_select_policy_reuses_c12_helpers[line_oa_conversations]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_site_scoped_select_policy_reuses_c12_helpers[line_oa_inbound_messages]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_site_scoped_select_policy_reuses_c12_helpers[line_oa_outbound_messages]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_site_scoped_select_policy_reuses_c12_helpers[line_oa_customer_identity]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_site_scoped_select_policy_reuses_c12_helpers[line_oa_orders]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_site_scoped_select_policy_reuses_c12_helpers[line_oa_audit_log]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_governance_only_select_policy_reuses_c12_helper[line_oa_channels]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_open_read_select_policy_present[line_oa_message_templates]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_client_write_policies[line_oa_channels]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_client_write_policies[line_oa_conversations]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_client_write_policies[line_oa_inbound_messages]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_client_write_policies[line_oa_outbound_messages]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_client_write_policies[line_oa_customer_identity]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_client_write_policies[line_oa_message_templates]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_client_write_policies[line_oa_orders]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_client_write_policies[line_oa_audit_log]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_policy_targets_client_roles[line_oa_channels]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_policy_targets_client_roles[line_oa_conversations]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_policy_targets_client_roles[line_oa_inbound_messages]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_policy_targets_client_roles[line_oa_outbound_messages]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_policy_targets_client_roles[line_oa_customer_identity]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_policy_targets_client_roles[line_oa_message_templates]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_policy_targets_client_roles[line_oa_orders]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_policy_targets_client_roles[line_oa_audit_log]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_channels_store_vault_references_only
+PASSED tests\line-oa-commerce\py\test_rls_read_scoping_property.py::test_rls_read_scoping
+PASSED tests\line-oa-commerce\py\test_schema_structure_smoke.py::test_all_eight_line_oa_tables_exist
+PASSED tests\line-oa-commerce\py\test_schema_structure_smoke.py::test_enum_exists_with_documented_values[line_oa_conversation_status-labels0]
+PASSED tests\line-oa-commerce\py\test_schema_structure_smoke.py::test_enum_exists_with_documented_values[line_oa_send_type-labels1]
+PASSED tests\line-oa-commerce\py\test_schema_structure_smoke.py::test_enum_exists_with_documented_values[line_oa_outbound_status-labels2]
+PASSED tests\line-oa-commerce\py\test_schema_structure_smoke.py::test_conversations_partial_unique_index_exists
+PASSED tests\line-oa-commerce\py\test_schema_structure_smoke.py::test_unique_constraint_exists[line_oa_inbound_messages_webhook_event_id_uniq-columns0]
+PASSED tests\line-oa-commerce\py\test_schema_structure_smoke.py::test_unique_constraint_exists[line_oa_customer_identity_user_vertical_uniq-columns1]
+PASSED tests\line-oa-commerce\py\test_schema_structure_smoke.py::test_unique_constraint_exists[line_oa_orders_webhook_event_id_uniq-columns2]
+PASSED tests\line-oa-commerce\py\test_schema_structure_smoke.py::test_unique_constraint_exists[line_oa_message_templates_key_vertical_uniq-columns3]
+PASSED tests\line-oa-commerce\py\test_schema_structure_smoke.py::test_check_constraint_exists[line_oa_customer_identity_match_confidence_range_chk-match_confidence]
+PASSED tests\line-oa-commerce\py\test_schema_structure_smoke.py::test_check_constraint_exists[line_oa_orders_origin_channel_id_chk-origin_channel_id]
+PASSED tests\line-oa-commerce\py\test_schema_structure_smoke.py::test_match_confidence_check_covers_full_range
+PASSED tests\line-oa-commerce\py\test_schema_structure_smoke.py::test_channels_store_vault_references
+PASSED tests\line-oa-commerce\py\test_signature_verification_property.py::test_signature_verification
+SKIPPED [1] tests\line-oa-commerce\py\test_ai_action_audit_property.py:376: required routine public.resolve_actor() is not installed; skipping AI-action audit property test.
+SKIPPED [1] tests\line-oa-commerce\py\test_failure_handling_property.py:314: required routine public.resolve_actor() is not installed; skipping failure-handling property test.
+SKIPPED [1] tests\line-oa-commerce\py\test_idempotent_processing_property.py:258: public.resolve_actor() is not installed; skipping idempotent-processing property test.
+SKIPPED [1] tests\line-oa-commerce\py\test_outbound_status_recording_property.py:308: required routine public.resolve_actor() is not installed; skipping outbound status-recording property test.
+SKIPPED [1] tests\\line-oa-commerce\\py\\test_reply_push_fallback_property.py:279: required routine public.resolve_actor() is not installed; skipping reply\u2192push fallback property test.
+SKIPPED [1] tests\line-oa-commerce\py\test_secret_non_exposure_property.py:440: required routine public.resolve_actor() is not installed; skipping secret-non-exposure property test.
+SKIPPED [1] tests\line-oa-commerce\py\test_strict_consistency_property.py:284: public.resolve_actor() is not installed; skipping strict-consistency property test.
+SKIPPED [1] tests\line-oa-commerce\py\test_unauthorized_mutation_denial_property.py:323: required routine public.resolve_actor() is not installed; skipping unauthorized-mutation denial property test.
+FAILED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_clients_hold_no_write_grants[line_oa_channels]
+FAILED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_clients_hold_no_write_grants[line_oa_conversations]
+FAILED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_clients_hold_no_write_grants[line_oa_inbound_messages]
+FAILED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_clients_hold_no_write_grants[line_oa_outbound_messages]
+FAILED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_clients_hold_no_write_grants[line_oa_customer_identity]
+FAILED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_clients_hold_no_write_grants[line_oa_message_templates]
+FAILED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_clients_hold_no_write_grants[line_oa_orders]
+FAILED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_clients_hold_no_write_grants[line_oa_audit_log]
+=================== 8 failed, 56 passed, 8 skipped in 4.30s ===================
