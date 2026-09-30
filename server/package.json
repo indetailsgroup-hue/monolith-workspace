@@ -34,7 +34,7 @@
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/node": "^20.10.0",
-    "@types/pdfkit": "^0.17.4",
+    "@types/pdfkit": "^0.17.6",
     "@types/uuid": "^10.0.0",
     "@types/yauzl": "^2.10.3",
     "@types/yazl": "^3.3.1",
