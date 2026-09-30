@@ -165,7 +165,7 @@ def _require_dependencies(conn: Any) -> None:
             "public.line_oa_verify_signature(text,text,text)",
             "public.line_oa_resolve_channel(text)",
             "public.line_oa_resolve_customer_identity(text,text)",
-            "public.resolve_actor()",
+            "public.resolve_actor(text)",
         ):
             cur.execute("select to_regprocedure(%s)", (sig,))
             if cur.fetchone()[0] is None:

@@ -217,7 +217,7 @@ def _require_dependencies(conn: Any) -> None:
             "public.get_active_site_codes()",
             "public.has_site_access(text)",
             "public.is_governance_role()",
-            "public.resolve_actor()",
+            "public.resolve_actor(text)",
             "auth.jwt()",
         ):
             cur.execute("select to_regprocedure(%s)", (proc,))
