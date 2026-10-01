@@ -2,11 +2,13 @@
 # trust-kernel-verify.yml — Shadow Trust-Ready complete-output CI gate (plan Task 12
 # Step 4; design §16, §17.1).
 #
-#  ##  UNVERIFIED  ##
-#  THIS WORKFLOW HAS NEVER RUN. The trust-kernel worktree is NOT pushed to any
-#  remote, so GitHub Actions has never executed a single line of this file. It is
-#  authored from the local command contracts (plan Step 6) but is UNPROVEN on CI
-#  infrastructure. Do NOT claim it "works" or "passes".
+#  ##  PARTLY VERIFIED  ##
+#  First GitHub Actions runs (PR #133): 2026-09-30 run 36748427202 and 2026-10-01
+#  run 36795389505. Every job was discovered and the toolchain resolved, but the
+#  final gate has never passed: repair_phase0_containment needs migration 0170,
+#  and the shadow E2E secrets and the evidence signer are not provisioned. Step 2
+#  below (deliberate violations on CI) has not been done. Do NOT claim this gate
+#  "works" or "passes".
 #
 #  FIRST PUSHER MUST, before trusting this gate:
 #    1. Push the branch and open the Actions run; confirm every job is discovered

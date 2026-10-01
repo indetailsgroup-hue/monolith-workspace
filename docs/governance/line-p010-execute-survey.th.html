@@ -26,7 +26,7 @@
 </tr></thead><tbody>
 <tr>
 <td>fn_prod_curated</td>
-<td>23 จุดในฟังก์ชัน DEFINER อื่น (0107 ถึง 0143) ไม่มีผู้เรียกจาก edge หรือ frontend</td>
+<td>23 จุดในฟังก์ชัน DEFINER อื่น (0107 ถึง 0143) ไม่มีผู้เรียกจาก edge หรือ frontend (ตรวจซ้ำ R1)</td>
 <td>revoke จาก PUBLIC เท่านั้น (<code>0107_factory_group_milestones.sql:61</code>)</td>
 <td>ไม่มี (<code>0107_factory_group_milestones.sql:50-60</code>)</td>
 <td>สูง (ข้ออนุมาน): ใส่ข้อความ push สถานะ pending เข้ากลุ่มลูกค้าของโปรเจกต์ โดยผู้เรียกกำหนดข้อความใน slot เองได้ หากรู้ project id</td>
@@ -49,7 +49,7 @@
 <td>fn_lead_followup_sweep</td>
 <td>cron job wf-lead-followup-sweep (<code>0116_lead_followup.sql:192</code>)</td>
 <td>service_role เท่านั้น (<code>0116_lead_followup.sql:223-225</code>)</td>
-<td>ไม่มี</td>
+<td>ไม่มี (นิยามล่าสุด <code>0130_scrutiny5_fixes.sql:332-387</code> ไม่ตรวจผู้เรียก)</td>
 <td>กลาง (ข้ออนุมาน): ใครก็สั่งให้ส่ง follow-up และ escalate lead ได้ทันที</td>
 </tr>
 <tr>
@@ -69,34 +69,34 @@
 <tr>
 <td>fn_welcome_on_group_bind</td>
 <td>trigger trg_welcome_group_bind (<code>0136_customer_docs.sql:185-186</code>)</td>
-<td>ไม่มี และ PUBLIC ก็มี EXECUTE</td>
+<td>ไม่มี (ตรวจซ้ำ R2) และ PUBLIC ก็มี EXECUTE (<code>evidence/line-p010-catalog-2026-09-30/08-analysis.txt:135</code>)</td>
 <td>ใช้ได้เฉพาะเป็น trigger</td>
 <td>ต่ำ (ข้ออนุมาน): PostgreSQL ไม่ยอมให้เรียก trigger function ตรง (ไม่ได้ทดสอบในรอบนี้)</td>
 </tr>
 <tr>
 <td>rpc_send_line_outbound</td>
-<td>ไม่มีผู้เรียกจริง (ทราบตั้งแต่ 26 กรกฎาคม 2026)</td>
+<td>ไม่มีผู้เรียกจริง (ทราบตั้งแต่ 26 กรกฎาคม 2026; ตรวจซ้ำ R1)</td>
 <td>authenticated (<code>00000000000040_line_oa_send_outbound.sql:442</code>)</td>
 <td>is_governance_role, has_site_access, 42501</td>
 <td>ต่ำ (ข้ออนุมาน): เนื้อฟังก์ชันปฏิเสธผู้เรียกที่ไม่มีสิทธิ์ site</td>
 </tr>
 <tr>
 <td>rpc_create_line_order</td>
-<td>ไม่มีในโค้ด</td>
+<td>ไม่มีในโค้ด (ตรวจซ้ำ R1)</td>
 <td>authenticated (<code>00000000000050_line_oa_create_order.sql:643</code>)</td>
 <td>is_governance_role, has_site_access, 42501</td>
 <td>ต่ำ (ข้ออนุมาน)</td>
 </tr>
 <tr>
 <td>rpc_evaluate_identity_merge_candidate</td>
-<td>ไม่มีในโค้ด</td>
+<td>ไม่มีในโค้ด (ตรวจซ้ำ R1)</td>
 <td>authenticated (<code>00000000000021_line_oa_identity_merge_candidate.sql:265</code>)</td>
 <td>is_governance_role, 42501</td>
 <td>ต่ำ (ข้ออนุมาน)</td>
 </tr>
 <tr>
 <td>rpc_resolve_conversation_site</td>
-<td>ไม่มีในโค้ด</td>
+<td>ไม่มีในโค้ด (ตรวจซ้ำ R1)</td>
 <td>authenticated (<code>00000000000030_line_oa_resolve_conversation_site.sql:254</code>)</td>
 <td>is_governance_role, has_site_access, 42501</td>
 <td>ต่ำ (ข้ออนุมาน)</td>
@@ -151,6 +151,8 @@
 <td>ต่ำ (ข้ออนุมาน)</td>
 </tr>
 </tbody></table></div>
+<p>ตรวจซ้ำ 2 ตุลาคม 2026 ที่ <code>48b72d4c7</code> ในขอบเขตเดียวกับหัวข้อวิธีสำรวจ (ไม่รวม migration และเทสต์):</p>
+<ul><li>R1: <code>git grep -nF &lt;ชื่อ routine&gt; -- src server packages supabase/functions tools e2e scripts</code> พบเพียง <code>scripts/line-b12-catalog.sql</code> ซึ่งเป็นรายการของ catalog query ไม่ใช่การเรียก และ comment ใน <code>supabase/functions/_shared/line-oa/autonomyGate.ts</code>, <code>brand-voice.ts</code>, <code>templates.ts</code> และ <code>supabase/functions/_shared/order-adapter.ts</code></li><li>R2: <code>git grep -nE &quot;grant execute on function public.fn_welcome_on_group_bind&quot; -- supabase/migrations</code> ที่ <code>48b72d4c7</code> ไม่พบผล</li></ul>
 <p>&quot;ต่ำ&quot; หมายความเพียงว่าเนื้อฟังก์ชันดูเหมือนจะปฏิเสธ anon ยังขึ้นกับว่า guard แต่ละตัวถูกต้องทุกเส้นทางหรือไม่ ซึ่งรอบนี้ไม่ได้ทดสอบ</p>
 <h2>ยังไม่ทราบ</h2>
 <ul><li>ผู้เรียกนอก repository เช่น แอปอื่น, script, ระบบอัตโนมัติ หรือเครื่องมือที่ใช้ด้วยมือ การไม่พบผู้เรียกใน repo ไม่ได้พิสูจน์ว่าไม่มี</li><li>Production: ยังไม่ได้อ่าน grant EXECUTE, default ACL และการตั้งค่า schema ที่ PostgREST เปิด ข้อมูลในรายงานนี้ไม่ได้แสดงว่า production เปิดฟังก์ชันเหล่านี้</li><li>พฤติกรรมจริงของ guard แต่ละตัวเมื่อ anon เรียก และการที่ PostgreSQL ปฏิเสธการเรียก trigger function ตรงในระบบนี้: ยังไม่ได้รัน</li></ul>

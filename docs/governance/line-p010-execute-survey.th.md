@@ -24,17 +24,17 @@
 
 | Routine | ผู้เรียกใน repo (พบจริง) | Grant ที่เขียนใน migration | การตรวจผู้เรียกในเนื้อฟังก์ชัน | ความเสี่ยงต่อ anon |
 |---|---|---|---|---|
-| fn_prod_curated | 23 จุดในฟังก์ชัน DEFINER อื่น (0107 ถึง 0143) ไม่มีผู้เรียกจาก edge หรือ frontend | revoke จาก PUBLIC เท่านั้น (`0107_factory_group_milestones.sql:61`) | ไม่มี (`0107_factory_group_milestones.sql:50-60`) | สูง (ข้ออนุมาน): ใส่ข้อความ push สถานะ pending เข้ากลุ่มลูกค้าของโปรเจกต์ โดยผู้เรียกกำหนดข้อความใน slot เองได้ หากรู้ project id |
+| fn_prod_curated | 23 จุดในฟังก์ชัน DEFINER อื่น (0107 ถึง 0143) ไม่มีผู้เรียกจาก edge หรือ frontend (ตรวจซ้ำ R1) | revoke จาก PUBLIC เท่านั้น (`0107_factory_group_milestones.sql:61`) | ไม่มี (`0107_factory_group_milestones.sql:50-60`) | สูง (ข้ออนุมาน): ใส่ข้อความ push สถานะ pending เข้ากลุ่มลูกค้าของโปรเจกต์ โดยผู้เรียกกำหนดข้อความใน slot เองได้ หากรู้ project id |
 | fn_line_handle_group_event | rpc_ingest_line_webhook เท่านั้น (`0097_line_group_bot_flows.sql:435`) | revoke จาก PUBLIC เท่านั้น (`0097_line_group_bot_flows.sql:285`) | ไม่มี และถือว่าผู้เรียกตรวจลายเซ็น LINE แล้ว | สูง (ข้ออนุมาน): เรียกตรงจะข้ามการตรวจลายเซ็น การผูกกลุ่มต้องใช้รหัสผูกที่ถูกต้องและ postback อนุมัติต้องใช้ approve token แต่ event join, leave และ member ไม่มีด่าน เช่น event leave ปลอมจะ archive กลุ่มที่ผูกแล้วได้ถ้ารู้ LINE group id (`0107_factory_group_milestones.sql:235-240`) |
 | line_oa_resolve_customer_identity | edge customer-design-view (index.ts:102 ผ่าน service client) และฟังก์ชัน ingest, order, approval | revoke จาก PUBLIC เท่านั้น (`00000000000020_line_oa_identity_resolution.sql:135`) | ไม่มี | กลาง (ข้ออนุมาน): สร้างแถว identity ให้ LINE user id ใดก็ได้ และคืน customer id |
-| fn_lead_followup_sweep | cron job wf-lead-followup-sweep (`0116_lead_followup.sql:192`) | service_role เท่านั้น (`0116_lead_followup.sql:223-225`) | ไม่มี | กลาง (ข้ออนุมาน): ใครก็สั่งให้ส่ง follow-up และ escalate lead ได้ทันที |
+| fn_lead_followup_sweep | cron job wf-lead-followup-sweep (`0116_lead_followup.sql:192`) | service_role เท่านั้น (`0116_lead_followup.sql:223-225`) | ไม่มี (นิยามล่าสุด `0130_scrutiny5_fixes.sql:332-387` ไม่ตรวจผู้เรียก) | กลาง (ข้ออนุมาน): ใครก็สั่งให้ส่ง follow-up และ escalate lead ได้ทันที |
 | rpc_sweep_line_session_timeouts | ไม่มีผู้เรียกใน repo นอกจากเทสต์ | revoke จาก PUBLIC (`00000000000061_line_oa_session_timeout_sweep.sql:136`) แล้วให้ service_role เท่านั้น (`00000000000061_line_oa_session_timeout_sweep.sql:141`) | ไม่มี | ต่ำ (ข้ออนุมาน): ปิดเฉพาะ session ที่เกินเวลาแล้ว |
 | rpc_ingest_line_webhook | edge line-webhook (index.ts:201 ด้วย service key) | authenticated และ service_role (`00000000000022_line_oa_ingest_webhook.sql:344-356`) | ตรวจลายเซ็น HMAC ของ LINE ก่อนเขียนทุกอย่าง | ต่ำ (ข้ออนุมาน): ปลอมได้ต้องรู้ channel secret แต่การเรียกที่ถูกปฏิเสธยังเพิ่มแถว audit 1 แถว |
-| fn_welcome_on_group_bind | trigger trg_welcome_group_bind (`0136_customer_docs.sql:185-186`) | ไม่มี และ PUBLIC ก็มี EXECUTE | ใช้ได้เฉพาะเป็น trigger | ต่ำ (ข้ออนุมาน): PostgreSQL ไม่ยอมให้เรียก trigger function ตรง (ไม่ได้ทดสอบในรอบนี้) |
-| rpc_send_line_outbound | ไม่มีผู้เรียกจริง (ทราบตั้งแต่ 26 กรกฎาคม 2026) | authenticated (`00000000000040_line_oa_send_outbound.sql:442`) | is_governance_role, has_site_access, 42501 | ต่ำ (ข้ออนุมาน): เนื้อฟังก์ชันปฏิเสธผู้เรียกที่ไม่มีสิทธิ์ site |
-| rpc_create_line_order | ไม่มีในโค้ด | authenticated (`00000000000050_line_oa_create_order.sql:643`) | is_governance_role, has_site_access, 42501 | ต่ำ (ข้ออนุมาน) |
-| rpc_evaluate_identity_merge_candidate | ไม่มีในโค้ด | authenticated (`00000000000021_line_oa_identity_merge_candidate.sql:265`) | is_governance_role, 42501 | ต่ำ (ข้ออนุมาน) |
-| rpc_resolve_conversation_site | ไม่มีในโค้ด | authenticated (`00000000000030_line_oa_resolve_conversation_site.sql:254`) | is_governance_role, has_site_access, 42501 | ต่ำ (ข้ออนุมาน) |
+| fn_welcome_on_group_bind | trigger trg_welcome_group_bind (`0136_customer_docs.sql:185-186`) | ไม่มี (ตรวจซ้ำ R2) และ PUBLIC ก็มี EXECUTE (`evidence/line-p010-catalog-2026-09-30/08-analysis.txt:135`) | ใช้ได้เฉพาะเป็น trigger | ต่ำ (ข้ออนุมาน): PostgreSQL ไม่ยอมให้เรียก trigger function ตรง (ไม่ได้ทดสอบในรอบนี้) |
+| rpc_send_line_outbound | ไม่มีผู้เรียกจริง (ทราบตั้งแต่ 26 กรกฎาคม 2026; ตรวจซ้ำ R1) | authenticated (`00000000000040_line_oa_send_outbound.sql:442`) | is_governance_role, has_site_access, 42501 | ต่ำ (ข้ออนุมาน): เนื้อฟังก์ชันปฏิเสธผู้เรียกที่ไม่มีสิทธิ์ site |
+| rpc_create_line_order | ไม่มีในโค้ด (ตรวจซ้ำ R1) | authenticated (`00000000000050_line_oa_create_order.sql:643`) | is_governance_role, has_site_access, 42501 | ต่ำ (ข้ออนุมาน) |
+| rpc_evaluate_identity_merge_candidate | ไม่มีในโค้ด (ตรวจซ้ำ R1) | authenticated (`00000000000021_line_oa_identity_merge_candidate.sql:265`) | is_governance_role, 42501 | ต่ำ (ข้ออนุมาน) |
+| rpc_resolve_conversation_site | ไม่มีในโค้ด (ตรวจซ้ำ R1) | authenticated (`00000000000030_line_oa_resolve_conversation_site.sql:254`) | is_governance_role, has_site_access, 42501 | ต่ำ (ข้ออนุมาน) |
 | rpc_sync_line_forecast | ไม่มีในโค้ด | authenticated (`00000000000060_line_oa_sync_forecast.sql:278`) | is_governance_role, has_site_access, 42501 | ต่ำ (ข้ออนุมาน) |
 | rpc_request_customer_acceptance | field-app LeadPanel.tsx:43 | authenticated และ service_role (`0098_customer_acceptance_flex.sql:110-113`) | is_governance_role, has_site_access | ต่ำ (ข้ออนุมาน) |
 | rpc_field_assign_lead | ไม่มีในโค้ด | authenticated และ service_role (`0116_lead_followup.sql:205-220`) | auth.uid, is_governance_role, has_site_access | ต่ำ (ข้ออนุมาน) |
@@ -42,6 +42,11 @@
 | rpc_field_set_lead_source | field-app SaleHome.tsx:42 | authenticated และ service_role (`0151_turnkey_lead_source.sql:264-273`) | is_governance_role, has_site_access | ต่ำ (ข้ออนุมาน) |
 | rpc_field_send_photo_to_customer | field-app PhotoSendCard.tsx:33 | authenticated และ service_role (`0134_sender_image.sql:69-74`) | is_governance_role, has_site_access | ต่ำ (ข้ออนุมาน) |
 | rpc_field_shop_drawing_revision | field-app DesignerToolsPanel.tsx:69 | authenticated และ service_role (`0143_qms_factory_design.sql:478-487`) | is_governance_role, has_site_access | ต่ำ (ข้ออนุมาน) |
+
+ตรวจซ้ำ 2 ตุลาคม 2026 ที่ `48b72d4c7` ในขอบเขตเดียวกับหัวข้อวิธีสำรวจ (ไม่รวม migration และเทสต์):
+
+- R1: `git grep -nF <ชื่อ routine> -- src server packages supabase/functions tools e2e scripts` พบเพียง `scripts/line-b12-catalog.sql` ซึ่งเป็นรายการของ catalog query ไม่ใช่การเรียก และ comment ใน `supabase/functions/_shared/line-oa/autonomyGate.ts`, `brand-voice.ts`, `templates.ts` และ `supabase/functions/_shared/order-adapter.ts`
+- R2: `git grep -nE "grant execute on function public.fn_welcome_on_group_bind" -- supabase/migrations` ที่ `48b72d4c7` ไม่พบผล
 
 "ต่ำ" หมายความเพียงว่าเนื้อฟังก์ชันดูเหมือนจะปฏิเสธ anon ยังขึ้นกับว่า guard แต่ละตัวถูกต้องทุกเส้นทางหรือไม่ ซึ่งรอบนี้ไม่ได้ทดสอบ
 

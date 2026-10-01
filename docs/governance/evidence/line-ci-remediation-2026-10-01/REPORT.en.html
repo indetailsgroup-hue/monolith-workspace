@@ -52,7 +52,7 @@
 </tr></thead><tbody>
 <tr>
 <td>4 governance documents (TH and EN, with HTML)</td>
-<td>permission matrix, session report, EXECUTE survey and integration follow-up: citations, Thai sentence boundaries and two rewordings (ledger below)</td>
+<td>permission matrix, session report, EXECUTE survey and integration follow-up: citations, Thai sentence boundaries and several rewordings (ledger rows 20, 22, 25, 27 and 39, plus the dash in the matrix CALLER-UNKNOWN item; the count was corrected on 2 October 2026)</td>
 </tr>
 <tr>
 <td>8 sealed evidence bundles</td>
@@ -204,7 +204,7 @@
 <td>21</td>
 <td><code>line-outbound-phase0-session-report.en.md:75</code></td>
 <td>A customer consent column and check</td>
-<td>table definition <code>00000000000002_line_oa_schema.sql:108</code>, staff column <code>0088_identity_binding_lifecycle.sql:10</code> and a re-check command at a97c3c847 (TH and EN)</td>
+<td>table definition <code>00000000000002_line_oa_schema.sql:108</code>, staff column <code>0088_identity_binding_lifecycle.sql:10</code> and a re-check command at a97c3c847 (TH and EN). Disclosed on 2 October 2026: the wording narrowed from the whole schema to the <code>line_oa_customer_identity</code> table, and the re-check covered only <code>supabase/migrations</code> and <code>supabase/functions</code>; <code>src/mcp/pdpa.ts:34</code> holds an MCP-layer PDPA consent gate that the LINE send path does not use</td>
 </tr>
 <tr>
 <td>22</td>
@@ -252,7 +252,7 @@
 <td>29–35</td>
 <td><code>line-p010-execute-survey.th.md</code> lines 24, 27, 30, 31, 32, 33 and 34</td>
 <td>A callers, grants or guards per the survey search</td>
-<td>shorthand migration citations in the 18-row routine table expanded to resolvable file:line (TH and EN); cited lines checked</td>
+<td>shorthand migration citations in the 18-row routine table expanded to resolvable file:line (TH and EN); cited lines checked. Correction of 2 October 2026: those citations point to grant, revoke or trigger lines and do not by themselves show the absence of callers, guards or grants; round 2 adds that evidence in the survey (re-checks R1 and R2 at 48b72d4c7 and the defining lines <code>0130_scrutiny5_fixes.sql:332-387</code>)</td>
 </tr>
 <tr>
 <td>36</td>
@@ -339,6 +339,9 @@
 <p>The commit goes through <code>commit-ci-remediation.sh</code>, which stages only the approved paths, runs the gate on the staged blobs, and commits only on exit 0 together with a transcript in <code>docs/governance/evidence/line-ci-remediation-commit-2026-10-01/</code>.</p>
 <h2>Limits and what remains open</h2>
 <ul><li>Storage: the Supabase CLI is not installed here, so the config change is untested locally under <code>supabase start</code>. A throwaway stack with storage-api already ran <code>trust_kernel_containment</code> 16/16 (<code>line-p012-green-2026-09-30/07b-ci-suite-runner/trust_kernel_containment.tap</code>). The next CI run is the test.</li><li>Shadow E2E: this session cannot provide the environment. The five secrets are credentials and must be set by the owner in the repository settings; the stack they point to needs a deployment, which is not approved. Until then the E2E job and the final gate stay red, now with a message naming the missing secrets.</li><li><code>repair_phase0_containment</code> still needs migration 0170 from main (PRD §8 Q7), so DB Verify and edge + pgTAP stay red on that suite.</li><li>Pull request #133 has merge conflicts, so the main-branch <code>pull_request</code> workflows have not run on it; only push-triggered workflows have.</li><li>The amended bundles include reviewer-accepted evidence (for example da252d18a); each amendment needs re-review.</li></ul>
+<h2>Corrections and updates (2 October 2026)</h2>
+<p>A builder-side pre-review of 48b72d4c7 (not an independent acceptance) found the points below. Round 2 corrects them in commit-ready files; the sealed REPORTs of the eight bundles are not amended again.</p>
+<ul><li>The 16 amended REPORTs say the pre-amendment hashes are in this bundle. That became true only in round 2, when <code>12-pre-amendment-hashes.txt</code> was added: 32 entries, each pre-amendment hash equal to the base blob at a97c3c847 (<code>12-pre-amendment-hashes.txt:38</code>).</li><li>The commit message of 48b72d4c7 and the docstring of <code>tools/amend_bundles.py</code> say real absence claims gained citations. Ledger rows 2, 4, 11 and 38 were cleared by sentence splitting only, and rows 29–35 by citations to grant lines (round-2 evidence in the survey, see row 29–35).</li><li>Two weak citations stay as written in sealed REPORTs: <code>line-p010-catalog-2026-09-30/08-analysis.txt:237</code> is the trigger-section header (the noaction lines are 238–245), and the p012-green Thai table cites line 66 for both the identity check and the overload check (the overload check is <code>0199_line_oa_restrict_definer_execute.sql:75</code>).</li><li>The CI facts in this report (runs 36748427202 and 36748427203) are excerpted with their URLs in <code>line-p012b-round2-2026-10-02/01-github-actions-excerpt.txt:1</code>, together with run 36795389505 at 48b72d4c7, where claim linters passed and <code>trust_kernel_containment</code> ran 16/16 with storage enabled.</li><li>The negative-control script asserts only a non-zero gate exit; <code>11-gate-negative-controls.txt:5</code> onward shows which check fired in each case.</li><li>Found after the commit: on this host the commit-mode gate (<code>gate-ci-remediation.py --rev</code>) stops with &quot;Filename too long&quot; unless Git runs with <code>core.longpaths=true</code>; with it, the gate passed all 104 checks on 48b72d4c7.</li></ul>
 <h2>Runner history</h2>
 <p>Three earlier runs of the runner in this round were set aside outside the repository. Run 1 called the WSL bash for the preflight simulation (exit 127), and its credential scan flagged the pre-existing local connection string. Run 2 still called the WSL bash. Both were runner defects, fixed in <code>tools/run-ci-remediation.sh</code> (explicit bash path; a narrow exception that is always reported). Run 3 passed every step but its runner carried an inaccurate comment about the cause of runs 1 and 2; the comment was corrected and the runner re-run. This bundle holds run 4, in which all 17 recorded steps exit 0.</p>
 <p>The first commit attempt through the wrapper was blocked by the gate: the negative-control script held a credential-shaped probe URI as a literal. Nothing was committed and the index was restored. The probe is now assembled at run time, the controls were re-run (<code>11-gate-negative-controls.txt</code>), and the bundle was resealed. The second attempt was also blocked by the gate, because the Thai edition of this paragraph put a negation and a file name in one sentence; the sentences were split before the third attempt.</p>

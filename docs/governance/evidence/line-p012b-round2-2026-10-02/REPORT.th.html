@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>การแก้ก่อนส่งตรวจของ 0199 — รอบ 2</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>การแก้ข้อบกพร่องก่อนส่งตรวจของ 0199 และการแก้ CI (รอบ 2)</h1>
+<p>วันที่: 2 ตุลาคม 2026 (เวลาไทย เวลาใน runner เป็น UTC) ฐาน: 48b72d4c7c3f0d3bab197cb19483ca973807add2 บน codex/repair-intelligence-phase0-trust สถานะ: สร้างในเครื่องแล้ว รอผู้ตรวจอิสระ migration 0199 ไม่เปลี่ยน รอบนี้แก้ suite เทสต์ 3 ชุด เอกสาร และ comment ใน workflow 1 จุด</p>
+<h2>การอนุมัติของเจ้าของ (2 ตุลาคม 2026)</h2>
+<p>เจ้าของอนุมัติทั้ง 3 ข้อในรอบเดียว และให้ push หลัง gate ผ่าน คือ แก้ข้อบกพร่องที่พบใน 48b72d4c7 ทำให้เทสต์ของ 0199 เข้มขึ้นพร้อมหลักฐาน RED/GREEN ใหม่บน stack ชั่วคราว และแก้ matrix doc ที่ล้าสมัย</p>
+<h2>ที่มาของข้อค้นพบ</h2>
+<p>agent 2 ตัวที่ไม่มี context ของผู้สร้างตรวจ a97c3c847 และ 48b72d4c7 แบบอ่านอย่างเดียวฝั่งผู้สร้าง นี่คือการหาข้อบกพร่องฝั่งผู้สร้าง ไม่ใช่การตรวจรับอิสระ ผู้ตรวจอิสระยังต้องตรวจทั้งสอง commit และรอบนี้ ผู้สร้างตรวจซ้ำข้อสำคัญด้วยตัวเองก่อนแก้</p>
+<h2>ข้อค้นพบและการจัดการ</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>ข้อค้นพบ</th>
+<th>การจัดการ</th>
+</tr></thead><tbody>
+<tr>
+<td>assertion 54 ของ suite matrix ล้มไม่ได้ เพราะทุก probe rollback เสมอ</td>
+<td>แก้แล้ว: assertion 54 เรียกแบบ anon ด้วยค่าจริงกับฟังก์ชันเขียน 4 ตัว และเทียบ fingerprint ของ 7 ตารางภายในแต่ละ probe ก่อน rollback ส่วน RED-A แสดงว่าทั้ง 4 ตัวเขียนข้อมูลได้เมื่อไม่มี 0199</td>
+</tr>
+<tr>
+<td><code>order by 1</code> ในเทสต์ fail-closed เรียงตามค่าคงที่</td>
+<td>แก้แล้ว: aggregate ทั้งสองเรียงตามค่าจริง</td>
+</tr>
+<tr>
+<td>assertion &quot;ไม่เปลี่ยนหลัง error&quot; ของ fail-closed พิสูจน์แค่ว่ามี error</td>
+<td>ปรับคำอธิบายให้ตรงกับสิ่งที่ตรวจ (สถานะหลัง rollback ถึง savepoint เท่ากับก่อนรัน) และหัวไฟล์ระบุว่า atomicity เป็นความหมายของ statement ใน PostgreSQL ส่วน owner ยังไม่ได้เทียบ</td>
+</tr>
+<tr>
+<td>กรณีไม่พบ identity (55000) ยังไม่มีเทสต์</td>
+<td>แก้แล้ว: case F เปลี่ยนชื่อ identity หนึ่งตัวออกไปและคาด 55000 ส่วน mutant C (ตัดการตรวจ identity) ล้มตรง 2 ข้อของ case F</td>
+</tr>
+<tr>
+<td>assertion 41 และ 43 ของ suite เดิมผ่านเพราะ ACL ของฟังก์ชัน แต่คำอธิบายพูดถึง guard ใน body</td>
+<td>แก้แล้ว: ทั้งสองข้อต้องได้ข้อความ &quot;permission denied for function rpc_record_line_send_result&quot; และ RED-A แสดงว่าทั้งสองล้มเมื่อไม่มี 0199 (<code>line-p012b-red-a-2026-10-02/04c-original.tap:73</code>, <code>line-p012b-red-a-2026-10-02/04c-original.tap:78</code>)</td>
+</tr>
+<tr>
+<td>assertion 55–60 ของ suite matrix ยอมรับ error ใดก็ได้ที่ไม่ใช่ ACL</td>
+<td>แก้แล้ว: แยกประเภท schema denial และฟังก์ชันที่หาไม่เจอออก ไม่นับเป็น &quot;body reached&quot;</td>
+</tr>
+<tr>
+<td>เทสต์ 69 เรียก owner ของ migration ว่า principal ของ cron</td>
+<td>ปรับคำ: เป็น principal ที่สมมติ และไม่ได้ตรวจ cron.job</td>
+</tr>
+<tr>
+<td>หัวไฟล์ suite matrix บอกว่าทุกข้อล้มใน RED</td>
+<td>แก้แล้ว: ระบุ regression control 4 ข้อ (9, 35, 36, 46)</td>
+</tr>
+<tr>
+<td>matrix doc มีฐานเก่า คำว่า DECIDE ย่อหน้า SENDER และหัวข้อ &quot;รันในเครื่องแล้ว&quot; ที่ล้าสมัย</td>
+<td>แก้แล้วทั้ง TH และ EN แผนตรวจรับมีคอลัมน์สถานะ พร้อมข้อที่ทำบางส่วนและข้อที่ยังค้าง</td>
+</tr>
+<tr>
+<td>48b72d4c7: REPORT ที่แก้ 16 ไฟล์ชี้ไปยัง hash ก่อนแก้ที่ชุดหลักฐานยังไม่มี</td>
+<td>แก้แล้ว: <code>line-ci-remediation-2026-10-01/12-pre-amendment-hashes.txt:38</code> (32 รายการ ทุกตัวเท่ากับ blob ฐาน)</td>
+</tr>
+<tr>
+<td>48b72d4c7: แถวใน survey ผ่าน linter ด้วยการอ้างบรรทัด grant แทนหลักฐานเรื่องผู้เรียก guard หรือ grant</td>
+<td>แก้แล้ว: survey อ้างการตรวจซ้ำ R1 และ R2 ที่ 48b72d4c7 และบรรทัดนิยาม <code>0130_scrutiny5_fixes.sql:332-387</code> และ ledger ของการแก้ระบุแล้ว</td>
+</tr>
+<tr>
+<td>48b72d4c7: จำนวนการปรับถ้อยคำ ขอบเขต consent ที่แคบลง <code>src/mcp/pdpa.ts:34</code> การอ้างที่อ่อน และ longpaths</td>
+<td>เปิดเผยในหัวข้อการแก้ไขของ <code>line-ci-remediation-2026-10-01/REPORT.th.md</code> ส่วน REPORT ที่ปิดผนึกของ 8 ชุดไม่แก้ซ้ำ</td>
+</tr>
+<tr>
+<td>ข้ออ้างเรื่อง CI ไม่มีหลักฐานที่เก็บไว้</td>
+<td>แก้แล้ว: <code>01-github-actions-excerpt.txt:1</code> มี URL, head SHA, ผลของ job, hash ของ log และบรรทัดที่ตรงสำหรับ run 36748427202, 36748427203 และ 36795389505</td>
+</tr>
+<tr>
+<td>ป้ายใน workflow ของ trust kernel บอกว่า workflow ไม่เคยรัน</td>
+<td>แก้แล้ว: ป้ายระบุ 2 run และระบุว่า final gate ยังไม่เคยผ่าน</td>
+</tr>
+<tr>
+<td>membership แบบ SET อย่างเดียวจะผ่านการตรวจ (<code>has_function_privilege</code> นับเฉพาะสิทธิ์ที่ inherit)</td>
+<td>ยังค้าง: เป็นกรณีทางทฤษฎี catalog ในเครื่องของ 3 role ไม่มี membership แบบนี้ (รายการ membership ที่ <code>line-p010-catalog-2026-09-30/08-analysis.txt:107</code>) production ต้องตรวจ catalog แยก</td>
+</tr>
+<tr>
+<td>หัวไฟล์ 0199 บอกว่า migration ก่อนหน้าถอนสิทธิ์จาก PUBLIC เท่านั้น แต่ 0193 และ 0194 ถอนจาก anon และ authenticated ด้วย</td>
+<td>ค้างโดยตั้งใจ: แก้ byte ของ 0199 จะทำให้หลักฐานของ commit ที่รอตรวจใช้ไม่ได้ จึงแจ้งผู้ตรวจไว้ที่นี่</td>
+</tr>
+<tr>
+<td>ทางที่ PUBLIC ยังเหลือสิทธิ์ใน 0199 ยังไม่มี case เฉพาะ</td>
+<td>ยังค้าง: ซ้ำซ้อนเมื่อยังมี anon เพราะ anon inherit จาก PUBLIC</td>
+</tr>
+<tr>
+<td>main ใช้เลข migration 0199 ขึ้นไปแล้ว และแถว KEEP อาจทำให้ 0199 หยุดใน production ถ้าสิทธิ์มาจาก PUBLIC อย่างเดียว</td>
+<td>เป็นความเสี่ยงของการรวม branch (PRD §8 ข้อ 7) และการตรวจ catalog ของ production</td>
+</tr>
+</tbody></table></div>
+<h2>สิ่งที่เปลี่ยน</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Path</th>
+<th>การเปลี่ยน</th>
+</tr></thead><tbody>
+<tr>
+<td><code>supabase/tests/line_oa_definer_execute_matrix.sql</code></td>
+<td>probe การเขียนพร้อม fingerprint ของตาราง (assertion 54) แยกประเภทผลให้เข้มขึ้น และแก้หัวไฟล์กับคำอธิบาย ยังคง 82 assertion</td>
+</tr>
+<tr>
+<td><code>supabase/tests/line_oa_definer_execute_fail_closed.sql</code></td>
+<td>เรียงตามค่า คำอธิบายตรงความจริง และ case F ใหม่ จาก 23 เป็น 27 assertion</td>
+</tr>
+<tr>
+<td><code>supabase/tests/line_outbound_claim_record.sql</code></td>
+<td>assertion 41 และ 43 ต้องได้ข้อความ ACL ของฟังก์ชัน แก้ comment และบรรทัด 429 ไม่เลื่อน</td>
+</tr>
+<tr>
+<td><code>docs/governance/line-b12-permission-matrix.{en,th}.md</code></td>
+<td>แก้ส่วนที่ล้าสมัย เพิ่มคอลัมน์สถานะ และหลักฐานรอบ 2</td>
+</tr>
+<tr>
+<td><code>docs/governance/line-p010-execute-survey.{en,th}.md</code></td>
+<td>การตรวจซ้ำ R1 และ R2 และบรรทัดนิยามสำหรับช่องที่อ้างว่าไม่มี</td>
+</tr>
+<tr>
+<td><code>docs/governance/evidence/line-ci-remediation-2026-10-01/</code></td>
+<td>เพิ่ม hash ก่อนแก้ แก้ REPORT ส่วน <code>SHA256SUMS.run</code> คงเดิม</td>
+</tr>
+<tr>
+<td><code>docs/PRD-LINE-OA.{en,th}.md</code></td>
+<td>ฉบับ 1.15: ผล GitHub Actions หลักฐานรอบ 2 และตัวเลข</td>
+</tr>
+<tr>
+<td><code>.github/workflows/trust-kernel-verify.yml</code></td>
+<td>แก้เฉพาะ comment ป้าย</td>
+</tr>
+</tbody></table></div>
+<p>HTML ที่เปลี่ยนทั้งหมดเท่ากับผล renderer ของ repository จาก Markdown ของตัวเอง</p>
+<h2>หลักฐาน</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>ชุด</th>
+<th>ผล</th>
+</tr></thead><tbody>
+<tr>
+<td><code>line-p012b-red-a-2026-10-02</code></td>
+<td>193 migration โดยข้าม 0199 suite matrix ล้มตรง 47 ข้อ (4–8, 10–34, 37–45, 47–54) assertion 54 แสดงการเขียน 4 แบบ suite เดิมล้มตรงข้อ 23, 41 และ 43 P0-10 133/133 fail-closed ของ 0198 28/28 Python 72/72 claim race ซ้ำ 0 และ verifier ผ่าน 21 ข้อ</td>
+</tr>
+<tr>
+<td><code>line-p012b-red-mutants-2026-10-02</code></td>
+<td>มี 0199: mutant B ล้มตรง 12 ข้อ (3–6, 8–11, 13–16) mutant C ล้มตรง 2 ข้อ (23, 24) mutant ทั้งสองแค่ลบบรรทัด และ verifier ผ่าน 18 ข้อ</td>
+</tr>
+<tr>
+<td><code>line-p012b-green-2026-10-02</code></td>
+<td>194 migration: matrix 82/82, fail-closed ของ 0199 27/27, suite เดิม 107/107, P0-10 133/133, fail-closed ของ 0198 28/28, Python 72/72, claim race ซ้ำ 0 runner 14 suite ในเครื่องล้มเฉพาะ repair_phase0_containment และ verifier ผ่าน 25 ข้อ</td>
+</tr>
+<tr>
+<td><code>line-p012b-round2-2026-10-02</code></td>
+<td>รายงานนี้ ข้อความที่คัดจาก GitHub Actions สคริปต์แก้ไขและสคริปต์สร้าง REPLAY gate และ wrapper สำหรับ commit ส่วน <code>02-gate-negative-controls.txt:10</code> เป็นต้นไปแสดงว่า gate ยอมรับชุดที่อนุมัติ และปฏิเสธการละเมิดที่ตั้งใจใส่ 8 แบบ แต่ละแบบด้วยข้อตรวจที่ตั้งใจไว้</td>
+</tr>
+</tbody></table></div>
+<p>ชุดของ runner ทุกชุดบันทึกคำสั่ง เวลา UTC exit code สำเนา source fingerprint ของ catalog ก่อนและหลังเทสต์ การถอด container และการสแกนข้อมูลลับระหว่างรันพร้อม positive control และ runner เขียน <code>SHA256SUMS.run</code> เอง</p>
+<h2>ข้อจำกัด</h2>
+<ul><li>เป็นผลจาก stack ชั่วคราวในเครื่องเท่านั้น GitHub Actions จะรัน suite ที่แก้หลัง push ไม่มีการเข้า production, deploy, รัน cron หรือส่งข้อความจริง</li><li>การตรวจอิสระของ a97c3c847, 48b72d4c7 และรอบนี้ยังค้าง ชุดหลักฐานที่ถูกแก้ต้องตรวจซ้ำ</li><li>ยังห้าม deploy จนกว่าจะได้ caller register ของ ops การยืนยันจาก manufacturing เรื่อง <code>fn_prod_curated</code> การรวม branch (PRD §8 ข้อ 7) และการตรวจ catalog ของ production Phase A ยังเป็น <code>EVIDENCE_INCOMPLETE</code></li></ul>
+</main>
+</body>
+</html>

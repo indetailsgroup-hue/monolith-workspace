@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>0199 pre-review fixes — round 2</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>0199 and CI-remediation pre-review fixes (round 2)</h1>
+<p>Date: 2 October 2026 (Asia/Bangkok; runner times are UTC). Base: 48b72d4c7c3f0d3bab197cb19483ca973807add2 on codex/repair-intelligence-phase0-trust. Status: BUILT LOCALLY, awaiting independent review. Migration 0199 is unchanged; this round changes three test suites, documents and one workflow comment.</p>
+<h2>Owner approval (2 October 2026)</h2>
+<p>The owner approved all three proposed items in one round and a push after the gate passes: fix the defects found in 48b72d4c7, strengthen the 0199 tests with new RED/GREEN evidence on a throwaway stack, and update the stale matrix document.</p>
+<h2>Where the findings came from</h2>
+<p>Two fresh-context agents ran a read-only, builder-side pre-review of a97c3c847 and 48b72d4c7. That is defect hunting by the builder's side, not an independent acceptance; the independent reviewer still has to review both commits and this round. The builder re-checked the main findings before acting on them.</p>
+<h2>Findings and disposition</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Finding</th>
+<th>Disposition</th>
+</tr></thead><tbody>
+<tr>
+<td>0199 matrix suite assertion 54 could not fail, because every probe rolls back</td>
+<td>Fixed: assertion 54 now runs realistic anon calls to four writers and fingerprints seven tables inside each probe before its rollback; RED-A shows all four writing without 0199</td>
+</tr>
+<tr>
+<td>The fail-closed suite's <code>order by 1</code> sorted by a constant</td>
+<td>Fixed: both aggregates order by their values</td>
+</tr>
+<tr>
+<td>The fail-closed &quot;unchanged after the error&quot; assertions only prove that an error happened</td>
+<td>Reworded to say what they check (state after the savepoint rollback equals the pre-state); the header notes that atomicity is PostgreSQL statement semantics; owners are still not compared</td>
+</tr>
+<tr>
+<td>The missing-identity branch (55000) had no test</td>
+<td>Fixed: case F renames one identity away and expects 55000; mutant C (identity check removed) fails exactly case F's two checks</td>
+</tr>
+<tr>
+<td>Original-suite assertions 41 and 43 passed through the function ACL while describing the body guard</td>
+<td>Fixed: both now require the message &quot;permission denied for function rpc_record_line_send_result&quot;, and RED-A shows both failing without 0199 (<code>line-p012b-red-a-2026-10-02/04c-original.tap:73</code>, <code>line-p012b-red-a-2026-10-02/04c-original.tap:78</code>)</td>
+</tr>
+<tr>
+<td>Matrix suite assertions 55–60 accepted any non-ACL error</td>
+<td>Fixed: a schema denial or a missing function is classified separately and no longer counts as &quot;body reached&quot;</td>
+</tr>
+<tr>
+<td>Test 69 called the migration owner the cron principal</td>
+<td>Reworded: assumed principal; cron.job is not inspected</td>
+</tr>
+<tr>
+<td>Matrix-suite header said every assertion fails on RED</td>
+<td>Fixed: names the four regression controls (9, 35, 36, 46)</td>
+</tr>
+<tr>
+<td>Matrix document stale base, DECIDE wording, SENDER paragraph and &quot;executed locally&quot; heading</td>
+<td>Fixed in TH and EN; the acceptance plan now has a status column with partly and open items</td>
+</tr>
+<tr>
+<td>48b72d4c7: the 16 amended REPORTs point to pre-amendment hashes that the bundle did not hold</td>
+<td>Fixed: <code>line-ci-remediation-2026-10-01/12-pre-amendment-hashes.txt:38</code> (32 entries, each equal to the base blob)</td>
+</tr>
+<tr>
+<td>48b72d4c7: survey rows passed the linter on grant citations, not on caller, guard or grant evidence</td>
+<td>Fixed: the survey now cites re-checks R1 and R2 at 48b72d4c7 and the defining lines <code>0130_scrutiny5_fixes.sql:332-387</code>; the remediation ledger says so</td>
+</tr>
+<tr>
+<td>48b72d4c7: rewording count, consent-scope narrowing, <code>src/mcp/pdpa.ts:34</code>, weak citations, longpaths</td>
+<td>Disclosed in a corrections section of <code>line-ci-remediation-2026-10-01/REPORT.en.md</code>; sealed REPORTs of the eight bundles are not amended again</td>
+</tr>
+<tr>
+<td>CI claims carried no captured evidence</td>
+<td>Fixed: <code>01-github-actions-excerpt.txt:1</code> holds URLs, head SHAs, job conclusions, log hashes and matching lines for runs 36748427202, 36748427203 and 36795389505</td>
+</tr>
+<tr>
+<td>Trust-kernel workflow banner said the workflow had never run</td>
+<td>Fixed: the banner states the two runs and that the final gate has not passed</td>
+</tr>
+<tr>
+<td>A SET-only role membership would pass the verification (<code>has_function_privilege</code> counts inherited rights only)</td>
+<td>Open: theoretical; the local catalog shows no such membership for the three roles (membership edges at <code>line-p010-catalog-2026-09-30/08-analysis.txt:107</code>); production needs the separate catalog check</td>
+</tr>
+<tr>
+<td>The 0199 header says earlier migrations revoked only from PUBLIC, while 0193 and 0194 also revoked from anon and authenticated</td>
+<td>Open by choice: changing 0199 bytes would void the evidence of the commit under review; noted here for the reviewer</td>
+</tr>
+<tr>
+<td>The PUBLIC-survives branch of 0199 has no dedicated case</td>
+<td>Open: redundant while anon exists, because anon inherits PUBLIC</td>
+</tr>
+<tr>
+<td>Main already uses migration numbers 0199 and later; KEEP rows could stop 0199 in production if a right exists only through PUBLIC</td>
+<td>Risks for integration (PRD §8 Q7) and the production catalog check</td>
+</tr>
+</tbody></table></div>
+<h2>What changed</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Path</th>
+<th>Change</th>
+</tr></thead><tbody>
+<tr>
+<td><code>supabase/tests/line_oa_definer_execute_matrix.sql</code></td>
+<td>write probes with table fingerprints (assertion 54), stricter outcome classes, header and label fixes; still 82 assertions</td>
+</tr>
+<tr>
+<td><code>supabase/tests/line_oa_definer_execute_fail_closed.sql</code></td>
+<td>value ordering, honest descriptions, new case F; 23 to 27 assertions</td>
+</tr>
+<tr>
+<td><code>supabase/tests/line_outbound_claim_record.sql</code></td>
+<td>assertions 41 and 43 require the function-ACL message; comments updated; line 429 unchanged</td>
+</tr>
+<tr>
+<td><code>docs/governance/line-b12-permission-matrix.{en,th}.md</code></td>
+<td>stale passages fixed; status column; round-2 evidence</td>
+</tr>
+<tr>
+<td><code>docs/governance/line-p010-execute-survey.{en,th}.md</code></td>
+<td>re-checks R1 and R2 and the defining lines for the absence cells</td>
+</tr>
+<tr>
+<td><code>docs/governance/evidence/line-ci-remediation-2026-10-01/</code></td>
+<td>pre-amendment hashes added; REPORT corrections; <code>SHA256SUMS.run</code> unchanged</td>
+</tr>
+<tr>
+<td><code>docs/PRD-LINE-OA.{en,th}.md</code></td>
+<td>edition 1.15: GitHub Actions results, round-2 evidence, counts</td>
+</tr>
+<tr>
+<td><code>.github/workflows/trust-kernel-verify.yml</code></td>
+<td>banner comment only</td>
+</tr>
+</tbody></table></div>
+<p>All changed HTML equals the repository renderer output of its Markdown.</p>
+<h2>Evidence</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Bundle</th>
+<th>Result</th>
+</tr></thead><tbody>
+<tr>
+<td><code>line-p012b-red-a-2026-10-02</code></td>
+<td>193 migrations with 0199 skipped; matrix suite fails exactly 47 assertions (4–8, 10–34, 37–45, 47–54); assertion 54 shows four writes; original suite fails exactly 23, 41 and 43; P0-10 133/133; 0198 fail-closed 28/28; Python 72/72; claim race zero overlap; verifier 21 checks</td>
+</tr>
+<tr>
+<td><code>line-p012b-red-mutants-2026-10-02</code></td>
+<td>with 0199: mutant B fails exactly 12 (3–6, 8–11, 13–16), mutant C exactly 2 (23, 24); both mutants only remove lines; verifier 18 checks</td>
+</tr>
+<tr>
+<td><code>line-p012b-green-2026-10-02</code></td>
+<td>194 migrations; matrix 82/82, 0199 fail-closed 27/27, original 107/107, P0-10 133/133, 0198 fail-closed 28/28, Python 72/72, claim race zero overlap; local fourteen-suite runner fails only repair_phase0_containment; verifier 25 checks</td>
+</tr>
+<tr>
+<td><code>line-p012b-round2-2026-10-02</code></td>
+<td>this report, the GitHub Actions excerpt, the edit and generator scripts, REPLAY, the gate and the commit wrapper; <code>02-gate-negative-controls.txt:10</code> onward shows the gate accepting the approved change set and rejecting eight deliberate violations, each by the check it targets</td>
+</tr>
+</tbody></table></div>
+<p>Each runner bundle records commands, UTC times, exit codes, source copies, a catalog fingerprint before and after the tests, container teardown, and an in-run credential scan with a positive control; <code>SHA256SUMS.run</code> is written by the runner.</p>
+<h2>Limits</h2>
+<ul><li>Local throwaway stacks only; GitHub Actions will run the changed suites after the push. No production access, deployment, cron run or real message.</li><li>Independent review of a97c3c847, 48b72d4c7 and this round is still open; amended bundles need re-review.</li><li>Deployment stays blocked on the ops caller register, the manufacturing sign-off for <code>fn_prod_curated</code>, integration (PRD §8 Q7) and the production catalog check. Phase A remains <code>EVIDENCE_INCOMPLETE</code>.</li></ul>
+</main>
+</body>
+</html>

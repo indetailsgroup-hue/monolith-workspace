@@ -1,0 +1,17 @@
+--- supabase/migrations/0199_line_oa_restrict_definer_execute.sql	2026-09-30 23:44:54.155033300 +0700
++++ docs/governance/evidence/line-p012b-red-mutants-2026-10-02/mutant-0199-no-identity-check.sql	2026-10-02 00:14:45.808448600 +0700
+@@ -59,13 +59,6 @@
+   ];
+ begin
+   -- 1. Every identity exists, and no covered name has an unclassified overload.
+-  select array_agg(sig order by sig) into v_problems
+-  from (select split_part(x, '=', 1) as sig from unnest(v_matrix) x) m
+-  where to_regprocedure('public.' || sig) is null;
+-  if cardinality(v_problems) > 0 then
+-    raise exception 'B12: matrix identity missing: %', array_to_string(v_problems, ', ')
+-      using errcode = 'object_not_in_prerequisite_state';
+-  end if;
+   select array_agg(p.oid::regprocedure::text order by p.oid::regprocedure::text) into v_problems
+   from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public'
+diff_exit=1 (1 = files differ, expected)

@@ -1,0 +1,41 @@
+Round 2 (2 October 2026, Asia/Bangkok; runner times are UTC) - what was run, in order
+
+Base: 48b72d4c7c3f0d3bab197cb19483ca973807add2 on codex/repair-intelligence-phase0-trust.
+
+1. Development only (not evidence): a throwaway dev stack (containers line-p010dev-*,
+   127.0.0.1:55445, cron off) migrated from zero. The three changed suites passed
+   there (matrix 82/82, 0199 fail-closed 27/27, original 107/107). A simulated RED
+   (EXECUTE re-granted to anon/authenticated inside the test transaction) showed
+   assertion 54 failing with four "wrote (rolled back)" results and assertions 41
+   and 43 failing; mutant C failed exactly assertions 23 and 24. The dev stack was
+   removed afterwards (no containers or network left).
+
+2. Evidence run RED-A:
+   PYTHON_BIN=python P012_MODE=red-a P012_OUT=docs/governance/evidence/line-p012b-red-a-2026-10-02 bash run-p012b.sh
+   -> runner_exit=0, verification_exit=0 (21 expectations).
+
+3. Evidence run RED-MUTANTS, first attempt: REFUSED at pre-flight with
+   "port 55449 already in use" (TIME_WAIT left by the RED-A stack). Nothing was
+   created. A later attempt waited until the port was clear:
+   PYTHON_BIN=python P012_MODE=red-mutants P012_OUT=docs/governance/evidence/line-p012b-red-mutants-2026-10-02 P012_RED_BUNDLE=docs/governance/evidence/line-p012b-red-a-2026-10-02 bash run-p012b.sh
+   -> runner_exit=0, verification_exit=0 (18 expectations).
+
+4. Evidence run GREEN (after waiting for the port to clear):
+   PYTHON_BIN=python P012_MODE=green P012_OUT=docs/governance/evidence/line-p012b-green-2026-10-02 P012_RED_BUNDLE=docs/governance/evidence/line-p012b-red-a-2026-10-02 bash run-p012b.sh
+   -> runner_exit=0, verification_exit=0 (25 expectations); ci_suite_runner_exit=1
+      is expected (only repair_phase0_containment fails).
+
+5. GitHub Actions excerpt (tools/ci_excerpt.py): the first attempt stopped with
+   exit 1 when one `gh api .../jobs/110157528407/logs` call failed; the same call
+   succeeded on retry, and the rerun wrote 01-github-actions-excerpt.txt (exit 0).
+
+6. Document edits were applied with the scripts in tools/ (edit_*.py,
+   pre_amendment_hashes.py). Two earlier attempts to run edit code inline through a
+   shell heredoc failed on shell quoting before writing anything; the same edits
+   were then run from files. HTML was regenerated with tools/render_check.py
+   (titles and languages read from the existing HTML).
+
+7. The runner scripts (run-p012b.sh, verify-p012b.py) and both mutants are copied
+   into each runner bundle by the runner itself; tools/make_runner.py derives
+   run-p012b.sh from the reviewed run-p012.sh by counted replacements, and
+   tools/make_mutant_c.py reproduces mutant C byte-for-byte.

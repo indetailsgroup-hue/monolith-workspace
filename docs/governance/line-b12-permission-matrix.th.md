@@ -1,14 +1,14 @@
 # ตารางสิทธิ์ B12 ราย identity และแผนตรวจรับ
 
-30 กันยายน 2026 ฐาน source c4c76717b9d64a51ad1c0b4421148587be7ba285 สถานะ สร้างในเครื่องแล้วใน 0199 รอผู้ตรวจอิสระ ยังไม่ deploy เรื่อง recorder ตัดสินแล้ว (service-only) แต่ caller register และคำตอบฝั่ง manufacturing ยังไม่มา และขวางการ deploy
+30 กันยายน 2026 ปรับเทสต์ 2 ตุลาคม 2026 matrix ร่างบน c4c76717b9d64a51ad1c0b4421148587be7ba285 และสร้างใน 0199 (commit a97c3c847 บนฐาน 5119396a7) สถานะ สร้างในเครื่องแล้ว รอผู้ตรวจอิสระ ยังไม่ deploy เรื่อง recorder ตัดสินแล้ว (service-only) แต่ caller register และคำตอบฝั่ง manufacturing ยังไม่มา และขวางการ deploy
 
 ## มติของเจ้าของและการสร้าง (30 กันยายน 2026)
 
 - Recorder: `rpc_record_line_send_result` เป็น service-only ตามมติของเจ้าของ แถว B12-15 ของ authenticated จึงเป็น DENY
 - การสร้าง: เจ้าของอนุมัติให้สร้างทั้ง matrix ในรอบเดียวก่อนที่ caller register ของ ops และการยืนยันจากเจ้าของ manufacturing จะมาถึง การปฏิเสธ authenticated ในแถว SERVICE และการปฏิเสธ service_role บน `fn_prod_curated` จึงสร้างตามสมมติฐาน และห้าม deploy จนกว่าจะได้คำตอบเหล่านั้น
 - Implementation: `supabase/migrations/0199_line_oa_restrict_definer_execute.sql` revoke EXECUTE อย่างเดียว ไม่ grant เพิ่ม หยุด (55000) เมื่อไม่พบ identity หรือพบ overload ที่ไม่ได้จัดประเภท (`0199_line_oa_restrict_definer_execute.sql:66`, `0199_line_oa_restrict_definer_execute.sql:75`) และ raise 42501 พร้อม rollback หากหลัง revoke สิทธิ์ที่มีผลจริงต่างจากเป้าหมาย หรือ PUBLIC ยังมี EXECUTE (`0199_line_oa_restrict_definer_execute.sql:111`)
-- เทสต์: `supabase/tests/line_oa_definer_execute_matrix.sql` (82 assertion) และ `supabase/tests/line_oa_definer_execute_fail_closed.sql` (23 assertion) เทสต์เดิมเปลี่ยนตามนโยบาย 2 จุด คือ suite เดิมตรวจว่า authenticated ไม่มี EXECUTE บน recorder แล้ว (`line_outbound_claim_record.sql:429`) และ suite ของ P0-10 เรียก `fn_prod_curated` ผ่าน `rpc_field_create_appointment` แทนการเรียกตรงด้วย service_role
-- หลักฐาน: `evidence/line-p012-red-a-2026-09-30/`, `evidence/line-p012-red-b-2026-09-30/` และ `evidence/line-p012-green-2026-09-30/` เป็นผลรันในเครื่องที่รอผู้ตรวจอิสระ ไม่ใช่ผล CI หรือ production
+- เทสต์: `supabase/tests/line_oa_definer_execute_matrix.sql` (82 assertion) และ `supabase/tests/line_oa_definer_execute_fail_closed.sql` (27 assertion; 23 ที่ a97c3c847) รอบ 2 (2 ตุลาคม 2026) ทำให้ assertion 54 เรียกแบบ anon ด้วยค่าจริงและเทียบ fingerprint ของตารางภายใน probe เพิ่ม case F (identity หาย, 55000) และให้ assertion 41 กับ 43 ของ suite เดิมตรวจข้อความ ACL ของฟังก์ชัน เทสต์เดิมเปลี่ยนตามนโยบาย 2 จุด คือ suite เดิมตรวจว่า authenticated ไม่มี EXECUTE บน recorder แล้ว (`line_outbound_claim_record.sql:429`) และ suite ของ P0-10 เรียก `fn_prod_curated` ผ่าน `rpc_field_create_appointment` แทนการเรียกตรงด้วย service_role
+- หลักฐาน: `evidence/line-p012-red-a-2026-09-30/`, `evidence/line-p012-red-b-2026-09-30/` และ `evidence/line-p012-green-2026-09-30/` และรอบ 2 ใน `evidence/line-p012b-red-a-2026-10-02/`, `evidence/line-p012b-red-mutants-2026-10-02/` และ `evidence/line-p012b-green-2026-10-02/` เป็นผลรันในเครื่องที่รอผู้ตรวจอิสระ ไม่ใช่ผล production
 
 ## ทางเลือกและข้อเสนอ
 
@@ -16,7 +16,7 @@
 
 ## ตารางราย identity
 
-Current A/U/S คือ EXECUTE ที่มีผลจริงของ anon/authenticated/service_role โดย t=มี f=ไม่มี จาก catalog ที่ commit da252d18a เป็นหลักฐาน local เดิม ไม่ใช่ production หรือ catalog ที่รันใหม่ ทั้ง 20 identity อยู่ public เป็น SECURITY DEFINER และ owner postgres ในรอบนั้น Target เป็นข้อเสนอสิทธิ์สุดท้าย ไม่ใช่คำสั่ง GRANT ใหม่ DENY ครอบคลุมสิทธิ์ผ่าน PUBLIC/membership ส่วน KEEP คือคงเดิมชั่วคราว ไม่ได้อนุมัติ caller ทุกคน DECIDE คือขอบเขตธุรกิจที่ต้องตัดสิน
+Current A/U/S คือ EXECUTE ที่มีผลจริงของ anon/authenticated/service_role โดย t=มี f=ไม่มี จาก catalog ที่ commit da252d18a เป็นหลักฐาน local เดิม ไม่ใช่ production หรือ catalog ที่รันใหม่ ทั้ง 20 identity อยู่ public เป็น SECURITY DEFINER และ owner postgres ในรอบนั้น Target เป็นข้อเสนอสิทธิ์สุดท้าย ไม่ใช่คำสั่ง GRANT ใหม่ DENY ครอบคลุมสิทธิ์ผ่าน PUBLIC/membership ส่วน KEEP คือคงเดิมชั่วคราว ไม่ได้อนุมัติ caller ทุกคน ตอนนี้ไม่เหลือแถว DECIDE แล้ว แถวเดียวที่เคยเป็น (B12-15) เจ้าของตัดสินเป็น service-only
 
 | ID | public identity | Current A/U/S | Target anon | Target authenticated | Target service_role | Class |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -50,25 +50,27 @@ Current A/U/S คือ EXECUTE ที่มีผลจริงของ anon/
 - กลุ่ม FIELD: คงงานผู้ใช้ที่มีสิทธิ์และทดสอบปฏิเสธข้าม site
 - กลุ่ม CALLER-UNKNOWN: คง authenticated/service รอ inventory การไม่พบ caller ในโค้ดไม่ให้สิทธิ์ถอนเพิ่ม — dogfood runbook ระบุ rpc_create_line_order ไว้จริง
 
-SENDER: claim คง service-only ส่วน recorder ปัจจุบันให้ authenticated เรียกและตรวจ governance/site ใน 0197:122–129 แนะนำให้เป็น service-only ถ้า ops และเจ้าของยืนยันว่าไม่มีขั้นตอนบันทึกผลโดยผู้ใช้ หากยังต้องใช้ ให้คงเส้นทางผู้ใช้พร้อมทดสอบ guard โดยตรง ห้ามเลือกแทนโดยเงียบ
+SENDER: claim คง service-only ก่อน 0199 recorder ให้ authenticated เรียกและตรวจ governance/site ใน 0197:122–129 เจ้าของตัดสินให้บันทึกผลแบบ service-only เมื่อ 30 กันยายน 2026 และ 0199 ทำตามนั้นแล้ว ops ยังควรยืนยันว่าไม่มีพนักงานหรือเครื่องมือใดบันทึกผลด้วยมือ
 
 ทุกแถวต้องอ้างทะเบียน ops หรือระบุ unresolved การอนุมัติต้องระบุ signature จริง มติ recorder ผู้เรียก service ที่คงไว้ principal ของ trigger/cron และการประสาน factory ตรวจ overload และเลข 0199 ใหม่บนฐานรวมก่อนเขียน SQL
 
-## แผนตรวจรับ — รันในเครื่องแล้วในหลักฐานของ 0199
+## แผนตรวจรับและสถานะในเครื่อง
 
-| การตรวจ | หลักฐานที่ต้องได้ |
-| --- | --- |
-| Baseline | owner, identity 20 ตัวกับ overload ที่เกินมา, สิทธิ์จริงของ role, PUBLIC และ inheritance โดยไม่สมมติ production |
-| RED | ใช้เทสต์ชุดเดียวกับ baseline พิสูจน์ว่าสิทธิ์ที่ต้องห้ามยังมี ใช้ input ชนิดถูกต้องและ rollback ไม่เปิด sender/cron/channel จริง |
-| Denial | ทุก DENY ต้องเป็น false จากสิทธิ์จริง ordinary function ต้องได้ 42501 permission denied for function ไม่ใช่ล้มที่ schema หรือใน body |
-| ข้อยกเว้น trigger | ตรวจ ACL และผล trigger จากการ bind จริง การเรียก trigger function ผิดรูปแบบโดยตรงไม่พิสูจน์การห้ามสิทธิ์ |
-| งานที่ต้องคงไว้ | ingest ลงลายเซ็น, service identity, claim/record, field 5 เส้นทาง, RPC ที่คงไว้พร้อม guard, owner sweep, welcome trigger และ factory owner chain ตรวจผลข้อมูลและการปฏิเสธผิด site |
-| สิทธิ์ตกค้าง | จำลอง inherited grant และ grantor อื่นด้วย role ชั่วคราว migration ต้องล้มแบบปิดโดยไม่เพิ่มสิทธิ์หรือแก้ membership เอง |
-| Atomicity | รัน migration จริงภายใต้ transaction ที่ตั้งใจใช้ เปรียบ ACL/owner หลังล้ม และทดสอบรันซ้ำ |
-| Integration | migration chain และ suite ครบ Python 12 ไฟล์ race กับการห้ามเขียนตรงของ 0198 containment ต้องคงเป็นล้มจนแก้จริง |
-| หลักฐาน | ชุดใหม่ไม่ทับเดิม ระบุ source คำสั่ง UTC exit ผลดิบ checksum secret scan และ cleanup ตรวจอิสระ และ CI จริงหลังอนุมัติ push แยก |
+สถานะหลังรัน 0199 ในเครื่อง (รอบ 1) และเทสต์ที่ปรับแล้ว (รอบ 2) คือ รันแล้ว บางส่วน หรือยังค้าง
 
-ข้อมูล fixture และ role ชั่วคราวอยู่เฉพาะ stack ใหม่แยก ปิด cron ไม่ใช้ credential จริง เทสต์ลบต้องไม่รัน outbound worker จริง rollback ผลข้อมูลหรือถอด stack ทิ้ง ผลในเครื่องอยู่ในชุดหลักฐาน line-p012 และไม่อ้างผล CI หรือ production
+| การตรวจ | หลักฐานที่ต้องได้ | สถานะ |
+| --- | --- | --- |
+| Baseline | owner, identity 20 ตัวกับ overload ที่เกินมา, สิทธิ์จริงของ role, PUBLIC และ inheritance โดยไม่สมมติ production | รันแล้วสำหรับ owner, identity, overload, 3 role, PUBLIC และ inheritance ส่วน authenticator หลัง 0199 ยังค้าง (ดูย่อหน้า PUBLIC) |
+| RED | ใช้เทสต์ชุดเดียวกับ baseline พิสูจน์ว่าสิทธิ์ที่ต้องห้ามยังมี ใช้ input ชนิดถูกต้องและ rollback ไม่เปิด sender/cron/channel จริง | รันแล้ว รอบ 2 เพิ่มการเรียกแบบ anon ด้วยค่าจริงซึ่งเขียนข้อมูลได้เมื่อไม่มี 0199 |
+| Denial | ทุก DENY ต้องเป็น false จากสิทธิ์จริง ordinary function ต้องได้ 42501 permission denied for function ไม่ใช่ล้มที่ schema หรือใน body | รันแล้ว |
+| ข้อยกเว้น trigger | ตรวจ ACL และผล trigger จากการ bind จริง การเรียก trigger function ผิดรูปแบบโดยตรงไม่พิสูจน์การห้ามสิทธิ์ | รันแล้ว |
+| งานที่ต้องคงไว้ | ingest ลงลายเซ็น, service identity, claim/record, field 5 เส้นทาง, RPC ที่คงไว้พร้อม guard, owner sweep, welcome trigger และ factory owner chain ตรวจผลข้อมูลและการปฏิเสธผิด site | รันแล้ว |
+| สิทธิ์ตกค้าง | จำลอง inherited grant และ grantor อื่นด้วย role ชั่วคราว migration ต้องล้มแบบปิดโดยไม่เพิ่มสิทธิ์หรือแก้ membership เอง | รันแล้ว (fail-closed case A–C) |
+| Atomicity | รัน migration จริงภายใต้ transaction ที่ตั้งใจใช้ เปรียบ ACL/owner หลังล้ม และทดสอบรันซ้ำ | บางส่วน: หลังรันล้มและ rollback ถึง savepoint แล้ว ACL และ membership เท่ากับก่อนรัน และรันซ้ำได้สะอาด (case E) ส่วน atomicity เป็นความหมายของ statement ใน PostgreSQL และยังไม่ได้เทียบ owner |
+| Integration | migration chain และ suite ครบ Python 12 ไฟล์ race กับการห้ามเขียนตรงของ 0198 containment ต้องคงเป็นล้มจนแก้จริง | รันแล้วในเครื่อง (ล้มเฉพาะ suite containment เดิม) GitHub Actions รัน suite LINE ทั้ง 5 ชุดที่ a97c3c847 |
+| หลักฐาน | ชุดใหม่ไม่ทับเดิม ระบุ source คำสั่ง UTC exit ผลดิบ checksum secret scan และ cleanup ตรวจอิสระ และ CI จริงหลังอนุมัติ push แยก | ทำชุดหลักฐานในเครื่องแล้ว การตรวจอิสระยังค้าง |
+
+ข้อมูล fixture และ role ชั่วคราวอยู่เฉพาะ stack ใหม่แยก ปิด cron ไม่ใช้ credential จริง เทสต์ลบต้องไม่รัน outbound worker จริง rollback ผลข้อมูลหรือถอด stack ทิ้ง ผลในเครื่องอยู่ในชุดหลักฐาน line-p012 และ line-p012b ส่วนผล GitHub Actions มีข้อความที่คัดมาในชุด green ของ line-p012b และไม่อ้างผล production
 
 ## ขอบเขตรวมระบบและ deploy
 
@@ -80,7 +82,7 @@ SENDER: claim คง service-only ส่วน recorder ปัจจุบัน
 
 Opus 5.5 ตรวจเฉพาะย่อหน้าข้อกำหนดที่ตัดข้อมูลลับผ่าน Claude CLI โดยปิด tools/MCP ไม่ได้ตรวจ source ไฟล์ หรือฐานข้อมูล ข้อทักท้วงสามเรื่องคือ caller ที่ได้สิทธิ์ผ่าน PUBLIC, สิทธิ์กลับมาหลังสร้างใหม่ และสมมติฐานเรื่อง owner chain/เทสต์ trigger นี่คือข้อคิดเห็นออกแบบ ไม่ใช่การรับรอง implementation อิสระ
 
-ทุก identity ต้องบันทึกที่มาสิทธิ์ ได้แก่ direct grant กับ grantor, PUBLIC, inheritance หรือ ownership สำหรับ grantee ที่พบทั้งหมด ไม่ใช่สาม role เท่านั้น KEEP ต้องยืนยันว่าสิทธิ์จริงยังมีหลังแก้ ส่วน DECIDE คง grant เดิมจนมีมติ หากถอน PUBLIC แล้วกระทบ caller ที่ยังไม่อยู่ใน matrix ให้หยุดเพื่อตัดสิน ไม่เพิ่ม replacement grant เอง snapshot เดิมมี named grant ให้ role ที่คงไว้ แต่ catalog เป้าหมายใหม่ต้องยืนยันอีกครั้ง การห้าม anon เปลี่ยน 18 identity ส่วน claim กับ recorder ห้ามอยู่แล้วและใช้ตรวจ regression
+ทุก identity ต้องบันทึกที่มาสิทธิ์ ได้แก่ direct grant กับ grantor, PUBLIC, inheritance หรือ ownership สำหรับ grantee ที่พบทั้งหมด ไม่ใช่สาม role เท่านั้น KEEP ต้องยืนยันว่าสิทธิ์จริงยังมีหลังแก้ ส่วน DECIDE คง grant เดิมจนมีมติ (ไม่เหลือแถว DECIDE แล้ว) การบันทึกที่มาสิทธิ์ของ grantee อื่นนอกจาก 3 role ยังค้าง หากถอน PUBLIC แล้วกระทบ caller ที่ยังไม่อยู่ใน matrix ให้หยุดเพื่อตัดสิน ไม่เพิ่ม replacement grant เอง snapshot เดิมมี named grant ให้ role ที่คงไว้ แต่ catalog เป้าหมายใหม่ต้องยืนยันอีกครั้ง การห้าม anon เปลี่ยน 18 identity ส่วน claim กับ recorder ห้ามอยู่แล้วและใช้ตรวจ regression
 
 สำรวจทุก overload ของชื่อที่ครอบคลุม หลัง create/recreate หรือรวมระบบที่อนุมัติ ต้องตรวจ matrix อีกครั้งและล้มเมื่อพบ overload ใหม่ที่ยังไม่จัดประเภท ไม่ขยายนโยบายห้ามทั่ว schema ในงานนี้ นโยบาย default ACL ในอนาคตยังแยกต่างหาก
 

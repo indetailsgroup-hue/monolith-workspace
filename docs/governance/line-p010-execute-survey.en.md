@@ -21,17 +21,17 @@ No migration issues ALTER DEFAULT PRIVILEGES (re-checked 2026-10-01 at `a97c3c84
 
 | Routine | In-repo callers (FOUND) | Grant written in migrations | Caller check in body | Exposure to anon |
 |---|---|---|---|---|
-| fn_prod_curated | 23 call sites inside other DEFINER functions (0107 to 0143); no edge or frontend caller | revoke from PUBLIC only (`0107_factory_group_milestones.sql:61`) | none (`0107_factory_group_milestones.sql:50-60`) | High (INFERENCE): queues a pending push into a project's customer group with caller-chosen slot text, given a project id |
+| fn_prod_curated | 23 call sites inside other DEFINER functions (0107 to 0143); no edge or frontend caller (re-check R1) | revoke from PUBLIC only (`0107_factory_group_milestones.sql:61`) | none (`0107_factory_group_milestones.sql:50-60`) | High (INFERENCE): queues a pending push into a project's customer group with caller-chosen slot text, given a project id |
 | fn_line_handle_group_event | only rpc_ingest_line_webhook (`0097_line_group_bot_flows.sql:435`) | revoke from PUBLIC only (`0097_line_group_bot_flows.sql:285`) | none; it trusts that the caller verified the LINE signature | High (INFERENCE): a direct call skips signature verification. Binding needs a valid bind code and approval postbacks need the approve token, but join, leave and member events are not gated; a forged leave event archives a bound group whose LINE group id is known (`0107_factory_group_milestones.sql:235-240`) |
 | line_oa_resolve_customer_identity | edge customer-design-view (index.ts:102, service client); ingest, order and approval functions | revoke from PUBLIC only (`00000000000020_line_oa_identity_resolution.sql:135`) | none | Medium (INFERENCE): creates an identity row for any LINE user id and returns the customer id |
-| fn_lead_followup_sweep | cron job wf-lead-followup-sweep (`0116_lead_followup.sql:192`) | service_role only (`0116_lead_followup.sql:223-225`) | none | Medium (INFERENCE): anyone can trigger lead follow-up pushes and escalations on demand |
+| fn_lead_followup_sweep | cron job wf-lead-followup-sweep (`0116_lead_followup.sql:192`) | service_role only (`0116_lead_followup.sql:223-225`) | none (the latest definition, `0130_scrutiny5_fixes.sql:332-387`, has no caller check) | Medium (INFERENCE): anyone can trigger lead follow-up pushes and escalations on demand |
 | rpc_sweep_line_session_timeouts | no in-repo caller outside tests | revoke from PUBLIC (`00000000000061_line_oa_session_timeout_sweep.sql:136`), then service_role only (`00000000000061_line_oa_session_timeout_sweep.sql:141`) | none | Low (INFERENCE): closes sessions already past the timeout |
 | rpc_ingest_line_webhook | edge line-webhook (index.ts:201, service key) | authenticated and service_role (`00000000000022_line_oa_ingest_webhook.sql:344-356`) | LINE HMAC signature before any write | Low (INFERENCE): forgery needs the channel secret; a rejected call still appends one audit row |
-| fn_welcome_on_group_bind | trigger trg_welcome_group_bind (`0136_customer_docs.sql:185-186`) | none; PUBLIC also holds EXECUTE | trigger-only function | Low (INFERENCE): PostgreSQL refuses to call a trigger function directly (not tested here) |
-| rpc_send_line_outbound | none live (known since 26 July 2026) | authenticated (`00000000000040_line_oa_send_outbound.sql:442`) | is_governance_role, has_site_access, 42501 | Low (INFERENCE): the body denies callers without a site role |
-| rpc_create_line_order | none in code | authenticated (`00000000000050_line_oa_create_order.sql:643`) | is_governance_role, has_site_access, 42501 | Low (INFERENCE) |
-| rpc_evaluate_identity_merge_candidate | none in code | authenticated (`00000000000021_line_oa_identity_merge_candidate.sql:265`) | is_governance_role, 42501 | Low (INFERENCE) |
-| rpc_resolve_conversation_site | none in code | authenticated (`00000000000030_line_oa_resolve_conversation_site.sql:254`) | is_governance_role, has_site_access, 42501 | Low (INFERENCE) |
+| fn_welcome_on_group_bind | trigger trg_welcome_group_bind (`0136_customer_docs.sql:185-186`) | none (re-check R2); PUBLIC also holds EXECUTE (`evidence/line-p010-catalog-2026-09-30/08-analysis.txt:135`) | trigger-only function | Low (INFERENCE): PostgreSQL refuses to call a trigger function directly (not tested here) |
+| rpc_send_line_outbound | none live (known since 26 July 2026; re-check R1) | authenticated (`00000000000040_line_oa_send_outbound.sql:442`) | is_governance_role, has_site_access, 42501 | Low (INFERENCE): the body denies callers without a site role |
+| rpc_create_line_order | none in code (re-check R1) | authenticated (`00000000000050_line_oa_create_order.sql:643`) | is_governance_role, has_site_access, 42501 | Low (INFERENCE) |
+| rpc_evaluate_identity_merge_candidate | none in code (re-check R1) | authenticated (`00000000000021_line_oa_identity_merge_candidate.sql:265`) | is_governance_role, 42501 | Low (INFERENCE) |
+| rpc_resolve_conversation_site | none in code (re-check R1) | authenticated (`00000000000030_line_oa_resolve_conversation_site.sql:254`) | is_governance_role, has_site_access, 42501 | Low (INFERENCE) |
 | rpc_sync_line_forecast | none in code | authenticated (`00000000000060_line_oa_sync_forecast.sql:278`) | is_governance_role, has_site_access, 42501 | Low (INFERENCE) |
 | rpc_request_customer_acceptance | field-app LeadPanel.tsx:43 | authenticated and service_role (`0098_customer_acceptance_flex.sql:110-113`) | is_governance_role, has_site_access | Low (INFERENCE) |
 | rpc_field_assign_lead | none in code | authenticated and service_role (`0116_lead_followup.sql:205-220`) | auth.uid, is_governance_role, has_site_access | Low (INFERENCE) |
@@ -39,6 +39,11 @@ No migration issues ALTER DEFAULT PRIVILEGES (re-checked 2026-10-01 at `a97c3c84
 | rpc_field_set_lead_source | field-app SaleHome.tsx:42 | authenticated and service_role (`0151_turnkey_lead_source.sql:264-273`) | is_governance_role, has_site_access | Low (INFERENCE) |
 | rpc_field_send_photo_to_customer | field-app PhotoSendCard.tsx:33 | authenticated and service_role (`0134_sender_image.sql:69-74`) | is_governance_role, has_site_access | Low (INFERENCE) |
 | rpc_field_shop_drawing_revision | field-app DesignerToolsPanel.tsx:69 | authenticated and service_role (`0143_qms_factory_design.sql:478-487`) | is_governance_role, has_site_access | Low (INFERENCE) |
+
+Re-checked on 2 October 2026 at `48b72d4c7`, in the same scope as the method section (migrations and tests excluded):
+
+- R1: `git grep -nF <routine name> -- src server packages supabase/functions tools e2e scripts` finds only `scripts/line-b12-catalog.sql`, a catalog-query list rather than a call, and comments in `supabase/functions/_shared/line-oa/autonomyGate.ts`, `brand-voice.ts`, `templates.ts` and `supabase/functions/_shared/order-adapter.ts`.
+- R2: `git grep -nE "grant execute on function public.fn_welcome_on_group_bind" -- supabase/migrations` at `48b72d4c7` returns nothing.
 
 "Low" means only that the body appears to deny anon. It still depends on each guard being correct on every path, which this survey did not test.
 

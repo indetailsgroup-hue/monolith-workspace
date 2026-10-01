@@ -1,0 +1,370 @@
+BEGIN
+# migration under test: C:/Users/thai3/determined-williams (2)/MONOLITH Repair Intelligence/.worktrees/repair-intelligence-phase0-trust/docs/governance/evidence/line-p012b-red-mutants-2026-10-02/mutant-0199-no-matrix-verification.sql
+CREATE EXTENSION
+1..27
+CREATE TABLE
+INSERT 0 20
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+ok 1 - scope guard: the twenty identities exist and already match the matrix (0199 applied)
+SAVEPOINT
+CREATE ROLE
+GRANT
+GRANT ROLE
+GRANT
+SAVEPOINT
+DO
+ROLLBACK
+RELEASE
+ok 2 - case A precondition: anon can execute fn_prod_curated only through role membership, and holds a direct EXECUTE on rpc_sync_line_forecast
+not ok 3 - case A: the migration raises SQLSTATE 42501 when an inherited EXECUTE survives
+# Failed test 3: "case A: the migration raises SQLSTATE 42501 when an inherited EXECUTE survives"
+#         have: 00000
+#         want: 42501
+not ok 4 - case A: the message starts with "B12: EXECUTE matrix not met after revoke" and names anon:fn_prod_curated
+# Failed test 4: "case A: the message starts with "B12: EXECUTE matrix not met after revoke" and names anon:fn_prod_curated"
+not ok 5 - case A: after the error and the case savepoint rollback, every function ACL and membership equals the pre-state
+# Failed test 5: "case A: after the error and the case savepoint rollback, every function ACL and membership equals the pre-state"
+#         have: fn_lead_followup_sweep()={postgres=X/postgres,service_role=X/postgres}
+# fn_line_handle_group_event(jsonb,text,text)={postgres=X/postgres}
+# fn_prod_curated(uuid,text,jsonb)={postgres=X/postgres,p012_fc_exec=X/postgres}
+# fn_welcome_on_group_bind()={postgres=X/postgres}
+# line_oa_resolve_customer_identity(text,text)={postgres=X/postgres,service_role=X/postgres}
+# rpc_claim_line_outbound_batch(integer,integer)={postgres=X/postgres,service_role=X/postgres}
+# rpc_create_line_order(uuid,jsonb,text,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_evaluate_identity_merge_candidate(text,text,uuid,jsonb,numeric)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_assign_lead(uuid,uuid)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_close_lead(uuid,text,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_send_photo_to_customer(uuid,uuid,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_set_lead_source(uuid,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_shop_drawing_revision(uuid,text,text,boolean,boolean)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_ingest_line_webhook(text,text,text)={postgres=X/postgres,service_role=X/postgres}
+# rpc_record_line_send_result(uuid,text,text,text,uuid)={postgres=X/postgres,service_role=X/postgres}
+# rpc_request_customer_acceptance(uuid,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_resolve_conversation_site(uuid,text,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_sweep_line_session_timeouts()={postgres=X/postgres,service_role=X/postgres}
+# rpc_sync_line_forecast(text,text,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# anon>p012_fc_exec
+# authenticator>anon
+# authenticator>authenticated
+# authenticator>service_role
+# pg_monitor>pg_read_all_settings
+# pg_monitor>pg_read_all_stats
+# pg_monitor>pg_stat_scan_tables
+# postgres>anon
+# postgres>authenticated
+# postgres>authenticator
+# postgres>monolith_p2_workload
+# postgres>p012_fc_exec
+# postgres>pg_create_subscription
+# postgres>pg_monitor
+# postgres>pg_read_all_data
+# postgres>pg_signal_backend
+# postgres>service_role
+# postgres>supabase_privileged_role
+# supabase_etl_admin>pg_monitor
+# supabase_etl_admin>pg_read_all_data
+# supabase_etl_admin>supabase_privileged_role
+# supabase_read_only_user>pg_monitor
+# supabase_read_only_user>pg_read_all_data
+# supabase_storage_admin>authenticator
+#         want: fn_lead_followup_sweep()={postgres=X/postgres,service_role=X/postgres}
+# fn_line_handle_group_event(jsonb,text,text)={postgres=X/postgres}
+# fn_prod_curated(uuid,text,jsonb)={postgres=X/postgres,p012_fc_exec=X/postgres}
+# fn_welcome_on_group_bind()={postgres=X/postgres}
+# line_oa_resolve_customer_identity(text,text)={postgres=X/postgres,service_role=X/postgres}
+# rpc_claim_line_outbound_batch(integer,integer)={postgres=X/postgres,service_role=X/postgres}
+# rpc_create_line_order(uuid,jsonb,text,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_evaluate_identity_merge_candidate(text,text,uuid,jsonb,numeric)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_assign_lead(uuid,uuid)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_close_lead(uuid,text,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_send_photo_to_customer(uuid,uuid,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_set_lead_source(uuid,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_shop_drawing_revision(uuid,text,text,boolean,boolean)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_ingest_line_webhook(text,text,text)={postgres=X/postgres,service_role=X/postgres}
+# rpc_record_line_send_result(uuid,text,text,text,uuid)={postgres=X/postgres,service_role=X/postgres}
+# rpc_request_customer_acceptance(uuid,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_resolve_conversation_site(uuid,text,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_sweep_line_session_timeouts()={postgres=X/postgres,service_role=X/postgres}
+# rpc_sync_line_forecast(text,text,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres,anon=X/postgres}
+# anon>p012_fc_exec
+# authenticator>anon
+# authenticator>authenticated
+# authenticator>service_role
+# pg_monitor>pg_read_all_settings
+# pg_monitor>pg_read_all_stats
+# pg_monitor>pg_stat_scan_tables
+# postgres>anon
+# postgres>authenticated
+# postgres>authenticator
+# postgres>monolith_p2_workload
+# postgres>p012_fc_exec
+# postgres>pg_create_subscription
+# postgres>pg_monitor
+# postgres>pg_read_all_data
+# postgres>pg_signal_backend
+# postgres>service_role
+# postgres>supabase_privileged_role
+# supabase_etl_admin>pg_monitor
+# supabase_etl_admin>pg_read_all_data
+# supabase_etl_admin>supabase_privileged_role
+# supabase_read_only_user>pg_monitor
+# supabase_read_only_user>pg_read_all_data
+# supabase_storage_admin>authenticator
+not ok 6 - case A: after the savepoint rollback the direct anon EXECUTE on rpc_sync_line_forecast is present again
+# Failed test 6: "case A: after the savepoint rollback the direct anon EXECUTE on rpc_sync_line_forecast is present again"
+SAVEPOINT
+CREATE ROLE
+GRANT ROLE
+GRANT
+GRANT
+SET
+GRANT
+RESET
+GRANT
+SAVEPOINT
+DO
+ROLLBACK
+RELEASE
+ok 7 - case B precondition: authenticated holds EXECUTE on fn_line_handle_group_event from another grantor, and anon a direct EXECUTE on rpc_sync_line_forecast
+not ok 8 - case B: the migration raises SQLSTATE 42501 when another grantor's EXECUTE survives
+# Failed test 8: "case B: the migration raises SQLSTATE 42501 when another grantor's EXECUTE survives"
+#         have: 00000
+#         want: 42501
+not ok 9 - case B: the message starts with "B12: EXECUTE matrix not met after revoke" and names authenticated:fn_line_handle_group_event
+# Failed test 9: "case B: the message starts with "B12: EXECUTE matrix not met after revoke" and names authenticated:fn_line_handle_group_event"
+not ok 10 - case B: after the error and the case savepoint rollback, every function ACL and membership equals the pre-state
+# Failed test 10: "case B: after the error and the case savepoint rollback, every function ACL and membership equals the pre-state"
+#         have: fn_lead_followup_sweep()={postgres=X/postgres,service_role=X/postgres}
+# fn_line_handle_group_event(jsonb,text,text)={postgres=X/postgres,p012_fc_grantor=X*/postgres,authenticated=X/p012_fc_grantor}
+# fn_prod_curated(uuid,text,jsonb)={postgres=X/postgres}
+# fn_welcome_on_group_bind()={postgres=X/postgres}
+# line_oa_resolve_customer_identity(text,text)={postgres=X/postgres,service_role=X/postgres}
+# rpc_claim_line_outbound_batch(integer,integer)={postgres=X/postgres,service_role=X/postgres}
+# rpc_create_line_order(uuid,jsonb,text,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_evaluate_identity_merge_candidate(text,text,uuid,jsonb,numeric)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_assign_lead(uuid,uuid)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_close_lead(uuid,text,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_send_photo_to_customer(uuid,uuid,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_set_lead_source(uuid,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_shop_drawing_revision(uuid,text,text,boolean,boolean)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_ingest_line_webhook(text,text,text)={postgres=X/postgres,service_role=X/postgres}
+# rpc_record_line_send_result(uuid,text,text,text,uuid)={postgres=X/postgres,service_role=X/postgres}
+# rpc_request_customer_acceptance(uuid,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_resolve_conversation_site(uuid,text,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_sweep_line_session_timeouts()={postgres=X/postgres,service_role=X/postgres}
+# rpc_sync_line_forecast(text,text,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# authenticator>anon
+# authenticator>authenticated
+# authenticator>service_role
+# pg_monitor>pg_read_all_settings
+# pg_monitor>pg_read_all_stats
+# pg_monitor>pg_stat_scan_tables
+# postgres>anon
+# postgres>authenticated
+# postgres>authenticator
+# postgres>monolith_p2_workload
+# postgres>p012_fc_grantor
+# postgres>p012_fc_grantor
+# postgres>pg_create_subscription
+# postgres>pg_monitor
+# postgres>pg_read_all_data
+# postgres>pg_signal_backend
+# postgres>service_role
+# postgres>supabase_privileged_role
+# supabase_etl_admin>pg_monitor
+# supabase_etl_admin>pg_read_all_data
+# supabase_etl_admin>supabase_privileged_role
+# supabase_read_only_user>pg_monitor
+# supabase_read_only_user>pg_read_all_data
+# supabase_storage_admin>authenticator
+#         want: fn_lead_followup_sweep()={postgres=X/postgres,service_role=X/postgres}
+# fn_line_handle_group_event(jsonb,text,text)={postgres=X/postgres,p012_fc_grantor=X*/postgres,authenticated=X/p012_fc_grantor}
+# fn_prod_curated(uuid,text,jsonb)={postgres=X/postgres}
+# fn_welcome_on_group_bind()={postgres=X/postgres}
+# line_oa_resolve_customer_identity(text,text)={postgres=X/postgres,service_role=X/postgres}
+# rpc_claim_line_outbound_batch(integer,integer)={postgres=X/postgres,service_role=X/postgres}
+# rpc_create_line_order(uuid,jsonb,text,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_evaluate_identity_merge_candidate(text,text,uuid,jsonb,numeric)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_assign_lead(uuid,uuid)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_close_lead(uuid,text,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_send_photo_to_customer(uuid,uuid,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_set_lead_source(uuid,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_shop_drawing_revision(uuid,text,text,boolean,boolean)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_ingest_line_webhook(text,text,text)={postgres=X/postgres,service_role=X/postgres}
+# rpc_record_line_send_result(uuid,text,text,text,uuid)={postgres=X/postgres,service_role=X/postgres}
+# rpc_request_customer_acceptance(uuid,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_resolve_conversation_site(uuid,text,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_sweep_line_session_timeouts()={postgres=X/postgres,service_role=X/postgres}
+# rpc_sync_line_forecast(text,text,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres,anon=X/postgres}
+# authenticator>anon
+# authenticator>authenticated
+# authenticator>service_role
+# pg_monitor>pg_read_all_settings
+# pg_monitor>pg_read_all_stats
+# pg_monitor>pg_stat_scan_tables
+# postgres>anon
+# postgres>authenticated
+# postgres>authenticator
+# postgres>monolith_p2_workload
+# postgres>p012_fc_grantor
+# postgres>p012_fc_grantor
+# postgres>pg_create_subscription
+# postgres>pg_monitor
+# postgres>pg_read_all_data
+# postgres>pg_signal_backend
+# postgres>service_role
+# postgres>supabase_privileged_role
+# supabase_etl_admin>pg_monitor
+# supabase_etl_admin>pg_read_all_data
+# supabase_etl_admin>supabase_privileged_role
+# supabase_read_only_user>pg_monitor
+# supabase_read_only_user>pg_read_all_data
+# supabase_storage_admin>authenticator
+not ok 11 - case B: after the savepoint rollback the direct anon EXECUTE on rpc_sync_line_forecast is present again
+# Failed test 11: "case B: after the savepoint rollback the direct anon EXECUTE on rpc_sync_line_forecast is present again"
+SAVEPOINT
+REVOKE
+GRANT
+GRANT
+SAVEPOINT
+DO
+ROLLBACK
+RELEASE
+ok 12 - case C precondition: authenticated can execute rpc_create_line_order only through PUBLIC, and anon holds a direct EXECUTE on rpc_sync_line_forecast
+not ok 13 - case C: the migration raises SQLSTATE 42501 when a kept right would be lost
+# Failed test 13: "case C: the migration raises SQLSTATE 42501 when a kept right would be lost"
+#         have: 00000
+#         want: 42501
+not ok 14 - case C: the message names authenticated:rpc_create_line_order want t, and nothing is granted in its place
+# Failed test 14: "case C: the message names authenticated:rpc_create_line_order want t, and nothing is granted in its place"
+not ok 15 - case C: after the error and the case savepoint rollback, every function ACL and membership equals the pre-state
+# Failed test 15: "case C: after the error and the case savepoint rollback, every function ACL and membership equals the pre-state"
+#         have: fn_lead_followup_sweep()={postgres=X/postgres,service_role=X/postgres}
+# fn_line_handle_group_event(jsonb,text,text)={postgres=X/postgres}
+# fn_prod_curated(uuid,text,jsonb)={postgres=X/postgres}
+# fn_welcome_on_group_bind()={postgres=X/postgres}
+# line_oa_resolve_customer_identity(text,text)={postgres=X/postgres,service_role=X/postgres}
+# rpc_claim_line_outbound_batch(integer,integer)={postgres=X/postgres,service_role=X/postgres}
+# rpc_create_line_order(uuid,jsonb,text,text)={postgres=X/postgres,service_role=X/postgres}
+# rpc_evaluate_identity_merge_candidate(text,text,uuid,jsonb,numeric)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_assign_lead(uuid,uuid)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_close_lead(uuid,text,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_send_photo_to_customer(uuid,uuid,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_set_lead_source(uuid,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_shop_drawing_revision(uuid,text,text,boolean,boolean)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_ingest_line_webhook(text,text,text)={postgres=X/postgres,service_role=X/postgres}
+# rpc_record_line_send_result(uuid,text,text,text,uuid)={postgres=X/postgres,service_role=X/postgres}
+# rpc_request_customer_acceptance(uuid,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_resolve_conversation_site(uuid,text,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_sweep_line_session_timeouts()={postgres=X/postgres,service_role=X/postgres}
+# rpc_sync_line_forecast(text,text,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# authenticator>anon
+# authenticator>authenticated
+# authenticator>service_role
+# pg_monitor>pg_read_all_settings
+# pg_monitor>pg_read_all_stats
+# pg_monitor>pg_stat_scan_tables
+# postgres>anon
+# postgres>authenticated
+# postgres>authenticator
+# postgres>monolith_p2_workload
+# postgres>pg_create_subscription
+# postgres>pg_monitor
+# postgres>pg_read_all_data
+# postgres>pg_signal_backend
+# postgres>service_role
+# postgres>supabase_privileged_role
+# supabase_etl_admin>pg_monitor
+# supabase_etl_admin>pg_read_all_data
+# supabase_etl_admin>supabase_privileged_role
+# supabase_read_only_user>pg_monitor
+# supabase_read_only_user>pg_read_all_data
+# supabase_storage_admin>authenticator
+#         want: fn_lead_followup_sweep()={postgres=X/postgres,service_role=X/postgres}
+# fn_line_handle_group_event(jsonb,text,text)={postgres=X/postgres}
+# fn_prod_curated(uuid,text,jsonb)={postgres=X/postgres}
+# fn_welcome_on_group_bind()={postgres=X/postgres}
+# line_oa_resolve_customer_identity(text,text)={postgres=X/postgres,service_role=X/postgres}
+# rpc_claim_line_outbound_batch(integer,integer)={postgres=X/postgres,service_role=X/postgres}
+# rpc_create_line_order(uuid,jsonb,text,text)={postgres=X/postgres,service_role=X/postgres,=X/postgres}
+# rpc_evaluate_identity_merge_candidate(text,text,uuid,jsonb,numeric)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_assign_lead(uuid,uuid)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_close_lead(uuid,text,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_send_photo_to_customer(uuid,uuid,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_set_lead_source(uuid,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_field_shop_drawing_revision(uuid,text,text,boolean,boolean)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_ingest_line_webhook(text,text,text)={postgres=X/postgres,service_role=X/postgres}
+# rpc_record_line_send_result(uuid,text,text,text,uuid)={postgres=X/postgres,service_role=X/postgres}
+# rpc_request_customer_acceptance(uuid,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_resolve_conversation_site(uuid,text,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+# rpc_sweep_line_session_timeouts()={postgres=X/postgres,service_role=X/postgres}
+# rpc_sync_line_forecast(text,text,text)={postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres,anon=X/postgres}
+# authenticator>anon
+# authenticator>authenticated
+# authenticator>service_role
+# pg_monitor>pg_read_all_settings
+# pg_monitor>pg_read_all_stats
+# pg_monitor>pg_stat_scan_tables
+# postgres>anon
+# postgres>authenticated
+# postgres>authenticator
+# postgres>monolith_p2_workload
+# postgres>pg_create_subscription
+# postgres>pg_monitor
+# postgres>pg_read_all_data
+# postgres>pg_signal_backend
+# postgres>service_role
+# postgres>supabase_privileged_role
+# supabase_etl_admin>pg_monitor
+# supabase_etl_admin>pg_read_all_data
+# supabase_etl_admin>supabase_privileged_role
+# supabase_read_only_user>pg_monitor
+# supabase_read_only_user>pg_read_all_data
+# supabase_storage_admin>authenticator
+not ok 16 - case C: after the savepoint rollback the direct anon EXECUTE on rpc_sync_line_forecast is present again
+# Failed test 16: "case C: after the savepoint rollback the direct anon EXECUTE on rpc_sync_line_forecast is present again"
+SAVEPOINT
+CREATE FUNCTION
+GRANT
+SAVEPOINT
+psql:C:/Users/thai3/determined-williams (2)/MONOLITH Repair Intelligence/.worktrees/repair-intelligence-phase0-trust/docs/governance/evidence/line-p012b-red-mutants-2026-10-02/mutant-0199-no-matrix-verification.sql:92: ERROR:  B12: unclassified overload: fn_prod_curated(text)
+CONTEXT:  PL/pgSQL function inline_code_block line 45 at RAISE
+ROLLBACK
+ROLLBACK
+RELEASE
+ok 17 - case D precondition: an extra overload fn_prod_curated(text) exists, and anon holds a direct EXECUTE on rpc_sync_line_forecast
+ok 18 - case D: the migration raises SQLSTATE 55000 for an unclassified overload
+ok 19 - case D: the message starts with "B12: unclassified overload" and names fn_prod_curated(text)
+ok 20 - case D: after the error and the case savepoint rollback, every function ACL and membership equals the pre-state
+ok 21 - case D: after the savepoint rollback the direct anon EXECUTE on rpc_sync_line_forecast is present
+SAVEPOINT
+ALTER FUNCTION
+SAVEPOINT
+psql:C:/Users/thai3/determined-williams (2)/MONOLITH Repair Intelligence/.worktrees/repair-intelligence-phase0-trust/docs/governance/evidence/line-p012b-red-mutants-2026-10-02/mutant-0199-no-matrix-verification.sql:92: ERROR:  B12: matrix identity missing: rpc_sync_line_forecast(text,text,text)
+CONTEXT:  PL/pgSQL function inline_code_block line 36 at RAISE
+ROLLBACK
+ROLLBACK
+RELEASE
+ok 22 - case F precondition: rpc_sync_line_forecast(text,text,text) is renamed away, so one matrix identity is missing
+ok 23 - case F: the migration raises SQLSTATE 55000 for a missing matrix identity
+ok 24 - case F: the message starts with "B12: matrix identity missing" and names rpc_sync_line_forecast(text,text,text)
+ok 25 - case F: after the error and the case savepoint rollback, every function ACL and membership equals the pre-state
+SAVEPOINT
+GRANT
+GRANT
+SAVEPOINT
+DO
+ROLLBACK
+RELEASE
+ok 26 - case E: with nothing blocking, the migration completes without error
+ok 27 - case E: the direct anon EXECUTE and the PUBLIC EXECUTE are revoked and every identity matches the matrix
+# Looks like you failed 12 tests of 27
+ROLLBACK

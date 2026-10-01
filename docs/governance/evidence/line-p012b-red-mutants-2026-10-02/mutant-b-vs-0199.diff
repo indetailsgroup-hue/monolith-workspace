@@ -1,0 +1,32 @@
+--- supabase/migrations/0199_line_oa_restrict_definer_execute.sql	2026-09-30 23:44:54.155033300 +0700
++++ docs/governance/evidence/line-p012b-red-mutants-2026-10-02/mutant-0199-no-matrix-verification.sql	2026-10-02 00:14:45.671536700 +0700
+@@ -88,28 +88,5 @@
+       end if;
+     end loop;
+   end loop;
+-
+-  -- 3. The effective state must equal the target exactly.
+-  v_problems := '{}';
+-  for v_row in select split_part(x, '=', 1) as sig, split_part(x, '=', 2) as target from unnest(v_matrix) x loop
+-    v_oid := to_regprocedure('public.' || v_row.sig);
+-    for i in 1 .. 3 loop
+-      v_role := v_roles[i];
+-      if exists (select 1 from pg_roles where rolname = v_role)
+-         and has_function_privilege(v_role, v_oid, 'EXECUTE') <> (split_part(v_row.target, '/', i) = 't') then
+-        v_problems := v_problems || format('%s:%s want %s', v_role, v_row.sig, split_part(v_row.target, '/', i));
+-      end if;
+-    end loop;
+-    if exists (select 1 from pg_proc p
+-               cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
+-               where p.oid = v_oid and a.grantee = 0 and a.privilege_type = 'EXECUTE') then
+-      v_problems := v_problems || format('PUBLIC:%s', v_row.sig);
+-    end if;
+-  end loop;
+-
+-  if cardinality(v_problems) > 0 then
+-    raise exception 'B12: EXECUTE matrix not met after revoke: %', array_to_string(v_problems, ', ')
+-      using errcode = 'insufficient_privilege';
+-  end if;
+ end;
+ $$;
+diff_exit=1 (1 = files differ, expected)

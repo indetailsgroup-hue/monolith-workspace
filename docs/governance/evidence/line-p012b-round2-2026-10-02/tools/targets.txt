@@ -1,0 +1,8 @@
+docs/governance/line-b12-permission-matrix.th.md
+docs/governance/line-b12-permission-matrix.en.md
+docs/governance/line-p010-execute-survey.th.md
+docs/governance/line-p010-execute-survey.en.md
+docs/governance/evidence/line-ci-remediation-2026-10-01/REPORT.th.md
+docs/governance/evidence/line-ci-remediation-2026-10-01/REPORT.en.md
+docs/PRD-LINE-OA.th.md
+docs/PRD-LINE-OA.en.md

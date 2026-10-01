@@ -24,7 +24,7 @@ The same DB Verify run executed all five LINE suites with plan-complete results:
 
 | Path | Change |
 |---|---|
-| 4 governance documents (TH and EN, with HTML) | permission matrix, session report, EXECUTE survey and integration follow-up: citations, Thai sentence boundaries and two rewordings (ledger below) |
+| 4 governance documents (TH and EN, with HTML) | permission matrix, session report, EXECUTE survey and integration follow-up: citations, Thai sentence boundaries and several rewordings (ledger rows 20, 22, 25, 27 and 39, plus the dash in the matrix CALLER-UNKNOWN item; the count was corrected on 2 October 2026) |
 | 8 sealed evidence bundles | REPORT.th.md and REPORT.en.md amended, HTML re-rendered, 4 REPORT lines of `SHA256SUMS` regenerated; `SHA256SUMS.run` and raw outputs unchanged |
 | `docs/governance/repair-intelligence-phase0-push-checklist.md` | the acceptance-condition sentence is worded as a condition |
 | `.github/workflows/trust-kernel-verify.yml` | shadow E2E job: a first step fails with the names of missing secrets (never values, `trust-kernel-verify.yml:235`), and the run step creates `reports/` before writing (`trust-kernel-verify.yml:249`) |
@@ -58,7 +58,7 @@ Class A: a claim that a findable thing is absent. Class B: wording the detector 
 | 18 | `line-b12-permission-matrix.th.md:9` | B code behaviour | 0199 lines 66, 75 and 111 cited (TH and EN) |
 | 19 | `line-b12-permission-matrix.th.md:10` | B test description | `line_outbound_claim_record.sql:429` cited (TH and EN) |
 | 20 | `line-b12-permission-matrix.th.md:48` | B policy | paragraph turned into one list item per caller class (TH and EN) |
-| 21 | `line-outbound-phase0-session-report.en.md:75` | A customer consent column and check | table definition `00000000000002_line_oa_schema.sql:108`, staff column `0088_identity_binding_lifecycle.sql:10` and a re-check command at a97c3c847 (TH and EN) |
+| 21 | `line-outbound-phase0-session-report.en.md:75` | A customer consent column and check | table definition `00000000000002_line_oa_schema.sql:108`, staff column `0088_identity_binding_lifecycle.sql:10` and a re-check command at a97c3c847 (TH and EN). Disclosed on 2 October 2026: the wording narrowed from the whole schema to the `line_oa_customer_identity` table, and the re-check covered only `supabase/migrations` and `supabase/functions`; `src/mcp/pdpa.ts:34` holds an MCP-layer PDPA consent gate that the LINE send path does not use |
 | 22 | `line-outbound-phase0-session-report.th.md:25` | B idiom | em dash as in the English edition |
 | 23 | `line-outbound-phase0-session-report.th.md:75` | A as row 21 | as row 21 |
 | 24 | `line-outbound-phase0-session-report.th.md:100` | B code behaviour | `0193_line_outbound_claim_and_record.sql:235` cited (TH and EN) |
@@ -66,7 +66,7 @@ Class A: a claim that a findable thing is absent. Class B: wording the detector 
 | 26 | `line-outbound-phase0-session-report.th.md:110` | A cron schedule in 0193–0196 | re-check command at a97c3c847 (TH and EN) |
 | 27 | `line-outbound-phase0-session-report.th.md:159` | A a repository cron for the sender | re-check command at a97c3c847; "definitively" removed from the English edition |
 | 28 | `line-p010-execute-survey.th.md:18` | A ALTER DEFAULT PRIVILEGES | split as in the English edition, re-check command at a97c3c847 (TH and EN) |
-| 29–35 | `line-p010-execute-survey.th.md` lines 24, 27, 30, 31, 32, 33 and 34 | A callers, grants or guards per the survey search | shorthand migration citations in the 18-row routine table expanded to resolvable file:line (TH and EN); cited lines checked |
+| 29–35 | `line-p010-execute-survey.th.md` lines 24, 27, 30, 31, 32, 33 and 34 | A callers, grants or guards per the survey search | shorthand migration citations in the 18-row routine table expanded to resolvable file:line (TH and EN); cited lines checked. Correction of 2 October 2026: those citations point to grant, revoke or trigger lines and do not by themselves show the absence of callers, guards or grants; round 2 adds that evidence in the survey (re-checks R1 and R2 at 48b72d4c7 and the defining lines `0130_scrutiny5_fixes.sql:332-387`) |
 | 36 | `line-p010-integration-b12-followup.th.md:15` | B own action | split as in the English edition |
 | 37 | `line-p010-integration-b12-followup.th.md:62` | A hedged scan result | scanned source commit 3bdd6f3e5 added (TH and EN) |
 | 38 | `line-p010-integration-b12-followup.th.md:64` | A hedged scan result | split as in the English edition |
@@ -100,6 +100,17 @@ The commit goes through `commit-ci-remediation.sh`, which stages only the approv
 - `repair_phase0_containment` still needs migration 0170 from main (PRD §8 Q7), so DB Verify and edge + pgTAP stay red on that suite.
 - Pull request #133 has merge conflicts, so the main-branch `pull_request` workflows have not run on it; only push-triggered workflows have.
 - The amended bundles include reviewer-accepted evidence (for example da252d18a); each amendment needs re-review.
+
+## Corrections and updates (2 October 2026)
+
+A builder-side pre-review of 48b72d4c7 (not an independent acceptance) found the points below. Round 2 corrects them in commit-ready files; the sealed REPORTs of the eight bundles are not amended again.
+
+- The 16 amended REPORTs say the pre-amendment hashes are in this bundle. That became true only in round 2, when `12-pre-amendment-hashes.txt` was added: 32 entries, each pre-amendment hash equal to the base blob at a97c3c847 (`12-pre-amendment-hashes.txt:38`).
+- The commit message of 48b72d4c7 and the docstring of `tools/amend_bundles.py` say real absence claims gained citations. Ledger rows 2, 4, 11 and 38 were cleared by sentence splitting only, and rows 29–35 by citations to grant lines (round-2 evidence in the survey, see row 29–35).
+- Two weak citations stay as written in sealed REPORTs: `line-p010-catalog-2026-09-30/08-analysis.txt:237` is the trigger-section header (the noaction lines are 238–245), and the p012-green Thai table cites line 66 for both the identity check and the overload check (the overload check is `0199_line_oa_restrict_definer_execute.sql:75`).
+- The CI facts in this report (runs 36748427202 and 36748427203) are excerpted with their URLs in `line-p012b-round2-2026-10-02/01-github-actions-excerpt.txt:1`, together with run 36795389505 at 48b72d4c7, where claim linters passed and `trust_kernel_containment` ran 16/16 with storage enabled.
+- The negative-control script asserts only a non-zero gate exit; `11-gate-negative-controls.txt:5` onward shows which check fired in each case.
+- Found after the commit: on this host the commit-mode gate (`gate-ci-remediation.py --rev`) stops with "Filename too long" unless Git runs with `core.longpaths=true`; with it, the gate passed all 104 checks on 48b72d4c7.
 
 ## Runner history
 

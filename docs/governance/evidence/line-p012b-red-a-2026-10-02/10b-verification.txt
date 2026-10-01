@@ -1,0 +1,23 @@
+PASS: RED-A: 193 migrations applied from zero and only 0199 skipped (193 applied, 1 skipped)
+PASS: no migration failed
+PASS: no mutant in the migration chain
+PASS: cron scheduler disabled
+PASS: no cron job ran
+PASS: schema/ACL/owner/trigger/membership fingerprint unchanged by the tests
+PASS: no throwaway p01x role left
+PASS: 04a-matrix.tap: plan 1..82 with 82 ordered results and no plan mismatch
+PASS: RED-A: exactly the 47 matrix, PUBLIC, denial and write-probe assertions fail ([] differ)
+PASS: RED-A: assertion 54 shows all four realistic anon calls wrote before their rollback (['fn_prod_curated', 'line_oa_resolve_customer_identity', 'rpc_ingest_line_webhook', 'fn_line_handle_group_event'])
+PASS: RED-A: scope guards, the already-denied regression controls, retained-RPC, owner-chain, sender, sweep and field-app assertions pass
+PASS: 04c-original.tap: plan 1..107 with 107 ordered results and no plan mismatch
+PASS: original suite: failures [23, 41, 43] (expected [23, 41, 43]: the service-only recorder check and the two ACL-message denials need 0199)
+PASS: 04d-p010.tap: plan 1..133 with 133 ordered results and no plan mismatch
+PASS: P0-10 suite 133/133 (fn_prod_curated reached through an owner chain)
+PASS: 04e-fc0198.tap: plan 1..28 with 28 ordered results and no plan mismatch
+PASS: 0198 fail-closed suite passes
+PASS: claim race zero overlap
+PASS: 12 required Python files 72/72, none skipped (72 cases, 0 not passing)
+PASS: owned containers and network removed
+PASS: in-run credential scan passed
+RESULT: P0-12 round-2 RED-A expectations met
+Scope: local throwaway stack only; not GitHub Actions and not production. Phase A remains EVIDENCE_INCOMPLETE.

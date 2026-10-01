@@ -1,0 +1,10 @@
+psql:C:/Users/thai3/determined-williams (2)/MONOLITH Repair Intelligence/.worktrees/repair-intelligence-phase0-trust/supabase/migrations/0199_line_oa_restrict_definer_execute.sql:115: ERROR:  B12: EXECUTE matrix not met after revoke: anon:fn_prod_curated(uuid,text,jsonb) want f
+CONTEXT:  PL/pgSQL function inline_code_block line 81 at RAISE
+psql:C:/Users/thai3/determined-williams (2)/MONOLITH Repair Intelligence/.worktrees/repair-intelligence-phase0-trust/supabase/migrations/0199_line_oa_restrict_definer_execute.sql:115: ERROR:  B12: EXECUTE matrix not met after revoke: authenticated:fn_line_handle_group_event(jsonb,text,text) want f
+CONTEXT:  PL/pgSQL function inline_code_block line 81 at RAISE
+psql:C:/Users/thai3/determined-williams (2)/MONOLITH Repair Intelligence/.worktrees/repair-intelligence-phase0-trust/supabase/migrations/0199_line_oa_restrict_definer_execute.sql:115: ERROR:  B12: EXECUTE matrix not met after revoke: authenticated:rpc_create_line_order(uuid,jsonb,text,text) want t
+CONTEXT:  PL/pgSQL function inline_code_block line 81 at RAISE
+psql:C:/Users/thai3/determined-williams (2)/MONOLITH Repair Intelligence/.worktrees/repair-intelligence-phase0-trust/supabase/migrations/0199_line_oa_restrict_definer_execute.sql:115: ERROR:  B12: unclassified overload: fn_prod_curated(text)
+CONTEXT:  PL/pgSQL function inline_code_block line 45 at RAISE
+psql:C:/Users/thai3/determined-williams (2)/MONOLITH Repair Intelligence/.worktrees/repair-intelligence-phase0-trust/supabase/migrations/0199_line_oa_restrict_definer_execute.sql:115: ERROR:  B12: matrix identity missing: rpc_sync_line_forecast(text,text,text)
+CONTEXT:  PL/pgSQL function inline_code_block line 36 at RAISE

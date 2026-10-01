@@ -1,0 +1,40 @@
+$ python tools/pre_amendment_hashes.py   (run from the repository root)
+utc_start: 2026-10-01T17:15:24Z
+base (pre-amendment): a97c3c8479a5fcbff9fb134e0e661f7f0d828a8e
+amendment commit:     48b72d4c7c3f0d3bab197cb19483ca973807add2
+bundle | file | pre-amendment sha256 | post-amendment sha256 | pre equals base blob | post equals amended blob
+line-b12-catalog-fixture-2026-09-30 | REPORT.en.md | c8f34358abb0530292646f4e6bcff0d1197bcbbd1df88164143fad5159ea0389 | 271fee1e3ee82c8e890e3f7f226bfc8bd5344f44f6e7f324c2f0abbb36996a79 | True | True
+line-b12-catalog-fixture-2026-09-30 | REPORT.en.html | d372676056fe9c5b7eed2c9f2136259f9cf5c560901325a5155aeacb9e2af283 | cf351472b2a558bbb3c0139c778cd2af3f181f516a94f32ccb89fbd15991b32e | True | True
+line-b12-catalog-fixture-2026-09-30 | REPORT.th.md | 5eb24ac47952911cf54832f283008c007f18d4160baa6b0e8b5de8a93c84eec2 | afac223c52f8a073650f59831f7bc9278500df88143f5155a0183897172af918 | True | True
+line-b12-catalog-fixture-2026-09-30 | REPORT.th.html | 95614792b0e1e2fd9567b1c7feef0324276a8a2a0d729db9812206048c1609be | 9ad45d084626a00bc69cc665be2fd32de059039c9f06cd4f4dc5a53578b1187e | True | True
+line-b12-monolith-catalog-attempt2-2026-09-30 | REPORT.en.md | 4166c82651f06ea4f71335de7436fee08c0f212e9a42171d15bcaafab37e58db | 5048db5b4d116734e86c7eb624c769257c6d6770a0a4e70237bf2e8e2a6c39eb | True | True
+line-b12-monolith-catalog-attempt2-2026-09-30 | REPORT.en.html | 448c3f83d34542363a00a314c8f80423ba9a45ce1d4959a627acb4ac2af9f142 | ed3ca10f54f222b6c9a3bf9e7fd44a12057446c085a3774705cb761cd6b4f277 | True | True
+line-b12-monolith-catalog-attempt2-2026-09-30 | REPORT.th.md | 26b7d300008715f5c2b39f5a644982582a26c9e14807eb666fa2245f76a4167d | 022444bca27b234654c7d0701eb948da6e1e5fdd54e2b03ef0a808fdef20e61d | True | True
+line-b12-monolith-catalog-attempt2-2026-09-30 | REPORT.th.html | bd160b296990495793196a906de401f9c52452757f59da0b6f553555c8148b4e | eda57938181a338f2694a1c0e3b4c830a739b2424b820f84e05f443c6ea2881a | True | True
+line-ci-source-2026-09-30 | REPORT.en.md | 7c5b7c3e8dfbfcc131b6544a00cb389cac2870773f3b7831b420098c492f1d74 | d26cb49c605b8264d05040a08431dbcb6c44d729e78f801c696cc85731402acf | True | True
+line-ci-source-2026-09-30 | REPORT.en.html | 0a7e976cbca4ec66348db3d0841094c52f87c5165c79af9b026aa1d6109247ec | 98aef4e5bb561a47d697e0c39827179812a8fddd2b17f17974c37dd104315ba2 | True | True
+line-ci-source-2026-09-30 | REPORT.th.md | 92d58a8e17e37330b74cd2cc8914a9b74ff3af8e802df0b11aabca877e8d4987 | 0ea2ce214e9ba6e7ec79bd3c137c9b8bb7b41a58a0d1857048450a9d55fa3946 | True | True
+line-ci-source-2026-09-30 | REPORT.th.html | ac4dc5b5f2f09a846011725e04ec9a9b73b3ae649191bd9f171440919bfff8be | 41d5809cb0c710aa9447329f9930d8f71321b4b8495dbe4051cf8e04a8e35152 | True | True
+line-p010-catalog-2026-09-30 | REPORT.en.md | 6f81774771c9d2b8af0ff929913a6eb6ea891fa6a31797f20fb54c15be6c6e9e | 6253c69fa2ac81aa99523332f1be424d5fa8d399ef88d3a2142ecf3e71353d51 | True | True
+line-p010-catalog-2026-09-30 | REPORT.en.html | f3ba5e15f345c77e60fbff15dcf46f20e1e3b0f6d962fbde5946f19ef23f03e6 | 1581b33e9d300702af2ea13161e834c082e5477f118ed59ebf2a1fae15be892f | True | True
+line-p010-catalog-2026-09-30 | REPORT.th.md | e1ecdd356f1697a047366148329b837fe5cb92c956ee0dbabcb33507bb19e52e | c500ce5149327ac8a92e2800dcf294f33deaa9c126213ae5ce221ea5d252e727 | True | True
+line-p010-catalog-2026-09-30 | REPORT.th.html | cf30026c30de8dd5b3f4f7a4c9bc547a1ddea8d66b199a7cf767785a7232f493 | 6bd1c77a4d3370c3c379c6c056af0090650ae84059b4a952077cb8236284e3fc | True | True
+line-p010-ci-hardening-green-2026-09-30 | REPORT.en.md | a926668bcb56a4c4e8596cca03403a93e89e8cc53e471f3613a233e20ea4400c | b50909b25507e0103906dd450edac807d4d6336d689f0d282d83204f41ccdf40 | True | True
+line-p010-ci-hardening-green-2026-09-30 | REPORT.en.html | d2d2ae2ed767202a72f0d3dd6cce154ae154746fb63df0622a45f0a52bd37dfc | f12f259ee0fdf90a29c977303addee59104c279fa932b63dbdeb6e70af50e809 | True | True
+line-p010-ci-hardening-green-2026-09-30 | REPORT.th.md | 7a4c6cf9e6ecfa7fdc68a4e449ae054416c0440e27a5443f527f7e5799e9ddae | 255e9ffddd53cdafd3357961ddfbb8630a584d30b7084803f0f173ea7fb1914c | True | True
+line-p010-ci-hardening-green-2026-09-30 | REPORT.th.html | 2f47397943e3c40825c34c6c9cd86d3f9d13e37f466c78f1bef87418878df503 | 6f870d551f0dfd6bd9a75b82fb02798ad466e1dd9c1e6af734a8396ebba11987 | True | True
+line-p010-evidence-followup-2026-09-30 | REPORT.en.md | 6a2d1171591e8f634552ad70e83b1fd76ee7d920a15d9e7905d8745caaf10176 | 8540112ea07825a374e92725961d4c1551407f86ff7860e357d18f4ae52dec3d | True | True
+line-p010-evidence-followup-2026-09-30 | REPORT.en.html | f1fc6e36fa4cfa53b9fc514aba90e576a65ad7fe6ee8fc679ddf845db0057b2b | d19095a5389fe153ba5daf8d6fd396ab9e68fdb5dae6bcd94b1312d100c59a01 | True | True
+line-p010-evidence-followup-2026-09-30 | REPORT.th.md | 7980cfc2cb8e45d88ea5872a7ecaf556149b15f4720677dc7e483b81c4709018 | 4febe26b4f7cb3833de5bd783e56b26a40d4147dbd0b891286339ac800ea52eb | True | True
+line-p010-evidence-followup-2026-09-30 | REPORT.th.html | 57dad3ac66936e023edc286b068d13fffda0498115d7cba9e0e6b1a49eec8a34 | 360a0eed38d0d25fa26497c9748cc3fc2d71968816dd630c12977ee2f264c104 | True | True
+line-p010-failclosed-green-2026-09-30 | REPORT.en.md | 7cb2937da217d6ab3829034e5268ce352154f85e487ad8774303af2df751de3e | 828b4a780f0dc6b53d618163b0f4353d3aaf7fb25826d6acf22ea426234b7a0a | True | True
+line-p010-failclosed-green-2026-09-30 | REPORT.en.html | 7e42e46f9392f89627023ed3452e9da2bc7bdeef2df97ebd218d2bdadd5f2ccf | 14c7ce15426ceaaf6299332b2405c4a49bc849aa577f68ae1ae9dfd587151bd4 | True | True
+line-p010-failclosed-green-2026-09-30 | REPORT.th.md | e6dbde538541d199307fb01a42fb0e4a38b6d6046eb46e9e536130b16e86e903 | 36f927226ced1d8f66747a90aabbc4eaca8814b078db35e671240cfa7b84c542 | True | True
+line-p010-failclosed-green-2026-09-30 | REPORT.th.html | 95057f4676b12d5749eed717736035b5189c1a5b7c8ca7c5841d9e5059e16f91 | 07039e20b3a6d1eb7e0d746d7332f2c17e3713753f46906a0a626d4905666738 | True | True
+line-p012-green-2026-09-30 | REPORT.en.md | 6d39d6308008dec92a4135a57b89770f32e516384696177d48d5326e39118fec | f819bcce27c80bd8753350756c588075bc11aa7e5937ff3a248abbb198e9fdd0 | True | True
+line-p012-green-2026-09-30 | REPORT.en.html | 04871d12aa76d2a6740e584265d77cc7e0f5c04e574b4b5c028d4ff4c7f35244 | c1ae83a8c7f027c79699a2baf2ba45ddb8722656c3e58da5c3cd027cb52901f3 | True | True
+line-p012-green-2026-09-30 | REPORT.th.md | aafc0cd39fa7bea7d9556f2ae3140774401a850c99b4f1aabdfe9942cbd46928 | 6dd5437b68b9ca29e6483d0cf91f0d914f9490616af1535dfec25404741ad82c | True | True
+line-p012-green-2026-09-30 | REPORT.th.html | c0980961a5772c4b2ebe05d55df252d8146738a419c46bed3fe6f017d605a9a8 | a4c5a3d8729cc4eb0bdd0feea41811b99fc11e6fb3564e630e7bf41800070232 | True | True
+entries: 32; problems: 0
+utc_end: 2026-10-01T17:15:26Z
+exit: 0

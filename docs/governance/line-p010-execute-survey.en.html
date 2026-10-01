@@ -26,7 +26,7 @@
 </tr></thead><tbody>
 <tr>
 <td>fn_prod_curated</td>
-<td>23 call sites inside other DEFINER functions (0107 to 0143); no edge or frontend caller</td>
+<td>23 call sites inside other DEFINER functions (0107 to 0143); no edge or frontend caller (re-check R1)</td>
 <td>revoke from PUBLIC only (<code>0107_factory_group_milestones.sql:61</code>)</td>
 <td>none (<code>0107_factory_group_milestones.sql:50-60</code>)</td>
 <td>High (INFERENCE): queues a pending push into a project's customer group with caller-chosen slot text, given a project id</td>
@@ -49,7 +49,7 @@
 <td>fn_lead_followup_sweep</td>
 <td>cron job wf-lead-followup-sweep (<code>0116_lead_followup.sql:192</code>)</td>
 <td>service_role only (<code>0116_lead_followup.sql:223-225</code>)</td>
-<td>none</td>
+<td>none (the latest definition, <code>0130_scrutiny5_fixes.sql:332-387</code>, has no caller check)</td>
 <td>Medium (INFERENCE): anyone can trigger lead follow-up pushes and escalations on demand</td>
 </tr>
 <tr>
@@ -69,34 +69,34 @@
 <tr>
 <td>fn_welcome_on_group_bind</td>
 <td>trigger trg_welcome_group_bind (<code>0136_customer_docs.sql:185-186</code>)</td>
-<td>none; PUBLIC also holds EXECUTE</td>
+<td>none (re-check R2); PUBLIC also holds EXECUTE (<code>evidence/line-p010-catalog-2026-09-30/08-analysis.txt:135</code>)</td>
 <td>trigger-only function</td>
 <td>Low (INFERENCE): PostgreSQL refuses to call a trigger function directly (not tested here)</td>
 </tr>
 <tr>
 <td>rpc_send_line_outbound</td>
-<td>none live (known since 26 July 2026)</td>
+<td>none live (known since 26 July 2026; re-check R1)</td>
 <td>authenticated (<code>00000000000040_line_oa_send_outbound.sql:442</code>)</td>
 <td>is_governance_role, has_site_access, 42501</td>
 <td>Low (INFERENCE): the body denies callers without a site role</td>
 </tr>
 <tr>
 <td>rpc_create_line_order</td>
-<td>none in code</td>
+<td>none in code (re-check R1)</td>
 <td>authenticated (<code>00000000000050_line_oa_create_order.sql:643</code>)</td>
 <td>is_governance_role, has_site_access, 42501</td>
 <td>Low (INFERENCE)</td>
 </tr>
 <tr>
 <td>rpc_evaluate_identity_merge_candidate</td>
-<td>none in code</td>
+<td>none in code (re-check R1)</td>
 <td>authenticated (<code>00000000000021_line_oa_identity_merge_candidate.sql:265</code>)</td>
 <td>is_governance_role, 42501</td>
 <td>Low (INFERENCE)</td>
 </tr>
 <tr>
 <td>rpc_resolve_conversation_site</td>
-<td>none in code</td>
+<td>none in code (re-check R1)</td>
 <td>authenticated (<code>00000000000030_line_oa_resolve_conversation_site.sql:254</code>)</td>
 <td>is_governance_role, has_site_access, 42501</td>
 <td>Low (INFERENCE)</td>
@@ -151,6 +151,8 @@
 <td>Low (INFERENCE)</td>
 </tr>
 </tbody></table></div>
+<p>Re-checked on 2 October 2026 at <code>48b72d4c7</code>, in the same scope as the method section (migrations and tests excluded):</p>
+<ul><li>R1: <code>git grep -nF &lt;routine name&gt; -- src server packages supabase/functions tools e2e scripts</code> finds only <code>scripts/line-b12-catalog.sql</code>, a catalog-query list rather than a call, and comments in <code>supabase/functions/_shared/line-oa/autonomyGate.ts</code>, <code>brand-voice.ts</code>, <code>templates.ts</code> and <code>supabase/functions/_shared/order-adapter.ts</code>.</li><li>R2: <code>git grep -nE &quot;grant execute on function public.fn_welcome_on_group_bind&quot; -- supabase/migrations</code> at <code>48b72d4c7</code> returns nothing.</li></ul>
 <p>&quot;Low&quot; means only that the body appears to deny anon. It still depends on each guard being correct on every path, which this survey did not test.</p>
 <h2>Unknown</h2>
 <ul><li>Callers outside this repository: other apps, scripts, automation or manual tools. Finding no caller in the repository does not prove there is none.</li><li>Production: its EXECUTE grants, default ACLs and PostgREST schema exposure were not read. Nothing here shows that production exposes these functions.</li><li>Runtime behaviour of each guard for anon, and whether PostgreSQL refuses a direct trigger-function call in this setup: not executed.</li></ul>

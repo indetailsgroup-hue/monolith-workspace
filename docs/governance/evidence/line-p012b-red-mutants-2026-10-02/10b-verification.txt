@@ -1,0 +1,20 @@
+PASS: red-mutants: all 194 migrations applied from zero, 0199 last (194 applied)
+PASS: no migration failed
+PASS: no mutant in the migration chain
+PASS: cron scheduler disabled
+PASS: no cron job ran
+PASS: schema/ACL/owner/trigger/membership fingerprint unchanged by the tests
+PASS: no throwaway p01x role left
+PASS: mutant-b-vs-0199.diff: the mutant only removes lines, including the 'EXECUTE matrix not met after revoke' raise (23 lines)
+PASS: mutant-c-vs-0199.diff: the mutant only removes lines, including the 'matrix identity missing' raise (7 lines)
+PASS: 04f-fc0199-vs-mutant-b.tap: plan 1..27 with 27 ordered results and no plan mismatch
+PASS: mutant B: exactly the 12 rejection/rollback assertions of cases A-C fail ([3, 4, 5, 6, 8, 9, 10, 11, 13, 14, 15, 16])
+PASS: mutant B: the three expected rejections show SQLSTATE 00000 (the mutant completed instead of refusing)
+PASS: 04g-fc0199-vs-mutant-c.tap: plan 1..27 with 27 ordered results and no plan mismatch
+PASS: mutant C: exactly case F's SQLSTATE and message assertions fail ([23, 24])
+PASS: mutant C: case F got 42P01 instead of 55000
+PASS: both mutant runs: psql exit 0
+PASS: owned containers and network removed
+PASS: in-run credential scan passed
+RESULT: P0-12 round-2 RED-MUTANTS expectations met
+Scope: local throwaway stack only; not GitHub Actions and not production. Phase A remains EVIDENCE_INCOMPLETE.

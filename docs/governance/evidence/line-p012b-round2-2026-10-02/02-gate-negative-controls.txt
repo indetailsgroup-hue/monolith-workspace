@@ -1,0 +1,92 @@
+$ bash tools/gate-negative-controls.sh   (repository root; private index per control)
+utc: 2026-10-01T17:25:32Z head: 48b72d4c7c3f0d3bab197cb19483ca973807add2
+warning: in the working copy of 'docs/PRD-LINE-OA.en.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/PRD-LINE-OA.en.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/PRD-LINE-OA.th.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/PRD-LINE-OA.th.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'supabase/tests/line_oa_definer_execute_fail_closed.sql', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'supabase/tests/line_oa_definer_execute_matrix.sql', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'supabase/tests/line_outbound_claim_record.sql', LF will be replaced by CRLF the next time Git touches it
+PASS (gate accepted): control 0, the approved change set unmodified
+warning: in the working copy of 'docs/PRD-LINE-OA.en.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/PRD-LINE-OA.en.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/PRD-LINE-OA.th.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/PRD-LINE-OA.th.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'supabase/tests/line_oa_definer_execute_fail_closed.sql', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'supabase/tests/line_oa_definer_execute_matrix.sql', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'supabase/tests/line_outbound_claim_record.sql', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'C:/Users/thai3/AppData/Local/Temp/tmp.ZdDl61tAq0/extra', LF will be replaced by CRLF the next time Git touches it
+PASS (rejected by the targeted check, exit 1): control 1, an unapproved extra path
+    FAIL: change set is exactly the approved 175 paths (unexpected=['docs/governance/unapproved-extra.md'], missing=[])
+    FAIL: listed files are modified and the new bundle files are added, nothing else ({'docs/governance/unapproved-extra.md': 'A'})
+warning: in the working copy of 'docs/PRD-LINE-OA.en.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/PRD-LINE-OA.en.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/PRD-LINE-OA.th.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/PRD-LINE-OA.th.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'supabase/tests/line_oa_definer_execute_fail_closed.sql', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'supabase/tests/line_oa_definer_execute_matrix.sql', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'supabase/tests/line_outbound_claim_record.sql', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'C:/Users/thai3/AppData/Local/Temp/tmp.ZdDl61tAq0/tap', LF will be replaced by CRLF the next time Git touches it
+PASS (rejected by the targeted check, exit 1): control 2, a raw runner output changed
+    FAIL: docs/governance/evidence/line-p012b-green-2026-10-02: SHA256SUMS matches the staged blobs (['04a-matrix.tap'])
+warning: in the working copy of 'docs/PRD-LINE-OA.en.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/PRD-LINE-OA.en.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/PRD-LINE-OA.th.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/PRD-LINE-OA.th.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'supabase/tests/line_oa_definer_execute_fail_closed.sql', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'supabase/tests/line_oa_definer_execute_matrix.sql', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'supabase/tests/line_outbound_claim_record.sql', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'C:/Users/thai3/AppData/Local/Temp/tmp.ZdDl61tAq0/mig', LF will be replaced by CRLF the next time Git touches it
+PASS (rejected by the targeted check, exit 1): control 3, migration 0199 changed
+    FAIL: change set is exactly the approved 175 paths (unexpected=['supabase/migrations/0199_line_oa_restrict_definer_execute.sql'], missing=[])
+    FAIL: listed files are modified and the new bundle files are added, nothing else ({'supabase/migrations/0199_line_oa_restrict_definer_execute.sql': 'M'})
+    FAIL: no migration or application source is touched (0199 unchanged)
+    FAIL: supabase/migrations/0199_line_oa_restrict_definer_execute.sql equals the copy used by line-p012b-red-mutants-2026-10-02
+warning: in the working copy of 'docs/PRD-LINE-OA.en.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/PRD-LINE-OA.en.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/PRD-LINE-OA.th.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/PRD-LINE-OA.th.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'supabase/tests/line_oa_definer_execute_fail_closed.sql', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'supabase/tests/line_oa_definer_execute_matrix.sql', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'supabase/tests/line_outbound_claim_record.sql', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'C:/Users/thai3/AppData/Local/Temp/tmp.ZdDl61tAq0/doc', LF will be replaced by CRLF the next time Git touches it
+PASS (rejected by the targeted check, exit 1): control 4, an unevidenced absence claim added to a governance document
+    FAIL: pinned lint_claims on the gated tree exits 0 (allowlisted debt: 15 hits across 11 files)
+    FAIL: docs/governance/line-p010-execute-survey.th.html equals the renderer output of its Markdown
+warning: in the working copy of 'docs/PRD-LINE-OA.en.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/PRD-LINE-OA.en.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/PRD-LINE-OA.th.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/PRD-LINE-OA.th.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'supabase/tests/line_oa_definer_execute_fail_closed.sql', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'supabase/tests/line_oa_definer_execute_matrix.sql', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'supabase/tests/line_outbound_claim_record.sql', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'C:/Users/thai3/AppData/Local/Temp/tmp.ZdDl61tAq0/wf', LF will be replaced by CRLF the next time Git touches it
+PASS (rejected by the targeted check, exit 1): control 5, a non-comment workflow change
+    FAIL: trust-kernel-verify.yml parses identical to the base (comment-only change)
+    FAIL: every non-comment line of trust-kernel-verify.yml is unchanged
+warning: in the working copy of 'docs/PRD-LINE-OA.en.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/PRD-LINE-OA.en.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/PRD-LINE-OA.th.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/PRD-LINE-OA.th.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'supabase/tests/line_oa_definer_execute_fail_closed.sql', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'supabase/tests/line_oa_definer_execute_matrix.sql', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'supabase/tests/line_outbound_claim_record.sql', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'C:/Users/thai3/AppData/Local/Temp/tmp.ZdDl61tAq0/run', LF will be replaced by CRLF the next time Git touches it
+PASS (rejected by the targeted check, exit 1): control 6, the remediation bundle's SHA256SUMS.run changed
+    FAIL: change set is exactly the approved 175 paths (unexpected=['docs/governance/evidence/line-ci-remediation-2026-10-01/SHA256SUMS.run'], missing=[])
+    FAIL: listed files are modified and the new bundle files are added, nothing else ({'docs/governance/evidence/line-ci-remediation-2026-10-01/SHA256SUMS.run': 'M'})
+    FAIL: docs/governance/evidence/line-ci-remediation-2026-10-01: SHA256SUMS.run identical to the base
+    FAIL: docs/governance/evidence/line-ci-remediation-2026-10-01: SHA256SUMS matches the blobs (['SHA256SUMS.run'])
+warning: in the working copy of 'docs/PRD-LINE-OA.en.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/PRD-LINE-OA.en.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/PRD-LINE-OA.th.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/PRD-LINE-OA.th.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'supabase/tests/line_oa_definer_execute_fail_closed.sql', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'supabase/tests/line_oa_definer_execute_matrix.sql', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'supabase/tests/line_outbound_claim_record.sql', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'C:/Users/thai3/AppData/Local/Temp/tmp.ZdDl61tAq0/cred', LF will be replaced by CRLF the next time Git touches it
+PASS (rejected by the targeted check, exit 1): control 7, a credential-shaped URI added to a changed file
+    FAIL: docs/governance/line-p010-execute-survey.en.html equals the renderer output of its Markdown
+    FAIL: no new credential-shaped value in 175 Git blobs ({'docs/governance/line-p010-execute-survey.en.md': ['uri_password']})
+negative controls not rejected by their targeted check: 0
+exit: 0

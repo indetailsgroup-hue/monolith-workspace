@@ -1,0 +1,69 @@
+$ python tools/ci_excerpt.py   (read-only gh API calls, run from the repository root)
+utc_start: 2026-10-01T17:20:38Z
+== run 36748427203: https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/36748427203
+   workflow='MONOLITH DB Verify' event=push head_sha=a97c3c8479a5fcbff9fb134e0e661f7f0d828a8e conclusion=failure created=2026-09-30T17:01:20Z
+   -- job 110000477997 'apply migrations + pgTAP invariants': conclusion=failure log_sha256=29c7e1ebe256d64fee883219695aa683171284d3121fa9c8384fa98f354ea4c6 lines=2618
+      2026-09-30T17:04:08.6944646Z workflow_db_invariants: pass (plan 11, ok 11, not ok 0, psql exit 0)
+      2026-09-30T17:04:08.9132448Z trust_kernel_tenancy: pass (plan 29, ok 29, not ok 0, psql exit 0)
+      2026-09-30T17:04:09.1147572Z trust_kernel_governance: pass (plan 27, ok 27, not ok 0, psql exit 0)
+      2026-09-30T17:04:09.4179864Z trust_kernel_release: pass (plan 59, ok 59, not ok 0, psql exit 0)
+      2026-09-30T17:04:09.6334342Z trust_kernel_bundles: pass (plan 27, ok 27, not ok 0, psql exit 0)
+      2026-09-30T17:04:09.8273533Z trust_kernel_containment: FAIL (plan 16, ok 14, not ok 2, psql exit 0)
+      2026-09-30T17:04:10.1092461Z trust_kernel_safety: pass (plan 68, ok 68, not ok 0, psql exit 0)
+      2026-09-30T17:04:10.3379252Z repair_phase0_organization: pass (plan 21, ok 21, not ok 0, psql exit 0)
+      2026-09-30T17:04:10.5278067Z repair_phase0_containment: FAIL (plan 8, ok 6, not ok 0, psql exit 3)
+      2026-09-30T17:04:10.5281162Z ##[error]repair_phase0_containment: incomplete-results: planned 8, found 6 result(s); missing: 7, 8
+      2026-09-30T17:04:10.8290433Z line_outbound_claim_record: pass (plan 107, ok 107, not ok 0, psql exit 0)
+      2026-09-30T17:04:11.0799372Z line_oa_client_write_revoke: pass (plan 133, ok 133, not ok 0, psql exit 0)
+      2026-09-30T17:04:11.3376040Z line_oa_client_write_revoke_fail_closed: pass (plan 28, ok 28, not ok 0, psql exit 0)
+      2026-09-30T17:04:11.6107471Z line_oa_definer_execute_matrix: pass (plan 82, ok 82, not ok 0, psql exit 0)
+      2026-09-30T17:04:11.8680750Z line_oa_definer_execute_fail_closed: pass (plan 23, ok 23, not ok 0, psql exit 0)
+      2026-09-30T17:04:11.8712355Z FAILED: 2 of 14 suites: trust_kernel_containment repair_phase0_containment
+      2026-09-30T17:04:12.8959749Z PASS claim-race: client_a=10 client_b=10 overlap=0 claimed=20
+      2026-09-30T17:04:13.1395275Z   "commit": "a97c3c8479a5fcbff9fb134e0e661f7f0d828a8e",
+      2026-09-30T17:04:13.1399006Z   "migrationsApplied": 194,
+      2026-09-30T17:04:13.1400543Z   "provenanceComplete": true,
+      2026-09-30T17:04:13.1402889Z   "linePass": true,
+      2026-09-30T17:04:13.1403279Z   "fullPass": false,
+      2026-09-30T17:04:13.1473622Z             "code": "incomplete-results",
+      2026-09-30T17:04:13.1511377Z     "linePass": true,
+      2026-09-30T17:04:13.1511718Z     "fullPass": false,
+== run 36748427202: https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/36748427202
+   workflow='Trust Kernel Verify (Shadow Trust-Ready)' event=push head_sha=a97c3c8479a5fcbff9fb134e0e661f7f0d828a8e conclusion=failure created=2026-09-30T17:01:20Z
+   -- job 110000478233 'claim linters (pinned governance baseline)': conclusion=failure log_sha256=e90d31149be6a4b083d2019cff66582ed16680054b99af1901ac086841bdc214 lines=327
+      2026-09-30T17:01:28.6222953Z [36;1mecho "CLAIM LINTERS: PASS" | tee reports/claim-linters.txt[0m
+      2026-09-30T17:01:29.1895852Z 38 unevidenced absence claim(s) beyond the allowlist in 14 file(s)
+      2026-09-30T17:01:29.1897080Z allowlisted debt: 15 hits across 11 files
+   -- job 110000478336 'edge + pgTAP': conclusion=failure log_sha256=604586eba3cb46fc5a4b3f2e88d327af2fdc540bd4275f2d9df94cb1c2c4da05 lines=1154
+      2026-09-30T17:02:50.1981305Z [36;1m  if grep -qE '^not ok' "reports/pgtap-${suite}.tap"; then echo "::error::pgTAP failure in ${suite}"; exit 1; fi[0m
+      2026-09-30T17:02:51.0150112Z not ok 8 - factory-packets read policy targets ONLY the isolated workload role
+      2026-09-30T17:02:51.0155932Z not ok 9 - the workload read policy is scoped to the factory-packets bucket (tenant-pathed)
+      2026-09-30T17:02:51.0246202Z ##[error]pgTAP failure in trust_kernel_containment
+   -- job 110000478356 'shadow E2E': conclusion=failure log_sha256=fdb7118b4a8c43743e8fa65f78518603ea62c9d3d8b44e94fee3e14d0d21e702 lines=467
+      2026-09-30T17:02:02.6000354Z /home/runner/work/_temp/6c56b3ed-dd2b-453e-8df2-617de672c6fd.sh: line 1: reports/e2e.json: No such file or directory
+      2026-09-30T17:02:02.6016628Z ##[error]Process completed with exit code 1.
+   -- job 110001794851 'final acceptance gate': conclusion=failure log_sha256=7c292127052d40bdac7de7724f5cdfebc6a79ad158292712d8b87484b6ed54e0 lines=196
+      2026-09-30T17:04:43.1476572Z TRUST KERNEL FINAL GATE: FAIL
+== run 36795389505: https://github.com/indetailsgroup-hue/monolith-workspace/actions/runs/36795389505
+   workflow='Trust Kernel Verify (Shadow Trust-Ready)' event=push head_sha=48b72d4c7c3f0d3bab197cb19483ca973807add2 conclusion=failure created=2026-10-01T00:17:01Z
+   -- job 110157528407 'claim linters (pinned governance baseline)': conclusion=success log_sha256=83966061ca8d8099ef9a46a55cf7f89d9913943ad5aa65943e8458e6d08361e4 lines=303
+      2026-10-01T00:17:07.4867506Z [36;1mecho "CLAIM LINTERS: PASS" | tee reports/claim-linters.txt[0m
+      2026-10-01T00:17:08.0638981Z allowlisted debt: 15 hits across 11 files
+      2026-10-01T00:17:08.4159134Z checked 63 document(s): every certification carries evidence (within the allowlist).
+      2026-10-01T00:17:08.4160028Z allowlisted debt: 1 hits across 1 files
+      2026-10-01T00:17:08.4250974Z CLAIM LINTERS: PASS
+   -- job 110157528263 'edge + pgTAP': conclusion=failure log_sha256=20354bbac8e6e9dc3e9d386326ccabc3ea77e2d787b9075099703ac2681cb0fe lines=1411
+      2026-10-01T00:18:47.8725139Z ok 8 - factory-packets read policy targets ONLY the isolated workload role
+      2026-10-01T00:18:47.8734629Z ok 9 - the workload read policy is scoped to the factory-packets bucket (tenant-pathed)
+      2026-10-01T00:18:48.7025806Z psql:supabase/tests/repair_phase0_containment.sql:74: ERROR:  function "public.rpc_factory_job_record_packet(text,text,text,text,text,text[],text[],text,text,text,text,integer)" does not exis
+   -- job 110157528461 'shadow E2E': conclusion=failure log_sha256=8c1f6efb6f38509dc0f7beb15bdb9bc0ddfa88f86a981c8de0b43891731258eb lines=67
+      2026-10-01T00:17:06.8304007Z [36;1m  echo "::error::shadow E2E environment is not provisioned; missing repository secrets:$missing"[0m
+      2026-10-01T00:17:06.9536773Z ##[error]shadow E2E environment is not provisioned; missing repository secrets: E2E_BASE_URL E2E_SUPABASE_ANON_KEY E2E_DESIGNER_A_JWT E2E_APPROVER_B_JWT E2E_TENANT_002_JWT
+   -- job 110158280684 'final acceptance gate': conclusion=failure log_sha256=b65db0442b1b210fe37edb8f3817af4c6435d4258959f755aa6b1d8224435689 lines=194
+      2026-10-01T00:19:59.0113368Z TRUST KERNEL FINAL GATE: FAIL
+      2026-10-01T00:19:59.0115245Z   - job "edge-db" did not succeed (result=failure)
+      2026-10-01T00:19:59.0115967Z   - job "e2e" did not succeed (result=failure)
+      2026-10-01T00:19:59.0116649Z   - job "evidence-self-verify" did not succeed (result=skipped)
+source: GitHub Actions job logs fetched read-only with `gh api`; logs expire on GitHub's retention schedule.
+utc_end: 2026-10-01T17:21:01Z
+exit: 0

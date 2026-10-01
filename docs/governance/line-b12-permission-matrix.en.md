@@ -1,14 +1,14 @@
 # B12 exact-identity permission matrix and acceptance plan
 
-30 September 2026. Source base c4c76717b9d64a51ad1c0b4421148587be7ba285. IMPLEMENTED LOCALLY in 0199, awaiting independent review; not deployed. The recorder choice is decided (service-only). Caller-register and manufacturing answers are still missing and block deployment.
+30 September 2026, tests revised 2 October 2026. The matrix was drafted on c4c76717b9d64a51ad1c0b4421148587be7ba285 and implemented in 0199 (commit a97c3c847 on base 5119396a7). IMPLEMENTED LOCALLY, awaiting independent review; not deployed. The recorder choice is decided (service-only). Caller-register and manufacturing answers are still missing and block deployment.
 
 ## Owner decisions and implementation (30 September 2026)
 
 - Recorder: `rpc_record_line_send_result` is service-only (owner decision). B12-15 authenticated is DENY.
 - Build: the owner approved building the whole matrix in one step before the ops caller register and the manufacturing sign-off arrived. The SERVICE-row authenticated denials and the `fn_prod_curated` service_role denial are therefore implemented on assumption, and deployment stays blocked until those answers exist.
 - Implementation: `supabase/migrations/0199_line_oa_restrict_definer_execute.sql` revokes EXECUTE only and grants nothing. It stops (55000) on a missing identity or an unclassified overload (`0199_line_oa_restrict_definer_execute.sql:66`, `0199_line_oa_restrict_definer_execute.sql:75`), and it raises 42501 and rolls back if any effective right differs from the target afterwards or PUBLIC still holds EXECUTE (`0199_line_oa_restrict_definer_execute.sql:111`).
-- Tests: `supabase/tests/line_oa_definer_execute_matrix.sql` (82 assertions) and `supabase/tests/line_oa_definer_execute_fail_closed.sql` (23). Two existing tests changed with the policy. The original suite's recorder check now expects no authenticated EXECUTE (`line_outbound_claim_record.sql:429`), and the P0-10 suite reaches `fn_prod_curated` through `rpc_field_create_appointment` instead of calling it as service_role.
-- Evidence: `evidence/line-p012-red-a-2026-09-30/`, `evidence/line-p012-red-b-2026-09-30/` and `evidence/line-p012-green-2026-09-30/`. These are local runs, awaiting independent review; they are not CI or production results.
+- Tests: `supabase/tests/line_oa_definer_execute_matrix.sql` (82 assertions) and `supabase/tests/line_oa_definer_execute_fail_closed.sql` (27; 23 at a97c3c847). Round 2 (2 October 2026) made assertion 54 run realistic anon calls that fingerprint the tables inside each probe, added case F (missing identity, 55000), and made the original suite's assertions 41 and 43 require the function-ACL message. Two existing tests changed with the policy. The original suite's recorder check now expects no authenticated EXECUTE (`line_outbound_claim_record.sql:429`), and the P0-10 suite reaches `fn_prod_curated` through `rpc_field_create_appointment` instead of calling it as service_role.
+- Evidence: `evidence/line-p012-red-a-2026-09-30/`, `evidence/line-p012-red-b-2026-09-30/` and `evidence/line-p012-green-2026-09-30/`; round 2 in `evidence/line-p012b-red-a-2026-10-02/`, `evidence/line-p012b-red-mutants-2026-10-02/` and `evidence/line-p012b-green-2026-10-02/`. These are local runs, awaiting independent review; they are not production results.
 
 ## Alternatives and recommendation
 
@@ -16,7 +16,7 @@ Keeping existing rights avoids disruption but leaves B12 open. Blanket revocatio
 
 ## Exact matrix
 
-Current A/U/S means effective EXECUTE for anon/authenticated/service_role, t=yes, f=no, from the committed reconstructed catalog at da252d18a. It is historical local evidence, not production or a fresh catalog. All twenty identities are public, SECURITY DEFINER and owned by postgres in that capture. Target columns are proposed final effective rights, not new GRANT instructions. DENY includes rights inherited through PUBLIC/membership; KEEP preserves current access provisionally and does not approve every caller. DECIDE is a blocking business boundary.
+Current A/U/S means effective EXECUTE for anon/authenticated/service_role, t=yes, f=no, from the committed reconstructed catalog at da252d18a. It is historical local evidence, not production or a fresh catalog. All twenty identities are public, SECURITY DEFINER and owned by postgres in that capture. Target columns are proposed final effective rights, not new GRANT instructions. DENY includes rights inherited through PUBLIC/membership; KEEP preserves current access provisionally and does not approve every caller. No row is DECIDE any more: the only one (B12-15) was settled by the owner as service-only.
 
 | ID | public identity | Current A/U/S | Target anon | Target authenticated | Target service_role | Class |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -50,25 +50,27 @@ PUBLIC target: no EXECUTE on all twenty identities; the historical catalog shows
 - FIELD: preserve authenticated business calls and test both authorized and cross-site denial.
 - CALLER-UNKNOWN: retain authenticated/service access pending inventory; absence of a code call does not justify further revocation — the dogfood runbook explicitly names rpc_create_line_order.
 
-SENDER: claim remains service-only. The recorder currently permits authenticated execution and checks governance/site access in 0197:122–129. Recommend service-only recording if ops and the owner confirm that no user-driven recording workflow is required. Otherwise retain the guarded user path and test it explicitly. Do not silently choose either branch.
+SENDER: claim remains service-only. Before 0199 the recorder permitted authenticated execution and checked governance/site access in 0197:122–129. The owner decided service-only recording on 30 September 2026 and 0199 implements it. Ops should still confirm that no staff member or tool records results by hand.
 
 Every row needs an ops register reference or an explicit unresolved entry. Approval must identify exact signatures, recorder choice, retained service callers, trigger/cron principal and factory coordination. Recheck overloads and 0199 availability on the chosen integration base immediately before SQL.
 
-## Acceptance plan — executed locally in 0199 evidence
+## Acceptance plan and local status
 
-| Check | Required evidence |
-| --- | --- |
-| Baseline | Catalog owners, twenty exact identities plus unexpected overloads, effective rights for named roles, PUBLIC and inheritance; no production assumptions |
-| RED | Same test bytes on baseline demonstrate expected forbidden access still exists; calls use valid typed inputs and transaction rollback, with no sender/cron/external channel |
-| Denial | After migration each DENY is false by effective privilege checks; ordinary-function calls produce 42501 permission denied for function, not a schema or body failure |
-| Trigger exception | Check ACL and actual binding-trigger effects; invalid direct invocation of a trigger function is not proof of permission denial |
-| Preserved behavior | Signed ingest, service identity, claim/record, five known field paths, retained guarded RPCs, owner sweep, welcome trigger and factory owner chain; assert resulting data and denied wrong-site cases |
-| Residual grants | Simulate inherited/direct other-grantor access on temporary roles; migration must fail closed without silently granting broader rights or changing memberships |
-| Atomicity | Run the real migration under the intended transaction boundary; compare before/after ACL and owner state after failure; test rerun behavior |
-| Integration | Complete migration chain and full suites, Python twelve files, race and 0198 direct-write denial; containment remains a real failure until resolved |
-| Evidence | New immutable bundle, source identities, commands/UTC/exit, raw results, checksums, secret scan and stack cleanup; independent review; actual CI after separate push approval |
+Status after the local runs of 0199 (round 1) and its strengthened tests (round 2): executed, partly, or open.
 
-Fixture rows and temporary roles are confined to a fresh isolated stack with cron off and no live credentials. Negative tests must not execute a live outbound worker. Test data effects are rolled back or the isolated stack is removed. Local results are in the line-p012 bundles; no CI or production result is claimed.
+| Check | Required evidence | Status |
+| --- | --- | --- |
+| Baseline | Catalog owners, twenty exact identities plus unexpected overloads, effective rights for named roles, PUBLIC and inheritance; no production assumptions | executed for owners, identities, overloads, the three roles, PUBLIC and inheritance; authenticator after 0199 is open (see the PUBLIC paragraph) |
+| RED | Same test bytes on baseline demonstrate expected forbidden access still exists; calls use valid typed inputs and transaction rollback, with no sender/cron/external channel | executed; round 2 adds realistic anon calls that are shown to write when 0199 is absent |
+| Denial | After migration each DENY is false by effective privilege checks; ordinary-function calls produce 42501 permission denied for function, not a schema or body failure | executed |
+| Trigger exception | Check ACL and actual binding-trigger effects; invalid direct invocation of a trigger function is not proof of permission denial | executed |
+| Preserved behavior | Signed ingest, service identity, claim/record, five known field paths, retained guarded RPCs, owner sweep, welcome trigger and factory owner chain; assert resulting data and denied wrong-site cases | executed |
+| Residual grants | Simulate inherited/direct other-grantor access on temporary roles; migration must fail closed without silently granting broader rights or changing memberships | executed (fail-closed cases A–C) |
+| Atomicity | Run the real migration under the intended transaction boundary; compare before/after ACL and owner state after failure; test rerun behavior | partly: after a failing run and the savepoint rollback, ACLs and memberships equal the pre-state, and a rerun is clean (case E); atomicity itself is PostgreSQL statement semantics, and owners are not compared |
+| Integration | Complete migration chain and full suites, Python twelve files, race and 0198 direct-write denial; containment remains a real failure until resolved | executed locally (only the existing containment suite fails); GitHub Actions ran the five LINE suites at a97c3c847 |
+| Evidence | New immutable bundle, source identities, commands/UTC/exit, raw results, checksums, secret scan and stack cleanup; independent review; actual CI after separate push approval | local bundles produced; independent review open |
+
+Fixture rows and temporary roles are confined to a fresh isolated stack with cron off and no live credentials. Negative tests must not execute a live outbound worker. Test data effects are rolled back or the isolated stack is removed. Local results are in the line-p012 and line-p012b bundles. GitHub Actions results are excerpted in the line-p012b green bundle; no production result is claimed.
 
 ## Integration and deployment boundaries
 
@@ -80,7 +82,7 @@ Prior to deployment, separately authorized production catalog review must compar
 
 Opus 5.5 reviewed only a sanitized requirements paragraph through Claude CLI with tools/MCP disabled; it did not inspect source, files or a database. Its three concerns were loss of access supplied through PUBLIC, recurrence after recreation, and assumptions about owner chains/trigger tests. This is design feedback, not independent implementation acceptance.
 
-For each identity, record grant origin (direct grant and grantor, PUBLIC, inheritance or ownership) for all observed grantees, not just three roles. KEEP requires post-state effective EXECUTE, while DECIDE preserves the existing grant until an explicit decision. If PUBLIC removal would break an unlisted caller, stop for disposition; do not add replacement grants automatically. The historical snapshot has named grants for retained named roles, but a new target catalog must confirm that fact. Anonymous denial changes eighteen identities; the claim and recorder already deny anon and are regression controls.
+For each identity, record grant origin (direct grant and grantor, PUBLIC, inheritance or ownership) for all observed grantees, not just three roles. KEEP requires post-state effective EXECUTE, while DECIDE preserves the existing grant until an explicit decision (no row remains DECIDE). Recording grant origin for grantees other than the three roles is still open. If PUBLIC removal would break an unlisted caller, stop for disposition; do not add replacement grants automatically. The historical snapshot has named grants for retained named roles, but a new target catalog must confirm that fact. Anonymous denial changes eighteen identities; the claim and recorder already deny anon and are regression controls.
 
 Inventory every overload of each covered name. After an authorized create/recreate or integration, reassert the approved matrix and fail on a new unclassified overload. Do not introduce a schema-wide deny policy under this bounded work. Broader future default-ACL policy remains separate.
 

@@ -52,7 +52,7 @@
 </tr></thead><tbody>
 <tr>
 <td>เอกสาร governance 4 ชุด (TH และ EN พร้อม HTML)</td>
-<td>permission matrix, session report, EXECUTE survey และ integration follow-up: เพิ่มการอ้างอิง แยกประโยคภาษาไทย และปรับถ้อยคำ 2 จุด (ดูตารางด้านล่าง)</td>
+<td>permission matrix, session report, EXECUTE survey และ integration follow-up: เพิ่มการอ้างอิง แยกประโยคภาษาไทย และปรับถ้อยคำหลายจุด (แถว 20, 22, 25, 27 และ 39 ของตาราง และขีดยาวในข้อ CALLER-UNKNOWN ของ matrix ซึ่งแก้จำนวนเมื่อ 2 ตุลาคม 2026)</td>
 </tr>
 <tr>
 <td>ชุดหลักฐานที่ปิดผนึก 8 ชุด</td>
@@ -204,7 +204,7 @@
 <td>21</td>
 <td><code>line-outbound-phase0-session-report.en.md:75</code></td>
 <td>A คอลัมน์และด่าน consent ฝั่งลูกค้า</td>
-<td>อ้างนิยามตาราง <code>00000000000002_line_oa_schema.sql:108</code> คอลัมน์ของพนักงาน <code>0088_identity_binding_lifecycle.sql:10</code> และคำสั่งตรวจซ้ำที่ a97c3c847 (TH และ EN)</td>
+<td>อ้างนิยามตาราง <code>00000000000002_line_oa_schema.sql:108</code> คอลัมน์ของพนักงาน <code>0088_identity_binding_lifecycle.sql:10</code> และคำสั่งตรวจซ้ำที่ a97c3c847 (TH และ EN) เปิดเผยเพิ่มเมื่อ 2 ตุลาคม 2026: ถ้อยคำแคบลงจากทั้ง schema เป็นตาราง <code>line_oa_customer_identity</code> และการตรวจซ้ำครอบคลุมแค่ <code>supabase/migrations</code> กับ <code>supabase/functions</code> ส่วน <code>src/mcp/pdpa.ts:34</code> มีด่าน PDPA consent ของชั้น MCP ซึ่งเส้นทางส่ง LINE ไม่ได้ใช้</td>
 </tr>
 <tr>
 <td>22</td>
@@ -252,7 +252,7 @@
 <td>29–35</td>
 <td><code>line-p010-execute-survey.th.md</code> บรรทัด 24, 27, 30, 31, 32, 33 และ 34</td>
 <td>A ผู้เรียก grant หรือ guard ตามการค้นของ survey</td>
-<td>ขยายการอ้าง migration แบบย่อในตาราง routine 18 แถวเป็น file:line ที่เปิดได้จริง (TH และ EN) และตรวจบรรทัดที่อ้างแล้ว</td>
+<td>ขยายการอ้าง migration แบบย่อในตาราง routine 18 แถวเป็น file:line ที่เปิดได้จริง (TH และ EN) และตรวจบรรทัดที่อ้างแล้ว แก้ไขเมื่อ 2 ตุลาคม 2026: การอ้างเหล่านั้นชี้บรรทัด grant, revoke หรือ trigger ซึ่งลำพังไม่ได้แสดงว่าผู้เรียก guard หรือ grant ไม่มีอยู่ รอบ 2 เพิ่มหลักฐานนั้นใน survey แล้ว (การตรวจซ้ำ R1 และ R2 ที่ 48b72d4c7 และบรรทัดนิยาม <code>0130_scrutiny5_fixes.sql:332-387</code>)</td>
 </tr>
 <tr>
 <td>36</td>
@@ -339,6 +339,9 @@
 <p>การ commit ทำผ่าน <code>commit-ci-remediation.sh</code> ซึ่ง stage เฉพาะ path ที่อนุมัติ รัน gate กับ blob ที่ stage แล้ว และ commit เมื่อ exit 0 เท่านั้น พร้อม transcript ใน <code>docs/governance/evidence/line-ci-remediation-commit-2026-10-01/</code></p>
 <h2>ข้อจำกัดและงานที่ยังค้าง</h2>
 <ul><li>Storage: เครื่องนี้ไม่ได้ติดตั้ง Supabase CLI จึงยังไม่ได้ทดสอบการแก้ config ผ่าน <code>supabase start</code> ในเครื่อง stack ชั่วคราวที่มี storage-api เคยรัน <code>trust_kernel_containment</code> ได้ 16/16 (<code>line-p012-green-2026-09-30/07b-ci-suite-runner/trust_kernel_containment.tap</code>) CI รอบถัดไปคือการทดสอบจริง</li><li>Shadow E2E: session นี้จัดเตรียม environment ให้ไม่ได้ secret ทั้ง 5 ตัวเป็น credential ที่เจ้าของต้องตั้งเองใน settings ของ repository และ stack ที่ secret ชี้ไปต้อง deploy ซึ่งยังไม่ได้อนุมัติ จนกว่าจะมี job E2E และ final gate จะยังแดง แต่ตอนนี้มีข้อความบอกชื่อ secret ที่ขาด</li><li><code>repair_phase0_containment</code> ยังต้องใช้ migration 0170 จาก main (PRD §8 ข้อ 7) DB Verify และ edge + pgTAP จึงยังแดงที่ suite นี้</li><li>Pull request #133 มี merge conflict workflow แบบ <code>pull_request</code> ของ main จึงยังไม่ได้รันกับ PR นี้ มีแค่ workflow ที่เกิดจาก push</li><li>ชุดหลักฐานที่แก้มีชุดที่ผู้ตรวจรับไปแล้ว (เช่น da252d18a) ทุกการแก้ต้องตรวจซ้ำ</li></ul>
+<h2>การแก้ไขและข้อมูลเพิ่ม (2 ตุลาคม 2026)</h2>
+<p>การตรวจฝั่งผู้สร้างก่อนส่งตรวจของ 48b72d4c7 (ไม่ใช่การตรวจรับอิสระ) พบประเด็นด้านล่าง รอบ 2 แก้ในไฟล์ที่จะ commit ส่วน REPORT ของชุดหลักฐาน 8 ชุดที่ปิดผนึกไม่แก้ซ้ำ</p>
+<ul><li>REPORT ที่แก้ทั้ง 16 ไฟล์บอกว่า hash ก่อนแก้อยู่ในชุดนี้ ข้อความนั้นเป็นจริงตั้งแต่รอบ 2 ที่เพิ่ม <code>12-pre-amendment-hashes.txt</code> แล้วเท่านั้น: 32 รายการ hash ก่อนแก้ทุกตัวเท่ากับ blob ฐานที่ a97c3c847 (<code>12-pre-amendment-hashes.txt:38</code>)</li><li>commit message ของ 48b72d4c7 และ docstring ของ <code>tools/amend_bundles.py</code> บอกว่าข้ออ้างว่าไม่มีที่เป็นจริงได้การอ้างอิงแล้ว แต่แถว 2, 4, 11 และ 38 ผ่านด้วยการแยกประโยคอย่างเดียว และแถว 29–35 ผ่านด้วยการอ้างบรรทัด grant (หลักฐานรอบ 2 อยู่ใน survey ดูแถว 29–35)</li><li>การอ้างที่อ่อน 2 จุดคงไว้ตามเดิมใน REPORT ที่ปิดผนึก: <code>line-p010-catalog-2026-09-30/08-analysis.txt:237</code> เป็นหัวส่วน trigger (บรรทัด noaction คือ 238–245) และตารางภาษาไทยของ p012-green อ้างบรรทัด 66 ทั้งการตรวจ identity และ overload (การตรวจ overload อยู่ที่ <code>0199_line_oa_restrict_definer_execute.sql:75</code>)</li><li>ข้อเท็จจริงเรื่อง CI ในรายงานนี้ (run 36748427202 และ 36748427203) คัดพร้อม URL ไว้ใน <code>line-p012b-round2-2026-10-02/01-github-actions-excerpt.txt:1</code> รวมถึง run 36795389505 ที่ 48b72d4c7 ซึ่ง claim linters ผ่าน และ <code>trust_kernel_containment</code> ได้ 16/16 เมื่อเปิด storage</li><li>สคริปต์ negative control ตรวจแค่ว่า gate exit ไม่เป็นศูนย์ ส่วน <code>11-gate-negative-controls.txt:5</code> เป็นต้นไปแสดงว่าแต่ละกรณีถูกตรวจข้อใด</li><li>พบหลัง commit: บนเครื่องนี้ gate แบบ commit mode (<code>gate-ci-remediation.py --rev</code>) หยุดด้วย &quot;Filename too long&quot; ถ้า Git ไม่ได้เปิด <code>core.longpaths=true</code> เมื่อเปิดแล้ว gate ผ่านครบ 104 ข้อบน 48b72d4c7</li></ul>
 <h2>ประวัติการรัน runner</h2>
 <p>รอบนี้มีการรัน runner 3 ครั้งก่อนหน้าที่ถูกย้ายออกไปไว้นอก repository ครั้งที่ 1 เรียก bash ของ WSL ในการจำลอง preflight (exit 127) และการสแกนข้อมูลลับแจ้ง connection string ในเครื่องที่มีอยู่เดิม ครั้งที่ 2 ยังเรียก bash ของ WSL ทั้งสองเป็นข้อบกพร่องของ runner ซึ่งแก้แล้วใน <code>tools/run-ci-remediation.sh</code> (ระบุ path ของ bash ชัดเจน และข้อยกเว้นแคบที่รายงานเสมอ) ครั้งที่ 3 ผ่านทุกขั้นแต่ comment ใน runner อธิบายสาเหตุของครั้งที่ 1 และ 2 ไม่ถูก จึงแก้ comment แล้วรันใหม่ ชุดนี้เป็นผลครั้งที่ 4 ซึ่งทั้ง 17 ขั้นที่บันทึกได้ exit 0</p>
 <p>การ commit ผ่าน wrapper ครั้งแรกถูก gate หยุด เพราะสคริปต์ negative control มี URI ทดสอบที่มีรูปแบบ credential เขียนเป็นตัวอักษรตรง ๆ ไม่มีอะไรถูก commit และ index ถูกคืนสภาพ ตอนนี้สคริปต์ประกอบ URI ทดสอบตอนรัน รัน control ใหม่แล้ว (<code>11-gate-negative-controls.txt</code>) และปิดผนึกชุดใหม่ก่อน commit ครั้งถัดไป ครั้งที่สองก็ถูก gate หยุดเช่นกัน เพราะย่อหน้านี้ในฉบับภาษาไทยรวมคำปฏิเสธกับชื่อไฟล์ไว้ในประโยคเดียว จึงแยกประโยคแล้ว commit ครั้งที่สาม</p>

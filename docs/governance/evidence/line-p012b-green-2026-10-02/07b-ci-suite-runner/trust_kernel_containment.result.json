@@ -1,0 +1,23 @@
+{
+  "suite": "trust_kernel_containment",
+  "stdout": "docs/governance/evidence/line-p012b-green-2026-10-02/07b-ci-suite-runner/trust_kernel_containment.tap",
+  "stderr": "docs/governance/evidence/line-p012b-green-2026-10-02/07b-ci-suite-runner/trust_kernel_containment.stderr",
+  "tapSha256": "8e125f2d51c02e8c04f1092427fb1b55f56c4cc6f390febe30113172f12e9118",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "runId": "p012b-green-local",
+  "origin": "local",
+  "checkedAt": "2026-10-01T17:18:29.732Z",
+  "pass": true,
+  "exitCode": 0,
+  "plan": 16,
+  "planLines": 1,
+  "results": 16,
+  "ok": 16,
+  "notOk": 0,
+  "skip": 0,
+  "todo": 0,
+  "bailOut": false,
+  "sqlErrorLines": 0,
+  "finishDiagnostics": [],
+  "failures": []
+}
