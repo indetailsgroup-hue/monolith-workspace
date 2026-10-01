@@ -96,7 +96,7 @@ cleanup() {
 }
 finish() { # $1 = exit code
   echo "finished_utc: $(utc)" >> "$CTX"
-  (cd "$OUT" && sha256sum $(ls | grep -v '^SHA256SUMS$' | LC_ALL=C sort) > SHA256SUMS)
+  (cd "$OUT" && find . -type f ! -path ./SHA256SUMS | sed 's#^\./##' | LC_ALL=C sort | xargs sha256sum > SHA256SUMS)
   exit "$1"
 }
 fail() { # $1 = code, $2 = reason

@@ -93,9 +93,23 @@ cases = root.findall('.//testcase')
 py_failed = [c.get('name') for c in cases if c.find('failure') is not None or c.find('error') is not None]
 py_skipped = [c for c in cases if c.find('skipped') is not None]
 require(not py_failed and py_exit == '0', f'Python: no failure or error ({len(cases)} cases)')
-require(all('resolve_actor() is not installed' in (c.find('skipped').get('message') or '') for c in py_skipped),
-        f'Python: every skip ({len(py_skipped)}) is the known resolve_actor() probe drift')
+KNOWN_SKIPS = ('public.resolve_actor() is not installed', 'public.record_input_sync(')
+require(all(any(k in (c.find('skipped').get('message') or '') for k in KNOWN_SKIPS) for c in py_skipped),
+        f'Python: every skip ({len(py_skipped)}) is a known pre-existing probe gap {KNOWN_SKIPS}')
 print(f'Python counts: {len(cases) - len(py_skipped)} passed, {len(py_skipped)} skipped, 0 failed')
+
+
+def outcomes(path):
+    tree = ET.parse(path).getroot()
+    return {(c.get('classname'), c.get('name')): 'skipped' if c.find('skipped') is not None else 'passed'
+            for c in tree.findall('.//testcase')}
+
+
+compare = os.environ.get('P009_COMPARE_RED')
+if mode == 'green' and compare:
+    red = outcomes(Path(compare) / '08-pytest-junit.xml')
+    require(red == outcomes(out / '08-pytest-junit.xml'),
+            f'Python: every test has the same outcome as the RED bundle {Path(compare).name} (no regression)')
 
 clean = lambda name: '\n'.join(l for l in (out / name).read_text(encoding='utf-8').splitlines()
                                if not l.startswith('captured_utc:'))
