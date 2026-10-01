@@ -1,7 +1,8 @@
 # PRD — ระบบสื่อสาร LINE OA ทั้งหมด (MONOLITH Repair Intelligence)
 
 > **ภาษา:** ไทย · ฉบับภาษาอังกฤษ: `docs/PRD-LINE-OA.en.md` · HTML: `docs/PRD-LINE-OA.th.html` / `docs/PRD-LINE-OA.en.html`
-> **ฉบับ:** 1.15 · 2 ตุลาคม 2026 (1.14, 1.13, 1.12, 1.11, 1.10, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4, 1.3 และ 1.2 = 30 ก.ย. 2026 · 1.1 = 1 ส.ค. 2026 · 1.0 = 26 ก.ค. 2026)
+> **ฉบับ:** 1.16 · 2 ตุลาคม 2026 (1.15 = 2 ต.ค. 2026 · 1.14, 1.13, 1.12, 1.11, 1.10, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4, 1.3 และ 1.2 = 30 ก.ย. 2026 · 1.1 = 1 ส.ค. 2026 · 1.0 = 26 ก.ค. 2026)
+> **สิ่งที่เปลี่ยนในฉบับ 1.16:** สร้าง P0-9 (B8) แบบเขียนเทสต์ก่อนใน migration 0200 บน branch ในเครื่องแยกต่างหาก `claude/line-p009-ingest-retry` (ฐาน 29e5e78d3, commit โค้ด 18a24483e) ตามคำสั่งเจ้าของ และสร้างก่อนมติ §8 ข้อ 7 เรื่อง P0-9 กับ `0175` ของ line-trust handler กลุ่มที่ล้มจะไม่ถูกนับเป็น processed อีกต่อไป: event เข้าคิวใหม่ `line_oa_inbound_retry` การส่งซ้ำของ event ที่อยู่ในคิวนับเป็น duplicate และ `rpc_line_inbound_retry_sweep` ซึ่งเรียกได้เฉพาะ service ประมวลผลแถวที่ถึงกำหนดซ้ำ (backoff 1/2/4/8 วินาที และ dead-letter พร้อม audit ที่ครั้งที่ 5) ไม่เพิ่ม cron หลักฐานที่ 0a355e29b: RED (chain ที่ยังไม่ apply 0200) ล้ม 31 จาก 35 ข้อใหม่ และข้อ 1 บันทึกว่า handler ที่ล้มได้ `events_processed` เป็น 1; GREEN ผ่าน 35/35, race ของ sweep สอง client เคลมแถวทั้ง 20 แถวแถวละครั้งเดียว และผลของ suite อื่นกับผล Python ทุกข้อเหมือนเดิม ยังไม่ merge เข้า branch นี้ ยังไม่ push และรอผู้ตรวจอิสระ
 > **สิ่งที่เปลี่ยนในฉบับ 1.15:** PR #133 รันบน GitHub Actions ครั้งแรก ที่ a97c3c847 DB Verify ผ่าน suite LINE ทั้ง 5 ชุด (107/133/28/82/23 และ claim race ซ้ำ 0) แต่ผลรวมล้มที่ `trust_kernel_containment` (เพราะ `supabase/config.toml` ปิด storage) และที่ `repair_phase0_containment` ซึ่งรู้อยู่แล้ว commit 48b72d4c7 แก้ข้อค้นพบของ claim linter (แก้ REPORT ของชุดหลักฐานที่ปิดผนึก 8 ชุดแบบเปิดเผยตามทางเลือก ก ของเจ้าของ) เปิด storage และเพิ่ม preflight ของ shadow E2E ใน commit นั้น claim linters ผ่าน และ `trust_kernel_containment` ได้ 16/16 จากนั้นการตรวจฝั่งผู้สร้างก่อนส่งตรวจทำให้เทสต์ของ 0199 เข้มขึ้น (รอบ 2) คือ probe แบบ anon ที่เขียนข้อมูลได้จริง case identity หาย และการตรวจข้อความ ACL ของฟังก์ชัน พร้อมหลักฐาน RED-A, mutant และ GREEN ใหม่ ยังรอผู้ตรวจอิสระ ยังห้าม deploy และ Phase A ยังเป็น `EVIDENCE_INCOMPLETE`
 > **สถานะเอกสาร:** รอเจ้าของ (คุณเดฟ) ตัดสินคำถามเปิดใน §8 — ทุกขั้นที่เสนอใน §9 ไม่เปิด cron และไม่ส่งข้อความหาลูกค้าจริง
 > **หลักการเขียน:** ทุกแถวแยก "ทำงานจริง / มีโค้ดแต่ไม่ต่อสาย / อยู่แค่ spec" พร้อมอ้าง file:line และแยกหลักฐาน "ตรวจซ้ำได้ (มี raw output ใน repo)" ออกจาก "รายงานไว้ (ไม่มี raw output ใน repo)"
@@ -9,11 +10,11 @@
 
 ---
 
-## 0. สถานะการดำเนินการ (ฉบับ 1.15)
+## 0. สถานะการดำเนินการ (ฉบับ 1.16)
 
-**P0-1 ถึง P0-6 ฉบับเดิมมี implementation และผ่านรีวิวข้ามค่ายแล้ว ส่วนการแก้ P0-11 ที่ 00651a6cd ผ่านการตรวจรับข้ามค่ายแล้ว P0-10 (0198) ผ่านการตรวจโค้ดและหลักฐานโดยผู้ตรวจอิสระที่ 87930836a (ผู้ตรวจไม่ได้รันซ้ำ) และงานติดตามรับด้าน source/หลักฐานที่บันทึกแบบจำกัดขอบเขตแล้ว ยังขาดการรันฐานข้อมูลซ้ำโดยผู้ตรวจและการตรวจข้ามค่าย ส่วน B12 (0199) สร้างในเครื่องแล้วและรอผู้ตรวจอิสระ — Phase A ยังไม่ปิด**
+**P0-1 ถึง P0-6 ฉบับเดิมมี implementation และผ่านรีวิวข้ามค่ายแล้ว ส่วนการแก้ P0-11 ที่ 00651a6cd ผ่านการตรวจรับข้ามค่ายแล้ว P0-10 (0198) ผ่านการตรวจโค้ดและหลักฐานโดยผู้ตรวจอิสระที่ 87930836a (ผู้ตรวจไม่ได้รันซ้ำ) และงานติดตามรับด้าน source/หลักฐานที่บันทึกแบบจำกัดขอบเขตแล้ว ยังขาดการรันฐานข้อมูลซ้ำโดยผู้ตรวจและการตรวจข้ามค่าย ส่วน B12 (0199) สร้างในเครื่องแล้วและรอผู้ตรวจอิสระ และ P0-9 (0200) สร้างบน branch ในเครื่องแยกต่างหากและรอผู้ตรวจอิสระ — Phase A ยังไม่ปิด**
 
-**สถานะหลักฐาน Phase A:** `EVIDENCE_INCOMPLETE` — รอบล่าสุดในเครื่อง (GREEN ของ 0199) Python 72/72 และ pgTAP LINE 107/133/28/82/23 ผ่าน loop ครบทั้ง 14 suite แล้ว แต่ `repair_phase0_containment` ล้ม (6 จาก 8 ข้อ เพราะไม่มีฟังก์ชัน) ยังไม่มีผล GitHub Actions หรือการตรวจ production, P0-9 ยังเปิด และ B12 (0199) รอผู้ตรวจอิสระ งานติดตามรับด้าน source/หลักฐานแบบจำกัดขอบเขตแล้ว ยังขาดการรันซ้ำและการตรวจข้ามค่าย
+**สถานะหลักฐาน Phase A:** `EVIDENCE_INCOMPLETE` — รอบล่าสุดในเครื่อง (GREEN ของ 0199) Python 72/72 และ pgTAP LINE 107/133/28/82/23 ผ่าน loop ครบทั้ง 14 suite แล้ว แต่ `repair_phase0_containment` ล้ม (6 จาก 8 ข้อ เพราะไม่มีฟังก์ชัน) ยังไม่มีผล GitHub Actions หรือการตรวจ production, B12 (0199) รอผู้ตรวจอิสระ บน branch `claude/line-p009-ingest-retry` รอบ GREEN ของ P0-9 (0a355e29b) ผ่าน suite ใหม่ 35/35 และ loop 15 suite ล้มเฉพาะ `repair_phase0_containment` โดย P0-9 รอผู้ตรวจอิสระ งานติดตามรับด้าน source/หลักฐานแบบจำกัดขอบเขตแล้ว ยังขาดการรันซ้ำและการตรวจข้ามค่าย
 
 - **Branch:** `codex/repair-intelligence-phase0-trust` · commit ที่ผ่านรีวิว: `46a203a6` (1 ส.ค. 2026) · ยังไม่ push และยังไม่ deploy
 - **Migrations:** `0193_line_outbound_claim_and_record.sql`, `0194_line_outbound_retry_and_claim_fencing.sql`, `0195_line_outbound_timezone_safe_backoff.sql`, `0196_line_outbound_timezone_safe_sent_at.sql` + การแก้ `supabase/functions/line-outbound-sender/index.ts`
@@ -70,14 +71,16 @@ migration ไม่ grant เพิ่ม และล้มแบบปิด�
 
 เทสต์เดิมเปลี่ยนตามนโยบาย 2 จุด suite เดิมตรวจว่า authenticated ไม่มี EXECUTE บน recorder แล้ว และ suite ของ P0-10 เรียก `fn_prod_curated` ผ่าน `rpc_field_create_appointment` แทนการเรียกตรงด้วย service_role caller register ของ ops และการยืนยันจากเจ้าของ manufacturing เรื่อง `fn_prod_curated` ยังไม่มา จึงห้าม deploy จนกว่าจะได้คำตอบและตรวจ production catalog แล้ว
 
+**หลักฐาน P0-9 / B8 (2 ตุลาคม 2026 ในเครื่อง รอผู้ตรวจอิสระ):** เจ้าของเลือกให้ทำ P0-9 แบบเขียนเทสต์ก่อนโดยไม่รอมติ §8 ข้อ 7 จึงสร้างบน branch ในเครื่องของตัวเอง `claude/line-p009-ingest-retry` จาก 29e5e78d3 และยังไม่ merge เข้า branch นี้ `supabase/migrations/0200_line_inbound_handler_retry.sql` แก้เฉพาะ group branch ของ `rpc_ingest_line_webhook` (ส่วนอื่นของ body จาก 0097, signature และ EXECUTE matrix ของ 0199 คงเดิม) และเพิ่มตาราง `line_oa_inbound_retry` (เปิด RLS, client เขียนไม่ได้, service_role อ่านได้อย่างเดียว) กับ `rpc_line_inbound_retry_sweep` ที่เรียกได้เฉพาะ service suite ใหม่ `supabase/tests/line_inbound_handler_retry.sql` (35 ข้อ) จำลอง handler ล้มด้วย trigger สำหรับเทสต์ภายใน transaction ที่ rollback `docs/governance/evidence/line-p009-red-2026-10-02/` (chain ที่ยังไม่ apply 0200, HEAD 0a355e29b) ล้ม 31 จาก 35 ข้อ ขณะที่ control 4 ข้อ (7, 33, 34, 35) ผ่าน และข้อ 1 บันทึกว่า handler ที่ล้มได้ `events_processed` เป็น 1 ซึ่งคือ B8 `docs/governance/evidence/line-p009-green-2026-10-02/` (195 migration) ผ่าน 35/35 โดย loop 15 suite ล้มเฉพาะ `repair_phase0_containment` race ของ sweep สอง client เคลม 20 แถวแถวละครั้งเดียว (`tests/line-oa-commerce/concurrency/inbound-retry-race.mjs` และ mutant ระหว่างพัฒนาที่ตัด `FOR UPDATE SKIP LOCKED` ออกล้ม race นี้) claim race ฝั่ง outbound ซ้ำ 0 เทสต์ของ CI harness ผ่าน และ Python ผ่าน 93 ข้าม 13 ล้ม 0 โดยผลทุกข้อเหมือน RED (13 ข้อที่ข้ามคือ probe `resolve_actor()` และ `record_input_sync` ที่รู้อยู่แล้ว) ไม่มี cron เรียก sweep จึงไม่ใช่การเปิดใช้งาน แถวที่ dead-letter เก็บ payload ไว้ให้คนจัดการ ซึ่งต้องตัดสินระยะเวลาเก็บรักษาก่อนขึ้น production
+
 **ทำไม Phase A ยังไม่ปิด:**
 
-- **P0-9 (B8) ยังไม่ได้สร้าง** — และอาจทับซ้อนกับ `0175` unified ingress ที่ branch `codex/line-trust-wave1-main` วางแผนไว้ (ยังเป็นเลขจอง ไม่มีโค้ด) จึงต้องตัดสินเจ้าของงานก่อน (§8 ข้อ 7)
+- **P0-9 (B8) สร้างแล้วแต่ยังไม่ผ่านการตรวจรับ** — 0200 บน branch ในเครื่อง `claude/line-p009-ingest-retry` รอผู้ตรวจอิสระ และอาจทับซ้อนกับ `0175` unified ingress ที่ branch `codex/line-trust-wave1-main` วางแผนไว้ (ยังเป็นเลขจอง ไม่มีโค้ด) §8 ข้อ 7 จึงยังเป็นผู้ตัดสินว่า branch ใดเป็นเจ้าของ
 - **Python suites ที่จำเป็นผ่านเฉพาะเมื่อมี 0198:** ถ้าไม่มี ผ่าน 64 ล้ม 8 ข้อสิทธิ์ B10 ถ้ามี ผ่าน 72/72 ไม่มี skip (ผลรันในเครื่อง)
 - **B12 สร้างแล้วแต่ยังไม่ผ่านการตรวจรับ:** 0199 รอผู้ตรวจอิสระ และห้าม deploy จนกว่าจะได้ caller register ของ ops และการยืนยันจากเจ้าของ manufacturing เรื่อง `fn_prod_curated` (`docs/governance/line-b12-permission-matrix.th.md`)
 - **CI ยังไม่ผ่าน:** ในเครื่องรันครบ 14 suite รวม LINE ทั้งห้าแล้ว แต่ยังเก็บ containment ที่ล้มเป็นไม่ผ่าน ไม่ได้นับว่าผ่าน การแก้ dependency ต้องผ่านมติรวม branch หรือขอบเขตแก้แยก งานนี้ไม่แก้ source ฝั่ง manufacturing
 
-| บั๊ก | สถานะ ณ ฉบับ 1.15 |
+| บั๊ก | สถานะ ณ ฉบับ 1.16 |
 |---|---|
 | B1 หยิบคิวไม่มี lock | ✅ มี implementation บน branch — sender เรียก `rpc_claim_line_outbound_batch` (`index.ts:740-744`), `FOR UPDATE SKIP LOCKED`, reclaim ตาม timeout, fencing ด้วย `claim_token` — เทสต์ 2 client ผ่านบน stack ชั่วคราว (รอบ 2 และ 3: 10+10 แถว ซ้ำ 0) ยังไม่มีผล CI |
 | B2 service role บันทึกผลไม่ได้ | ✅ มี implementation บน branch — ตรวจ service context จาก SQL role (`current_setting('role')`) ไม่ใช่ JWT; ด่านของผู้ใช้ไม่ถูกผ่อน |
@@ -86,7 +89,7 @@ migration ไม่ grant เพิ่ม และล้มแบบปิด�
 | B5 ล้มครั้งเดียวตายถาวร | ✅ มี implementation บน branch — แยก transient/permanent + exponential backoff (1 วินาที × 2^n สูงสุด 5 นาที) + เพดาน 5 ครั้ง |
 | B6 ไม่มี cron | ⏸ ตั้งใจยังไม่ตั้ง — เป็นงาน Phase C รอคำตอบ §8 ข้อ 1, 2, 4 |
 | B7 เทสต์ตาบอด | ✅ มีเทสต์ใหม่ที่ชน Postgres จริง (pgTAP) และเทสต์ที่ตรวจว่า sender ต่อสายเข้า RPC จริง |
-| B8 `handler_error` นับว่าสำเร็จ | 🔴 ยังไม่แก้ — P0-9 ยังไม่ได้สร้าง; อาจทับซ้อนกับ `0175` ที่ line-trust จองไว้ |
+| B8 `handler_error` นับว่าสำเร็จ | 🟡 แก้แล้วใน 0200 (18a24483e) บน branch ในเครื่อง `claude/line-p009-ingest-retry` — หลักฐาน RED/GREEN ที่ 0a355e29b; รอผู้ตรวจอิสระ; ยังไม่ merge ไม่ push ไม่ deploy; อาจทับซ้อนกับ `0175` ที่ line-trust จองไว้ (มติข้อ 7) |
 | B9 `line-login` ไม่ใช้ state/nonce | 🔴 ยังไม่แก้ — อยู่ใน P1; อาจทับซ้อนกับ `0176` ที่ line-trust จองไว้ |
 | B10 role ฝั่ง client มีสิทธิ์เขียนและ TRUNCATE บนตาราง LINE | 🟡 แก้บน branch ใน 0198 แล้ว — ผ่านการตรวจโค้ดและหลักฐานโดยผู้ตรวจอิสระที่ 87930836a (ผู้ตรวจไม่ได้รันซ้ำ); เทสต์ fail-closed และการลงทะเบียน CI สร้างแล้ว รอผู้ตรวจ; ยังไม่ได้รัน CI; ยังไม่ deploy |
 | B11 ความล้มเหลวที่ error detail เป็นช่องว่างล้วน | ✅ มี implementation ใน 0197 และหลักฐาน RED/GREEN ในเครื่อง; ผ่านการตรวจรับข้ามค่ายที่ 00651a6cd แล้ว |
@@ -114,7 +117,7 @@ migration ไม่ grant เพิ่ม และล้มแบบปิด�
 | รันฐานข้อมูลซ้ำโดยผู้ตรวจ / ตรวจข้ามค่ายรอบติดตาม | ยังไม่ครบ | ผู้ตรวจแยกรันและส่งคำตัดสิน |
 | พฤติกรรมในเครื่อง | ผลเดิม LINE 107/133/28 และ Python 72 ผ่าน แต่ containment ล้ม | แก้ dependency factory บน schema รวมโดยไม่ลด assertion |
 | GitHub Actions | รันแล้วเมื่อ push ของ PR #133: DB Verify ที่ a97c3c847 ผ่าน suite LINE ทั้ง 5 ชุดแต่ผลรวมล้ม (containment) และ Trust Kernel Verify ที่ 48b72d4c7 ผ่าน claim linters และ `trust_kernel_containment` แต่ล้มที่ `repair_phase0_containment`, shadow E2E (ยังไม่ได้ตั้ง secret) และ final gate ข้อความที่คัดมาอยู่ใน `docs/governance/evidence/line-p012b-round2-2026-10-02/01-github-actions-excerpt.txt` | workflow แบบ `pull_request` ของ main รอแก้ merge conflict ก่อน และ DB workflow ยังไม่มี Python suites |
-| Phase A / production | EVIDENCE_INCOMPLETE / ยังไม่อนุมัติ | P0-9, B12, รวมระบบและเกณฑ์รับงานครบ; production และส่งจริงมีด่านแยก |
+| Phase A / production | EVIDENCE_INCOMPLETE / ยังไม่อนุมัติ | รีวิว P0-9 และ B12, รวมระบบและเกณฑ์รับงานครบ; production และส่งจริงมีด่านแยก |
 
 ข้อมูลส่งต่อเจ้าของงานและ ops อยู่ใน [ทะเบียนผู้เรียก](governance/line-rpc-caller-register.th.md) การอนุมัติปัจจุบันให้ปรับสถานะและเตรียมส่งต่อ ส่วนสิทธิ์ B12 รายตัวและมติสถาปัตยกรรมยังรอข้อมูล ตารางนี้ไม่ได้อนุมัติ migration ใหม่หรือ push
 
@@ -233,7 +236,7 @@ MONOLITH ใช้ LINE เป็นช่องทางหลักติด�
 | P0-6 | **Retry จำกัดครั้งสำหรับความล้มเหลวชั่วคราว** (แนว claim v3 ของ 0084) + dead-letter | LINE ตอบ 5xx → retry ตาม backoff; เกินเพดาน → `failed` พร้อมเหตุผล | ✅ มี retry และการจัดการเหตุผลแล้ว (0194–0197); pgTAP 107/107 ผ่าน; P0-11 ผ่านการตรวจรับข้ามค่ายที่ 00651a6cd แล้ว |
 | P0-7 | **ตัดสิน autonomy gate (§8 ข้อ 3) แล้วทำตามมติ:** wire ให้ live หรือลบ + แก้ `tasks.md:157` | ไม่เหลือโค้ดที่อ้างว่าคุมแต่ไม่ได้คุมจริง | ⏸ รอมติข้อ 3 |
 | P0-8 | **มติ cron + consent (§8 ข้อ 1, 2, 4) บันทึกเป็นลายลักษณ์อักษร** ก่อนเปิดส่งจริง | runbook ระบุ cron ที่ต้องมี; มติ consent ลงเอกสาร | ⏸ รอมติข้อ 1, 2, 4 |
-| P0-9 | **Handler ที่ล้มต้องไม่นับเป็น processed (B8):** `handler_error` — เหตุการณ์ที่ handler ล้มต้องมี retry state ของเราเอง (แถว retry + sweep แบบ claim v3 ของ 0084) — ห้ามพึ่ง LINE redelivery เพราะ LINE ไม่รับประกัน — ไม่นับ processed และไม่ทำให้แถวที่ล้มโดน dedupe | จำลอง handler ล้ม → event เข้าคิว retry ภายในระบบและถูกประมวลผลซ้ำจนสำเร็จหรือครบเพดาน → dead-letter + audit; ไม่มี false success | 🔴 ยังไม่ได้สร้าง — อาจทับซ้อนกับ `0175` ที่ line-trust จองไว้ รอมติข้อ 7 |
+| P0-9 | **Handler ที่ล้มต้องไม่นับเป็น processed (B8):** `handler_error` — เหตุการณ์ที่ handler ล้มต้องมี retry state ของเราเอง (แถว retry + sweep แบบ claim v3 ของ 0084) — ห้ามพึ่ง LINE redelivery เพราะ LINE ไม่รับประกัน — ไม่นับ processed และไม่ทำให้แถวที่ล้มโดน dedupe | จำลอง handler ล้ม → event เข้าคิว retry ภายในระบบและถูกประมวลผลซ้ำจนสำเร็จหรือครบเพดาน → dead-letter + audit; ไม่มี false success | 🟡 สร้างแล้วใน 0200 บน branch ในเครื่อง `claude/line-p009-ingest-retry` (RED/GREEN ที่ 0a355e29b) — รอผู้ตรวจอิสระ; อาจทับซ้อนกับ `0175` ที่ line-trust จองไว้ มติข้อ 7 ยังเปิด |
 | P0-10 | **ปิดสิทธิ์เขียนตรงของ role ฝั่ง client (B10):** revoke INSERT, UPDATE, DELETE และ TRUNCATE บน 8 ตาราง `line_oa_*` จาก `anon`, `authenticated` และ `service_role` (ขอบเขตที่เจ้าของอนุมัติ; PUBLIC ไม่มีสิทธิ์เหล่านี้) คง SELECT, EXECUTE และสิทธิ์อื่นทั้งหมดไว้ | ดูเกณฑ์ใน §9.1 ขั้นที่ 1b | 🟡 0198 ผ่านการตรวจโค้ดและหลักฐานโดยผู้ตรวจอิสระที่ 87930836a (ผู้ตรวจไม่ได้รันซ้ำ); งานติดตามรับ source/หลักฐานแบบจำกัดขอบเขตแล้ว ยังขาดการรันซ้ำและตรวจข้ามค่าย; ยังไม่ได้รัน CI |
 | P0-11 | **ความล้มเหลวต้องมีเหตุผลที่ไม่ว่าง (B11):** แทนค่าที่มีแต่ whitespace ตามนิยาม Python ด้วย placeholder เดิม | property เดิมผ่าน; pgTAP เพิ่ม 37 กรณีครอบคลุม whitespace 29 ตัว ค่าผสม ข้อความที่มีความหมาย และการ scrub token | ✅ มี implementation ใน 0197; ผ่านการตรวจรับข้ามค่ายที่ 00651a6cd แล้ว |
 | P0-12 | **จำกัด EXECUTE บนฟังก์ชัน SECURITY DEFINER ที่เขียนข้อมูล (B12)** ตาม matrix ราย identity ที่เจ้าของอนุมัติ | matrix และแผนใน `docs/governance/line-b12-permission-matrix.th.md`: ทุกช่อง DENY ถูกปฏิเสธที่ ACL ของฟังก์ชัน เส้นทางที่คงไว้ยังทำงานโดยตรวจจากข้อมูล และ migration ล้มแบบปิดไว้ก่อนเมื่อมีสิทธิ์คงเหลือ สิทธิ์ที่ต้องคงหายไป หรือ overload ที่ไม่ได้จัดประเภท | 🟡 สร้างใน 0199 พร้อมหลักฐาน RED-A/RED-B/GREEN; เทสต์เข้มขึ้นในรอบ 2 (RED-A/mutant/GREEN); suite LINE ผ่านบน GitHub Actions ที่ a97c3c847; รอผู้ตรวจอิสระ; ห้าม deploy จนกว่าจะได้คำตอบจาก ops และ manufacturing |
@@ -298,7 +301,7 @@ MONOLITH ใช้ LINE เป็นช่องทางหลักติด�
 | โมเดล tenant / organization / site / membership | ซ้ำแล้วจริง — มีโค้ดทั้งสองฝั่ง | `monolith_tenant`, `monolith_organization`, `monolith_site`, `monolith_membership*`, `verified_action_context` (0180, 0189) | `tenants`, `organizations`, `sites`, `tenant_memberships`, `access_grants`, `auth_subjects`, `project_parties` (0171) | แหล่งความจริงเรื่อง tenant และสิทธิ์สองชุด ชื่อตารางไม่ชนแต่ข้อมูลจะแยกกัน ต้องเลือกชุด canonical ก่อนรวม |
 | สิทธิ์ของผู้เรียกฝั่ง service | ซ้ำแล้วจริง — มีโค้ดทั้งสองฝั่ง | ตรวจ SQL role `current_setting('role')` = `service_role` (0193) | ตาราง `service_principals` + `rpc_authorize_business_action` (0173) | กลไกให้สิทธิ์ service สองแบบ — ต้องตัดสินว่า sender ต้องผ่าน policy decision ของ 0173 หรือไม่ |
 | คิวขาออก LINE | อาจทับซ้อนตามแผน — อีกฝั่งยังเป็นเลขจอง | claim, fencing, backoff บน `line_oa_outbound_messages` (0193–0196) | จอง `0178` = atomic outbox (ยังไม่มีโค้ด) | ถ้า line-trust สร้าง outbox ใหม่ภายหลังจะมีคิวสองแบบ; และ 0194 ลบ `rpc_record_line_send_result` แบบ 3 argument ที่ schema ของ line-trust ยังมีอยู่ |
-| ingest ที่ล้มแล้วหาย (B8) | อาจทับซ้อนตามแผน — ยังไม่มีโค้ดทั้งสองฝั่ง | P0-9 ยังไม่ได้สร้าง | จอง `0175` = unified ingress พร้อม processing state, retry, dead letter | ถ้าสร้างทั้งสองฝั่งจะได้ retry ของ ingest สองชุด — ต้องมีเจ้าของเดียว |
+| ingest ที่ล้มแล้วหาย (B8) | อาจทับซ้อนตามแผน — มีโค้ดฝั่งนี้เท่านั้น (0200 บน branch ในเครื่อง ยังไม่ merge) | P0-9 สร้างใน 0200 บน `claude/line-p009-ingest-retry`: `line_oa_inbound_retry` + `rpc_line_inbound_retry_sweep` | จอง `0175` = unified ingress พร้อม processing state, retry, dead letter | ถ้าสร้างทั้งสองฝั่งจะได้ retry ของ ingest สองชุด — ต้องมีเจ้าของเดียว |
 | login พนักงาน (B9) | อาจทับซ้อนตามแผน — ยังไม่มีโค้ดทั้งสองฝั่ง | P1 ยังไม่ได้สร้าง | จอง `0176` = identity binding + step-up | ควรทำฝั่งเดียว |
 | ตาราง LINE ที่ใช้ร่วมกัน | ต้องพิสูจน์ความเข้ากันได้ | sender อ่าน `line_groups.vertical_context` และ `line_oa_channels.channel_access_token_ref` | 0171/0172 เพิ่ม `tenant_id` (nullable, FK NOT VALID) ใน `line_oa_channels` และ `tenant_id`, `canonical_site_id` + constraint ใน `line_groups` | น่าจะเข้ากันได้เพราะเป็นการเพิ่มคอลัมน์ แต่ยังไม่ได้พิสูจน์ — ต้องรัน pgTAP ของ branch นี้บน schema ที่รวมแล้ว |
 | ลำดับเลข migration | ความเสี่ยงด้านลำดับ | `0180`–`0196` | `0171`–`0173` และจอง `0174`–`0179` | ถ้า environment ใด apply `0180`+ ของ branch นี้ก่อน แล้ว `0174`–`0179` ของ line-trust ตามมาทีหลัง จะเป็นการ apply ย้อนลำดับ — ต้องออก amendment ของ line-trust หรือห้าม apply `0180`+ จนกว่าจะตกลงลำดับ |
@@ -307,7 +310,7 @@ MONOLITH ใช้ LINE เป็นช่องทางหลักติด�
 
 ## 9. ลำดับงาน (Phasing)
 
-1. **Phase A — 🟡 ยังไม่ปิด:** `EVIDENCE_INCOMPLETE`; P0-9 ยังไม่ได้สร้าง P0-10 (0198) ผ่านรีวิวโค้ด/หลักฐานแล้ว งานติดตามรับ source/หลักฐานแบบจำกัดขอบเขต ยังขาดการรันซ้ำโดยผู้ตรวจและการตรวจข้ามค่าย P0-11 ผ่านการตรวจรับที่ 00651a6cd แล้ว B12 ยังเปิดอยู่ และยังไม่มีหลักฐาน CI (§9.1)
+1. **Phase A — 🟡 ยังไม่ปิด:** `EVIDENCE_INCOMPLETE`; P0-9 สร้างใน 0200 บน branch ในเครื่องแล้วและรอผู้ตรวจอิสระ P0-10 (0198) ผ่านรีวิวโค้ด/หลักฐานแล้ว งานติดตามรับ source/หลักฐานแบบจำกัดขอบเขต ยังขาดการรันซ้ำโดยผู้ตรวจและการตรวจข้ามค่าย P0-11 ผ่านการตรวจรับที่ 00651a6cd แล้ว B12 ยังเปิดอยู่ และยังไม่มีหลักฐาน CI (§9.1)
 2. **Phase B (หลังมติข้อ 3):** P0-7 — wire หรือลบ autonomy gate + แก้ spec ให้ตรง
 3. **Phase C (หลังมติข้อ 1, 2, 4 และหลังปิด Phase A):** push + deploy งาน Phase A, ผ่าน gate ใน §9.2, ตั้ง cron จริง, เพิ่ม consent gate และ human-approval ถ้ามีมติ → เปิดส่งลูกค้า
 4. **Phase D (หลังมติข้อ 5, 6):** เก็บกวาด subsystem ที่ตาย + admin UI
@@ -369,6 +372,7 @@ MONOLITH ใช้ LINE เป็นช่องทางหลักติด�
 #### ขั้นที่ 3 — สร้าง P0-9 ใน branch ที่มติขั้นที่ 2 กำหนด
 
 - **เกณฑ์รับงาน:** RED ก่อน — จำลอง handler ล้มแล้วพิสูจน์ว่าปัจจุบันได้ inbound row + `events_processed` เพิ่ม (false success); GREEN — event ที่ล้มไม่ถูกนับ processed, ไม่ถูก dedupe, เข้าคิว retry ภายในระบบ, ประมวลผลซ้ำจนสำเร็จหรือครบเพดาน แล้วไป dead-letter พร้อม audit; ไม่พึ่ง LINE redelivery; ไม่มี cron ใหม่; ผ่านรีวิวข้ามค่าย
+- **สถานะ (1.16):** สร้างก่อนขั้นที่ 2 ตามคำสั่งเจ้าของ บน branch ในเครื่อง `claude/line-p009-ingest-retry` (โค้ด 18a24483e หลักฐาน 0a355e29b) RED และ GREEN ตามที่ระบุใน §0 ที่ยังเปิดคือการรีวิวข้ามค่าย และมติขั้นที่ 2 ว่า branch ใดเป็นเจ้าของ retry ของ ingest
 
 #### ขั้นที่ 4 — รวม branch ในเครื่องและตรวจบน schema ที่รวมแล้ว (หลังได้มติขั้นที่ 2 เท่านั้น)
 

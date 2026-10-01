@@ -1,0 +1,23 @@
+{
+  "suite": "trust_kernel_release",
+  "stdout": "docs/governance/evidence/line-p009-red-2026-10-02/06-suite-loop/trust_kernel_release.tap",
+  "stderr": "docs/governance/evidence/line-p009-red-2026-10-02/06-suite-loop/trust_kernel_release.stderr",
+  "tapSha256": "17b3bc731f0de4330d8e48a808675d499a6dcb6e55e7f8092e895bac584759bf",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "runId": "p009-red",
+  "origin": "local",
+  "checkedAt": "2026-10-01T17:52:52.807Z",
+  "pass": true,
+  "exitCode": 0,
+  "plan": 59,
+  "planLines": 1,
+  "results": 59,
+  "ok": 59,
+  "notOk": 0,
+  "skip": 0,
+  "todo": 0,
+  "bailOut": false,
+  "sqlErrorLines": 0,
+  "finishDiagnostics": [],
+  "failures": []
+}

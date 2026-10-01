@@ -1,0 +1,47 @@
+BEGIN
+CREATE EXTENSION
+1..29
+INSERT 0 4
+INSERT 0 2
+INSERT 0 3
+INSERT 0 3
+INSERT 0 4
+INSERT 0 4
+INSERT 0 4
+INSERT 0 4
+ok 1 - tenant 002 coexists without source changes
+ok 2 - tenant 001 approver remains tenant scoped
+ok 3 - monolith_tenant RLS enabled
+ok 4 - monolith_site RLS enabled
+ok 5 - monolith_membership RLS enabled
+ok 6 - monolith_membership_role RLS enabled
+ok 7 - monolith_membership_site RLS enabled
+ok 8 - verified_action_context RLS enabled
+ok 9 - monolith_tenant: no client write policy
+ok 10 - monolith_site: no client write policy
+ok 11 - monolith_membership: no client write policy
+ok 12 - monolith_membership_role: no client write policy
+ok 13 - monolith_membership_site: no client write policy
+ok 14 - verified_action_context: no client write policy
+ok 15 - no trust-kernel table uses a using(true) product-data policy
+ok 16 - service role cannot create human action context
+ok 17 - FREEZE context persisted with derived actor
+ok 18 - RELEASE context persisted with derived actor
+ok 19 - action context expires ~5 minutes after issuance
+ok 20 - first consume of a valid RELEASE context succeeds
+ok 21 - nonce is one-time
+ok 22 - consume rejects an action that does not match the context
+UPDATE 1
+ok 23 - expired context is rejected
+ok 24 - cross-tenant action context creation is denied
+SET
+RESET
+ok 25 - RLS: a tenant-001 member cannot read tenant-002 sites
+SET
+RESET
+ok 26 - RLS: same-tenant membership without the organization grant cannot read an org-X site
+ok 27 - FREEZE with a candidate hash is rejected (shape rule)
+ok 28 - RELEASE without candidate/authorization hashes is rejected (shape rule)
+UPDATE 1
+ok 29 - a revoked membership invalidates its unconsumed context
+ROLLBACK

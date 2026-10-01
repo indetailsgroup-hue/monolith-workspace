@@ -1,0 +1,24 @@
+PASS: generated credential inputs supplied
+PASS: credential scanner positive control detects a generated credential
+PASS: no generated credential bytes in 69 captured files (findings=[])
+PASS: every applied migration succeeded
+PASS: GREEN applied the whole chain ending at 0200
+PASS: P0-9 suite psql exit 0 (failures are reported in TAP, not by psql)
+PASS: TAP plan 1..35 with 35 results in order
+PASS: GREEN: all 35 assertions pass
+PASS: fifteen suite verdicts recorded (15)
+PASS: suite loop fails exactly ['repair_phase0_containment'] (known 0170 dependency; failed=['repair_phase0_containment'])
+PASS: suite loop exit 1 agrees with the recorded failures
+PASS: inbound retry race exit 0
+PASS: GREEN: two concurrent sweeps claim 20 rows once each and clean up
+PASS: outbound claim race unchanged: overlap 0
+PASS: CI harness node tests pass
+PASS: Python: no failure or error (106 cases)
+PASS: Python: every skip (13) is a known pre-existing probe gap ('public.resolve_actor() is not installed', 'public.record_input_sync(')
+Python counts: 93 passed, 13 skipped, 0 failed
+PASS: Python: every test has the same outcome as the RED bundle line-p009-red-2026-10-02 (no regression)
+PASS: listed pre/post counters match excluding capture timestamp
+PASS: no cron job schedules the sweep and no cron job ran
+PASS: GREEN: sweep present, retry table empty after the run
+PASS: owned containers and network removed
+RESULT: P0-9 GREEN stage verified; Phase A remains EVIDENCE_INCOMPLETE; independent review pending

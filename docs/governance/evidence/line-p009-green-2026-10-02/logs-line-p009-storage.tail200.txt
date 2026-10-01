@@ -1,0 +1,3 @@
+{"level":30,"time":"2026-10-01T17:53:40.634Z","pid":1,"hostname":"4eab012a3906","region":"stub","appVersion":"1.66.4","msg":"Server listening at http://127.0.0.1:5000"}
+{"level":30,"time":"2026-10-01T17:53:40.634Z","pid":1,"hostname":"4eab012a3906","region":"stub","appVersion":"1.66.4","msg":"Server listening at http://172.25.0.4:5000"}
+{"level":30,"time":"2026-10-01T17:53:40.634Z","pid":1,"hostname":"4eab012a3906","region":"stub","appVersion":"1.66.4","type":"server","msg":"[Server] Started Successfully"}
