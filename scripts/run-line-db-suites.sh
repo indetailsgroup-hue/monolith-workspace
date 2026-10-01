@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run the fourteen db-verify pgTAP suites, each in its own psql process, and check
+# Run the fifteen db-verify pgTAP suites, each in its own psql process, and check
 # every TAP output with scripts/line-ci-tap.mjs. A failing suite never stops the
 # ones after it; the script exits 1 if any suite failed, was incomplete, was
 # skipped or left no result file.
@@ -38,7 +38,7 @@ SUITES=(
   trust_kernel_safety repair_phase0_organization repair_phase0_containment
   line_outbound_claim_record line_oa_client_write_revoke
   line_oa_client_write_revoke_fail_closed line_oa_definer_execute_matrix
-  line_oa_definer_execute_fail_closed
+  line_oa_definer_execute_fail_closed line_inbound_handler_retry
 )
 
 mkdir -p "$TAP_DIR" || exit 2
@@ -59,10 +59,10 @@ for suite in "${SUITES[@]}"; do
 
   args=(-X -tA -v ON_ERROR_STOP=1)
   case "$suite" in
-    line_outbound_claim_record|line_oa_client_write_revoke|line_oa_definer_execute_matrix)
+    line_outbound_claim_record|line_oa_client_write_revoke|line_oa_definer_execute_matrix|line_inbound_handler_retry)
       # These suites own only ROLLBACK; open their transaction in the same psql
-      # session so fixtures, audit rows, throwaway roles and grants can never
-      # autocommit.
+      # session so fixtures, audit rows, throwaway roles, grants and test-only
+      # triggers can never autocommit.
       args+=(-c "begin;") ;;
     line_oa_client_write_revoke_fail_closed)
       # Same wrapper; the suite re-runs the real 0198 via \ir.

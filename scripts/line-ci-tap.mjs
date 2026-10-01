@@ -11,11 +11,11 @@
 // Its content is not judged: an expected SQL ERROR in it is not a failure.
 // It always writes the result JSON and exits 1 when the suite fails.
 // assemble: needs <suite>.result.json and the unchanged <suite>.tap and
-// <suite>.stderr for each of the fourteen suites. It always writes the artifact
+// <suite>.stderr for each of the fifteen suites. It always writes the artifact
 // and exits 1 unless all pass.
 //
 // The verdict covers pgTAP only (verdictScope 'pgtap-only'). fullPgTapPass is
-// the fourteen-suite verdict; pass and fullPass are kept as aliases of it.
+// the fifteen-suite verdict; pass and fullPass are kept as aliases of it.
 // workflowPass is always null: the rest of the workflow is not evaluated here.
 // provenanceComplete / missingProvenance report traceability separately and
 // never change the pgTAP verdict or the exit code.
@@ -31,12 +31,12 @@ export const SUITES = Object.freeze([
   'trust_kernel_safety', 'repair_phase0_organization', 'repair_phase0_containment',
   'line_outbound_claim_record', 'line_oa_client_write_revoke',
   'line_oa_client_write_revoke_fail_closed', 'line_oa_definer_execute_matrix',
-  'line_oa_definer_execute_fail_closed',
+  'line_oa_definer_execute_fail_closed', 'line_inbound_handler_retry',
 ]);
 export const LINE_SUITES = Object.freeze([
   'line_outbound_claim_record', 'line_oa_client_write_revoke',
   'line_oa_client_write_revoke_fail_closed', 'line_oa_definer_execute_matrix',
-  'line_oa_definer_execute_fail_closed',
+  'line_oa_definer_execute_fail_closed', 'line_inbound_handler_retry',
 ]);
 
 // Whole-line matches only: a plan quoted in a comment, an indented line, a data
@@ -346,7 +346,7 @@ function checkCommand([tapFile, exitText, suite, resultFile, stderrFile]) {
   const tap = readTap(tapFile);
   const analysis = analyzeTap(tap.text, exitCode);
   if (!SUITES.includes(suite)) {
-    analysis.failures.push({ code: 'unknown-suite', detail: `${suite} is not one of the fourteen db-verify suites` });
+    analysis.failures.push({ code: 'unknown-suite', detail: `${suite} is not one of the fifteen db-verify suites` });
   }
   if (baseName(tapFile) !== `${suite}.tap`) {
     analysis.failures.push({ code: 'suite-file-mismatch', detail: `${tapFile} is not ${suite}.tap` });

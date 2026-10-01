@@ -79,6 +79,13 @@ jobs:
           LINE_CLAIM_RACE_EPHEMERAL: "1"
         run: node tests/line-oa-commerce/concurrency/claim-race.mjs
 
+      - name: Prove LINE inbound retry sweeps do not overlap across two clients
+        if: ${{ always() && steps.db.outcome == 'success' }}
+        env:
+          LINE_CLAIM_RACE_DSN: ${{ steps.db.outputs.DB_URL }}
+          LINE_CLAIM_RACE_EPHEMERAL: "1"
+        run: node tests/line-oa-commerce/concurrency/inbound-retry-race.mjs
+
       - name: Confirm migration chain reaches 0192
         if: ${{ always() && steps.db.outcome == 'success' }}
         run: |
