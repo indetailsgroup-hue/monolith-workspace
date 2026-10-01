@@ -172,7 +172,7 @@ pgTAP workflow ไม่ใช้ hosted Supabase token แล้ว แต่�
 | PR | สถานะจาก GitHub | ผลเปรียบเทียบกับ `main` | คำแนะนำ |
 |---|---|---|---|
 | #41 Digital Shadow Service | closed as superseded | unique three-parameter Weibull/RUL delta ถูกย้ายเข้า PR #79; product integration อยู่ใน PR #80 | ปิดแล้วพร้อม comment อ้างอิง replacement |
-| #44 Digital Shadow integration | closed and replaced | แยกเฉพาะ Machine Shadow UI/API/store, Feature Cache, adapters/services และ tests ออกมาเป็น clean PR #80 โดยไม่พา CI/Slack/SARIF commits เก่า | ปิดแล้ว; PR #80 merge เข้า `main` ที่ `1df31e0b` หลังทุก check ผ่าน |
+| #44 Digital Shadow integration | closed and replaced | แยกเฉพาะ Machine Shadow UI/API/store, Feature Cache, adapters/services และ tests ออกมาเป็น clean PR #80 โดยไม่พา CI/SARIF commits เก่า | ปิดแล้ว; PR #80 merge เข้า `main` ที่ `1df31e0b` หลังทุก check ผ่าน |
 | #46 Accounting/RLS | closed as superseded | 42/73 paths byte-identical, 30 paths มีใน main และพัฒนาต่อแล้ว; canonical migration preparation รับหน้าที่แทน legacy bootstrap | ปิดแล้วหลัง fresh DB/pgTAP ยืนยัน current design |
 | #78 CONTRIBUTING formatting | open, 1 commit, 1 line | ไม่อยู่ใน scope stabilization และไม่เกี่ยวกับ release gates | คงไว้ให้ owner จัดการแยก |
 

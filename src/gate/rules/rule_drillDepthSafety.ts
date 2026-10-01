@@ -32,7 +32,7 @@ import { compositeThicknessMm } from '../compute/composite';
 import { issueId } from '../utils/idGen';
 
 /**
- * Float slack for "the residual is exactly the margin".
+ * Float tolerance for "the residual is exactly the margin".
  * Not a tolerance knob — it only absorbs binary-float error on sums like
  * 18 - 17.5, so the equality case is detected reliably.
  */

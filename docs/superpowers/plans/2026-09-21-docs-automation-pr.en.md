@@ -24,7 +24,7 @@ Owner request: replace Generator/Changelog direct pushes to main with PRs. Base:
 
 A GitHub App token could trigger CI automatically, but requires a separately authorized identity and secret setup; it is not introduced here. A custom REST/GraphQL PR publisher would duplicate branch, diff, signing and retry logic. The pinned existing action provides those operations with a small workflow change. Separate changelog PRs favor preserving every event over minimizing PR count.
 
-No generated site content, Slack settings, SciSpace hosting, or branch protections are changed in this patch. sync-chapters.yml is a separate release workflow and remains outside this request. Actual PR-creation policy and bot signing must be confirmed in a real run after this workflow is active; local tests cannot establish them.
+No generated site content, SciSpace hosting, or branch protections are changed in this patch. sync-chapters.yml is a separate release workflow and remains outside this request. Actual PR-creation policy and bot signing must be confirmed in a real run after this workflow is active; local tests cannot establish them.
 
 ## Verification
 

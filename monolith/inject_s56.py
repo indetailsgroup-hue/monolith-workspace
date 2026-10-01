@@ -211,7 +211,7 @@ S56 += table(
         ["P3-ONB-CHK-08", "Integration smoke test — per workstream (end-to-end data flow verified)", "Signal/Aria/Core", "P3-M1 Wk 4"],
         ["P3-ONB-CHK-09", "SLA acceptance test execution — all 7 GAPs (per 56.4 matrix)", "Tech Lead + Vendors", "P3-M2 Wk 4"],
         ["P3-ONB-CHK-10", "Security penetration test sign-off (Guardian compliance review)", "Guardian", "P3-M2 Wk 3"],
-        ["P3-ONB-CHK-11", "Hypercare support structure agreed — TAM assigned, Slack channel live", "Programme Director", "P3-M2 Wk 1"],
+        ["P3-ONB-CHK-11", "Hypercare support structure agreed — TAM assigned; authorized LINE group and delivery verified before activation", "Programme Director", "P3-M2 Wk 1"],
         ["P3-ONB-CHK-12", "P3-M2 gate readiness confirmed — all vendors operational, 0 P1 incidents open", "SC Checkpoint", "P3-M2 End"],
     ]
 )
@@ -284,7 +284,7 @@ S56 += table(
     ["Hypercare Phase", "Period", "Support Cadence", "P1 Response SLA", "Review Forum"],
     [
         ["Intensive Hypercare", "Days 1–30 (P3-M2)", "Daily stand-up · Dedicated vendor TAM per WS", "≤ 2 hours", "Daily Tech Stand-up (Signal/Aria/Core)"],
-        ["Active Hypercare", "Days 31–60 (P3-M3)", "Weekly review · Shared Slack channel per WS", "≤ 4 hours", "Weekly WS Lead Review"],
+        ["Active Hypercare", "Days 31–60 (P3-M3)", "Weekly review · Authorized LINE group per WS (verify before activation)", "≤ 4 hours", "Weekly WS Lead Review"],
         ["Transition Hypercare", "Days 61–90 (P3-M4)", "Monthly review · Standard support queue", "≤ 8 hours", "Monthly SC Programme Update"],
         ["BAU Operations", "Day 91+ (post P3-M4)", "ITIL standard support · SLA as per MSA", "Per MSA SLA", "Quarterly SC Governance"],
     ]
@@ -310,7 +310,7 @@ S56 += body(
 S56 += bullet("P3-ONB-CHK-01–12: All twelve onboarding checklist items confirmed complete")
 S56 += bullet("SLA acceptance: All 7 GAP acceptance tests passed (per 56.4 matrix); no outstanding remediation windows open")
 S56 += bullet("Security: Guardian pen-test sign-off complete (P3-ONB-CHK-10); zero critical vulnerabilities open")
-S56 += bullet("Hypercare live: All 3 vendor TAMs assigned; Slack channels operational; daily stand-up cadence established")
+S56 += bullet("Hypercare activation criteria: All 3 vendor TAMs assigned; authorized LINE groups and delivery verified; daily stand-up cadence established")
 S56 += bullet("Zero P1 incidents: No unresolved P1 incidents at gate date across all three workstreams")
 S56 += bullet("Data pipelines stable: 72-hour clean run of all WS-A/B/C data pipelines with < 1% data drop rate")
 S56 += bullet("SC documentation: Onboarding completion report (MONOLITH-S56-P3ONB-001) signed off and lodged with Ledger")

@@ -833,7 +833,7 @@ describe('plinth leg — a plinth is a leg you can buy, with a range', () => {
     expect(() => assertBuildableHeightStack(s)).toThrow(/PLINTH_ABOVE_LEG_MAXIMUM/);
   });
 
-  it('THE LEVELLING TOLERANCE IS THE ADJUSTMENT RANGE, not slack to discard', () => {
+  it('THE LEVELLING TOLERANCE IS THE ADJUSTMENT RANGE, not discretionary clearance to discard', () => {
     const s = DEFAULT_HEIGHT_STACK;
 
     // Thai default: plinth 70 == leg minimum 70, so a leg cannot be shortened AT ALL.

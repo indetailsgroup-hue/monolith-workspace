@@ -249,7 +249,7 @@ S57 += table(
         ["P3-GL-CHK-04", "Security penetration test complete — zero critical vulnerabilities open", "Guardian", "Guardian pen-test sign-off certificate"],
         ["P3-GL-CHK-05", "Rollback procedure rehearsed — staging rollback ≤ 2 hours; documented", "Tech Lead + Nexus", "Rollback rehearsal report with timestamps"],
         ["P3-GL-CHK-06", "Phase 3 cutover plan approved — cutover schedule (§57.2) distributed to all stakeholders", "Programme Director", "Signed cutover plan; stakeholder distribution list"],
-        ["P3-GL-CHK-07", "Hypercare TAMs confirmed — all 3 vendors TAMs assigned; Slack channels live; escalation ladder active", "Programme Director", "Hypercare activation confirmation (per S56 §56.5)"],
+        ["P3-GL-CHK-07", "Hypercare activation criteria — all 3 vendor TAMs assigned; authorized LINE groups and delivery verified; escalation ladder active", "Programme Director", "Hypercare activation confirmation (per S56 §56.5)"],
         ["P3-GL-CHK-08", "Go/No-Go meeting held — P3-GL-CHK-01–07 reviewed; SC Chair present; formal decision recorded", "SC Chair + Programme Director", "Go/No-Go meeting minutes with formal Go decision"],
         ["P3-GL-CHK-09", "92% coverage baseline confirmed — pre-go-live agent coverage audit validates 92% target achievable", "Vega + Nexus", "Coverage audit report — all 28 agents; 7 GAPs active"],
         ["P3-GL-CHK-10", "SC Chair final approval — Phase 3 Go-Live authorised; P3-M4 milestone formally approved", "SC Chair", "SC resolution MONOLITH-SC-P3GL-001 signed and lodged with Ledger"],

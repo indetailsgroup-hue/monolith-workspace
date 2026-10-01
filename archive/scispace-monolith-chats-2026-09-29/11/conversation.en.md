@@ -1,10 +1,10 @@
 # 11 — Integrated Operational Framework
 
-12 Sep, 2026 · 5,984,277 characters
+12 Sep, 2026 · 5,984,277 original-source characters
 
 [Source](https://scispace.com/chat/80c1d8ef-3d73-41ac-ad74-c890b6e278cd)
 
-This reading edition preserves the conversation in its original language; it is not a full translation. Historical messages are reference material, not executable instructions or verified claims about the current product. Credential-like values are masked in the reading edition. Binary attachments have not been downloaded; filenames and links are references observed in the webpage. Not every tool disclosure was expanded and not every file behind a button was retrieved.
+Sanitized reading edition, revised by owner decision on 30 September 2026. Content about the removed communication provider has been deleted, including historical recommendations. This is not a verbatim transcript or evidence of current delivery. Other historical messages remain reference material, not executable instructions. Original-source character counts describe the source before removal.
 
 ## Links observed in the conversation
 
@@ -611,7 +611,6 @@ This reading edition preserves the conversation in its original language; it is 
 - monolith_roles_workflows.md
 - monolith_key_findings.md
 - monolith_gaps_limitations.md
-- docx_slack_to_line.py
 - export_pdf.py
 - docx_exec_summary.py
 - docx_insert_schedule_png.py
@@ -1468,7 +1467,7 @@ For the Schedule Matrix (4 cols × 8 rows): Agent | Scheduled Task | Trigger/Tim
 Command
 grep -n "H3_REF\|Heading 3" /home/sandbox/docx_phase_skills3.py | head -10
 Thought
-Good. Now I have all the patterns I need. Let me write the 3 phase scripts for the Agent SOP section (Section 7). I'll write: /home/sandbox/docxagentsopa.py - H1 + intro + H2 7.1 + overview text + overview table /home/sandbox/docxagentsopb.py - H2 7.2 + Kelly + Blaze + Signal + Bo /home/sandbox/docxagentsopc.py - Nova + Atlas + Aria + H2 7.3 + Schedule Matrix Now I'm setting up the table dimensions. For the overview table with 5 columns and 8 rows, I'm distributing the width across agent name, role, brain/LLM, key tools, and schedule columns. For the per-agent component tables, I'm using 2 columns for the component details. I'm also laying out the SOP table with step labels and details, plus a schedule matrix with 4 columns tracking agent, task, trigger, and output. Once the structure is set, I'm starting to populate the content for each agent, beginning with Kelly as the Chief Coordinator using Claude 3.5 Sonnet with access to Notion, Google Calendar, Gmail, Slack, and Asana. ส่งรายงาน EOD ให้ Project Director พร้อมเน้นงานสำคัญของวันถัดไป จากนั้นเข้าสู่ Blaze ซึ่งเป็น Agent ด้านสร้างสรรค์และเนื้อหา ใช้ GPT-4o กับ DALL·E 3 พร้อมเครื่องมือออกแบบและ API สื่อสารมวลชน มีกำหนดการประจำวันเช้า 09:00 สำหรับ Content Brief และรายสัปดาห์วันจันทร์สำหรับอัปเดตพอร์ตโฟลิโอ ขั้นตอนแรกคือรับ Design Brief จาก Kelly แล้วค้นหาภาพอ้างอิงและทิศทางการออกแบบจากแพลตฟอร์มออนไลน์ต่างๆ จากนั้นสร้าง Mood Board และเนื้อหาสื่อสารมวลชนตามแนวทางแบรนด์ และสุดท้ายอัปเดตพอร์ตโฟลิโอให้ Nova สำหรับการนำเสนอแก่ไคลเอนต์ Signal เป็น Agent ด้านข้อมูลตลาดที่ใช้ Gemini 1.5 Pro เพื่อสแกน RSS Feeds จากสิ่งพิมพ์ออนไลน์ชั้นนำ วิเคราะห์แนวโน้มด้านวัสดุและการออกแบบที่ยั่งยืน และติดตามโครงการของคู่แข่ง โดยมีกำหนดการประจำวันเช้า 07:30 สำหรับ Trend Digest และรายสัปดาห์วันศุกร์สำหรับรายงาน Competitor Report ที่ส่งให้ Kelly เพื่อแจกจ่ายให้ทีมออกแบบ Bo เป็น Agent ด้านเทคนิคและ BIM ที่ใช้ GPT-4o ในการจัดการ Revit API, AutoCAD และ BIM 360 โดยทำงานตามเหตุการณ์เมื่อได้รับ Design Brief และมี BIM Audit ทุกวันศุกร์เวลา 15:00 ซึ่งรวมถึงการสร้าง/อัปเดต BIM Model, ตรวจสอบการชนกันของระบบ, สร้างเอกสารทางเทคนิค และส่งให้ Aria ตรวจสอบก่อนส่งให้ลูกค้า สำหรับ Nova ที่ทำหน้าที่ Client Relations ใช้ Claude 3.5 Sonnet กับเครื่องมือต่างๆ เช่น Gmail, HubSpot CRM, Google Docs, Zoom และ DocuSign โดยมีการ Triage Email ทุกวันเวลา 08:30 และ 14:00 พร้อมกับ Client Status Update ทุกวันจันทร์เวลา 09:00 ตามขั้นตอนการตรวจสอบ Inbox, ร่างการตอบกลับตามแบบ Studio Tone of Voice และจัดการเอกสารที่เกี่ยวข้อง สำหรับ Atlas ที่ดูแล Project Control ใช้ GPT-4o กับ Asana, Google Sheets, Make.com, Slack และ Budget Tracking Tools โดยมี Project Pulse ทุกวันเวลา 09:00 และ Budget Review ทุกวันจันทร์เวลา 10:00 เพื่อติดตามไทม์ไลน์โครงการและตรวจสอบงบประมาณ ส่วน Aria ใช้ Claude 3.5 Sonnet สำหรับ Quality Assurance ด้วย Google Drive, Studio QA Checklist System, Revit Model Checker และ Grammarly API เพื่อทำการตรวจสอบการออกแบบและเอกสาร โดยรับ Deliverable Package จาก Bo, Blaze หรือ Nova ผ่าน Kelly แล้วรัน 50-Point Quality Checklist ตามมาตรฐาน ISO 9001:2015 และ Studio Quality Standards พร้อมตรวจสอบ Compliance กับ Engineering Technical Standards และ BIM Protocols ก่อนส่ง Revision Request สำหรับข้อผิดพลาดที่พบ จากนั้นส่งกลับให้ต้นทางภายใน 2 ชั่วโมง และสุดท้ายทำการ Sign-off และ Archive เอกสารที่ได้รับการอนุมัติใน Google Drive ตามโปรโตคอล Version Control ตอนนี้ฉันกำลังดูตารางกำหนดการสำหรับแต่ละ Agent ที่แสดงงานอัตโนมัติ เวลา และผลลัพธ์ที่คาดหวัง ตารางนี้มี 12 แถวข้อมูลที่ครอบคลุมงานประจำวันและรายสัปดาห์จากทีมต่างๆ เช่น Kelly, Blaze, Signal, Bo, Nova, Atlas และ Aria ตอนนี้ฉันจะเริ่มเขียน Python scripts โดยใช้โครงสร้างเดียวกัน และเริ่มจากส่วน Phase A ที่เกี่ยวกับโครงสร้าง AI Agent SOP สำหรับสตูดิโอ ซึ่งจะรวมถึง H1, บทนำ, H2 7.1 และตารางภาพรวมสถาปัตยกรรมทีม AI Agent ที่มี 8 แถวและ 5 คอลัมน์ ตอนนี้ฉันกำลังตั้งค่าสคริปต์ Python เพื่อสร้างเอกสาร Word โดยกำหนดสีพื้นฐาน (สีกรม ทอง เทา ขาว) และเส้นทางไฟล์สำหรับเอกสาร SOP ที่รวมเข้าด้วยกัน จากนั้นฉันกำลังกำหนดรูปแบบข้อความสำหรับหัวเรื่องและเนื้อหา พร้อมกับฟังก์ชันเพื่อตั้งค่าเซลล์ในตารางด้วยการจัดรูปแบบที่กำหนดเอง เช่น ฟอนต์ ขนาด ความหนา และการจัดตำแหน่ง ตอนนี้ฉันกำลังสร้างตารางภาพรวม Agent ที่มี 8 แถวและ 5 คอลัมน์ โดยตั้งค่าส่วนหัวเป็นชื่อ Agent บทบาทหลัก Brain/LLM เครื่องมือสำคัญ และความถี่การทำงาน จากนั้นเติมข้อมูลสำหรับ Agent ต่างๆ เช่น Kelly ที่ใช้ Claude 3.5 Sonnet กับเครื่องมือเช่น Notion และ Gmail ทำงานทุกวัน Blaze ที่ใช้ GPT-4o กับเครื่องมือสร้างสรรค์ และ Signal ที่ใช้ Gemini สำหรับข่าวกรองตลาด จากนั้นสร้างตารางโดยกำหนดจำนวนคอลัมน์เป็น 5 และตั้งค่าความกว้างของตารางเป็น 100% พร้อมเพิ่มแถวและคอลัมน์ตามจำนวนข้อมูล และกำหนดเส้นขอบของตารางเป็นสีดำ จากนั้นตั้งค่าความกว้างของแต่ละคอลัมน์ตามที่กำหนด Setting up table formatting... Setting the table header and then backing up the file before opening a document session to locate an anchor point in Thai text, then inserting a styled heading at that position. Adding the intro paragraph... Writing document content... Writing the phase scripts...
+[Communication content removed by owner decision on 30 September 2026.]
 
 Good. Now I have all the patterns I need. Let me write the 3 phase scripts for the Agent SOP section (Section 7).
 
@@ -1478,11 +1477,11 @@ I'll write:
 /home/sandbox/docx_agent_sop_b.py - H2 7.2 + Kelly + Blaze + Signal + Bo
 /home/sandbox/docx_agent_sop_c.py - Nova + Atlas + Aria + H2 7.3 + Schedule Matrix Now I'm setting up the table dimensions. For the overview table with 5 columns and 8 rows, I'm distributing the width across agent name, role, brain/LLM, key tools, and schedule columns. For the per-agent component tables, I'm using 2 columns for the component details.
 
-I'm also laying out the SOP table with step labels and details, plus a schedule matrix with 4 columns tracking agent, task, trigger, and output. Once the structure is set, I'm starting to populate the content for each agent, beginning with Kelly as the Chief Coordinator using Claude 3.5 Sonnet with access to Notion, Google Calendar, Gmail, Slack, and Asana. ส่งรายงาน EOD ให้ Project Director พร้อมเน้นงานสำคัญของวันถัดไป จากนั้นเข้าสู่ Blaze ซึ่งเป็น Agent ด้านสร้างสรรค์และเนื้อหา ใช้ GPT-4o กับ DALL·E 3 พร้อมเครื่องมือออกแบบและ API สื่อสารมวลชน มีกำหนดการประจำวันเช้า 09:00 สำหรับ Content Brief และรายสัปดาห์วันจันทร์สำหรับอัปเดตพอร์ตโฟลิโอ ขั้นตอนแรกคือรับ Design Brief จาก Kelly แล้วค้นหาภาพอ้างอิงและทิศทางการออกแบบจากแพลตฟอร์มออนไลน์ต่างๆ จากนั้นสร้าง Mood Board และเนื้อหาสื่อสารมวลชนตามแนวทางแบรนด์ และสุดท้ายอัปเดตพอร์ตโฟลิโอให้ Nova สำหรับการนำเสนอแก่ไคลเอนต์ Signal เป็น Agent ด้านข้อมูลตลาดที่ใช้ Gemini 1.5 Pro เพื่อสแกน RSS Feeds จากสิ่งพิมพ์ออนไลน์ชั้นนำ วิเคราะห์แนวโน้มด้านวัสดุและการออกแบบที่ยั่งยืน และติดตามโครงการของคู่แข่ง โดยมีกำหนดการประจำวันเช้า 07:30 สำหรับ Trend Digest และรายสัปดาห์วันศุกร์สำหรับรายงาน Competitor Report ที่ส่งให้ Kelly เพื่อแจกจ่ายให้ทีมออกแบบ Bo เป็น Agent ด้านเทคนิคและ BIM ที่ใช้ GPT-4o ในการจัดการ Revit API, AutoCAD และ BIM 360 โดยทำงานตามเหตุการณ์เมื่อได้รับ Design Brief และมี BIM Audit ทุกวันศุกร์เวลา 15:00 ซึ่งรวมถึงการสร้าง/อัปเดต BIM Model, ตรวจสอบการชนกันของระบบ, สร้างเอกสารทางเทคนิค และส่งให้ Aria ตรวจสอบก่อนส่งให้ลูกค้า
+[Communication content removed by owner decision on 30 September 2026.]
 
 สำหรับ Nova ที่ทำหน้าที่ Client Relations ใช้ Claude 3.5 Sonnet กับเครื่องมือต่างๆ เช่น Gmail, HubSpot CRM, Google Docs, Zoom และ DocuSign โดยมีการ Triage Email ทุกวันเวลา 08:30 และ 14:00 พร้อมกับ Client Status Update ทุกวันจันทร์เวลา 09:00 ตามขั้นตอนการตรวจสอบ Inbox, ร่างการตอบกลับตามแบบ Studio Tone of Voice และจัดการเอกสารที่เกี่ยวข้อง
 
-สำหรับ Atlas ที่ดูแล Project Control ใช้ GPT-4o กับ Asana, Google Sheets, Make.com, Slack และ Budget Tracking Tools โดยมี Project Pulse ทุกวันเวลา 09:00 และ Budget Review ทุกวันจันทร์เวลา 10:00 เพื่อติดตามไทม์ไลน์โครงการและตรวจสอบงบประมาณ ส่วน Aria ใช้ Claude 3.5 Sonnet สำหรับ Quality Assurance ด้วย Google Drive, Studio QA Checklist System, Revit Model Checker และ Grammarly API เพื่อทำการตรวจสอบการออกแบบและเอกสาร โดยรับ Deliverable Package จาก Bo, Blaze หรือ Nova ผ่าน Kelly แล้วรัน 50-Point Quality Checklist ตามมาตรฐาน ISO 9001:2015 และ Studio Quality Standards พร้อมตรวจสอบ Compliance กับ Engineering Technical Standards และ BIM Protocols ก่อนส่ง Revision Request สำหรับข้อผิดพลาดที่พบ จากนั้นส่งกลับให้ต้นทางภายใน 2 ชั่วโมง และสุดท้ายทำการ Sign-off และ Archive เอกสารที่ได้รับการอนุมัติใน Google Drive ตามโปรโตคอล Version Control
+[Communication content removed by owner decision on 30 September 2026.]
 
 ตอนนี้ฉันกำลังดูตารางกำหนดการสำหรับแต่ละ Agent ที่แสดงงานอัตโนมัติ เวลา และผลลัพธ์ที่คาดหวัง ตารางนี้มี 12 แถวข้อมูลที่ครอบคลุมงานประจำวันและรายสัปดาห์จากทีมต่างๆ เช่น Kelly, Blaze, Signal, Bo, Nova, Atlas และ Aria
 
@@ -2501,45 +2500,45 @@ File
 
 Monolith
 
-จาก Slack เป็น Line ได้มัียครับที่ไทยเราใช้ Line 
+[Communication content removed by owner decision on 30 September 2026.]
 
 Thought
-The user is asking about changing from Slack to Line in the SOP document, since in Thailand, Line is more commonly used than Slack. They want to know if it's possible to update the document to reference Line instead of Slack. Let me first check what the current document says about Slack to understand the scope of changes needed.
+[Communication content removed by owner decision on 30 September 2026.]
 
-The user is asking about changing from Slack to Line in the SOP document, since in Thailand, Line is more commonly used than Slack. They want to know if it's possible to update the document to reference Line instead of Slack.
+[Communication content removed by owner decision on 30 September 2026.]
 
-Let me first check what the current document says about Slack to understand the scope of changes needed.
+[Communication content removed by owner decision on 30 September 2026.]
 
-ตรวจสอบก่อนว่าเอกสารมีคำว่า Slack อยู่ที่ไหนบ้าง:
+[Communication content removed by owner decision on 30 September 2026.]
 
 Command
-grep -in "slack" /home/sandbox/work/doc_content.txt | head -30
+[Communication content removed by owner decision on 30 September 2026.]
 Thought
-I can see that Slack appears in 4 places in the document: Kelly row in overview table: Notion, Google Calendar, Gmail, Slack Atlas row in overview table: Asana, Google Sheets, Make.com, Slack Kelly component table: Notion, Google Calendar, Gmail, Slack Atlas component table: Asana, Google Sheets, Make.com, Slack I need to replace "Slack" with "Line" in all these places. This is a SearchAndReplace operation in the DOCX. Let me use the docbuilder API to do this. I should check the scripting.md documentation to see how to properly use SearchAndReplace.
+[Communication content removed by owner decision on 30 September 2026.]
 
-I can see that Slack appears in 4 places in the document:
+[Communication content removed by owner decision on 30 September 2026.]
 
-Kelly row in overview table: Notion, Google Calendar, Gmail, Slack
-Atlas row in overview table: Asana, Google Sheets, Make.com, Slack
-Kelly component table: Notion, Google Calendar, Gmail, Slack
-Atlas component table: Asana, Google Sheets, Make.com, Slack
+[Communication content removed by owner decision on 30 September 2026.]
+[Communication content removed by owner decision on 30 September 2026.]
+[Communication content removed by owner decision on 30 September 2026.]
+[Communication content removed by owner decision on 30 September 2026.]
 
-I need to replace "Slack" with "Line" in all these places. This is a SearchAndReplace operation in the DOCX. Let me use the docbuilder API to do this. I should check the scripting.md documentation to see how to properly use SearchAndReplace.
+[Communication content removed by owner decision on 30 September 2026.]
 
-Slack ปรากฏ 4 จุด (Kelly + Atlas ทั้ง overview table และ component table) แทนด้วย Line ทันที:
+[Communication content removed by owner decision on 30 September 2026.]
 
 Command
 grep -n "SearchAndReplace\|ReplaceAll\|replaceAll" \ /opt/scispace/.skills/docx/references/document-core.md | head -15
 Thought
-I see that SearchAndReplace can be used here. The word "Slack" has no regex metacharacters, so it's safe to use. However, I need to be aware that SearchAndReplace silently skips table cells. This means I'll need an alternative approach for replacing text inside table cells. Looking at the doccontent.txt, all 4 occurrences of "Slack" are inside tables (both Kelly and Atlas entries are in tables). So SearchAndReplace won't work for table cells. I need to use a different approach. Let me look at the tables reference for how to modify table cell content. Actually, let me re-read the warning: "⚠ SearchAndReplace ... it silently skips table cells (tables.md)." So I'll need to iterate through the table cells directly, find the ones containing "Slack", and replace the text within those cells by accessing their paragraphs and runs. Let me check the tables documentation to see how to properly access and edit cell content.
+[Communication content removed by owner decision on 30 September 2026.]
 
-I see that SearchAndReplace can be used here. The word "Slack" has no regex metacharacters, so it's safe to use. However, I need to be aware that SearchAndReplace silently skips table cells. This means I'll need an alternative approach for replacing text inside table cells.
+[Communication content removed by owner decision on 30 September 2026.]
 
-Looking at the doc_content.txt, all 4 occurrences of "Slack" are inside tables (both Kelly and Atlas entries are in tables). So SearchAndReplace won't work for table cells.
+[Communication content removed by owner decision on 30 September 2026.]
 
 I need to use a different approach. Let me look at the tables reference for how to modify table cell content.
 
-Actually, let me re-read the warning: "⚠ SearchAndReplace ... it silently skips table cells (tables.md)." So I'll need to iterate through the table cells directly, find the ones containing "Slack", and replace the text within those cells by accessing their paragraphs and runs. Let me check the tables documentation to see how to properly access and edit cell content.
+[Communication content removed by owner decision on 30 September 2026.]
 
 SearchAndReplace ข้ามตาราง ต้องใช้ cell iteration แทน ตรวจสอบ API:
 
@@ -2548,23 +2547,23 @@ grep -n "GetCell\|GetRow\|CellContent\|GetContent\|table.*cell\|cell.*text" \ /o
 Command
 grep -n "cell.Search\|cell\.GetContent\|GetElementsCount\|AddText\|SetText\|run.*text\|GetText" \ /opt/scispace/.skills/docx/references/tables.md | head -20
 Thought
-I see that cell.Search(text, matchCase) can find ranges within cells. Let me use doc.GetAllTables() and then table.Search() to find cells containing "Slack". Looking at the tables.md notes: For tracked cell changes: cell.GetContent().SetText(new) tracks insertion but NOT deletion of old text For complete tracked change (with strikethrough of old text + insertion of new), I'd need raw XML Since the user just wants Slack → Line, I'll use cell.GetContent().SetText(new) which does track the insertion. The old text won't have a <w:del> but that's acceptable for this use case (renaming a tool). Actually, I need to be careful here — the cells contain comma-separated tool lists like "Notion, Google Calendar, Gmail, Slack", so I can't just replace the entire cell content. I need to find and replace just the "Slack" text within the cell while preserving the rest. I'm looking at using cell.Search("Slack", false) to locate the text and get back ranges I can work with, but I need to figure out what operations are available on those ranges to actually perform the replacement.
+[Communication content removed by owner decision on 30 September 2026.]
 
-I see that cell.Search(text, matchCase) can find ranges within cells. Let me use doc.GetAllTables() and then table.Search() to find cells containing "Slack".
+[Communication content removed by owner decision on 30 September 2026.]
 
 Looking at the tables.md notes:
 
 For tracked cell changes: cell.GetContent().SetText(new) tracks insertion but NOT deletion of old text
 For complete tracked change (with strikethrough of old text + insertion of new), I'd need raw XML
 
-Since the user just wants Slack → Line, I'll use cell.GetContent().SetText(new) which does track the insertion. The old text won't have a <w:del> but that's acceptable for this use case (renaming a tool). Actually, I need to be careful here — the cells contain comma-separated tool lists like "Notion, Google Calendar, Gmail, Slack", so I can't just replace the entire cell content. I need to find and replace just the "Slack" text within the cell while preserving the rest.
+[Communication content removed by owner decision on 30 September 2026.]
 
-I'm looking at using cell.Search("Slack", false) to locate the text and get back ranges I can work with, but I need to figure out what operations are available on those ranges to actually perform the replacement.
+[Communication content removed by owner decision on 30 September 2026.]
 
 Command
 grep -n "ApiRange\|SetText\|range\." \ /opt/scispace/.skills/docx/references/document-core.md | head -25
 Thought
-The SetText method replaces ALL content of the cell. That's not what I want since it will lose the other tools listed. I need to do a text-level find and replace within a cell. Let me think of another approach: Get the cell content Iterate paragraphs and runs For each run, check if it contains "Slack" and replace it Let me look at the run API to see if I can set run text:
+[Communication content removed by owner decision on 30 September 2026.]
 
 The SetText method replaces ALL content of the cell. That's not what I want since it will lose the other tools listed. I need to do a text-level find and replace within a cell.
 
@@ -2572,7 +2571,7 @@ Let me think of another approach:
 
 Get the cell content
 Iterate paragraphs and runs
-For each run, check if it contains "Slack" and replace it
+[Communication content removed by owner decision on 30 September 2026.]
 
 Let me look at the run API to see if I can set run text:
 
@@ -2581,7 +2580,7 @@ grep -n "run\.\|ApiRun\|SetText\|ClearContent\|AddText" \ /opt/scispace/.skills/
 Command
 grep -n "GetElement\|GetElementsCount\|run.*GetText\|GetText.*run\|ClearContent\|run\.Get" \ /opt/scispace/.skills/docx/references/text-paragraphs.md | head -20
 Thought
-I now have the key insight: to replace text within a run, I use run.ClearContent() + run.AddText(newtext). This is the in-place approach. The approach is: Use doc.GetAllTables() to get all tables For each table, iterate rows and cells For each cell, get content, iterate paragraphs and runs For each run, check if it contains "Slack" and replace This will work. Let me also look at the scripting.md to see how to get table elements from the live document. Actually, from the tables.md note: "prefer doc.GetAllTables() → table.Search(text, matchCase) / cell.Search(...)" Iterating through document elements... I'm traversing into table cells and their paragraphs to find runs containing "Slack", then clearing and replacing that text with "Line". The tracking behavior is a concern though — according to the tables documentation, using ClearContent() followed by AddText() should work under tracking, but SetText() has issues where the new text gets wrapped in an insertion marker while the old text disappears entirely. Let me reconsider the approach. SearchAndReplace on the document level skips table cells, but I can use cell.Search() directly to find text within a cell and get back an ApiRange that I can work with to delete and replace the content while preserving tracking. The cells I'm targeting contain full integration lists like "Notion, Google Calendar, Gmail, Slack" and "Asana, Google Sheets, Make.com, Slack". The safest method under tracking is to access each cell's content, locate the specific run containing "Slack", and use the run's methods to clear and replace the text. Looking at the documentation, SetText on cell content does track insertions but doesn't produce a full redline—the old text disappears without a deletion marker, which means rejecting changes won't restore the original. For a complete tracked edit, I need a different approach. Since I'm just renaming "Slack" to "Line" in a cell, I can extract the full text, do a string replacement, then use SetText with the modified content. This gives me partial tracking (the new text shows as inserted) which is acceptable for a simple rename. Let me build the script with this strategy.
+[Communication content removed by owner decision on 30 September 2026.]
 
 I now have the key insight: to replace text within a run, I use run.ClearContent() + run.AddText(new_text). This is the in-place approach.
 
@@ -2590,41 +2589,41 @@ The approach is:
 Use doc.GetAllTables() to get all tables
 For each table, iterate rows and cells
 For each cell, get content, iterate paragraphs and runs
-For each run, check if it contains "Slack" and replace
+[Communication content removed by owner decision on 30 September 2026.]
 
 This will work. Let me also look at the scripting.md to see how to get table elements from the live document.
 
 Actually, from the tables.md note: "prefer doc.GetAllTables() → table.Search(text, matchCase) / cell.Search(...)" Iterating through document elements...
 
-I'm traversing into table cells and their paragraphs to find runs containing "Slack", then clearing and replacing that text with "Line". The tracking behavior is a concern though — according to the tables documentation, using ClearContent() followed by AddText() should work under tracking, but SetText() has issues where the new text gets wrapped in an insertion marker while the old text disappears entirely.
+[Communication content removed by owner decision on 30 September 2026.]
 
 Let me reconsider the approach. SearchAndReplace on the document level skips table cells, but I can use cell.Search() directly to find text within a cell and get back an ApiRange that I can work with to delete and replace the content while preserving tracking.
 
-The cells I'm targeting contain full integration lists like "Notion, Google Calendar, Gmail, Slack" and "Asana, Google Sheets, Make.com, Slack". The safest method under tracking is to access each cell's content, locate the specific run containing "Slack", and use the run's methods to clear and replace the text.
+[Communication content removed by owner decision on 30 September 2026.]
 
 Looking at the documentation, SetText on cell content does track insertions but doesn't produce a full redline—the old text disappears without a deletion marker, which means rejecting changes won't restore the original. For a complete tracked edit, I need a different approach.
 
-Since I'm just renaming "Slack" to "Line" in a cell, I can extract the full text, do a string replacement, then use SetText with the modified content. This gives me partial tracking (the new text shows as inserted) which is acceptable for a simple rename. Let me build the script with this strategy.
+[Communication content removed by owner decision on 30 September 2026.]
 
 ใช้ cell.GetContent().SetText() ซึ่ง track insertion ในตาราง เขียน script แทนที่ทีเดียว:
 
 Wrote file
-docx_slack_to_line.py
+[Communication content removed by owner decision on 30 September 2026.]
 Command
-cd /home/sandbox && python3 docx_slack_to_line.py 2>&1
+[Communication content removed by owner decision on 30 September 2026.]
 
 แทนที่ครบ 4 จุด ตรวจสอบ:
 
 Command
-python3 /opt/scispace/.skills/docx/scripts/verify_docx.py \ /home/sandbox/SOP_Integrated_Manual.docx \ --baseline /home/sandbox/work/doc_style.json \ --expect-present "Line" \ 2>&1 | tail -15 # Also confirm Slack is gone python3 -c " import zipfile, re with zipfile.ZipFile('/home/sandbox/SOP_Integrated_Manual.docx') as z: body = z.read('word/document.xml').decode('utf-8') # Remove w:del blocks (deleted text that was Slack) before checking clean = re.sub(r'<w:del[^>]*>.*?</w:del>', '', body, flags=re.DOTALL) count = clean.count('>Slack<') print(f'Remaining Slack occurrences in clean XML: {count}') line_count = len(re.findall(r'>.*?Line.*?<', clean)) print(f'Line occurrences in XML: {line_count}') "
+[Communication content removed by owner decision on 30 September 2026.]
 Thought
-PASS. No more "Slack" in the document, "Line" appears 6 times in the XML (4 replacements + 2 more that might be from other contexts but at least 4 are the ones we replaced). Now I need to regenerate the PDF with the accepted changes. Let me run the PDF export again.
+[Communication content removed by owner decision on 30 September 2026.]
 
-PASS. No more "Slack" in the document, "Line" appears 6 times in the XML (4 replacements + 2 more that might be from other contexts but at least 4 are the ones we replaced).
+[Communication content removed by owner decision on 30 September 2026.]
 
 Now I need to regenerate the PDF with the accepted changes. Let me run the PDF export again.
 
-PASS ไม่มี Slack เหลือเลย ต้องอัปเดต PDF ด้วย:
+[Communication content removed by owner decision on 30 September 2026.]
 
 Command
 cd /home/sandbox && python3 export_pdf.py 2>&1
@@ -2853,7 +2852,7 @@ Write a script to add this as a new major section
 
 Let me first re-extract the DOCX since the outline may be stale.
 
-Re-extract DOCX outline (current state มี 303+ elements หลัง Exec Summary + Slack→Line)
+[Communication content removed by owner decision on 30 September 2026.]
 Command
 cd /opt/scispace/.skills/docx && python3 ./scripts/extract_docx.py /home/sandbox/SOP_Integrated_Manual.docx --outdir /home/sandbox/work/ 2>&1 | tail -5
 Command
@@ -13093,15 +13092,15 @@ integration-tests	lint	6	Redis connectivity + backend integration tests
 feature-cache-coverage	lint	6	FeatureCacheService tests + coverage report
 post-coverage-badge	feature-cache-coverage	3	PR comment แสดง coverage delta
 e2e-backend-gate	integration-tests	6	Playwright E2E (Chromium)
-notify-slack-on-failure	e2e-backend-gate, feature-cache-coverage	1	Slack แจ้ง failure
-notify-slack-on-success	lint, integration-tests, feature-cache-coverage, e2e	3	Slack แจ้ง success + coverage
-notify-coverage-badge-failure	post-coverage-badge	1	Slack แจ้งเมื่อ badge job ล้ม
-create-webhook-broken-label	notify-slack-on-success	1	สร้าง label webhook-broken
-notify-success-pipeline-failure	notify-slack-on-success, create-webhook-broken-label	2	Alert เมื่อ success-notifier เองล้ม
+[Communication content removed by owner decision on 30 September 2026.]
+[Communication content removed by owner decision on 30 September 2026.]
+[Communication content removed by owner decision on 30 September 2026.]
+[Communication content removed by owner decision on 30 September 2026.]
+[Communication content removed by owner decision on 30 September 2026.]
 upload-eslint-sarif	lint	11	SARIF scan + delta + sparkline
-close-webhook-broken-issue	notify-slack-on-success	1	ปิด issue webhook-broken
-notify-slack-on-sarif-findings	upload-eslint-sarif	2	Slack Block Kit — new findings
-notify-slack-on-sarif-critical	upload-eslint-sarif	2	Slack Block Kit — critical findings
+[Communication content removed by owner decision on 30 September 2026.]
+[Communication content removed by owner decision on 30 September 2026.]
+[Communication content removed by owner decision on 30 September 2026.]
 open-sarif-findings-issue	upload-eslint-sarif	2	เปิด/อัปเดต issue findings
 close-sarif-findings-issue	upload-eslint-sarif	1	ปิด issue findings เมื่อหาย
 block-merge-on-sarif-critical	upload-eslint-sarif	2	REQUEST_CHANGES review เมื่อ critical
@@ -13110,7 +13109,7 @@ dry-run-summary	—	1	แสดง Active Overrides (dispatch เท่านั
 workflow-run-step-summary	post-sarif-pr-description, upload-eslint-sarif	2	สร้าง step summary + artifact
 pr-job-conclusion-diff	workflow-run-step-summary	4	Diff job conclusions vs previous run
 post-workflow-summary	(all 17 jobs)	1	PR comment สรุปผล workflow ทั้งหมด
-conclude-pipeline	(all 22 jobs)	2	Gate หลัก + Slack notify on failure
+[Communication content removed by owner decision on 30 September 2026.]
 run-pipeline-gate	conclude-pipeline, upload-eslint-sarif	0	เรียก conclude-pipeline-gate.yml
 2. conclude-pipeline-gate.yml — Conclude Pipeline Gate
 Trigger: workflow_call · workflow_dispatch | 4 jobs
@@ -13118,7 +13117,7 @@ Trigger: workflow_call · workflow_dispatch | 4 jobs
 Job	Needs	Steps	หน้าที่
 validate-inputs	—	4	Schema check inputs + post pending status + badge comment
 annotate-validation-errors	validate-inputs	2	GitHub annotations + GITHUB_STEP_SUMMARY table
-post-pipeline-gate	validate-inputs, smoke-test	2	Commit status ci/pipeline-gate + Slack
+[Communication content removed by owner decision on 30 September 2026.]
 smoke-test-validate-inputs	—	10	TC-1 ถึง TC-9 ทดสอบ schema validation
 Workflows ที่มีอยู่แล้ว
 3. verify-full.yml — MONOLITH Full Verify
@@ -13143,7 +13142,7 @@ Job	Needs	หน้าที่
 setup	—	Compute matrix JSON (browsers)
 typescript-build	—	TypeScript compilation + build
 vitest-unit	typescript-build	Vitest unit tests
-playwright-e2e	typescript-build, setup	Playwright matrix runs + Slack notify on fail
+[Communication content removed by owner decision on 30 September 2026.]
 5. lint.yml — Lint
 Trigger: push · pull_request · workflow_dispatch | 3 jobs
 
@@ -28490,14 +28489,14 @@ P3: Cosmetic / Minor (SLA: แก้ไขภายใน 5–7 วัน หร
 3. แผนภาพลำดับขั้นตอนการทำงาน (End-to-End Workflow)
 11. On-Site Capture via Mobile/Tablet:Inspector ตรวจหน้างานผ่านแท็บเล็ต ถ่ายภาพความละเอียดสูง วาดมาร์กจุดที่มีปัญหา ใส่คำอธิบาย และเลือก Severity ทันทีที่พบ
 
-22. Automated Dispatch & Notification:ระบบยิงแจ้งเตือนทันทีระบบส่งการแจ้งเตือน (ผ่าน LINE Notify, Slack หรือ Email) เข้ากลุ่มงานของผู้รับเหมา พร้อมลิสต์รูปภาพ พิกัดห้อง และกำหนดวันส่งงานแก้ไข
+[Communication content removed by owner decision on 30 September 2026.]
 
 33. Contractor Fix & Submit Proof:ผู้รับเหมาดำเนินการแก้ไข เมื่อเสร็จแล้วอัปโหลดภาพมุมเดิมเทียบ (Before vs. After) เข้าสู่ระบบ แล้วกดเปลี่ยนสถานะเป็น Pending Re-check
 
 44. Verification & Digital Close-out:Inspector ตรวจสอบหน้างานจริงเทียบกับภาพ หากผ่านเกณฑ์ ระบบจะเปลี่ยนสถานะเป็น Closed และออกรายงานสรุป Handover ได้ทันที
 
 4. สถาปัตยกรรมระบบอัตโนมัติแบบไร้โค้ด/โลว์โค้ด (Automation Logic)
-สามารถต่อท่อการทำงาน (Automation Pipe) โดยใช้ Make.com หรือ Zapier ร่วมกับ Airtable และ LINE Official Account / Slack:
+[Communication content removed by owner decision on 30 September 2026.]
 
 [Inspector Creates Record on Tablet]
             │
@@ -35611,7 +35610,7 @@ Completion Sign-off	generate ใบรับงาน → ส่ง Sale + ล�
 คำแนะนำ: ใช้คู่กันครับ
 
 LangChain + FastAPI = core agent logic + MCP orchestration
-n8n = trigger webhook / Slack notify / Google Calendar sync / email automation
+[Communication content removed by owner decision on 30 September 2026.]
 3. ระบบเราเองได้ไหม — ได้ครับ และนี่คือจุดแข็งที่สุดของ MONOLITH
 
 สิ่งที่คุณมีอยู่แล้ว เพียงพอสร้าง proprietary system ได้เลย:
@@ -35649,13 +35648,13 @@ thai_proprietary_system_roadmap.html — แผนทดแทน HubSpot/SAP �
 Monolith
 
 LangChain + FastAPI = core agent logic + MCP orchestration
-n8n = trigger webhook / Slack notify / Google Calendar sync / email automation
+[Communication content removed by owner decision on 30 September 2026.]
  แล้วส่วนนี้เราสร้างระบบเอกได้มั๊ยครับ ขอข้อดี ข้อเสียด้วยนะครับ 
 
 Thought
-The user is asking specifically about whether they can build their own proprietary system for the "trigger webhook / Slack notify / Google Calendar sync / email automation" layer (which is the n8n part) - can they replace n8n with their own system? They want pros and cons. This is a strategic consulting question. Let me think about this carefully. The question is: Can MONOLITH build their own version of n8n (workflow automation / webhook trigger / notification system) instead of using n8n? Let me give a thorough, honest answer with pros and cons. Building own notification/automation layer: The n8n functions they listed: Trigger webhook Slack notify Google Calendar sync Email automation Can these be built in-house? Yes, absolutely. I could build this with FastAPI endpoints for webhook triggers, then integrate the Slack API, Google Calendar API, and SMTP or a service like SendGrid for email delivery. Pros of building own: No n8n licensing/hosting cost Full control over workflow logic Integrated with existing FastAPI/MCP stack - single codebase No visual UI complexity Can be versioned with Git Secrets stay in-house Custom retry/error handling Cons of building own: Development time - n8n has 400+ pre-built integrations Maintenance burden - need to update when APIs change (Slack, Google, etc.) No visual debugging - harder for non-dev team to see what's happening n8n visual UI lets business users modify workflows without code Testing/reliability - n8n is battle-tested For their specific use case, these are actually all relatively simple API calls. Given they're already building a FastAPI stack, adding these as background tasks or a simple scheduler is totally feasible. They don't need n8n if they're comfortable with code, their workflows are linear without complex branching, and they want everything in-house. On the flip side, n8n makes sense if non-technical team members need to modify flows, they need rapid access to 100+ integrations, or they want visual monitoring of runs. Since MONOLITH is a self-contained proprietary system and they have the technical capability, building these simple automations directly in FastAPI is very achievable. I should structure a clear comparison with a recommendation.
+[Communication content removed by owner decision on 30 September 2026.]
 
-The user is asking specifically about whether they can build their own proprietary system for the "trigger webhook / Slack notify / Google Calendar sync / email automation" layer (which is the n8n part) - can they replace n8n with their own system? They want pros and cons.
+[Communication content removed by owner decision on 30 September 2026.]
 
 This is a strategic consulting question. Let me think about this carefully.
 
@@ -35668,11 +35667,11 @@ Building own notification/automation layer:
 The n8n functions they listed:
 
 Trigger webhook
-Slack notify
+[Communication content removed by owner decision on 30 September 2026.]
 Google Calendar sync
 Email automation
 
-Can these be built in-house? Yes, absolutely. I could build this with FastAPI endpoints for webhook triggers, then integrate the Slack API, Google Calendar API, and SMTP or a service like SendGrid for email delivery.
+[Communication content removed by owner decision on 30 September 2026.]
 
 Pros of building own:
 
@@ -35687,7 +35686,7 @@ Custom retry/error handling
 Cons of building own:
 
 Development time - n8n has 400+ pre-built integrations
-Maintenance burden - need to update when APIs change (Slack, Google, etc.)
+[Communication content removed by owner decision on 30 September 2026.]
 No visual debugging - harder for non-dev team to see what's happening
 n8n visual UI lets business users modify workflows without code
 Testing/reliability - n8n is battle-tested
@@ -35699,7 +35698,7 @@ On the flip side, n8n makes sense if non-technical team members need to modify f
 สร้างระบบ Automation เองแทน n8n — ได้ครับ วิเคราะห์ให้ละเอียด
 สิ่งที่ n8n ทำอยู่ในโปรเจกต์นี้
 Webhook Trigger      → รับ event จาก MCP / Agent / ลูกค้า
-Slack Notify         → แจ้งทีมภายใน (PM, Designer, QA)
+[Communication content removed by owner decision on 30 September 2026.]
 Google Calendar Sync → นัดหมาย site survey / ติดตั้ง
 Email Automation     → ส่งใบเสนอราคา / ใบรับงาน / แจ้งเตือน
 
@@ -35711,14 +35710,14 @@ Email Automation     → ส่งใบเสนอราคา / ใบรั�
 ไม่มีค่า License	n8n self-hosted ฟรี แต่ต้องดูแล server เอง; build เอง = ไม่มีค่าใช้จ่ายเพิ่ม
 Single Codebase	อยู่ใน FastAPI stack เดียวกันหมด — debug ง่าย, deploy ครั้งเดียว
 Control 100%	retry logic, error handling, logging ทำได้ตามที่ต้องการ
-Secret ไม่รั่ว	Slack token / Google credential อยู่ใน env ของบริษัทเอง
+[Communication content removed by owner decision on 30 September 2026.]
 Git Versioned	workflow เปลี่ยนแปลงมี history ทุก commit
 ปรับตาม DAPH ได้	logic เฉพาะบริษัท เช่น เงื่อนไขการ escalate ตาม PFMEA severity
 ข้อเสีย — สร้างเอง
 ข้อเสีย	ความรุนแรง	วิธีรับมือ
-ต้องเขียนโค้ดทุก integration	⚠️ ปานกลาง	Slack/Google/Email มี Python SDK ครบ — ใช้เวลาไม่มาก
+[Communication content removed by owner decision on 30 September 2026.]
 ไม่มี Visual UI	⚠️ ปานกลาง	ถ้า non-dev ต้องแก้ workflow → ยาก; แต่ MONOLITH dev-driven อยู่แล้ว
-API เปลี่ยน ต้อง maintain เอง	⚠️ ต่ำ	Google/Slack API stable มาก, เปลี่ยนน้อย
+[Communication content removed by owner decision on 30 September 2026.]
 ต้องสร้าง Scheduler เอง	⚠️ ต่ำ	ใช้ APScheduler หรือ Celery + Redis ใน FastAPI ได้เลย
 ไม่มี 400+ pre-built connectors	✅ ไม่กระทบ	MONOLITH ใช้แค่ 4 integrations เท่านั้น
 สิ่งที่ต้องสร้าง (ถ้าไม่ใช้ n8n)
@@ -35726,7 +35725,7 @@ API เปลี่ยน ต้อง maintain เอง	⚠️ ต่ำ	Googl
 
 /services
   /webhook_handler.py     → รับ POST จาก MCP events
-  /slack_notifier.py      → ส่ง message ไป Slack channel ตาม role
+[Communication content removed by owner decision on 30 September 2026.]
   /calendar_sync.py       → สร้าง Google Calendar event + invite
   /email_sender.py        → ส่ง email ผ่าน Resend API (หรือ SMTP)
   /scheduler.py           → APScheduler — cron jobs (remind, escalate)
@@ -35762,40 +35761,40 @@ thai_installation_agent_spec.html — Installation Agent ที่ยังข�
 
 Monolith
 
-/slack_notifier.py      → ส่ง message ไป Slack channel ตาม role   แต่ที่ไทยส่วนมากใช้ Line กันนะครับ เราจะตัดสินใจในส่วยนี้ดีครับ 
+[Communication content removed by owner decision on 30 September 2026.]
 
 Thought
-The user is making a very valid point - in Thailand, most people use LINE (not Slack) for internal communication. They want to make a decision about whether to use LINE or Slack (or both) for their notification system. Let me think about this from a Thai business context: LINE is dominant in Thailand - both personal and business (LINE Official Account, LINE Notify, LINE Works) Slack is used more in international/tech companies For DAPH Decor (a Thai furniture/decor company), their staff (Designer, Factory, Installation teams) almost certainly use LINE LINE options: LINE Notify - Free, simple webhook, but being discontinued (deprecated March 2025 - actually it was announced to be discontinued on March 31, 2025) LINE Messaging API - More powerful, can send rich messages, requires LINE Official Account LINE Works - Enterprise version of LINE (like Slack but LINE-based), good for internal comms LINE Bot - Custom bot for group chats Since LINE Notify is no longer available as of September 2026, I need to focus on the remaining options: LINE Messaging API with an Official Account, LINE Works for enterprise communication, or a custom LINE Bot for group notifications. Comparing LINE versus Slack for this team—LINE has the advantage since the Thai team already uses it, doesn't require installing additional apps, and notifications reach mobile devices immediately. Slack offers better integration and workflow features but isn't widely adopted by the factory workers and technicians. For MONOLITH, I'm leaning toward the LINE Messaging API for customer-facing notifications and internal team alerts. So for MONOLITH, I'd route internal team notifications through a LINE group with a bot, while customer notifications go through a LINE Official Account.
+[Communication content removed by owner decision on 30 September 2026.]
 
-The user is making a very valid point - in Thailand, most people use LINE (not Slack) for internal communication. They want to make a decision about whether to use LINE or Slack (or both) for their notification system.
+[Communication content removed by owner decision on 30 September 2026.]
 
 Let me think about this from a Thai business context:
 
 LINE is dominant in Thailand - both personal and business (LINE Official Account, LINE Notify, LINE Works)
-Slack is used more in international/tech companies
+[Communication content removed by owner decision on 30 September 2026.]
 For DAPH Decor (a Thai furniture/decor company), their staff (Designer, Factory, Installation teams) almost certainly use LINE
 
 LINE options:
 
 LINE Notify - Free, simple webhook, but being discontinued (deprecated March 2025 - actually it was announced to be discontinued on March 31, 2025)
 LINE Messaging API - More powerful, can send rich messages, requires LINE Official Account
-LINE Works - Enterprise version of LINE (like Slack but LINE-based), good for internal comms
+[Communication content removed by owner decision on 30 September 2026.]
 LINE Bot - Custom bot for group chats
 
 Since LINE Notify is no longer available as of September 2026, I need to focus on the remaining options: LINE Messaging API with an Official Account, LINE Works for enterprise communication, or a custom LINE Bot for group notifications.
 
-Comparing LINE versus Slack for this team—LINE has the advantage since the Thai team already uses it, doesn't require installing additional apps, and notifications reach mobile devices immediately. Slack offers better integration and workflow features but isn't widely adopted by the factory workers and technicians.
+[Communication content removed by owner decision on 30 September 2026.]
 
 For MONOLITH, I'm leaning toward the LINE Messaging API for customer-facing notifications and internal team alerts. So for MONOLITH, I'd route internal team notifications through a LINE group with a bot, while customer notifications go through a LINE Official Account.
 
-LINE vs Slack — ตัดสินใจให้ถูกต้องสำหรับบริษัทไทย
+[Communication content removed by owner decision on 30 September 2026.]
 ความเป็นจริงในตลาดไทย
 ทีมโรงงาน / ช่างติดตั้ง / Sale     → ใช้ LINE 100%
 ผู้จัดการ / ลูกค้า                   → ใช้ LINE เกือบทั้งหมด
-Dev team / IT                       → อาจใช้ Slack
+[Communication content removed by owner decision on 30 September 2026.]
 
 
-ถ้า notify ผ่าน Slack แต่ทีมหน้างานไม่เปิด Slack → ระบบ fail ทันทีครับ
+[Communication content removed by owner decision on 30 September 2026.]
 
 LINE Options ที่มีในปัจจุบัน (2026)
 
@@ -35803,7 +35802,7 @@ LINE Options ที่มีในปัจจุบัน (2026)
 
 ตัวเลือก	เหมาะกับ	ค่าใช้จ่าย
 LINE Messaging API	แจ้ง internal team + ลูกค้า ผ่าน LINE OA	ฟรี 200 msg/เดือน, จากนั้น ~฿0.04/msg
-LINE Works Bot API	internal team เท่านั้น (เหมือน Slack แต่เป็น LINE)	มี free tier, paid ราย user
+[Communication content removed by owner decision on 30 September 2026.]
 LINE Bot ใน Group	แจ้งทีมแต่ละแผนก (Factory group, Install group)	ฟรี ถ้าใช้ Messaging API
 แนะนำสถาปัตยกรรมสำหรับ MONOLITH
 MCP Event / Agent Action
@@ -35819,11 +35818,11 @@ MCP Event / Agent Action
    │  PM            LINE Group  │
    │  Factory       LINE Group  │
    │  Install       LINE Group  │
-   │  Dev/Admin     Slack (opt) │
+[Communication content removed by owner decision on 30 September 2026.]
    └────────────────────────────┘
 
 ข้อดี ข้อเสีย เปรียบเทียบตรง
-	LINE Messaging API	Slack	LINE Works
+[Communication content removed by owner decision on 30 September 2026.]
 ทีมไทยใช้อยู่แล้ว	✅ ทุกคน	❌ ต้องติดตั้งเพิ่ม	⚠️ ต้องสมัครใหม่
 แจ้งลูกค้าได้	✅ ได้เลย	❌ ไม่ได้	❌ ไม่ได้
 Bot ใน Group Chat	✅ ได้	✅ ได้	✅ ได้
@@ -35842,38 +35841,38 @@ Dev integration	ดี	ดีมาก	ปานกลาง
 แจ้งลูกค้าได้ด้วย LINE เดียวกัน
 ค่าใช้จ่ายต่ำที่สุด
 Python SDK ครบ (line-bot-sdk-python)
-# แทนที่ /slack_notifier.py ด้วย
+[Communication content removed by owner decision on 30 September 2026.]
 /line_notifier.py   → ส่ง message ไป LINE Group ตาม department
 /line_oa.py         → ส่ง message หา customer ผ่าน LINE Official Account
 
 
-Slack — เก็บไว้เฉพาะ dev team เท่านั้น (optional) ถ้าทีม dev ชอบใช้ Slack สำหรับ log/alert ก็เพิ่มได้ แต่ไม่ใช่ primary channel
+[Communication content removed by owner decision on 30 September 2026.]
 
 สรุปการตัดสินใจ
 ✅ LINE Messaging API   = primary notification (ทุก department + ลูกค้า)
 ✅ LINE Official Account = customer-facing channel
-⚠️ Slack               = dev/admin เท่านั้น (optional)
+[Communication content removed by owner decision on 30 September 2026.]
 ❌ LINE Notify          = deprecated แล้ว ห้ามใช้
 ❌ LINE Works           = ไม่คุ้มค่า ถ้าไม่ได้ต้องการ enterprise features
 
 
 ต้องการให้อัปเดต spec และสร้างเอกสารต่อไหมครับ:
 
-อัปเดต thai_automation_layer_spec.html — เปลี่ยน Slack → LINE Messaging API พร้อม Flex Message template สำหรับแต่ละ department
+[Communication content removed by owner decision on 30 September 2026.]
 เพิ่ม LINE OA setup guide — วิธีเชื่อม LINE Official Account กับ MCP layer
 
 Monolith
 
-อัปเดต thai_automation_layer_spec.html — เปลี่ยน Slack → LINE Messaging API พร้อม Flex Message template สำหรับแต่ละ department
+[Communication content removed by owner decision on 30 September 2026.]
 เพิ่ม LINE OA setup guide — วิธีเชื่อม LINE Official Account กับ MCP layer
 
 Thought
-The user wants me to: Create thaiautomationlayerspec.html (this is a new file, not an update - it was mentioned as a potential file to create but never actually created) Include LINE Messaging API replacing Slack Include Flex Message templates for each department Include LINE OA setup guide for connecting to MCP layer This is a new HTML file to create. Let me plan the content: File: thaiautomationlayerspec.html Content sections: Overview - Automation Layer architecture (FastAPI + LINE) System Architecture diagram - MCP Event → FastAPI → LINE LINE Messaging API setup with Official Account creation, channel access tokens, and webhook configuration Step-by-step LINE OA setup guide for connecting to the MCP layer with environment variables Flex Message templates customized for each department (Sales, Designer, PM, Factory, Procurement, Installation) Python modules for LINE notification handling and OA integration with webhook handlers Department LINE Group configuration FastAPI service scaffold Now I'm creating a comprehensive HTML documentation file with the MONOLITH design theme using Sarabun font, navy and gold accents, and green highlights. I'll organize it with tabbed sections covering the architecture overview, LINE OA setup instructions, Flex Message templates for each department, and Python code scaffolds. Building the HTML layout... I'm organizing the documentation into five interactive tabs covering the system architecture, LINE OA setup procedures, Flex Message templates for each department with JSON examples, the Python service code for handling notifications, and how MCP integration routes events to LINE messages. I need to clarify that LINE Notify is deprecated, so I'll focus on the LINE Messaging API. For the bot to send messages to department groups, it needs to be added as a member first to get the group chat ID, while direct messages require user IDs and the LINE OA can push messages to users who've added it as a friend. I'm thinking through the architecture: internal team notifications go through LINE Bots in department group chats, while customer notifications use the LINE Official Account. Now I'm mapping out the notification templates for each department—Sales gets customer inquiry and escalation alerts, Design receives briefs for approval and revision requests, PM tracks project milestones and response deadlines, Factory monitors production orders and QC checkpoints, Procurement handles BOM approvals and vendor responses, and Installation manages job scheduling and completion sign-offs. I'll build these as Flex Messages to make them interactive and visually clear. Writing the HTML file... Writing the complete HTML file...
+[Communication content removed by owner decision on 30 September 2026.]
 
 The user wants me to:
 
 Create thai_automation_layer_spec.html (this is a new file, not an update - it was mentioned as a potential file to create but never actually created)
-Include LINE Messaging API replacing Slack
+[Communication content removed by owner decision on 30 September 2026.]
 Include Flex Message templates for each department
 Include LINE OA setup guide for connecting to MCP layer
 

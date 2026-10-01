@@ -731,5 +731,6 @@ CREATE INDEX IF NOT EXISTS idx_notif_invoice_type_date
 --   const { data } = await supabase.rpc('rpc_check_overdue_invoices', {
 --     p_org_id: null, p_dry_run: false
 --   })
---   // Then push data.notifications to email/LINE/Slack per org settings
+--   // Proposed: deliver data.notifications through an authorized LINE OA adapter.
+--   // This example does not establish that LINE delivery is implemented or enabled.
 -- ============================================================================

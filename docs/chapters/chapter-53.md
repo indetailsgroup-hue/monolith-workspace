@@ -205,7 +205,7 @@ Strategy | When Used | Behavior
 
 ## 53.5 Tool: `trigger_realtime_alert`
 
-Fires a real-time alert across multiple delivery channels (email, SMS, webhook, push, MQTT, PagerDuty, Slack) with deduplication, escalation tracking, and acknowledgement flow.
+Describes real-time alert routing across email, SMS, webhook, push, MQTT, PagerDuty and LINE, with deduplication, escalation tracking, and acknowledgement flow. MONOLITH selects LINE OA (Messaging API) for human communication. The LINE route below is a target contract, not evidence of a deployed adapter; recipient authorization and delivery tests are required before activation.
 [code] 
     {
       tenantId:       string;
@@ -221,7 +221,7 @@ Fires a real-time alert across multiple delivery channels (email, SMS, webhook, 
       tags?:          Record<string, string>;
     }
     
-    type AlertChannel = "email" | "sms" | "webhook" | "push" | "mqtt_alert" | "pagerduty" | "slack";
+    type AlertChannel = "email" | "sms" | "webhook" | "push" | "mqtt_alert" | "pagerduty" | "line";
     
 [/code]
 
@@ -263,7 +263,7 @@ Severity | escalationLevel | Auto-escalates to | SLA for Acknowledgement
         │
      Create RealtimeAlert (status: "open")
         │
-     Deliver to channels (email/SMS/webhook/push/MQTT/PagerDuty/Slack)
+     Deliver through configured adapters (email/SMS/webhook/push/MQTT/PagerDuty/LINE)
         │
         ├── deliveredTo[] populated
         │
@@ -426,7 +426,7 @@ Persona | Primary Tool | Use Case
 ---|---|---  
 System Administrator | `register_edge_device` + `update_device_firmware` | Fleet provisioning and OTA management  
 Maintenance Engineer | `trigger_realtime_alert` + `query_sensor_history` | Incident response and root-cause  
-Plant Manager | `trigger_realtime_alert` (channels: email, slack) | Executive alerts for critical events  
+Plant Manager | `trigger_realtime_alert` (target channels: email, line) | Executive alerts for critical events; LINE adapter activation remains subject to verification
 AI Agent | Full Phase 14 pipeline | Autonomous predictive maintenance  
 Security Officer | `update_device_firmware` (hotfix channel) | Critical vulnerability patching  
 Field Technician | `register_edge_device` (on-site provisioning) | New device onboarding at plant
