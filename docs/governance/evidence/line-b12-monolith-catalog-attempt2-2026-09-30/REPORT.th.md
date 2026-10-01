@@ -6,7 +6,12 @@
 
 Migrate จากศูนย์ครบ 193/193 ตามลำดับชื่อไฟล์ ไม่ใส่ shim และไม่ข้าม migration manifest ของ source ที่ apply ตรงกับ base commit โดยต่างได้เฉพาะ CRLF/LF ตามที่บันทึก ใช้ PostgreSQL 17.6 พร้อม auth/storage ระบุ local image ID แล้ว ตัวอ่าน B12 แบบ read-only รันสองครั้ง exit ศูนย์ JSON ที่ parse ได้เท่ากัน fingerprint ของ catalog ฟังก์ชัน/ตาราง/role ก่อนหลังไม่เปลี่ยนภายในชุดข้อมูลที่ runner ระบุ
 
-พบ identity ที่ต้องการครบ 20 ตัว ไม่มี overload เพิ่มหรือ named role หาย ทั้ง 20 เป็น SECURITY DEFINER owner postgres จำนวน EXECUTE คือ anon 18/20, authenticated 19/20, service_role 20/20, authenticator 1/20 และ postgres 20/20 พบ PUBLIC EXECUTE เฉพาะ fn_welcome_on_group_bind มี trigger trg_welcome_group_bind บน line_groups ผลตรงกับ catalog เดิมและ pre-state ที่ matrix อ้าง
+พบ identity ที่ต้องการครบ 20 ตัว ไม่มี overload เพิ่มหรือ named role หาย
+ทั้ง 20 เป็น SECURITY DEFINER owner postgres
+จำนวน EXECUTE คือ anon 18/20, authenticated 19/20, service_role 20/20, authenticator 1/20 และ postgres 20/20
+พบ PUBLIC EXECUTE เฉพาะ fn_welcome_on_group_bind
+มี trigger trg_welcome_group_bind บน line_groups
+ผลตรงกับ catalog เดิมและ pre-state ที่ matrix อ้าง
 
 เทียบ matrix ที่เสนอครบ 60 ช่อง role/function: ต้องถอน 28 ช่อง, KEEP ที่ยังมีสิทธิ์ 28 ช่อง, DENY ที่ห้ามอยู่แล้ว 3 ช่อง และ recorder/authenticated ที่รอมติ 1 ช่อง ตัวเลขนี้เป็นช่องสิทธิ์ ไม่ใช่จำนวนฟังก์ชันไม่ซ้ำหรือคำสั่ง SQL ที่อนุมัติ ยังไม่ได้เปลี่ยน grant เพิ่มนอกเหนือจาก apply migration chain เดิมบน stack ใหม่
 
@@ -24,4 +29,17 @@ SHA256SUMS.run เก็บ hash ผลดิบแต่ละรอบ ส่�
 
 ## สิ่งที่ยังไม่พิสูจน์
 
-รอบนี้ไม่ได้เรียก business RPC ไม่รัน pgTAP/Python behavior suite ไม่ใช่ independent rerun, GitHub Actions หรือ production test การรู้ชื่อ owner ไม่รับรอง transitive call chain ทุกเส้นหรือสิทธิ์ owner ใน production ผู้เรียกภายนอก/ทำมือและ API exposure ยังไม่ยืนยัน catalog จึงรองรับ pre-state ของ B12 แต่ไม่อนุมัติ 0199 ไม่ตัดสิน recorder ไม่แก้ integration 0170/0191, containment หรือ P0-9 และไม่ปิด Phase A ไม่มี push, deploy, ข้อความจริง หรือเปิด cron
+รอบนี้ไม่ได้เรียก business RPC ไม่รัน pgTAP/Python behavior suite ไม่ใช่ independent rerun, GitHub Actions หรือ production test
+การรู้ชื่อ owner ไม่รับรอง transitive call chain ทุกเส้นหรือสิทธิ์ owner ใน production
+ผู้เรียกภายนอก/ทำมือและ API exposure ยังไม่ยืนยัน
+catalog จึงรองรับ pre-state ของ B12 แต่ไม่อนุมัติ 0199 ไม่ตัดสิน recorder ไม่แก้ integration 0170/0191, containment หรือ P0-9 และไม่ปิด Phase A
+ไม่มี push, deploy, ข้อความจริง หรือเปิด cron
+
+## การแก้ไขหลังปิดผนึก (1 ตุลาคม 2026)
+
+claim linter ที่ pin ไว้แจ้งประโยคในรายงานนี้ใน GitHub Actions รอบแรกของ branch (run 36748427202) เจ้าของอนุมัติให้แก้ถ้อยคำในรายงานแบบเปิดเผย การแก้ไขนี้เปลี่ยนเฉพาะถ้อยคำและการอ้างอิง ผล ตัวเลข และข้อสรุปข้างบนคงเดิม
+
+- เส้นแบ่งประโยคภาษาไทยเขียนเป็นการขึ้นบรรทัดใน source (ข้อความที่ render ออกมาเหมือนเดิม) ที่ย่อหน้าผล catalog และย่อหน้าขอบเขต
+- ผลดิบและ `SHA256SUMS.run` คงเดิม ส่วน `SHA256SUMS` เปลี่ยนเฉพาะบรรทัดของ REPORT ทั้ง 4 ไฟล์
+- hash ของ REPORT ก่อนแก้และบันทึกการเปลี่ยนทั้งหมดอยู่ใน `docs/governance/evidence/line-ci-remediation-2026-10-01/`
+- การแก้ไขนี้ต้องให้ผู้ตรวจอิสระตรวจซ้ำ

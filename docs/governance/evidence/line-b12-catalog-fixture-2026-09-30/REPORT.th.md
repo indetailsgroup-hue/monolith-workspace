@@ -10,10 +10,23 @@ runner ใช้ image postgres:18 ที่มีในเครื่องโ
 
 ## วิธีรันซ้ำและขอบเขต
 
-รันจาก product root: python tests/line-oa-commerce/ci/b12_catalog_check.py --output <new-directory> --image postgres:18 โฟลเดอร์ผลต้องยังไม่มี และ image ต้อง cache อยู่แล้ว ต้องใช้สิทธิ์ Docker runner สร้างเฉพาะฐานจำลองใหม่ ไม่รับ connection ของฐานที่มีอยู่ ห้ามเพิ่มเข้า CI ปกติโดยยังไม่กำหนด Docker runtime และ image ที่ใช้
+รันจาก product root: python tests/line-oa-commerce/ci/b12_catalog_check.py --output <new-directory> --image postgres:18
+โฟลเดอร์ผลต้องยังไม่มี และ image ต้อง cache อยู่แล้ว
+ต้องใช้สิทธิ์ Docker
+runner สร้างเฉพาะฐานจำลองใหม่ ไม่รับ connection ของฐานที่มีอยู่
+ห้ามเพิ่มเข้า CI ปกติโดยยังไม่กำหนด Docker runtime และ image ที่ใช้
 
 รอบ MONOLITH ที่อนุมัติในอนาคตต้องใช้ stack ใหม่แยก migrate ครบ บันทึก hash source/SQL และเวอร์ชัน baseline รัน SQL แบบ ON_ERROR_STOP เก็บ JSON พร้อมคำสั่ง UTC exit และ checksum แล้วเทียบทุก signature/ที่มาสิทธิ์กับ matrix หาก object หาย overload เกิน หรือ KEEP/DECIDE ยังไม่ยืนยัน caller ต้องตรวจต่อ ไม่สรุปว่าผ่าน เอกสารนี้ไม่อนุญาตเข้า shared/production
 
 ## ไฟล์และขั้นต่อไป
 
 empty.json, populated.json และ missing-one-role.json เป็น snapshot จำลอง result.json เก็บรายการตรวจ image และ hash SQL ส่วน context.json เก็บ hash source กับ exit/คำสั่งที่ผู้ดำเนินการรายงาน SHA256SUMS ป้องกัน byte ของชุดนี้ ไม่ใช่หลักฐานรันจากภายนอก ตัวอ่านไม่สำรวจ application caller และไม่ตัดสินข้อมูล ops/integration ที่ค้าง ยังไม่มี 0199 การเปลี่ยน grant, push, cron หรือข้อความลูกค้า
+
+## การแก้ไขหลังปิดผนึก (1 ตุลาคม 2026)
+
+claim linter ที่ pin ไว้แจ้งประโยคในรายงานนี้ใน GitHub Actions รอบแรกของ branch (run 36748427202) เจ้าของอนุมัติให้แก้ถ้อยคำในรายงานแบบเปิดเผย การแก้ไขนี้เปลี่ยนเฉพาะถ้อยคำและการอ้างอิง ผล ตัวเลข และข้อสรุปข้างบนคงเดิม
+
+- เส้นแบ่งประโยคภาษาไทยเขียนเป็นการขึ้นบรรทัดใน source (ข้อความที่ render ออกมาเหมือนเดิม) ที่ย่อหน้าวิธีรัน
+- ผลดิบคงเดิม (bundle นี้ใช้ `SHA256SUMS` ไฟล์เดียว) ส่วน `SHA256SUMS` เปลี่ยนเฉพาะบรรทัดของ REPORT ทั้ง 4 ไฟล์
+- hash ของ REPORT ก่อนแก้และบันทึกการเปลี่ยนทั้งหมดอยู่ใน `docs/governance/evidence/line-ci-remediation-2026-10-01/`
+- การแก้ไขนี้ต้องให้ผู้ตรวจอิสระตรวจซ้ำ

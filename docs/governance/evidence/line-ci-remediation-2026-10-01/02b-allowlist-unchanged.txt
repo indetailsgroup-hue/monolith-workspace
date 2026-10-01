@@ -1,0 +1,4 @@
+$ git diff --exit-code --stat a97c3c8479a5fcbff9fb134e0e661f7f0d828a8e -- tools/.lint_allowlist
+utc_start: 2026-10-01T00:03:04Z
+utc_end: 2026-10-01T00:03:04Z
+exit: 0

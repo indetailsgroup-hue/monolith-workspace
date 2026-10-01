@@ -59,7 +59,7 @@ Owner response on 30 September: external RPC callers are not yet confirmed; surv
 | Internal owner chains | fn_line_handle_group_event at 0097:435; fn_prod_curated at 0107:89,133,135, 0124:149,151 and 0143:122 | Owner authority; coordinate manufacturing |
 | Trigger / scheduled DB | fn_welcome_on_group_bind at 0136:185–186; fn_lead_followup_sweep registration at 0116:192 | Trigger/cron principal; deployed principal unknown |
 | Documented manual path | rpc_create_line_order; docs/dogfood/first-house-runbook.md:25–35 | Field Operator is a documented role; actual usage/credential class unknown |
-| No executable caller found in this scan | rpc_send_line_outbound, rpc_evaluate_identity_merge_candidate, rpc_resolve_conversation_site, rpc_sync_line_forecast, rpc_sweep_line_session_timeouts, rpc_field_assign_lead | Absence not established; owner/ops confirmation required |
+| No executable caller found in this scan (source `3bdd6f3e5`) | rpc_send_line_outbound, rpc_evaluate_identity_merge_candidate, rpc_resolve_conversation_site, rpc_sync_line_forecast, rpc_sweep_line_session_timeouts, rpc_field_assign_lead | Absence not established; owner/ops confirmation required |
 
 Mentions in autonomyGate.ts, brand-voice.ts, templates.ts and order-adapter.ts can be comments rather than calls; evidence harnesses are not deployed callers. No n8n, Make.com or Zapier reference matched the bounded scan, and no exact writer name matched searched workflows. Dynamic calls, external automation and manual tools remain UNKNOWN. postgres is a database owner, not an identified accountable human.
 

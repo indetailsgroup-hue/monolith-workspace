@@ -1,0 +1,157 @@
+$ node scripts/trust-kernel/verify-repair-phase0-docs.mjs
+utc_start: 2026-10-01T00:03:10Z
+REPAIR PHASE 0 DOCS: PASS — required EN/TH Markdown + HTML and push checklist, statuses intact.
+utc_end: 2026-10-01T00:03:10Z
+exit: 0
+$ node --test scripts/trust-kernel/verify-repair-phase0-docs.test.mjs
+utc_start: 2026-10-01T00:03:10Z
+TAP version 13
+# Subtest: accepts a complete bilingual set
+ok 1 - accepts a complete bilingual set
+  ---
+  duration_ms: 13.2948
+  type: 'test'
+  ...
+# Subtest: required set covers accepted risks and exit review
+ok 2 - required set covers accepted risks and exit review
+  ---
+  duration_ms: 0.1271
+  type: 'test'
+  ...
+# Subtest: rejects a missing push checklist
+ok 3 - rejects a missing push checklist
+  ---
+  duration_ms: 8.0185
+  type: 'test'
+  ...
+# Subtest: rejects a missing Thai file
+ok 4 - rejects a missing Thai file
+  ---
+  duration_ms: 7.3593
+  type: 'test'
+  ...
+# Subtest: rejects a missing HTML file
+ok 5 - rejects a missing HTML file
+  ---
+  duration_ms: 7.0261
+  type: 'test'
+  ...
+# Subtest: rejects a document without PENDING_OWNER_REVIEW
+ok 6 - rejects a document without PENDING_OWNER_REVIEW
+  ---
+  duration_ms: 9.7639
+  type: 'test'
+  ...
+# Subtest: rejects a control pack without a threat table
+ok 7 - rejects a control pack without a threat table
+  ---
+  duration_ms: 7.733
+  type: 'test'
+  ...
+# Subtest: rejects any positive Gate B completion claim
+ok 8 - rejects any positive Gate B completion claim
+  ---
+  duration_ms: 7.8254
+  type: 'test'
+  ...
+# Subtest: rejects an empty HTML edition (not a rendered document)
+ok 9 - rejects an empty HTML edition (not a rendered document)
+  ---
+  duration_ms: 7.1619
+  type: 'test'
+  ...
+# Subtest: rejects an HTML edition missing the Markdown status lines
+ok 10 - rejects an HTML edition missing the Markdown status lines
+  ---
+  duration_ms: 7.0184
+  type: 'test'
+  ...
+# Subtest: rejects a hostile Gate B claim hidden only in the HTML edition
+ok 11 - rejects a hostile Gate B claim hidden only in the HTML edition
+  ---
+  duration_ms: 10.4675
+  type: 'test'
+  ...
+# Subtest: rejects widened forbidden verbs (cleared / GA release / signed off)
+ok 12 - rejects widened forbidden verbs (cleared / GA release / signed off)
+  ---
+  duration_ms: 23.2168
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 227.5021
+utc_end: 2026-10-01T00:03:10Z
+exit: 0
+$ node scripts/trust-kernel/final-gate-check.selftest.mjs
+utc_start: 2026-10-01T00:03:10Z
+checkVitestReport unit checks:
+  ok  - flags a hidden it.skip (status=skipped) despite green aggregates
+  ok  - flags a test.todo
+  ok  - passes a genuinely clean report
+evaluateReports end-to-end checks:
+  ok  - clean+verified tree yields zero violations
+  ok  - a bare {verified:true} evidence report is rejected
+  ok  - a failed evidence-self-verify job result is rejected
+  ok  - an attestation evidenceRootHash mismatch is rejected
+  ok  - report bytes that drift after manifest creation are rejected
+  ok  - a malformed Ed25519 signature shape is rejected
+  ok  - an attestation ciRunId mismatch is rejected when GITHUB_RUN_ID is present
+  ok  - pre-attestation validation accepts a clean tree without its not-yet-issued proof
+  ok  - pre-attestation validation still rejects a hidden skip
+  ok  - a missing workflow report server-ubuntu-latest.json is flagged
+  ok  - a missing workflow report server-windows-latest.json is flagged
+  ok  - a missing workflow report determinism-ubuntu-latest.json is flagged
+  ok  - a missing workflow report determinism-windows-latest.json is flagged
+  ok  - a missing workflow report verifier-ubuntu-latest.json is flagged
+  ok  - a missing workflow report verifier-windows-latest.json is flagged
+  ok  - a missing workflow report containment-ubuntu-latest.json is flagged
+  ok  - a missing workflow report containment-windows-latest.json is flagged
+  ok  - a missing workflow report repair-ubuntu-latest.json is flagged
+  ok  - a missing workflow report repair-windows-latest.json is flagged
+  ok  - a missing workflow report route-ledger.txt is flagged
+  ok  - a missing workflow report repair-phase0-ledger.json is flagged
+  ok  - a missing workflow report repair-docs.txt is flagged
+  ok  - a missing workflow report golden-ubuntu-latest.sha is flagged
+  ok  - a missing workflow report golden-windows-latest.sha is flagged
+  ok  - a missing workflow report edge.json is flagged
+  ok  - a missing workflow report pgtap-trust_kernel_tenancy.tap is flagged
+  ok  - a missing workflow report pgtap-trust_kernel_governance.tap is flagged
+  ok  - a missing workflow report pgtap-trust_kernel_release.tap is flagged
+  ok  - a missing workflow report pgtap-trust_kernel_bundles.tap is flagged
+  ok  - a missing workflow report pgtap-trust_kernel_containment.tap is flagged
+  ok  - a missing workflow report pgtap-workflow_db_invariants.tap is flagged
+  ok  - a missing workflow report pgtap-trust_kernel_safety.tap is flagged
+  ok  - a missing workflow report pgtap-repair_phase0_organization.tap is flagged
+  ok  - a missing workflow report pgtap-repair_phase0_containment.tap is flagged
+  ok  - a missing workflow report e2e.json is flagged
+  ok  - a missing workflow report claim-linters.txt is flagged
+  ok  - a missing workflow report evidence-manifest.json is flagged
+  ok  - a missing workflow report evidence-attestation.json is flagged
+  ok  - a hidden it.skip in a server report is flagged
+  ok  - a test.todo is flagged
+  ok  - an unverified evidence attestation is flagged UNVERIFIED
+  ok  - a missing evidence attestation proof is flagged UNVERIFIED
+  ok  - a missing repair-phase0-ledger.json is flagged
+  ok  - a failed repair-phase0-ledger.json is flagged
+  ok  - a missing repair_phase0_organization.tap is flagged
+  ok  - a missing repair_phase0_containment.tap is flagged
+  ok  - a zero-assertion repair pgTAP report is rejected
+  ok  - a missing bilingual docs verifier report is flagged
+  ok  - a missing route-ledger report is flagged
+  ok  - a missing pinned claim-linter report is flagged
+  ok  - a missing named pgTAP suite (trust_kernel_safety) is flagged
+  ok  - a required report that is not a valid vitest report is flagged
+  ok  - two empty golden sha files are rejected (not treated as a match)
+  ok  - a pgTAP Bail out! is flagged
+  ok  - a pgTAP # SKIP directive is flagged
+
+FINAL-GATE SELF-TEST: PASS
+utc_end: 2026-10-01T00:03:14Z
+exit: 0

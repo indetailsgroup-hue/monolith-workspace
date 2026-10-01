@@ -6,8 +6,8 @@
 
 - Recorder: `rpc_record_line_send_result` เป็น service-only ตามมติของเจ้าของ แถว B12-15 ของ authenticated จึงเป็น DENY
 - การสร้าง: เจ้าของอนุมัติให้สร้างทั้ง matrix ในรอบเดียวก่อนที่ caller register ของ ops และการยืนยันจากเจ้าของ manufacturing จะมาถึง การปฏิเสธ authenticated ในแถว SERVICE และการปฏิเสธ service_role บน `fn_prod_curated` จึงสร้างตามสมมติฐาน และห้าม deploy จนกว่าจะได้คำตอบเหล่านั้น
-- Implementation: `supabase/migrations/0199_line_oa_restrict_definer_execute.sql` revoke EXECUTE อย่างเดียว ไม่ grant เพิ่ม หยุด (55000) เมื่อไม่พบ identity หรือพบ overload ที่ไม่ได้จัดประเภท และ raise 42501 พร้อม rollback หากหลัง revoke สิทธิ์ที่มีผลจริงต่างจากเป้าหมาย หรือ PUBLIC ยังมี EXECUTE
-- เทสต์: `supabase/tests/line_oa_definer_execute_matrix.sql` (82 assertion) และ `supabase/tests/line_oa_definer_execute_fail_closed.sql` (23 assertion) เทสต์เดิมเปลี่ยนตามนโยบาย 2 จุด คือ suite เดิมตรวจว่า authenticated ไม่มี EXECUTE บน recorder แล้ว และ suite ของ P0-10 เรียก `fn_prod_curated` ผ่าน `rpc_field_create_appointment` แทนการเรียกตรงด้วย service_role
+- Implementation: `supabase/migrations/0199_line_oa_restrict_definer_execute.sql` revoke EXECUTE อย่างเดียว ไม่ grant เพิ่ม หยุด (55000) เมื่อไม่พบ identity หรือพบ overload ที่ไม่ได้จัดประเภท (`0199_line_oa_restrict_definer_execute.sql:66`, `0199_line_oa_restrict_definer_execute.sql:75`) และ raise 42501 พร้อม rollback หากหลัง revoke สิทธิ์ที่มีผลจริงต่างจากเป้าหมาย หรือ PUBLIC ยังมี EXECUTE (`0199_line_oa_restrict_definer_execute.sql:111`)
+- เทสต์: `supabase/tests/line_oa_definer_execute_matrix.sql` (82 assertion) และ `supabase/tests/line_oa_definer_execute_fail_closed.sql` (23 assertion) เทสต์เดิมเปลี่ยนตามนโยบาย 2 จุด คือ suite เดิมตรวจว่า authenticated ไม่มี EXECUTE บน recorder แล้ว (`line_outbound_claim_record.sql:429`) และ suite ของ P0-10 เรียก `fn_prod_curated` ผ่าน `rpc_field_create_appointment` แทนการเรียกตรงด้วย service_role
 - หลักฐาน: `evidence/line-p012-red-a-2026-09-30/`, `evidence/line-p012-red-b-2026-09-30/` และ `evidence/line-p012-green-2026-09-30/` เป็นผลรันในเครื่องที่รอผู้ตรวจอิสระ ไม่ใช่ผล CI หรือ production
 
 ## ทางเลือกและข้อเสนอ
@@ -45,7 +45,10 @@ Current A/U/S คือ EXECUTE ที่มีผลจริงของ anon/
 
 ## กลุ่ม caller และมติที่ยังขาด
 
-INTERNAL: ถอนการเรียกตรงของ role หลังพิสูจน์ว่า owner chain และ trigger ที่ติดตั้งยังทำงาน fn_prod_curated ต้องประสาน manufacturing กลุ่ม SERVICE: คงทางเข้า service และยืนยัน principal ของ cron จริงโดยไม่เปิด cron กลุ่ม FIELD: คงงานผู้ใช้ที่มีสิทธิ์และทดสอบปฏิเสธข้าม site กลุ่ม CALLER-UNKNOWN: คง authenticated/service รอ inventory การไม่พบ caller ในโค้ดไม่ให้สิทธิ์ถอนเพิ่ม และ dogfood runbook ระบุ rpc_create_line_order ไว้จริง
+- กลุ่ม INTERNAL: ถอนการเรียกตรงของ role หลังพิสูจน์ว่า owner chain และ trigger ที่ติดตั้งยังทำงาน fn_prod_curated ต้องประสาน manufacturing
+- กลุ่ม SERVICE: คงทางเข้า service และยืนยัน principal ของ cron จริงโดยไม่เปิด cron
+- กลุ่ม FIELD: คงงานผู้ใช้ที่มีสิทธิ์และทดสอบปฏิเสธข้าม site
+- กลุ่ม CALLER-UNKNOWN: คง authenticated/service รอ inventory การไม่พบ caller ในโค้ดไม่ให้สิทธิ์ถอนเพิ่ม — dogfood runbook ระบุ rpc_create_line_order ไว้จริง
 
 SENDER: claim คง service-only ส่วน recorder ปัจจุบันให้ authenticated เรียกและตรวจ governance/site ใน 0197:122–129 แนะนำให้เป็น service-only ถ้า ops และเจ้าของยืนยันว่าไม่มีขั้นตอนบันทึกผลโดยผู้ใช้ หากยังต้องใช้ ให้คงเส้นทางผู้ใช้พร้อมทดสอบ guard โดยตรง ห้ามเลือกแทนโดยเงียบ
 

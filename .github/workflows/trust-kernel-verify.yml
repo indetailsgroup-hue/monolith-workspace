@@ -214,6 +214,27 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      # Fail closed, and say why, when the shadow environment is not provisioned.
+      # Only secret NAMES are printed, never values. There is no skip path: a
+      # missing secret fails this job, and the final gate then rejects the run for
+      # the missing e2e.json (see docs/governance/repair-intelligence-phase0-push-checklist.md).
+      - name: Require the shadow E2E environment (names only)
+        shell: bash
+        env:
+          E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+          E2E_SUPABASE_ANON_KEY: ${{ secrets.E2E_SUPABASE_ANON_KEY }}
+          E2E_DESIGNER_A_JWT: ${{ secrets.E2E_DESIGNER_A_JWT }}
+          E2E_APPROVER_B_JWT: ${{ secrets.E2E_APPROVER_B_JWT }}
+          E2E_TENANT_002_JWT: ${{ secrets.E2E_TENANT_002_JWT }}
+        run: |
+          missing=""
+          for name in E2E_BASE_URL E2E_SUPABASE_ANON_KEY E2E_DESIGNER_A_JWT E2E_APPROVER_B_JWT E2E_TENANT_002_JWT; do
+            if [ -z "${!name}" ]; then missing="$missing $name"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::shadow E2E environment is not provisioned; missing repository secrets:$missing"
+            exit 1
+          fi
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -223,7 +244,10 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
       - name: Run trust-kernel shadow E2E (JSON report)
-        run: npx playwright test e2e/trust-kernel --reporter=json > reports/e2e.json
+        shell: bash
+        run: |
+          mkdir -p reports
+          npx playwright test e2e/trust-kernel --reporter=json > reports/e2e.json
         env:
           E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
           E2E_SUPABASE_ANON_KEY: ${{ secrets.E2E_SUPABASE_ANON_KEY }}

@@ -17,3 +17,12 @@ A future authorized MONOLITH run must use a fresh fully migrated isolated stack,
 ## Files and next step
 
 empty.json, populated.json and missing-one-role.json are synthetic snapshots. result.json holds checks, image and SQL hash; context.json holds source hashes and the orchestrator-reported exit/command. SHA256SUMS protects this bundle's bytes; it is not external execution attestation. The collector does not enumerate application callers or resolve the pending ops/integration decisions. No 0199, grant change, push, cron or customer message occurred.
+
+## Post-seal amendment (1 October 2026)
+
+The pinned claim linter flagged sentences in this report on the branch's first GitHub Actions run (run 36748427202). The owner approved an open amendment of the report wording. This amendment changes wording and citations only; every result, number and conclusion above is unchanged.
+
+- Thai sentence boundaries are now source line breaks in REPORT.th.md (the rendered text is unchanged), in the run-instructions paragraph
+- Raw outputs are unchanged (this bundle keeps a single `SHA256SUMS`); `SHA256SUMS` changes only in the lines of the four REPORT files.
+- The pre-amendment REPORT hashes and the full change record are in `docs/governance/evidence/line-ci-remediation-2026-10-01/`.
+- This amendment needs independent re-review.

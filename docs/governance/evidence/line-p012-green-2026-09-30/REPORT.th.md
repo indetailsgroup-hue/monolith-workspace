@@ -6,10 +6,10 @@
 
 | ไฟล์ | การเปลี่ยนแปลง |
 |---|---|
-| supabase/migrations/0199_line_oa_restrict_definer_execute.sql | revoke EXECUTE บน 20 identity ตาม matrix โดยไม่ grant เพิ่ม หยุดเมื่อไม่พบ identity หรือพบ overload ที่ไม่ได้จัดประเภท (55000) และ raise 42501 พร้อม rollback หากหลัง revoke สิทธิ์ที่มีผลจริงต่างจากเป้าหมาย หรือ PUBLIC ยังมี EXECUTE |
-| supabase/tests/line_oa_definer_execute_matrix.sql | ใหม่ 82 assertion: matrix และ PUBLIC, การเรียกจริง 29 ครั้งที่ต้องถูกปฏิเสธที่ ACL ของฟังก์ชัน, ไม่มีผลข้างเคียง, RPC ที่คงไว้ยังเรียกได้ และตรวจเส้นทางที่คงไว้จากข้อมูลจริง |
-| supabase/tests/line_oa_definer_execute_fail_closed.sql | ใหม่ 23 assertion: สิทธิ์สืบทอด, grantor อื่น, สิทธิ์ที่ต้องคงหายไปเพราะมาจาก PUBLIC, overload ที่ไม่ได้จัดประเภท และการรันปกติ |
-| supabase/tests/line_outbound_claim_record.sql | assertion 23 เปลี่ยนเป็นตรวจว่า authenticated ไม่มี EXECUTE บน recorder แล้ว (มติเจ้าของ: service-only) |
+| supabase/migrations/0199_line_oa_restrict_definer_execute.sql | revoke EXECUTE บน 20 identity ตาม matrix โดยไม่ grant เพิ่ม หยุดเมื่อไม่พบ identity หรือพบ overload ที่ไม่ได้จัดประเภท (55000, `0199_line_oa_restrict_definer_execute.sql:66`) และ raise 42501 พร้อม rollback หากหลัง revoke สิทธิ์ที่มีผลจริงต่างจากเป้าหมาย หรือ PUBLIC ยังมี EXECUTE (`0199_line_oa_restrict_definer_execute.sql:111`) |
+| supabase/tests/line_oa_definer_execute_matrix.sql | ใหม่ 82 assertion: matrix และ PUBLIC, การเรียกจริง 29 ครั้งที่ต้องถูกปฏิเสธที่ ACL ของฟังก์ชัน, ไม่มีผลข้างเคียง (`line_oa_definer_execute_matrix.sql:200`), RPC ที่คงไว้ยังเรียกได้ และตรวจเส้นทางที่คงไว้จากข้อมูลจริง |
+| supabase/tests/line_oa_definer_execute_fail_closed.sql | ใหม่ 23 assertion: สิทธิ์สืบทอด, grantor อื่น, สิทธิ์ที่ต้องคงหายไปเพราะมาจาก PUBLIC (`line_oa_definer_execute_fail_closed.sql:204`), overload ที่ไม่ได้จัดประเภท และการรันปกติ |
+| supabase/tests/line_outbound_claim_record.sql | assertion 23 เปลี่ยนเป็นตรวจว่า authenticated ไม่มี EXECUTE บน recorder แล้ว (มติเจ้าของ: service-only, `line_outbound_claim_record.sql:429`) |
 | supabase/tests/line_oa_client_write_revoke.sql | assertion 131 เรียก fn_prod_curated ผ่าน rpc_field_create_appointment แทนการเรียกตรงด้วย service_role |
 | scripts/run-line-db-suites.sh, scripts/line-ci-tap.mjs, tests/line-oa-commerce/ci/tap-evidence.test.mjs | ลงทะเบียน 2 suite ใหม่ (รวม 14 suite, LINE 5 suite) ให้ suite fail-closed ใช้ path ของ 0199 จริง และปรับเทสต์ของ harness |
 
@@ -46,3 +46,12 @@
 ## ไฟล์
 
 ผลดิบของแต่ละรอบอยู่ใน SHA256SUMS.run และ REPLAY.txt ระบุคำสั่งที่รันจริง gate-p012.py และ commit-p012.sh คือ gate และ wrapper ที่ใช้ commit ส่วน transcript อยู่ใน docs/governance/evidence/line-p012-commit-2026-09-30/
+
+## การแก้ไขหลังปิดผนึก (1 ตุลาคม 2026)
+
+claim linter ที่ pin ไว้แจ้งประโยคในรายงานนี้ใน GitHub Actions รอบแรกของ branch (run 36748427202) เจ้าของอนุมัติให้แก้ถ้อยคำในรายงานแบบเปิดเผย การแก้ไขนี้เปลี่ยนเฉพาะถ้อยคำและการอ้างอิง ผล ตัวเลข และข้อสรุปข้างบนคงเดิม
+
+- เพิ่มการอ้าง source บรรทัดจริงในตารางสิ่งที่เปลี่ยน: 0199 บรรทัด 66 และ 111, matrix suite บรรทัด 200, fail-closed suite บรรทัด 204 และ claim-record suite บรรทัด 429
+- ผลดิบและ `SHA256SUMS.run` คงเดิม ส่วน `SHA256SUMS` เปลี่ยนเฉพาะบรรทัดของ REPORT ทั้ง 4 ไฟล์
+- hash ของ REPORT ก่อนแก้และบันทึกการเปลี่ยนทั้งหมดอยู่ใน `docs/governance/evidence/line-ci-remediation-2026-10-01/`
+- การแก้ไขนี้ต้องให้ผู้ตรวจอิสระตรวจซ้ำ

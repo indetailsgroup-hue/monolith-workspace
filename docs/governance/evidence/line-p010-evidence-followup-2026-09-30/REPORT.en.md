@@ -6,7 +6,7 @@
 
 E1: check/assemble require stderr to exist, match its suite name and recorded SHA256. Missing, deleted, replaced or misnamed files fail; empty stderr and expected negative-test SQL errors remain valid.
 
-E2: the new local replica supplies base SHA, ref, one run ID, 193 applied migrations and the digest of a tested-source manifest. The summary reports provenanceComplete=true with no missing fields. This describes field completeness, not independently authenticated execution. The base SHA plus source digest identifies the uncommitted tested patch.
+E2: the new local replica supplies base SHA, ref, one run ID, 193 applied migrations and the digest of a tested-source manifest. The summary reports provenanceComplete=true with no missing fields (`07-ci-local/full/db-verify-evidence.json:14`). This describes field completeness, not independently authenticated execution. The base SHA plus source digest identifies the uncommitted tested patch.
 
 E3: fullPgTapPass and verdictScope=pgtap-only make the outcome scope explicit. workflowPass=null means unevaluated. pass/fullPass are retained as compatibility aliases of the full pgTAP verdict. No successful workflow result is inferred.
 
@@ -42,3 +42,13 @@ The unchanged Actions workflow does not yet provide testedSourceSha256, so futur
 The integration/B12 packet identifies the 0170-after-0191 grant recreation risk, an unresolved invalid ref, external RPC-caller uncertainty and the authenticated rpc_record_line_send_result boundary. It proposes tests and retained paths. A manufacturing/integration owner must be named; tenant and overlapping-work decisions remain open. No migration number or role matrix is silently approved.
 
 Independent acceptance, separate containment integration and actual green CI after authorized push remain outstanding. B12/0199, default ACL policy, production catalog and real LINE G-C1 testing remain separate. No push, deploy, real message or shared/production access occurred.
+
+## Post-seal amendment (1 October 2026)
+
+The pinned claim linter flagged sentences in this report on the branch's first GitHub Actions run (run 36748427202). The owner approved an open amendment of the report wording. This amendment changes wording and citations only; every result, number and conclusion above is unchanged.
+
+- Thai sentence boundaries are now source line breaks in REPORT.th.md (the rendered text is unchanged), in the E2 and limitation paragraphs
+- A `07-ci-local/full/db-verify-evidence.json:14` citation supports the provenanceComplete statement
+- Raw outputs and `SHA256SUMS.run` are unchanged; `SHA256SUMS` changes only in the lines of the four REPORT files.
+- The pre-amendment REPORT hashes and the full change record are in `docs/governance/evidence/line-ci-remediation-2026-10-01/`.
+- This amendment needs independent re-review.

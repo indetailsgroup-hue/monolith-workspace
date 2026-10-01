@@ -1,0 +1,60 @@
+$ lint_pair /tmp/tmp.QH0EouxbYc/before
+utc_start: 2026-10-01T00:03:01Z
+docs/governance/evidence/line-b12-catalog-fixture-2026-09-30/REPORT.th.md:13: unevidenced absence claim about 'tests/line-oa-commerce/ci/b12_catalog_check.py'
+docs/governance/evidence/line-b12-monolith-catalog-attempt2-2026-09-30/REPORT.th.md:9: unevidenced absence claim about 'service_role'
+docs/governance/evidence/line-b12-monolith-catalog-attempt2-2026-09-30/REPORT.th.md:27: unevidenced absence claim about 'pgTAP'
+docs/governance/evidence/line-ci-source-2026-09-30/REPORT.th.md:21: unevidenced absence claim about 'EVIDENCE_INCOMPLETE'
+docs/governance/evidence/line-p010-catalog-2026-09-30/REPORT.th.md:7: unevidenced absence claim about 'service_role'
+docs/governance/evidence/line-p010-catalog-2026-09-30/REPORT.th.md:39: unevidenced absence claim about 'service_role'
+docs/governance/evidence/line-p010-catalog-2026-09-30/REPORT.th.md:42: unevidenced absence claim about 'search_path'
+docs/governance/evidence/line-p010-catalog-2026-09-30/REPORT.th.md:45: unevidenced absence claim about 'trg_line_guard_customer_group'
+docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/REPORT.th.md:11: unevidenced absence claim about 'pgTAP'
+docs/governance/evidence/line-p010-evidence-followup-2026-09-30/REPORT.th.md:9: unevidenced absence claim about 'provenanceComplete'
+docs/governance/evidence/line-p010-evidence-followup-2026-09-30/REPORT.th.md:38: unevidenced absence claim about 'testedSourceSha256'
+docs/governance/evidence/line-p010-failclosed-green-2026-09-30/REPORT.en.md:48: unevidenced absence claim about 'repair_phase0_containment'
+docs/governance/evidence/line-p010-failclosed-green-2026-09-30/REPORT.th.md:48: unevidenced absence claim about 'repair_phase0_containment'
+docs/governance/evidence/line-p012-green-2026-09-30/REPORT.th.md:9: unevidenced absence claim about 'supabase/migrations/0199_line_oa_restrict_definer_execute.sql'
+docs/governance/evidence/line-p012-green-2026-09-30/REPORT.th.md:10: unevidenced absence claim about 'supabase/tests/line_oa_definer_execute_matrix.sql'
+docs/governance/evidence/line-p012-green-2026-09-30/REPORT.th.md:11: unevidenced absence claim about 'supabase/tests/line_oa_definer_execute_fail_closed.sql'
+docs/governance/evidence/line-p012-green-2026-09-30/REPORT.th.md:12: unevidenced absence claim about 'supabase/tests/line_outbound_claim_record.sql'
+docs/governance/line-b12-permission-matrix.th.md:9: unevidenced absence claim about 'supabase/migrations/0199_line_oa_restrict_definer_execute.sql'
+docs/governance/line-b12-permission-matrix.th.md:10: unevidenced absence claim about 'supabase/tests/line_oa_definer_execute_matrix.sql'
+docs/governance/line-b12-permission-matrix.th.md:48: unevidenced absence claim about 'fn_prod_curated'
+docs/governance/line-outbound-phase0-session-report.en.md:75: unevidenced absence claim about 'identity_binding.consent_at'
+docs/governance/line-outbound-phase0-session-report.th.md:25: unevidenced absence claim about 'file:line'
+docs/governance/line-outbound-phase0-session-report.th.md:75: unevidenced absence claim about 'identity_binding.consent_at'
+docs/governance/line-outbound-phase0-session-report.th.md:100: unevidenced absence claim about 'pending'
+docs/governance/line-outbound-phase0-session-report.th.md:103: unevidenced absence claim about 'next_attempt_at'
+docs/governance/line-outbound-phase0-session-report.th.md:110: unevidenced absence claim about 'cron.schedule'
+docs/governance/line-outbound-phase0-session-report.th.md:159: unevidenced absence claim about 'line-outbound-sender'
+docs/governance/line-p010-execute-survey.th.md:18: unevidenced absence claim about 'supabase_admin'
+docs/governance/line-p010-execute-survey.th.md:24: unevidenced absence claim about 'fn_prod_curated'
+docs/governance/line-p010-execute-survey.th.md:27: unevidenced absence claim about 'fn_lead_followup_sweep'
+docs/governance/line-p010-execute-survey.th.md:30: unevidenced absence claim about 'fn_welcome_on_group_bind'
+docs/governance/line-p010-execute-survey.th.md:31: unevidenced absence claim about 'rpc_send_line_outbound'
+docs/governance/line-p010-execute-survey.th.md:32: unevidenced absence claim about 'rpc_create_line_order'
+docs/governance/line-p010-execute-survey.th.md:33: unevidenced absence claim about 'rpc_evaluate_identity_merge_candidate'
+docs/governance/line-p010-execute-survey.th.md:34: unevidenced absence claim about 'rpc_resolve_conversation_site'
+docs/governance/line-p010-integration-b12-followup.th.md:15: unevidenced absence claim about 'refs/heads/codex/repair-intelligence-phase0-trust (1)'
+docs/governance/line-p010-integration-b12-followup.th.md:62: unevidenced absence claim about 'rpc_send_line_outbound'
+docs/governance/line-p010-integration-b12-followup.th.md:64: unevidenced absence claim about 'autonomyGate'
+
+38 unevidenced absence claim(s) beyond the allowlist in 14 file(s)
+allowlisted debt: 15 hits across 11 files
+lint_claims exit: 1
+docs\governance\line-outbound-phase0-session-report.en.md:146: uncorroborated certification  [passes]  | `supabase/functions/line-outbound-sender/index.ts` | Calls the claim RPC, classifies failures, passes the cl
+docs\governance\repair-intelligence-phase0-push-checklist.md:61: uncorroborated certification  [passes]  `verified:true` report passes the final gate.
+
+checked 61 document(s)
+2 certification(s) beyond the allowlist, in 2 document(s)
+
+Attach one of these next to each sentence above, within 5 lines:
+  <!-- adversary: what you attacked it with, and what happened -->
+  a fenced console block holding the command you ran and its output
+
+Neither is proof the check happened. Both make skipping it a written,
+attributable statement instead of a silence.
+allowlisted debt: 1 hits across 1 files
+lint_certifications exit: 1
+utc_end: 2026-10-01T00:03:02Z
+exit: 0

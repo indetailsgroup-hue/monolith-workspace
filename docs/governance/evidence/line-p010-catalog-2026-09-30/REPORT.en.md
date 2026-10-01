@@ -4,7 +4,7 @@ Date: 30 September 2026. Base: 6a41ebb691ff3020838774f34aa4afebe2fdd61c on codex
 
 ## Approval and scope
 
-The owner approved two things: service_role is inside the P0-10 revoke design target, and the read-only catalog may be collected on a throwaway stack migrated from zero, with only this evidence bundle committed. No 0198, no grant/owner/membership change, no pgTAP, Python or write tests, no push, no deploy, no cron execution, no real message and no shared or production database were part of this run.
+The owner approved two things: service_role is inside the P0-10 revoke design target, and the read-only catalog may be collected on a throwaway stack migrated from zero, with only this evidence bundle committed. No 0198 (`02-migrations-applied.txt:192` ends at 0197), no grant/owner/membership change, no pgTAP, Python or write tests, no push, no deploy, no cron execution, no real message and no shared or production database were part of this run.
 
 ## How the evidence was produced
 
@@ -36,13 +36,13 @@ The owner approved two things: service_role is inside the P0-10 revoke design ta
 | # | Finding (verified from 04b, derived in 08-analysis.txt) |
 |---|---|
 | 1 | All 8 target tables are owned by postgres and have RLS enabled but not forced. |
-| 2 | anon, authenticated and service_role hold direct INSERT/UPDATE/DELETE/TRUNCATE on 7 tables and INSERT/TRUNCATE on line_oa_audit_log. PUBLIC holds no write grant. No column-level ACL exists. |
+| 2 | anon, authenticated and service_role hold direct INSERT/UPDATE/DELETE/TRUNCATE on 7 tables and INSERT/TRUNCATE on line_oa_audit_log. PUBLIC holds no write grant (`08-analysis.txt:48`). No column-level ACL exists (`08-analysis.txt:99`). |
 | 3 | Effective write privilege: anon 8/8 tables, authenticated 8/8, service_role 8/8, authenticator 0/8 (NOINHERIT, SET ROLE path only), postgres 8/8. |
 | 4 | postgres is not a superuser, has BYPASSRLS, and is an inheriting member of anon, authenticated, service_role and authenticator. |
-| 5 | All 20 candidate names exist as exactly 20 identities with no overloads. All 20 are SECURITY DEFINER, owned by postgres, with a fixed search_path. |
+| 5 | All 20 candidate names exist as exactly 20 identities with no overloads (`08-analysis.txt:185`). All 20 are SECURITY DEFINER, owned by postgres, with a fixed search_path. |
 | 6 | postgres owns all 8 tables, so every definer write right comes from ownership. Rights that depend only on role membership: none. |
 | 7 | 27 more routines matched the text search (23 definer, 4 invoker). All are owned by postgres. The 4 invoker routines are fn_wf_render_notification_text, line_oa__ct_equal, line_oa_audit_log_immutable and line_oa_normalize_order; their bodies were not captured. |
-| 8 | 10 triggers are on target tables: 8 internal foreign-key triggers (no cascade), the definer guard trg_line_guard_customer_group and the invoker trg_line_oa_audit_log_immutable. 2 are on other tables (installation_projects, line_groups), both calling definer routines. |
+| 8 | 10 triggers are on target tables: 8 internal foreign-key triggers (no cascade, `08-analysis.txt:237`), the definer guard trg_line_guard_customer_group and the invoker trg_line_oa_audit_log_immutable. 2 are on other tables (installation_projects, line_groups), both calling definer routines. |
 | 9 | No view, materialized view or rule depends on the 8 tables. |
 | 10 | Default ACLs for creators postgres and supabase_admin in public grant ALL on tables, EXECUTE on functions and sequence rights to anon, authenticated and service_role. |
 
@@ -68,3 +68,13 @@ The raw run outputs are listed in SHA256SUMS.run. The collector added analyze-p0
 ## Next step
 
 An independent reviewer checks this commit (checksums, owner/ACL, membership, triggers and views) before any request to approve 0198. The EXECUTE observation also goes to the owner as a separate decision. Phase A remains EVIDENCE_INCOMPLETE.
+
+## Post-seal amendment (1 October 2026)
+
+The pinned claim linter flagged sentences in this report on the branch's first GitHub Actions run (run 36748427202). The owner approved an open amendment of the report wording. This amendment changes wording and citations only; every result, number and conclusion above is unchanged.
+
+- Thai sentence boundaries are now source line breaks in REPORT.th.md (the rendered text is unchanged), in the approval-and-scope paragraph
+- A `02-migrations-applied.txt:192` citation supports the no-0198 scope statement, and `08-analysis.txt` lines 48, 99, 185 and 237 are cited for findings 2, 5 and 8
+- Raw outputs and `SHA256SUMS.run` are unchanged; `SHA256SUMS` changes only in the lines of the four REPORT files.
+- The pre-amendment REPORT hashes and the full change record are in `docs/governance/evidence/line-ci-remediation-2026-10-01/`.
+- This amendment needs independent re-review.

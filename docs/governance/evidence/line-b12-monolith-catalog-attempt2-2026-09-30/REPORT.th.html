@@ -22,6 +22,9 @@
 <p>หากรันซ้ำให้ใช้ checkout แยกที่ base เดิม image cache และ output ใหม่ เรียกสำเนา run-b12-catalog.sh โดยตั้ง B12_OUT และ B12_SQL=scripts/line-b12-catalog.sql runner รับ branch ที่กำหนดหรือ detached HEAD ปฏิเสธ output/resource ชื่อเดิม ใช้ local image ID และปิด cron ห้ามใช้ worktree ของงานอื่นหรือ shared stack ไม่ต้องใช้ credential ภายนอก ค่าลับที่สร้างอยู่ใน process และถูก scrub ก่อนเก็บ log</p>
 <h2>สิ่งที่ยังไม่พิสูจน์</h2>
 <p>รอบนี้ไม่ได้เรียก business RPC ไม่รัน pgTAP/Python behavior suite ไม่ใช่ independent rerun, GitHub Actions หรือ production test การรู้ชื่อ owner ไม่รับรอง transitive call chain ทุกเส้นหรือสิทธิ์ owner ใน production ผู้เรียกภายนอก/ทำมือและ API exposure ยังไม่ยืนยัน catalog จึงรองรับ pre-state ของ B12 แต่ไม่อนุมัติ 0199 ไม่ตัดสิน recorder ไม่แก้ integration 0170/0191, containment หรือ P0-9 และไม่ปิด Phase A ไม่มี push, deploy, ข้อความจริง หรือเปิด cron</p>
+<h2>การแก้ไขหลังปิดผนึก (1 ตุลาคม 2026)</h2>
+<p>claim linter ที่ pin ไว้แจ้งประโยคในรายงานนี้ใน GitHub Actions รอบแรกของ branch (run 36748427202) เจ้าของอนุมัติให้แก้ถ้อยคำในรายงานแบบเปิดเผย การแก้ไขนี้เปลี่ยนเฉพาะถ้อยคำและการอ้างอิง ผล ตัวเลข และข้อสรุปข้างบนคงเดิม</p>
+<ul><li>เส้นแบ่งประโยคภาษาไทยเขียนเป็นการขึ้นบรรทัดใน source (ข้อความที่ render ออกมาเหมือนเดิม) ที่ย่อหน้าผล catalog และย่อหน้าขอบเขต</li><li>ผลดิบและ <code>SHA256SUMS.run</code> คงเดิม ส่วน <code>SHA256SUMS</code> เปลี่ยนเฉพาะบรรทัดของ REPORT ทั้ง 4 ไฟล์</li><li>hash ของ REPORT ก่อนแก้และบันทึกการเปลี่ยนทั้งหมดอยู่ใน <code>docs/governance/evidence/line-ci-remediation-2026-10-01/</code></li><li>การแก้ไขนี้ต้องให้ผู้ตรวจอิสระตรวจซ้ำ</li></ul>
 </main>
 </body>
 </html>

@@ -1,0 +1,8 @@
+$ python - /tmp/tmp.QH0EouxbYc
+utc_start: 2026-10-01T00:03:10Z
+bash: C:\Program Files\Git\usr\bin\bash.EXE
+PASS: all five unset: exit 1 (want 1); output: ::error::shadow E2E environment is not provisioned; missing repository secrets: E2E_BASE_URL E2E_SUPABASE_ANON_KEY E2E_DESIGNER_A_JWT E2E_APPROVER_B_JWT E2E_TENANT_002_JWT
+PASS: all five set to a placeholder: exit 0 (want 0); output: <none>
+PASS: only E2E_TENANT_002_JWT unset: exit 1 (want 1); output: ::error::shadow E2E environment is not provisioned; missing repository secrets: E2E_TENANT_002_JWT
+utc_end: 2026-10-01T00:03:10Z
+exit: 0

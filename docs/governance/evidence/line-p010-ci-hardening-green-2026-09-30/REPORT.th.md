@@ -8,7 +8,10 @@
 
 ## สิ่งที่แก้
 
-รัน pgTAP ครบ 12 suite แยก stdout, stderr, exit status และผลแต่ละ suite ตัวตรวจบังคับให้มี plan เดียว ผลครบตามลำดับ exit ศูนย์ ไม่มี fail, skip หรือ TODO ค่า `pass` รวมตาม `fullPass` โดยแยกจาก `linePass` Metadata ระบุผลในเครื่องตามจริง
+รัน pgTAP ครบ 12 suite แยก stdout, stderr, exit status และผลแต่ละ suite
+ตัวตรวจบังคับให้มี plan เดียว ผลครบตามลำดับ exit ศูนย์ ไม่มี fail, skip หรือ TODO
+ค่า `pass` รวมตาม `fullPass` โดยแยกจาก `linePass`
+Metadata ระบุผลในเครื่องตามจริง
 
 ตัวตรวจหลัง 0198 บังคับให้พบครบ 8 ตารางและ 3 role เพิ่ม fail-closed จาก 13 เป็น 28 assertions: ระบุ inheritance ชัดเจน เพิ่ม inherited DELETE/TRUNCATE และ column INSERT จากเดิมที่มี inherited INSERT/UPDATE และ column UPDATE เทสต์รัน 0198 จริงผ่าน savepoint และเทียบ ACL ของตาราง/คอลัมน์ รวม options/grantor ของ membership หลัง rollback ผลนี้พิสูจน์ขอบเขตของชุดทดสอบ ไม่ใช่ migration runner ทุกชนิด
 
@@ -42,3 +45,12 @@ Wrapper และ transcript เปิดให้ตรวจ tree ที่ผ
 ## งานที่ยังเหลือ
 
 รอผู้ตรวจอิสระ แก้ dependency ของ containment แยก และอนุมัติ push ก่อน CI จริง ส่วน P0-9, B12/0199 และ production catalog เป็นงานแยก ไม่ได้ push, deploy, ต่อ shared/production, เปิด cron หรือส่งข้อความจริง Stack ชั่วคราวนี้ไม่ได้พิสูจน์สิทธิ์ใน production
+
+## การแก้ไขหลังปิดผนึก (1 ตุลาคม 2026)
+
+claim linter ที่ pin ไว้แจ้งประโยคในรายงานนี้ใน GitHub Actions รอบแรกของ branch (run 36748427202) เจ้าของอนุมัติให้แก้ถ้อยคำในรายงานแบบเปิดเผย การแก้ไขนี้เปลี่ยนเฉพาะถ้อยคำและการอ้างอิง ผล ตัวเลข และข้อสรุปข้างบนคงเดิม
+
+- เส้นแบ่งประโยคภาษาไทยเขียนเป็นการขึ้นบรรทัดใน source (ข้อความที่ render ออกมาเหมือนเดิม) ที่ย่อหน้าผล pgTAP
+- ผลดิบและ `SHA256SUMS.run` คงเดิม ส่วน `SHA256SUMS` เปลี่ยนเฉพาะบรรทัดของ REPORT ทั้ง 4 ไฟล์
+- hash ของ REPORT ก่อนแก้และบันทึกการเปลี่ยนทั้งหมดอยู่ใน `docs/governance/evidence/line-ci-remediation-2026-10-01/`
+- การแก้ไขนี้ต้องให้ผู้ตรวจอิสระตรวจซ้ำ

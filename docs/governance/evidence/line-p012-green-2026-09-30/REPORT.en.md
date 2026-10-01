@@ -6,10 +6,10 @@ Date: 30 September 2026. Base: 5119396a7c66c3f0d33547b57902ddefa2aefe07 on codex
 
 | File | Change |
 |---|---|
-| supabase/migrations/0199_line_oa_restrict_definer_execute.sql | Revokes EXECUTE on the twenty identities to the matrix and grants nothing. Stops on a missing identity or an unclassified overload (55000). Raises 42501 and rolls back if any effective right differs from the target afterwards or PUBLIC still holds EXECUTE. |
-| supabase/tests/line_oa_definer_execute_matrix.sql | New, 82 assertions: matrix and PUBLIC, 29 real calls refused at the function ACL, no side effects, retained RPCs still execute, and kept paths checked by their data |
-| supabase/tests/line_oa_definer_execute_fail_closed.sql | New, 23 assertions: inherited right, other grantor, keep lost through PUBLIC, unclassified overload, normal run |
-| supabase/tests/line_outbound_claim_record.sql | Assertion 23 now expects no authenticated EXECUTE on the recorder (owner decision: service-only) |
+| supabase/migrations/0199_line_oa_restrict_definer_execute.sql | Revokes EXECUTE on the twenty identities to the matrix and grants nothing. Stops on a missing identity or an unclassified overload (55000, `0199_line_oa_restrict_definer_execute.sql:66`). Raises 42501 and rolls back if any effective right differs from the target afterwards or PUBLIC still holds EXECUTE (`0199_line_oa_restrict_definer_execute.sql:111`). |
+| supabase/tests/line_oa_definer_execute_matrix.sql | New, 82 assertions: matrix and PUBLIC, 29 real calls refused at the function ACL, no side effects (`line_oa_definer_execute_matrix.sql:200`), retained RPCs still execute, and kept paths checked by their data |
+| supabase/tests/line_oa_definer_execute_fail_closed.sql | New, 23 assertions: inherited right, other grantor, keep lost through PUBLIC (`line_oa_definer_execute_fail_closed.sql:204`), unclassified overload, normal run |
+| supabase/tests/line_outbound_claim_record.sql | Assertion 23 now expects no authenticated EXECUTE on the recorder (owner decision: service-only, `line_outbound_claim_record.sql:429`) |
 | supabase/tests/line_oa_client_write_revoke.sql | Assertion 131 reaches fn_prod_curated through rpc_field_create_appointment instead of calling it as service_role |
 | scripts/run-line-db-suites.sh, scripts/line-ci-tap.mjs, tests/line-oa-commerce/ci/tap-evidence.test.mjs | The two new suites are registered (fourteen suites, five LINE suites), the fail-closed suite gets the real 0199 path, and the harness tests are updated |
 
@@ -46,3 +46,12 @@ Date: 30 September 2026. Base: 5119396a7c66c3f0d33547b57902ddefa2aefe07 on codex
 ## Files
 
 The raw outputs of each run are listed in SHA256SUMS.run, and REPLAY.txt gives the exact commands. gate-p012.py and commit-p012.sh are the gate and wrapper used for the commit; the transcript is in docs/governance/evidence/line-p012-commit-2026-09-30/.
+
+## Post-seal amendment (1 October 2026)
+
+The pinned claim linter flagged sentences in this report on the branch's first GitHub Actions run (run 36748427202). The owner approved an open amendment of the report wording. This amendment changes wording and citations only; every result, number and conclusion above is unchanged.
+
+- Source line citations were added to the what-changed table: 0199 lines 66 and 111, matrix suite line 200, fail-closed suite line 204 and claim-record suite line 429
+- Raw outputs and `SHA256SUMS.run` are unchanged; `SHA256SUMS` changes only in the lines of the four REPORT files.
+- The pre-amendment REPORT hashes and the full change record are in `docs/governance/evidence/line-ci-remediation-2026-10-01/`.
+- This amendment needs independent re-review.

@@ -11,7 +11,7 @@
 <h1>หลักฐาน catalog ของ P0-10: stack ชั่วคราวที่สร้างจาก migration chain</h1>
 <p>วันที่: 30 กันยายน 2026 ฐาน: 6a41ebb691ff3020838774f34aa4afebe2fdd61c บน codex/repair-intelligence-phase0-trust สถานะ: เก็บหลักฐานแล้ว รอผู้ตรวจอิสระ ผลนี้ไม่ได้ปิด P0-10 หรือ Phase A ไม่ได้อนุมัติ migration 0198 และไม่ได้เปลี่ยนสิทธิ์ใด ๆ</p>
 <h2>การอนุมัติและขอบเขต</h2>
-<p>เจ้าของอนุมัติ 2 เรื่อง คือ รวม service_role ในเป้าหมายการออกแบบ revoke ของ P0-10 และให้เก็บ catalog แบบอ่านอย่างเดียวบน stack ชั่วคราวที่ migrate จากศูนย์ โดย commit เฉพาะชุดหลักฐานนี้ รอบนี้ไม่มี 0198 ไม่เปลี่ยน grant/owner/membership ไม่รัน pgTAP, Python หรือการทดสอบเขียน ไม่ push ไม่ deploy ไม่ให้ cron ทำงาน ไม่ส่งข้อความจริง และไม่เชื่อมต่อฐานข้อมูล shared หรือ production</p>
+<p>เจ้าของอนุมัติ 2 เรื่อง คือ รวม service_role ในเป้าหมายการออกแบบ revoke ของ P0-10 และให้เก็บ catalog แบบอ่านอย่างเดียวบน stack ชั่วคราวที่ migrate จากศูนย์ โดย commit เฉพาะชุดหลักฐานนี้ รอบนี้ไม่มี 0198 (<code>02-migrations-applied.txt:192</code> จบที่ 0197) ไม่เปลี่ยน grant/owner/membership ไม่รัน pgTAP, Python หรือการทดสอบเขียน ไม่ push ไม่ deploy ไม่ให้ cron ทำงาน ไม่ส่งข้อความจริง และไม่เชื่อมต่อฐานข้อมูล shared หรือ production</p>
 <h2>วิธีสร้างหลักฐาน</h2>
 <div class="table-wrap"><table><thead><tr>
 <th>รายการ</th>
@@ -105,7 +105,7 @@
 </tr>
 <tr>
 <td>2</td>
-<td>anon, authenticated และ service_role มี INSERT/UPDATE/DELETE/TRUNCATE โดยตรงใน 7 ตาราง และมี INSERT/TRUNCATE ใน line_oa_audit_log ส่วน PUBLIC ไม่มีสิทธิ์เขียน และไม่มี ACL ระดับคอลัมน์</td>
+<td>anon, authenticated และ service_role มี INSERT/UPDATE/DELETE/TRUNCATE โดยตรงใน 7 ตาราง และมี INSERT/TRUNCATE ใน line_oa_audit_log ส่วน PUBLIC ไม่มีสิทธิ์เขียน (<code>08-analysis.txt:48</code>) และไม่มี ACL ระดับคอลัมน์ (<code>08-analysis.txt:99</code>)</td>
 </tr>
 <tr>
 <td>3</td>
@@ -117,7 +117,7 @@
 </tr>
 <tr>
 <td>5</td>
-<td>ชื่อผู้สมัครทั้ง 20 มีอยู่จริงเป็น 20 identity ไม่มี overload ทั้ง 20 เป็น SECURITY DEFINER, owner คือ postgres และกำหนด search_path ไว้</td>
+<td>ชื่อผู้สมัครทั้ง 20 มีอยู่จริงเป็น 20 identity ไม่มี overload (<code>08-analysis.txt:185</code>) ทั้ง 20 เป็น SECURITY DEFINER, owner คือ postgres และกำหนด search_path ไว้</td>
 </tr>
 <tr>
 <td>6</td>
@@ -129,7 +129,7 @@
 </tr>
 <tr>
 <td>8</td>
-<td>มี trigger บนตารางเป้าหมาย 10 ตัว: internal foreign-key 8 ตัว (ไม่มี cascade), guard แบบ definer trg_line_guard_customer_group และ trg_line_oa_audit_log_immutable แบบ invoker อีก 2 ตัวอยู่บนตารางอื่น (installation_projects, line_groups) และเรียก routine แบบ definer ทั้งคู่</td>
+<td>มี trigger บนตารางเป้าหมาย 10 ตัว: internal foreign-key 8 ตัว (ไม่มี cascade, <code>08-analysis.txt:237</code>), guard แบบ definer trg_line_guard_customer_group และ trg_line_oa_audit_log_immutable แบบ invoker อีก 2 ตัวอยู่บนตารางอื่น (installation_projects, line_groups) และเรียก routine แบบ definer ทั้งคู่</td>
 </tr>
 <tr>
 <td>9</td>
@@ -150,6 +150,9 @@
 <p>ผลดิบของการรันอยู่ใน SHA256SUMS.run ผู้เก็บหลักฐานเพิ่ม analyze-p010-catalog.py, 08-analysis.txt, gate-p010-commit.py, REPLAY.txt และรายงาน 4 ไฟล์นี้หลังการรัน SHA256SUMS ครอบคลุมทุกไฟล์ยกเว้นตัวมันเอง วิธีตรวจซ้ำและรันซ้ำอยู่ใน REPLAY.txt</p>
 <h2>ขั้นต่อไป</h2>
 <p>ผู้ตรวจอิสระตรวจ commit นี้ (checksum, owner/ACL, membership, trigger และ view) ก่อนขออนุมัติ 0198 ส่วนข้อสังเกตเรื่อง EXECUTE ส่งให้เจ้าของตัดสินแยก Phase A ยังคงเป็น EVIDENCE_INCOMPLETE</p>
+<h2>การแก้ไขหลังปิดผนึก (1 ตุลาคม 2026)</h2>
+<p>claim linter ที่ pin ไว้แจ้งประโยคในรายงานนี้ใน GitHub Actions รอบแรกของ branch (run 36748427202) เจ้าของอนุมัติให้แก้ถ้อยคำในรายงานแบบเปิดเผย การแก้ไขนี้เปลี่ยนเฉพาะถ้อยคำและการอ้างอิง ผล ตัวเลข และข้อสรุปข้างบนคงเดิม</p>
+<ul><li>เส้นแบ่งประโยคภาษาไทยเขียนเป็นการขึ้นบรรทัดใน source (ข้อความที่ render ออกมาเหมือนเดิม) ที่ย่อหน้าการอนุมัติและขอบเขต</li><li>เพิ่มการอ้าง <code>02-migrations-applied.txt:192</code> ให้ข้อความว่ารอบนี้ไม่มี 0198 และเพิ่มการอ้าง <code>08-analysis.txt</code> บรรทัด 48, 99, 185 และ 237 ให้ข้อค้นพบข้อ 2, 5 และ 8</li><li>ผลดิบและ <code>SHA256SUMS.run</code> คงเดิม ส่วน <code>SHA256SUMS</code> เปลี่ยนเฉพาะบรรทัดของ REPORT ทั้ง 4 ไฟล์</li><li>hash ของ REPORT ก่อนแก้และบันทึกการเปลี่ยนทั้งหมดอยู่ใน <code>docs/governance/evidence/line-ci-remediation-2026-10-01/</code></li><li>การแก้ไขนี้ต้องให้ผู้ตรวจอิสระตรวจซ้ำ</li></ul>
 </main>
 </body>
 </html>

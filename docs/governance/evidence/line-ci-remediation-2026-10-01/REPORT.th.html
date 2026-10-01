@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>การแก้ CI ของงาน LINE — Actions รอบแรก</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>การแก้ CI รอบแรกของ branch งาน LINE บน GitHub Actions</h1>
+<p>วันที่: 1 ตุลาคม 2026 (เวลาไทย เวลาใน runner เป็น UTC) ฐาน: a97c3c8479a5fcbff9fb134e0e661f7f0d828a8e บน codex/repair-intelligence-phase0-trust สถานะ: สร้างในเครื่องแล้ว รอผู้ตรวจอิสระและ CI รอบถัดไป รอบนี้แก้เอกสาร งาน 1 job ใน workflow และ config 1 บรรทัด ไม่แก้ migration เทสต์ หรือโค้ดแอป</p>
+<h2>มติของเจ้าของ (1 ตุลาคม 2026)</h2>
+<ul><li>หลักฐานที่ปิดผนึกแล้ว: ทางเลือก ก แก้ไฟล์ REPORT แบบเปิดเผย คงผลดิบและ <code>SHA256SUMS.run</code> สร้าง <code>SHA256SUMS</code> ฉบับสุดท้ายใหม่เฉพาะบรรทัดของ REPORT และให้ผู้ตรวจอิสระตรวจซ้ำ</li><li>การ push: อนุมัติให้ push ก่อนผู้ตรวจอิสระตรวจ a97c3c847 เสร็จ</li><li>งานของ Repair Phase 0: ให้ผู้สร้าง (session นี้) ทำ คือเปิด storage ใน <code>supabase/config.toml</code> (บรรทัดเดียว ไม่ดึง config ทั้งหมดของ main) ประโยครับรองใน push checklist และ secret กับ environment ของ shadow E2E</li></ul>
+<h2>สาเหตุที่ CI ล้ม (run 36748427202 และ 36748427203 ที่ a97c3c847)</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Check</th>
+<th>สาเหตุ</th>
+<th>มาจากงาน LINE ไหม</th>
+</tr></thead><tbody>
+<tr>
+<td>claim linters</td>
+<td><code>lint_claims</code> พบข้ออ้างว่าไม่มีโดยไม่มีหลักฐาน 38 จุดในเอกสาร LINE 14 ไฟล์ และ <code>lint_certifications</code> พบประโยครับรอง 2 จุด</td>
+<td>ใช่ 39 จาก 40 จุด ส่วนจุดใน push checklist มีมาก่อนเอกสาร LINE</td>
+</tr>
+<tr>
+<td>edge + pgTAP และ DB Verify (<code>trust_kernel_containment</code> ข้อ 8–9)</td>
+<td><code>supabase/config.toml</code> ปิด storage ไว้ ตอน 0184 รันจึงยังไม่มี <code>storage.objects</code> และบล็อก policy ที่มีเงื่อนไข (<code>0184_trust_kernel_legacy_containment.sql:98</code>) ถูกข้าม</td>
+<td>ไม่ใช่</td>
+</tr>
+<tr>
+<td>DB Verify (<code>repair_phase0_containment</code>)</td>
+<td>ฟังก์ชัน 12 argument มาจาก 0170 บน main (PRD §8 ข้อ 7)</td>
+<td>ไม่ใช่ และรอบนี้ไม่ได้แก้</td>
+</tr>
+<tr>
+<td>shadow E2E</td>
+<td>ไม่ได้สร้างโฟลเดอร์ <code>reports/</code> ก่อนเขียนผล และ secret ของ E2E ทั้ง 5 ตัวว่าง</td>
+<td>ไม่ใช่</td>
+</tr>
+<tr>
+<td>final gate และ evidence self-verify</td>
+<td>ล้มต่อจากข้อข้างบนและยังไม่ได้ตั้ง signer (ออกแบบให้ล้มแบบปิดไว้ก่อน)</td>
+<td>ไม่ใช่</td>
+</tr>
+</tbody></table></div>
+<p>DB Verify รอบเดียวกันรัน suite LINE ทั้ง 5 ชุดได้ผลครบตาม plan: 107/107, 133/133, 28/28, 82/82 และ 23/23 และ claim race overlap 0 นี่เป็นหลักฐาน GitHub Actions ของ a97c3c847 เท่านั้น ไม่ใช่หลักฐาน production และไม่ใช่การตรวจอิสระ</p>
+<h2>สิ่งที่เปลี่ยน</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Path</th>
+<th>การเปลี่ยน</th>
+</tr></thead><tbody>
+<tr>
+<td>เอกสาร governance 4 ชุด (TH และ EN พร้อม HTML)</td>
+<td>permission matrix, session report, EXECUTE survey และ integration follow-up: เพิ่มการอ้างอิง แยกประโยคภาษาไทย และปรับถ้อยคำ 2 จุด (ดูตารางด้านล่าง)</td>
+</tr>
+<tr>
+<td>ชุดหลักฐานที่ปิดผนึก 8 ชุด</td>
+<td>แก้ REPORT.th.md และ REPORT.en.md render HTML ใหม่ และสร้างบรรทัด REPORT 4 บรรทัดใน <code>SHA256SUMS</code> ใหม่ ส่วน <code>SHA256SUMS.run</code> และผลดิบคงเดิม</td>
+</tr>
+<tr>
+<td><code>docs/governance/repair-intelligence-phase0-push-checklist.md</code></td>
+<td>ประโยคเงื่อนไขการยอมรับเขียนเป็นเงื่อนไข</td>
+</tr>
+<tr>
+<td><code>.github/workflows/trust-kernel-verify.yml</code></td>
+<td>job shadow E2E: ขั้นแรกจะล้มพร้อมบอกชื่อ secret ที่ขาด (ไม่แสดงค่า, <code>trust-kernel-verify.yml:235</code>) และขั้นรันสร้าง <code>reports/</code> ก่อนเขียนผล (<code>trust-kernel-verify.yml:249</code>)</td>
+</tr>
+<tr>
+<td><code>supabase/config.toml</code></td>
+<td><code>[storage] enabled = true</code> (บรรทัดเดียว)</td>
+</tr>
+</tbody></table></div>
+<p><code>tools/.lint_allowlist</code> คงเดิม (<code>02b-allowlist-unchanged.txt</code>) linter จึงผ่านโดยไม่ได้ยกเว้นเพิ่ม</p>
+<h2>ตารางข้อค้นพบ</h2>
+<p>ประเภท A: ข้ออ้างว่าสิ่งที่ค้นหาได้นั้นไม่มีอยู่ ประเภท B: ถ้อยคำที่ตัวตรวจอ่านว่าเป็นข้ออ้างแต่ไม่ใช่ (พฤติกรรม ข้อกำหนด ขอบเขต สำนวน ชื่อชนิดข้อมูล หรือเงื่อนไขการยอมรับ) path ของชุดหลักฐานอยู่ใต้ <code>docs/governance/evidence/</code></p>
+<div class="table-wrap"><table><thead><tr>
+<th>#</th>
+<th>ข้อค้นพบที่ฐาน</th>
+<th>ประเภท</th>
+<th>การแก้</th>
+</tr></thead><tbody>
+<tr>
+<td>1</td>
+<td><code>line-b12-catalog-fixture-2026-09-30/REPORT.th.md:13</code></td>
+<td>B ข้อกำหนด</td>
+<td>แยกประโยคภาษาไทยคนละบรรทัดใน source</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>line-b12-monolith-catalog-attempt2-2026-09-30/REPORT.th.md:9</code></td>
+<td>A overload (ไม่ได้ระบุชื่อ) มี catalog ในชุดรองรับ</td>
+<td>แยกประโยคภาษาไทยคนละบรรทัดใน source</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>line-b12-monolith-catalog-attempt2-2026-09-30/REPORT.th.md:27</code></td>
+<td>B ขอบเขต</td>
+<td>แยกประโยคภาษาไทยคนละบรรทัดใน source</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>line-ci-source-2026-09-30/REPORT.th.md:21</code></td>
+<td>A ฟังก์ชัน 12 argument (ไม่ได้ระบุชื่อ)</td>
+<td>แยกประโยคภาษาไทยคนละบรรทัดใน source</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>line-p010-catalog-2026-09-30/REPORT.th.md:7</code></td>
+<td>B ขอบเขต</td>
+<td>แยกประโยค และอ้าง <code>02-migrations-applied.txt:192</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>line-p010-catalog-2026-09-30/REPORT.th.md:39</code></td>
+<td>A สิทธิ์เขียนของ PUBLIC และ ACL ระดับคอลัมน์</td>
+<td>อ้าง <code>08-analysis.txt:48</code> และ <code>08-analysis.txt:99</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>line-p010-catalog-2026-09-30/REPORT.th.md:42</code></td>
+<td>A overload</td>
+<td>อ้าง <code>08-analysis.txt:185</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>line-p010-catalog-2026-09-30/REPORT.th.md:45</code></td>
+<td>A cascade</td>
+<td>อ้าง <code>08-analysis.txt:237</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>line-p010-ci-hardening-green-2026-09-30/REPORT.th.md:11</code></td>
+<td>B ข้อกำหนดของตัวตรวจ</td>
+<td>แยกประโยคภาษาไทยคนละบรรทัดใน source</td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>line-p010-evidence-followup-2026-09-30/REPORT.th.md:9</code></td>
+<td>A field ของ provenance</td>
+<td>แยกประโยค และอ้าง <code>07-ci-local/full/db-verify-evidence.json:14</code></td>
+</tr>
+<tr>
+<td>11</td>
+<td><code>line-p010-evidence-followup-2026-09-30/REPORT.th.md:38</code></td>
+<td>A field ที่เปิดเผยในเวลานั้น</td>
+<td>แยกประโยคภาษาไทยคนละบรรทัดใน source</td>
+</tr>
+<tr>
+<td>12</td>
+<td><code>line-p010-failclosed-green-2026-09-30/REPORT.en.md:48</code></td>
+<td>A migration 0170</td>
+<td>อ้าง <code>07-ci-local/full/ci-step-1.log:411</code></td>
+</tr>
+<tr>
+<td>13</td>
+<td><code>line-p010-failclosed-green-2026-09-30/REPORT.th.md:48</code></td>
+<td>A migration 0170</td>
+<td>อ้าง <code>07-ci-local/full/ci-step-1.log:411</code></td>
+</tr>
+<tr>
+<td>14</td>
+<td><code>line-p012-green-2026-09-30/REPORT.th.md:9</code></td>
+<td>B พฤติกรรมของโค้ด</td>
+<td>อ้าง <code>0199_line_oa_restrict_definer_execute.sql:66</code> และ <code>:111</code></td>
+</tr>
+<tr>
+<td>15</td>
+<td><code>line-p012-green-2026-09-30/REPORT.th.md:10</code></td>
+<td>B คำอธิบายเทสต์</td>
+<td>อ้าง <code>line_oa_definer_execute_matrix.sql:200</code></td>
+</tr>
+<tr>
+<td>16</td>
+<td><code>line-p012-green-2026-09-30/REPORT.th.md:11</code></td>
+<td>B คำอธิบายเทสต์</td>
+<td>อ้าง <code>line_oa_definer_execute_fail_closed.sql:204</code></td>
+</tr>
+<tr>
+<td>17</td>
+<td><code>line-p012-green-2026-09-30/REPORT.th.md:12</code></td>
+<td>B คำอธิบายเทสต์</td>
+<td>อ้าง <code>line_outbound_claim_record.sql:429</code></td>
+</tr>
+<tr>
+<td>18</td>
+<td><code>line-b12-permission-matrix.th.md:9</code></td>
+<td>B พฤติกรรมของโค้ด</td>
+<td>อ้าง 0199 บรรทัด 66, 75 และ 111 (TH และ EN)</td>
+</tr>
+<tr>
+<td>19</td>
+<td><code>line-b12-permission-matrix.th.md:10</code></td>
+<td>B คำอธิบายเทสต์</td>
+<td>อ้าง <code>line_outbound_claim_record.sql:429</code> (TH และ EN)</td>
+</tr>
+<tr>
+<td>20</td>
+<td><code>line-b12-permission-matrix.th.md:48</code></td>
+<td>B นโยบาย</td>
+<td>เปลี่ยนย่อหน้าเป็นรายการ 1 ข้อต่อกลุ่ม caller (TH และ EN)</td>
+</tr>
+<tr>
+<td>21</td>
+<td><code>line-outbound-phase0-session-report.en.md:75</code></td>
+<td>A คอลัมน์และด่าน consent ฝั่งลูกค้า</td>
+<td>อ้างนิยามตาราง <code>00000000000002_line_oa_schema.sql:108</code> คอลัมน์ของพนักงาน <code>0088_identity_binding_lifecycle.sql:10</code> และคำสั่งตรวจซ้ำที่ a97c3c847 (TH และ EN)</td>
+</tr>
+<tr>
+<td>22</td>
+<td><code>line-outbound-phase0-session-report.th.md:25</code></td>
+<td>B สำนวน</td>
+<td>ใช้ em dash แบบฉบับอังกฤษ</td>
+</tr>
+<tr>
+<td>23</td>
+<td><code>line-outbound-phase0-session-report.th.md:75</code></td>
+<td>A เหมือนแถว 21</td>
+<td>เหมือนแถว 21</td>
+</tr>
+<tr>
+<td>24</td>
+<td><code>line-outbound-phase0-session-report.th.md:100</code></td>
+<td>B พฤติกรรมของโค้ด</td>
+<td>อ้าง <code>0193_line_outbound_claim_and_record.sql:235</code> (TH และ EN)</td>
+</tr>
+<tr>
+<td>25</td>
+<td><code>line-outbound-phase0-session-report.th.md:103</code></td>
+<td>B ชื่อชนิดข้อมูล</td>
+<td>เขียนชนิดข้อมูลเป็น code (TH และ EN)</td>
+</tr>
+<tr>
+<td>26</td>
+<td><code>line-outbound-phase0-session-report.th.md:110</code></td>
+<td>A cron schedule ใน 0193–0196</td>
+<td>เพิ่มคำสั่งตรวจซ้ำที่ a97c3c847 (TH และ EN)</td>
+</tr>
+<tr>
+<td>27</td>
+<td><code>line-outbound-phase0-session-report.th.md:159</code></td>
+<td>A cron ในเรโปที่เรียก sender</td>
+<td>เพิ่มคำสั่งตรวจซ้ำที่ a97c3c847 และเอาคำว่า &quot;definitively&quot; ออกจากฉบับอังกฤษ</td>
+</tr>
+<tr>
+<td>28</td>
+<td><code>line-p010-execute-survey.th.md:18</code></td>
+<td>A ALTER DEFAULT PRIVILEGES</td>
+<td>แยกประโยคแบบฉบับอังกฤษ และเพิ่มคำสั่งตรวจซ้ำที่ a97c3c847 (TH และ EN)</td>
+</tr>
+<tr>
+<td>29–35</td>
+<td><code>line-p010-execute-survey.th.md</code> บรรทัด 24, 27, 30, 31, 32, 33 และ 34</td>
+<td>A ผู้เรียก grant หรือ guard ตามการค้นของ survey</td>
+<td>ขยายการอ้าง migration แบบย่อในตาราง routine 18 แถวเป็น file:line ที่เปิดได้จริง (TH และ EN) และตรวจบรรทัดที่อ้างแล้ว</td>
+</tr>
+<tr>
+<td>36</td>
+<td><code>line-p010-integration-b12-followup.th.md:15</code></td>
+<td>B การกระทำของงานนี้เอง</td>
+<td>แยกประโยคแบบฉบับอังกฤษ</td>
+</tr>
+<tr>
+<td>37</td>
+<td><code>line-p010-integration-b12-followup.th.md:62</code></td>
+<td>A ผลค้นที่ระบุข้อจำกัด</td>
+<td>เพิ่ม commit ของ source ที่ค้น 3bdd6f3e5 (TH และ EN)</td>
+</tr>
+<tr>
+<td>38</td>
+<td><code>line-p010-integration-b12-followup.th.md:64</code></td>
+<td>A ผลค้นที่ระบุข้อจำกัด</td>
+<td>แยกประโยคแบบฉบับอังกฤษ</td>
+</tr>
+<tr>
+<td>39</td>
+<td><code>line-outbound-phase0-session-report.en.md:146</code> (ประโยครับรอง)</td>
+<td>B คำว่า &quot;passes&quot; หมายถึงส่งต่อ</td>
+<td>เปลี่ยนเป็น &quot;forwards&quot;</td>
+</tr>
+<tr>
+<td>40</td>
+<td><code>repair-intelligence-phase0-push-checklist.md:61</code> (ประโยครับรอง)</td>
+<td>B เงื่อนไขการยอมรับ</td>
+<td>เขียนเป็นเงื่อนไข</td>
+</tr>
+</tbody></table></div>
+<p>การแยกบรรทัดภาษาไทยเปลี่ยนเฉพาะ Markdown source เพราะ renderer รวมบรรทัดในย่อหน้าด้วยช่องว่าง 1 ช่อง ข้อความที่ render ของย่อหน้าเหล่านั้นจึงเหมือนเดิม (<code>05-render-check.txt</code> และใน 4 ชุดที่แก้แค่การแยกบรรทัด HTML ต่างจากเดิมเฉพาะส่วนบันทึกการแก้ไขที่ต่อท้าย)</p>
+<h2>หลักฐานในชุดนี้</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>ไฟล์</th>
+<th>สิ่งที่แสดง</th>
+</tr></thead><tbody>
+<tr>
+<td><code>00-context.txt</code></td>
+<td>ฐาน เวอร์ชันเครื่องมือ hash ของ linter ที่ pin ไว้ (สำเนาในเครื่องเท่ากันเมื่อไม่นับ CRLF/LF) และไฟล์ที่เปลี่ยน</td>
+</tr>
+<tr>
+<td><code>01a-linters-before.txt</code>, <code>01b-findings-before.txt</code></td>
+<td>linter ที่ pin ไว้บน tree ฐานให้ผลล้มแบบเดียวกับ CI คือ 38 และ 2 จุด exit 1 ทั้งคู่ พร้อม marker และประโยคของแต่ละจุด</td>
+</tr>
+<tr>
+<td><code>02a-linters-after.txt</code>, <code>02b-allowlist-unchanged.txt</code></td>
+<td>linter ที่ pin ไว้บน working tree: exit 0 ทั้งคู่ และ allowlisted debt คงเดิม (15 และ 1)</td>
+</tr>
+<tr>
+<td><code>03-reproduce-amendments.txt</code></td>
+<td><code>tools/amend_bundles.py</code> ที่รันบน byte ของฐานได้ REPORT ที่แก้ครบ 16 ไฟล์ตรงทุก byte และตาราง routine ของ survey เท่ากับผลของ <code>tools/expand_survey.py</code></td>
+</tr>
+<tr>
+<td><code>04-reseal-check.txt</code></td>
+<td><code>SHA256SUMS.run</code> ของทุกชุดที่แก้เท่ากับฐาน <code>sha256sum -c</code> ผ่านกับทุก <code>SHA256SUMS</code> และ <code>SHA256SUMS.run</code> และแต่ละ <code>SHA256SUMS</code> ต่างจากฐานเฉพาะ 4 บรรทัดของ REPORT</td>
+</tr>
+<tr>
+<td><code>05-render-check.txt</code></td>
+<td>HTML ที่เปลี่ยนทั้ง 24 ไฟล์เท่ากับผล renderer ของ repository จาก Markdown ของตัวเอง</td>
+</tr>
+<tr>
+<td><code>06-workflow-config.txt</code></td>
+<td>workflow ทั้งสอง parse ได้ preflight ของ E2E เป็นขั้นแรกและอ่านชื่อ secret 5 ตัวเดียวกับขั้นรัน <code>[storage].enabled</code> เป็น true และ diff ของ config มีบรรทัดเดียว</td>
+</tr>
+<tr>
+<td><code>07-preflight-simulation.txt</code></td>
+<td>สคริปต์ preflight ที่ดึงจาก YAML รันด้วยค่าแทน: ไม่ตั้งเลยได้ exit 1 พร้อม 5 ชื่อ ตั้งครบได้ exit 0 ขาดตัวเดียวบอกเฉพาะชื่อนั้น และไม่แสดงค่าใด (<code>07-preflight-simulation.txt:4</code> ถึงบรรทัด 6)</td>
+</tr>
+<tr>
+<td><code>08-repair-phase0-checks.txt</code></td>
+<td>ตัวตรวจเอกสาร Repair Phase 0 เทสต์ของมัน (12 จาก 12) และ final-gate self-test ได้ exit 0 ทั้งหมด</td>
+</tr>
+<tr>
+<td><code>09-diff.txt</code>, <code>10-credential-scan.txt</code></td>
+<td>ชุดที่เปลี่ยนเทียบกับฐาน และการสแกนข้อมูลลับพร้อม positive controls (ยกเว้นแบบรายงาน 1 จุด คือ connection string ของ Supabase ในเครื่องที่บรรทัด 189 ของ workflow ซึ่งเหมือนในฐานทุกตัวอักษร)</td>
+</tr>
+<tr>
+<td><code>11-gate-negative-controls.txt</code>, <code>gate-ci-remediation.py</code></td>
+<td>gate สำหรับ commit ยอมรับชุดที่อนุมัติ และปฏิเสธการละเมิดที่ตั้งใจใส่ 6 แบบ แต่ละแบบใน index ส่วนตัว คือ path เกิน, <code>SHA256SUMS.run</code> เปลี่ยน, ผลดิบเปลี่ยน, ประโยคใหม่ที่ claim linter ต้องแจ้ง, config เปลี่ยนเกินบรรทัด storage และ URI ที่มีรูปแบบ credential</td>
+</tr>
+</tbody></table></div>
+<p>การ commit ทำผ่าน <code>commit-ci-remediation.sh</code> ซึ่ง stage เฉพาะ path ที่อนุมัติ รัน gate กับ blob ที่ stage แล้ว และ commit เมื่อ exit 0 เท่านั้น พร้อม transcript ใน <code>docs/governance/evidence/line-ci-remediation-commit-2026-10-01/</code></p>
+<h2>ข้อจำกัดและงานที่ยังค้าง</h2>
+<ul><li>Storage: เครื่องนี้ไม่ได้ติดตั้ง Supabase CLI จึงยังไม่ได้ทดสอบการแก้ config ผ่าน <code>supabase start</code> ในเครื่อง stack ชั่วคราวที่มี storage-api เคยรัน <code>trust_kernel_containment</code> ได้ 16/16 (<code>line-p012-green-2026-09-30/07b-ci-suite-runner/trust_kernel_containment.tap</code>) CI รอบถัดไปคือการทดสอบจริง</li><li>Shadow E2E: session นี้จัดเตรียม environment ให้ไม่ได้ secret ทั้ง 5 ตัวเป็น credential ที่เจ้าของต้องตั้งเองใน settings ของ repository และ stack ที่ secret ชี้ไปต้อง deploy ซึ่งยังไม่ได้อนุมัติ จนกว่าจะมี job E2E และ final gate จะยังแดง แต่ตอนนี้มีข้อความบอกชื่อ secret ที่ขาด</li><li><code>repair_phase0_containment</code> ยังต้องใช้ migration 0170 จาก main (PRD §8 ข้อ 7) DB Verify และ edge + pgTAP จึงยังแดงที่ suite นี้</li><li>Pull request #133 มี merge conflict workflow แบบ <code>pull_request</code> ของ main จึงยังไม่ได้รันกับ PR นี้ มีแค่ workflow ที่เกิดจาก push</li><li>ชุดหลักฐานที่แก้มีชุดที่ผู้ตรวจรับไปแล้ว (เช่น da252d18a) ทุกการแก้ต้องตรวจซ้ำ</li></ul>
+<h2>ประวัติการรัน runner</h2>
+<p>รอบนี้มีการรัน runner 3 ครั้งก่อนหน้าที่ถูกย้ายออกไปไว้นอก repository ครั้งที่ 1 เรียก bash ของ WSL ในการจำลอง preflight (exit 127) และการสแกนข้อมูลลับแจ้ง connection string ในเครื่องที่มีอยู่เดิม ครั้งที่ 2 ยังเรียก bash ของ WSL ทั้งสองเป็นข้อบกพร่องของ runner ซึ่งแก้แล้วใน <code>tools/run-ci-remediation.sh</code> (ระบุ path ของ bash ชัดเจน และข้อยกเว้นแคบที่รายงานเสมอ) ครั้งที่ 3 ผ่านทุกขั้นแต่ comment ใน runner อธิบายสาเหตุของครั้งที่ 1 และ 2 ไม่ถูก จึงแก้ comment แล้วรันใหม่ ชุดนี้เป็นผลครั้งที่ 4 ซึ่งทั้ง 17 ขั้นที่บันทึกได้ exit 0</p>
+<p>การ commit ผ่าน wrapper ครั้งแรกถูก gate หยุด เพราะสคริปต์ negative control มี URI ทดสอบที่มีรูปแบบ credential เขียนเป็นตัวอักษรตรง ๆ ไม่มีอะไรถูก commit และ index ถูกคืนสภาพ ตอนนี้สคริปต์ประกอบ URI ทดสอบตอนรัน รัน control ใหม่แล้ว (<code>11-gate-negative-controls.txt</code>) และปิดผนึกชุดใหม่ก่อน commit ครั้งถัดไป ครั้งที่สองก็ถูก gate หยุดเช่นกัน เพราะย่อหน้านี้ในฉบับภาษาไทยรวมคำปฏิเสธกับชื่อไฟล์ไว้ในประโยคเดียว จึงแยกประโยคแล้ว commit ครั้งที่สาม</p>
+</main>
+</body>
+</html>

@@ -21,3 +21,12 @@ PRD 1.12 records that bounded acceptance. The bilingual caller register lists kn
 No push or actual Actions run occurred. Prior database evidence remains unchanged: LINE checks passed but containment failed on the missing 12-argument factory function. This patch does not fix containment, implement P0-9, decide tenant/branch integration, create 0199, change default ACLs or authorize production inspection/deployment. Phase A stays EVIDENCE_INCOMPLETE.
 
 The current source metadata wiring is locally validated, not yet confirmed on GitHub's runner. Source/code checks and pattern-based secret scanning are not independent execution attestation or proof of detecting every possible secret format. Opus authored helper/tests from requirements only; Codex integrated and verified them. No secret files were supplied to Opus.
+
+## Post-seal amendment (1 October 2026)
+
+The pinned claim linter flagged sentences in this report on the branch's first GitHub Actions run (run 36748427202). The owner approved an open amendment of the report wording. This amendment changes wording and citations only; every result, number and conclusion above is unchanged.
+
+- Thai sentence boundaries are now source line breaks in REPORT.th.md (the rendered text is unchanged), in the scope paragraph
+- Raw outputs and `SHA256SUMS.run` are unchanged; `SHA256SUMS` changes only in the lines of the four REPORT files.
+- The pre-amendment REPORT hashes and the full change record are in `docs/governance/evidence/line-ci-remediation-2026-10-01/`.
+- This amendment needs independent re-review.

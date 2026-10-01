@@ -1,0 +1,127 @@
+$ git diff --stat a97c3c8479a5fcbff9fb134e0e661f7f0d828a8e
+utc_start: 2026-10-01T00:03:14Z
+ .github/workflows/trust-kernel-verify.yml          | 26 +++++++++++-
+ .../REPORT.en.html                                 |  3 ++
+ .../REPORT.en.md                                   |  9 +++++
+ .../REPORT.th.html                                 |  3 ++
+ .../REPORT.th.md                                   | 15 ++++++-
+ .../line-b12-catalog-fixture-2026-09-30/SHA256SUMS |  8 ++--
+ .../REPORT.en.html                                 |  3 ++
+ .../REPORT.en.md                                   |  9 +++++
+ .../REPORT.th.html                                 |  3 ++
+ .../REPORT.th.md                                   | 22 ++++++++++-
+ .../SHA256SUMS                                     |  8 ++--
+ .../line-ci-source-2026-09-30/REPORT.en.html       |  3 ++
+ .../line-ci-source-2026-09-30/REPORT.en.md         |  9 +++++
+ .../line-ci-source-2026-09-30/REPORT.th.html       |  3 ++
+ .../line-ci-source-2026-09-30/REPORT.th.md         | 14 ++++++-
+ .../evidence/line-ci-source-2026-09-30/SHA256SUMS  |  8 ++--
+ .../line-p010-catalog-2026-09-30/REPORT.en.html    | 11 ++++--
+ .../line-p010-catalog-2026-09-30/REPORT.en.md      | 18 +++++++--
+ .../line-p010-catalog-2026-09-30/REPORT.th.html    | 11 ++++--
+ .../line-p010-catalog-2026-09-30/REPORT.th.md      | 19 +++++++--
+ .../line-p010-catalog-2026-09-30/SHA256SUMS        |  8 ++--
+ .../REPORT.en.html                                 |  3 ++
+ .../REPORT.en.md                                   |  9 +++++
+ .../REPORT.th.html                                 |  3 ++
+ .../REPORT.th.md                                   | 14 ++++++-
+ .../SHA256SUMS                                     |  8 ++--
+ .../REPORT.en.html                                 |  5 ++-
+ .../REPORT.en.md                                   | 12 +++++-
+ .../REPORT.th.html                                 |  5 ++-
+ .../REPORT.th.md                                   | 19 ++++++++-
+ .../SHA256SUMS                                     |  8 ++--
+ .../REPORT.en.html                                 |  5 ++-
+ .../REPORT.en.md                                   | 11 +++++-
+ .../REPORT.th.html                                 |  5 ++-
+ .../REPORT.th.md                                   | 11 +++++-
+ .../SHA256SUMS                                     |  8 ++--
+ .../line-p012-green-2026-09-30/REPORT.en.html      | 11 ++++--
+ .../line-p012-green-2026-09-30/REPORT.en.md        | 17 ++++++--
+ .../line-p012-green-2026-09-30/REPORT.th.html      | 11 ++++--
+ .../line-p012-green-2026-09-30/REPORT.th.md        | 17 ++++++--
+ .../evidence/line-p012-green-2026-09-30/SHA256SUMS |  8 ++--
+ docs/governance/line-b12-permission-matrix.en.html |  4 +-
+ docs/governance/line-b12-permission-matrix.en.md   |  9 +++--
+ docs/governance/line-b12-permission-matrix.th.html |  4 +-
+ docs/governance/line-b12-permission-matrix.th.md   |  9 +++--
+ .../line-outbound-phase0-session-report.en.html    | 10 ++---
+ .../line-outbound-phase0-session-report.en.md      | 12 +++---
+ .../line-outbound-phase0-session-report.th.html    | 10 ++---
+ .../line-outbound-phase0-session-report.th.md      | 12 +++---
+ docs/governance/line-p010-execute-survey.en.html   | 46 +++++++++++-----------
+ docs/governance/line-p010-execute-survey.en.md     | 38 +++++++++---------
+ docs/governance/line-p010-execute-survey.th.html   | 46 +++++++++++-----------
+ docs/governance/line-p010-execute-survey.th.md     | 41 ++++++++++---------
+ .../line-p010-integration-b12-followup.en.html     |  2 +-
+ .../line-p010-integration-b12-followup.en.md       |  2 +-
+ .../line-p010-integration-b12-followup.th.html     |  2 +-
+ .../line-p010-integration-b12-followup.th.md       | 11 ++++--
+ .../repair-intelligence-phase0-push-checklist.md   |  4 +-
+ supabase/config.toml                               |  2 +-
+ 59 files changed, 463 insertions(+), 204 deletions(-)
+utc_end: 2026-10-01T00:03:14Z
+exit: 0
+$ git diff --numstat a97c3c8479a5fcbff9fb134e0e661f7f0d828a8e
+utc_start: 2026-10-01T00:03:14Z
+25	1	.github/workflows/trust-kernel-verify.yml
+3	0	docs/governance/evidence/line-b12-catalog-fixture-2026-09-30/REPORT.en.html
+9	0	docs/governance/evidence/line-b12-catalog-fixture-2026-09-30/REPORT.en.md
+3	0	docs/governance/evidence/line-b12-catalog-fixture-2026-09-30/REPORT.th.html
+14	1	docs/governance/evidence/line-b12-catalog-fixture-2026-09-30/REPORT.th.md
+4	4	docs/governance/evidence/line-b12-catalog-fixture-2026-09-30/SHA256SUMS
+3	0	docs/governance/evidence/line-b12-monolith-catalog-attempt2-2026-09-30/REPORT.en.html
+9	0	docs/governance/evidence/line-b12-monolith-catalog-attempt2-2026-09-30/REPORT.en.md
+3	0	docs/governance/evidence/line-b12-monolith-catalog-attempt2-2026-09-30/REPORT.th.html
+20	2	docs/governance/evidence/line-b12-monolith-catalog-attempt2-2026-09-30/REPORT.th.md
+4	4	docs/governance/evidence/line-b12-monolith-catalog-attempt2-2026-09-30/SHA256SUMS
+3	0	docs/governance/evidence/line-ci-source-2026-09-30/REPORT.en.html
+9	0	docs/governance/evidence/line-ci-source-2026-09-30/REPORT.en.md
+3	0	docs/governance/evidence/line-ci-source-2026-09-30/REPORT.th.html
+13	1	docs/governance/evidence/line-ci-source-2026-09-30/REPORT.th.md
+4	4	docs/governance/evidence/line-ci-source-2026-09-30/SHA256SUMS
+7	4	docs/governance/evidence/line-p010-catalog-2026-09-30/REPORT.en.html
+14	4	docs/governance/evidence/line-p010-catalog-2026-09-30/REPORT.en.md
+7	4	docs/governance/evidence/line-p010-catalog-2026-09-30/REPORT.th.html
+15	4	docs/governance/evidence/line-p010-catalog-2026-09-30/REPORT.th.md
+4	4	docs/governance/evidence/line-p010-catalog-2026-09-30/SHA256SUMS
+3	0	docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/REPORT.en.html
+9	0	docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/REPORT.en.md
+3	0	docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/REPORT.th.html
+13	1	docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/REPORT.th.md
+4	4	docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/SHA256SUMS
+4	1	docs/governance/evidence/line-p010-evidence-followup-2026-09-30/REPORT.en.html
+11	1	docs/governance/evidence/line-p010-evidence-followup-2026-09-30/REPORT.en.md
+4	1	docs/governance/evidence/line-p010-evidence-followup-2026-09-30/REPORT.th.html
+17	2	docs/governance/evidence/line-p010-evidence-followup-2026-09-30/REPORT.th.md
+4	4	docs/governance/evidence/line-p010-evidence-followup-2026-09-30/SHA256SUMS
+4	1	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/REPORT.en.html
+10	1	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/REPORT.en.md
+4	1	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/REPORT.th.html
+10	1	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/REPORT.th.md
+4	4	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/SHA256SUMS
+7	4	docs/governance/evidence/line-p012-green-2026-09-30/REPORT.en.html
+13	4	docs/governance/evidence/line-p012-green-2026-09-30/REPORT.en.md
+7	4	docs/governance/evidence/line-p012-green-2026-09-30/REPORT.th.html
+13	4	docs/governance/evidence/line-p012-green-2026-09-30/REPORT.th.md
+4	4	docs/governance/evidence/line-p012-green-2026-09-30/SHA256SUMS
+2	2	docs/governance/line-b12-permission-matrix.en.html
+6	3	docs/governance/line-b12-permission-matrix.en.md
+2	2	docs/governance/line-b12-permission-matrix.th.html
+6	3	docs/governance/line-b12-permission-matrix.th.md
+5	5	docs/governance/line-outbound-phase0-session-report.en.html
+6	6	docs/governance/line-outbound-phase0-session-report.en.md
+5	5	docs/governance/line-outbound-phase0-session-report.th.html
+6	6	docs/governance/line-outbound-phase0-session-report.th.md
+23	23	docs/governance/line-p010-execute-survey.en.html
+19	19	docs/governance/line-p010-execute-survey.en.md
+23	23	docs/governance/line-p010-execute-survey.th.html
+22	19	docs/governance/line-p010-execute-survey.th.md
+1	1	docs/governance/line-p010-integration-b12-followup.en.html
+1	1	docs/governance/line-p010-integration-b12-followup.en.md
+1	1	docs/governance/line-p010-integration-b12-followup.th.html
+8	3	docs/governance/line-p010-integration-b12-followup.th.md
+2	2	docs/governance/repair-intelligence-phase0-push-checklist.md
+1	1	supabase/config.toml
+utc_end: 2026-10-01T00:03:14Z
+exit: 0

@@ -1,0 +1,82 @@
+CI remediation evidence run
+utc: 2026-10-01T00:02:59Z
+base_head: a97c3c8479a5fcbff9fb134e0e661f7f0d828a8e
+branch: codex/repair-intelligence-phase0-trust
+pinned_governance_linters: 55557d7f178dcbe00fec15cffb3061df668eaff8
+python: Python 3.14.2
+node: v22.21.1
+git: git version 2.52.0.windows.1
+pinned linter sha256 (and whether tools/ copies equal them, CRLF/LF aside):
+  lint_claims.py 6fbf0a0911e8458403d7d35910e650806fe750f05faef695923685da737bc164 local_copy=equal
+  lint_certifications.py 1740d22d5fcf88c7be307e53f35b15fee03f8ff964c609d294b05867be83d3d0 local_copy=equal
+  lint_allowlist.py 8cc6498f3e5bfd3fbc633bb816e8e42451dd6ef9b065b9b96c19fa72cc2a71fe local_copy=equal
+  claim_detect.py e7232a95994e0685b61388b1811901e21590277218f0e31252945b773f05ae1a local_copy=equal
+  verify_absence.py 5a12e03c6863d1eec0e8ac78afd59c869d700c7044fa174159c47caf6375007d local_copy=equal
+helper sha256:
+  e36c91ca0439e92c71a85b2a66a3fa01ed3ac4436d981878197a10d0fd2e1ea2 *amend_bundles.py
+  1ac63cf0e58a3d8531b7d6819a8f9b51172a8f5c91fed87ae07d7b0062e6bc04 *expand_survey.py
+  1f0349bfd83a7ac6fef18529ac10879b6da3460bbb29ed11286b745e287868cb *lint-explain.py
+  51b8587409944b597e9a27292a8d3b55c2955dfac7c4f551fc2e7529445ec4a5 *render_check.py
+  d9d8580df23ab3c06b39279247586b5c4e25064688e8dc6a4b0dbcde1688a65c *reseal.py
+  8f48a0ca8f12e91b9e151cd2a7dbbc58dd36d3042e79add4a9c90a706fb4b29a *run-ci-remediation.sh
+  5cce57013bd4cd3e647d70a93b8383eccb4b7a3a7d1161dddb0c5883ac0f053b *targets.txt
+tracked changes against base (git status --short, untracked excluded):
+   M .github/workflows/trust-kernel-verify.yml
+   M docs/governance/evidence/line-b12-catalog-fixture-2026-09-30/REPORT.en.html
+   M docs/governance/evidence/line-b12-catalog-fixture-2026-09-30/REPORT.en.md
+   M docs/governance/evidence/line-b12-catalog-fixture-2026-09-30/REPORT.th.html
+   M docs/governance/evidence/line-b12-catalog-fixture-2026-09-30/REPORT.th.md
+   M docs/governance/evidence/line-b12-catalog-fixture-2026-09-30/SHA256SUMS
+   M docs/governance/evidence/line-b12-monolith-catalog-attempt2-2026-09-30/REPORT.en.html
+   M docs/governance/evidence/line-b12-monolith-catalog-attempt2-2026-09-30/REPORT.en.md
+   M docs/governance/evidence/line-b12-monolith-catalog-attempt2-2026-09-30/REPORT.th.html
+   M docs/governance/evidence/line-b12-monolith-catalog-attempt2-2026-09-30/REPORT.th.md
+   M docs/governance/evidence/line-b12-monolith-catalog-attempt2-2026-09-30/SHA256SUMS
+   M docs/governance/evidence/line-ci-source-2026-09-30/REPORT.en.html
+   M docs/governance/evidence/line-ci-source-2026-09-30/REPORT.en.md
+   M docs/governance/evidence/line-ci-source-2026-09-30/REPORT.th.html
+   M docs/governance/evidence/line-ci-source-2026-09-30/REPORT.th.md
+   M docs/governance/evidence/line-ci-source-2026-09-30/SHA256SUMS
+   M docs/governance/evidence/line-p010-catalog-2026-09-30/REPORT.en.html
+   M docs/governance/evidence/line-p010-catalog-2026-09-30/REPORT.en.md
+   M docs/governance/evidence/line-p010-catalog-2026-09-30/REPORT.th.html
+   M docs/governance/evidence/line-p010-catalog-2026-09-30/REPORT.th.md
+   M docs/governance/evidence/line-p010-catalog-2026-09-30/SHA256SUMS
+   M docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/REPORT.en.html
+   M docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/REPORT.en.md
+   M docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/REPORT.th.html
+   M docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/REPORT.th.md
+   M docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/SHA256SUMS
+   M docs/governance/evidence/line-p010-evidence-followup-2026-09-30/REPORT.en.html
+   M docs/governance/evidence/line-p010-evidence-followup-2026-09-30/REPORT.en.md
+   M docs/governance/evidence/line-p010-evidence-followup-2026-09-30/REPORT.th.html
+   M docs/governance/evidence/line-p010-evidence-followup-2026-09-30/REPORT.th.md
+   M docs/governance/evidence/line-p010-evidence-followup-2026-09-30/SHA256SUMS
+   M docs/governance/evidence/line-p010-failclosed-green-2026-09-30/REPORT.en.html
+   M docs/governance/evidence/line-p010-failclosed-green-2026-09-30/REPORT.en.md
+   M docs/governance/evidence/line-p010-failclosed-green-2026-09-30/REPORT.th.html
+   M docs/governance/evidence/line-p010-failclosed-green-2026-09-30/REPORT.th.md
+   M docs/governance/evidence/line-p010-failclosed-green-2026-09-30/SHA256SUMS
+   M docs/governance/evidence/line-p012-green-2026-09-30/REPORT.en.html
+   M docs/governance/evidence/line-p012-green-2026-09-30/REPORT.en.md
+   M docs/governance/evidence/line-p012-green-2026-09-30/REPORT.th.html
+   M docs/governance/evidence/line-p012-green-2026-09-30/REPORT.th.md
+   M docs/governance/evidence/line-p012-green-2026-09-30/SHA256SUMS
+   M docs/governance/line-b12-permission-matrix.en.html
+   M docs/governance/line-b12-permission-matrix.en.md
+   M docs/governance/line-b12-permission-matrix.th.html
+   M docs/governance/line-b12-permission-matrix.th.md
+   M docs/governance/line-outbound-phase0-session-report.en.html
+   M docs/governance/line-outbound-phase0-session-report.en.md
+   M docs/governance/line-outbound-phase0-session-report.th.html
+   M docs/governance/line-outbound-phase0-session-report.th.md
+   M docs/governance/line-p010-execute-survey.en.html
+   M docs/governance/line-p010-execute-survey.en.md
+   M docs/governance/line-p010-execute-survey.th.html
+   M docs/governance/line-p010-execute-survey.th.md
+   M docs/governance/line-p010-integration-b12-followup.en.html
+   M docs/governance/line-p010-integration-b12-followup.en.md
+   M docs/governance/line-p010-integration-b12-followup.th.html
+   M docs/governance/line-p010-integration-b12-followup.th.md
+   M docs/governance/repair-intelligence-phase0-push-checklist.md
+   M supabase/config.toml

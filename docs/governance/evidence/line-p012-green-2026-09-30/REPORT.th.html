@@ -17,19 +17,19 @@
 </tr></thead><tbody>
 <tr>
 <td>supabase/migrations/0199_line_oa_restrict_definer_execute.sql</td>
-<td>revoke EXECUTE บน 20 identity ตาม matrix โดยไม่ grant เพิ่ม หยุดเมื่อไม่พบ identity หรือพบ overload ที่ไม่ได้จัดประเภท (55000) และ raise 42501 พร้อม rollback หากหลัง revoke สิทธิ์ที่มีผลจริงต่างจากเป้าหมาย หรือ PUBLIC ยังมี EXECUTE</td>
+<td>revoke EXECUTE บน 20 identity ตาม matrix โดยไม่ grant เพิ่ม หยุดเมื่อไม่พบ identity หรือพบ overload ที่ไม่ได้จัดประเภท (55000, <code>0199_line_oa_restrict_definer_execute.sql:66</code>) และ raise 42501 พร้อม rollback หากหลัง revoke สิทธิ์ที่มีผลจริงต่างจากเป้าหมาย หรือ PUBLIC ยังมี EXECUTE (<code>0199_line_oa_restrict_definer_execute.sql:111</code>)</td>
 </tr>
 <tr>
 <td>supabase/tests/line_oa_definer_execute_matrix.sql</td>
-<td>ใหม่ 82 assertion: matrix และ PUBLIC, การเรียกจริง 29 ครั้งที่ต้องถูกปฏิเสธที่ ACL ของฟังก์ชัน, ไม่มีผลข้างเคียง, RPC ที่คงไว้ยังเรียกได้ และตรวจเส้นทางที่คงไว้จากข้อมูลจริง</td>
+<td>ใหม่ 82 assertion: matrix และ PUBLIC, การเรียกจริง 29 ครั้งที่ต้องถูกปฏิเสธที่ ACL ของฟังก์ชัน, ไม่มีผลข้างเคียง (<code>line_oa_definer_execute_matrix.sql:200</code>), RPC ที่คงไว้ยังเรียกได้ และตรวจเส้นทางที่คงไว้จากข้อมูลจริง</td>
 </tr>
 <tr>
 <td>supabase/tests/line_oa_definer_execute_fail_closed.sql</td>
-<td>ใหม่ 23 assertion: สิทธิ์สืบทอด, grantor อื่น, สิทธิ์ที่ต้องคงหายไปเพราะมาจาก PUBLIC, overload ที่ไม่ได้จัดประเภท และการรันปกติ</td>
+<td>ใหม่ 23 assertion: สิทธิ์สืบทอด, grantor อื่น, สิทธิ์ที่ต้องคงหายไปเพราะมาจาก PUBLIC (<code>line_oa_definer_execute_fail_closed.sql:204</code>), overload ที่ไม่ได้จัดประเภท และการรันปกติ</td>
 </tr>
 <tr>
 <td>supabase/tests/line_outbound_claim_record.sql</td>
-<td>assertion 23 เปลี่ยนเป็นตรวจว่า authenticated ไม่มี EXECUTE บน recorder แล้ว (มติเจ้าของ: service-only)</td>
+<td>assertion 23 เปลี่ยนเป็นตรวจว่า authenticated ไม่มี EXECUTE บน recorder แล้ว (มติเจ้าของ: service-only, <code>line_outbound_claim_record.sql:429</code>)</td>
 </tr>
 <tr>
 <td>supabase/tests/line_oa_client_write_revoke.sql</td>
@@ -122,6 +122,9 @@
 <ul><li>caller register ของ ops (ผู้เรียกภายนอกหรือเรียกด้วยมือ, principal ของ cron, เจ้าหน้าที่ที่บันทึกผลเอง) และความเห็นของเจ้าของ manufacturing เรื่อง fn_prod_curated ทั้งสองยังเป็นสมมติฐานจนกว่าจะได้คำตอบ</li><li>Production: ยังไม่ทราบ grant, grantor, owner และการเปิดผ่าน PostgREST การตรวจ production catalog แบบอ่านอย่างเดียวยังเป็นด่านแยก</li><li>GitHub Actions: ยังไม่ได้ push และ suite containment จะยังล้มที่นั่น</li><li>ฟังก์ชันที่สร้างใหม่หรือสร้างซ้ำภายหลังยังได้ EXECUTE ตาม default ซึ่งเป็นการตัดสินนโยบายแยก</li></ul>
 <h2>ไฟล์</h2>
 <p>ผลดิบของแต่ละรอบอยู่ใน SHA256SUMS.run และ REPLAY.txt ระบุคำสั่งที่รันจริง gate-p012.py และ commit-p012.sh คือ gate และ wrapper ที่ใช้ commit ส่วน transcript อยู่ใน docs/governance/evidence/line-p012-commit-2026-09-30/</p>
+<h2>การแก้ไขหลังปิดผนึก (1 ตุลาคม 2026)</h2>
+<p>claim linter ที่ pin ไว้แจ้งประโยคในรายงานนี้ใน GitHub Actions รอบแรกของ branch (run 36748427202) เจ้าของอนุมัติให้แก้ถ้อยคำในรายงานแบบเปิดเผย การแก้ไขนี้เปลี่ยนเฉพาะถ้อยคำและการอ้างอิง ผล ตัวเลข และข้อสรุปข้างบนคงเดิม</p>
+<ul><li>เพิ่มการอ้าง source บรรทัดจริงในตารางสิ่งที่เปลี่ยน: 0199 บรรทัด 66 และ 111, matrix suite บรรทัด 200, fail-closed suite บรรทัด 204 และ claim-record suite บรรทัด 429</li><li>ผลดิบและ <code>SHA256SUMS.run</code> คงเดิม ส่วน <code>SHA256SUMS</code> เปลี่ยนเฉพาะบรรทัดของ REPORT ทั้ง 4 ไฟล์</li><li>hash ของ REPORT ก่อนแก้และบันทึกการเปลี่ยนทั้งหมดอยู่ใน <code>docs/governance/evidence/line-ci-remediation-2026-10-01/</code></li><li>การแก้ไขนี้ต้องให้ผู้ตรวจอิสระตรวจซ้ำ</li></ul>
 </main>
 </body>
 </html>

@@ -45,7 +45,7 @@ Mutant คือ 0198 ที่ตัดเฉพาะ loop ตรวจสิ�
 
 พบปัญหาเดิม 2 เรื่องที่ไม่ได้แก้ในรอบนี้:
 
-1. repair_phase0_containment.sql ตรวจ rpc_factory_job_record_packet แบบ 12 argument ซึ่งมีเฉพาะใน 0170_factory_jobs_list_real_fields.sql บน origin/main และ branch นี้ไม่มี migration นั้น บน GitHub Actions ขั้น pgTAP จะหยุดที่ suite นี้ จึงไม่ได้รัน suite LINE และอีก 3 ขั้นถัดไปจะถูกข้าม CI จึงยังใช้เป็นหลักฐานปิด P0-10 ไม่ได้ เรื่องนี้ต้องแก้ผ่านมติรวม branch (PRD §8 ข้อ 7) หรือการแก้ที่อนุมัติแยก
+1. repair_phase0_containment.sql ตรวจ rpc_factory_job_record_packet แบบ 12 argument ซึ่งมีเฉพาะใน 0170_factory_jobs_list_real_fields.sql บน origin/main และ branch นี้ไม่มี migration นั้น (`07-ci-local/full/ci-step-1.log:411`) บน GitHub Actions ขั้น pgTAP จะหยุดที่ suite นี้ จึงไม่ได้รัน suite LINE และอีก 3 ขั้นถัดไปจะถูกข้าม CI จึงยังใช้เป็นหลักฐานปิด P0-10 ไม่ได้ เรื่องนี้ต้องแก้ผ่านมติรวม branch (PRD §8 ข้อ 7) หรือการแก้ที่อนุมัติแยก
 2. สคริปต์ "Assemble evidence" นับ suite ที่หยุดกลางทางว่าผ่าน (ok 6, not ok 0, plan 8) เพราะไม่ได้เทียบผลกับ plan
 
 ## สิ่งที่ยังไม่ยืนยัน
@@ -57,3 +57,12 @@ Mutant คือ 0198 ที่ตัดเฉพาะ loop ตรวจสิ�
 ## ไฟล์
 
 ผลดิบอยู่ใน SHA256SUMS.run ของแต่ละชุด และ REPLAY.txt ระบุคำสั่งที่รันจริง gate-p010-followup.py และ commit-p010-followup.sh คือ gate และ wrapper ที่ใช้ commit ส่วน transcript อยู่ใน docs/governance/evidence/line-p010-followup-commit-2026-09-30/ gate อนุญาตค่าที่ไม่ใช่ความลับเพียงค่าเดียว คือ DSN ค่าเริ่มต้นสำหรับเครื่อง local ตามเอกสารของ Supabase CLI ใน db-verify.yml และสำเนาที่บันทึกไว้
+
+## การแก้ไขหลังปิดผนึก (1 ตุลาคม 2026)
+
+claim linter ที่ pin ไว้แจ้งประโยคในรายงานนี้ใน GitHub Actions รอบแรกของ branch (run 36748427202) เจ้าของอนุมัติให้แก้ถ้อยคำในรายงานแบบเปิดเผย การแก้ไขนี้เปลี่ยนเฉพาะถ้อยคำและการอ้างอิง ผล ตัวเลข และข้อสรุปข้างบนคงเดิม
+
+- เพิ่มการอ้าง `07-ci-local/full/ci-step-1.log:411` (psql error ของฟังก์ชัน 12 argument) ให้ข้อความว่า branch นี้ไม่มี 0170
+- ผลดิบและ `SHA256SUMS.run` คงเดิม ส่วน `SHA256SUMS` เปลี่ยนเฉพาะบรรทัดของ REPORT ทั้ง 4 ไฟล์
+- hash ของ REPORT ก่อนแก้และบันทึกการเปลี่ยนทั้งหมดอยู่ใน `docs/governance/evidence/line-ci-remediation-2026-10-01/`
+- การแก้ไขนี้ต้องให้ผู้ตรวจอิสระตรวจซ้ำ

@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LINE CI remediation — first Actions run</title>
+  <style>:root{color-scheme:light;--ink:#17202a;--muted:#5b6470;--line:#d9e1ea;--paper:#fff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#e9fbf7;--warn:#92400e;--warn-soft:#fff7ed}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#edf1f5;color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.62}main{max-width:1120px;min-height:100vh;margin:0 auto;padding:48px 58px 76px;background:var(--paper);box-shadow:0 24px 70px rgba(15,23,42,.08)}h1,h2,h3,h4{line-height:1.22}h1{margin:0 0 14px;font-size:clamp(1.65rem,3.2vw,2.45rem)}h2{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);font-size:1.42rem}h3{margin-top:28px;font-size:1.13rem;color:var(--accent)}h4{margin-top:22px}p{margin:13px 0}a{color:#0b63ce}blockquote{margin:22px 0;padding:16px 20px;border-left:5px solid var(--accent);background:var(--accent-soft);font-weight:650}blockquote p{margin:6px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#edf2f7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}pre{overflow:auto;padding:18px 20px;border-radius:8px;background:#17212b;color:#edf6ff;line-height:1.5}pre code{padding:0;background:transparent;color:inherit}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.94rem}th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}th{background:var(--soft)}tr:nth-child(even) td{background:#fbfcfe}hr{border:0;border-top:1px solid var(--line);margin:26px 0}ol li,ul li{margin:7px 0}@media (max-width:760px){main{padding:26px 18px 50px}}@media print{body{background:#fff}main{box-shadow:none;padding:0}}</style>
+</head>
+<body>
+<main>
+<h1>CI remediation for the first GitHub Actions run of the LINE branch</h1>
+<p>Date: 1 October 2026 (Asia/Bangkok; runner times are UTC). Base: a97c3c8479a5fcbff9fb134e0e661f7f0d828a8e on codex/repair-intelligence-phase0-trust. Status: BUILT LOCALLY, awaiting independent review and the next CI run. This round changes documents, one workflow job and one config line; it changes no migration, test or application code.</p>
+<h2>Owner decisions (1 October 2026)</h2>
+<ul><li>Sealed evidence: option A. Amend the REPORT files openly, keep raw outputs and <code>SHA256SUMS.run</code>, regenerate only the REPORT lines of the final <code>SHA256SUMS</code>, and have the independent reviewer re-check.</li><li>Push: approved before the independent review of a97c3c847 finishes.</li><li>Repair Phase 0 items: the builder (this session) does them: enable storage in <code>supabase/config.toml</code> (one line, not the whole main config), the push-checklist certification sentence, and the shadow E2E secrets and environment.</li></ul>
+<h2>Why CI failed (runs 36748427202 and 36748427203 at a97c3c847)</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Check</th>
+<th>Cause</th>
+<th>From the LINE work?</th>
+</tr></thead><tbody>
+<tr>
+<td>claim linters</td>
+<td><code>lint_claims</code> reported 38 unevidenced absence claims in 14 LINE documents; <code>lint_certifications</code> reported 2 certifications</td>
+<td>39 of 40 yes; the push-checklist certification predates the LINE documents</td>
+</tr>
+<tr>
+<td>edge + pgTAP, DB Verify (<code>trust_kernel_containment</code> 8–9)</td>
+<td><code>supabase/config.toml</code> had storage disabled, so <code>storage.objects</code> was absent when 0184 ran and its guarded policy block (<code>0184_trust_kernel_legacy_containment.sql:98</code>) was skipped</td>
+<td>No</td>
+</tr>
+<tr>
+<td>DB Verify (<code>repair_phase0_containment</code>)</td>
+<td>the 12-argument function comes from 0170 on main (PRD §8 Q7)</td>
+<td>No; unchanged here</td>
+</tr>
+<tr>
+<td>shadow E2E</td>
+<td><code>reports/</code> was not created before the redirect, and the five E2E secrets are empty</td>
+<td>No</td>
+</tr>
+<tr>
+<td>final gate, evidence self-verify</td>
+<td>follow from the failures above and the unconfigured signer (fail-closed by design)</td>
+<td>No</td>
+</tr>
+</tbody></table></div>
+<p>The same DB Verify run executed all five LINE suites with plan-complete results: 107/107, 133/133, 28/28, 82/82 and 23/23, claim race overlap 0. That is GitHub Actions evidence for a97c3c847 only; it is not production evidence and not an independent review.</p>
+<h2>What changed</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Path</th>
+<th>Change</th>
+</tr></thead><tbody>
+<tr>
+<td>4 governance documents (TH and EN, with HTML)</td>
+<td>permission matrix, session report, EXECUTE survey and integration follow-up: citations, Thai sentence boundaries and two rewordings (ledger below)</td>
+</tr>
+<tr>
+<td>8 sealed evidence bundles</td>
+<td>REPORT.th.md and REPORT.en.md amended, HTML re-rendered, 4 REPORT lines of <code>SHA256SUMS</code> regenerated; <code>SHA256SUMS.run</code> and raw outputs unchanged</td>
+</tr>
+<tr>
+<td><code>docs/governance/repair-intelligence-phase0-push-checklist.md</code></td>
+<td>the acceptance-condition sentence is worded as a condition</td>
+</tr>
+<tr>
+<td><code>.github/workflows/trust-kernel-verify.yml</code></td>
+<td>shadow E2E job: a first step fails with the names of missing secrets (never values, <code>trust-kernel-verify.yml:235</code>), and the run step creates <code>reports/</code> before writing (<code>trust-kernel-verify.yml:249</code>)</td>
+</tr>
+<tr>
+<td><code>supabase/config.toml</code></td>
+<td><code>[storage] enabled = true</code> (one line)</td>
+</tr>
+</tbody></table></div>
+<p><code>tools/.lint_allowlist</code> is unchanged (<code>02b-allowlist-unchanged.txt</code>), so the linters pass without new grandfathering.</p>
+<h2>Finding ledger</h2>
+<p>Class A: a claim that a findable thing is absent. Class B: wording the detector reads as a claim that is not one (behaviour, requirement, scope, idiom, type name, acceptance condition). Bundle paths are under <code>docs/governance/evidence/</code>.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>#</th>
+<th>Finding at the base</th>
+<th>Class</th>
+<th>Action</th>
+</tr></thead><tbody>
+<tr>
+<td>1</td>
+<td><code>line-b12-catalog-fixture-2026-09-30/REPORT.th.md:13</code></td>
+<td>B requirement</td>
+<td>Thai sentences on separate source lines</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>line-b12-monolith-catalog-attempt2-2026-09-30/REPORT.th.md:9</code></td>
+<td>A overloads (unnamed), backed by the bundle catalog</td>
+<td>Thai sentences on separate source lines</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>line-b12-monolith-catalog-attempt2-2026-09-30/REPORT.th.md:27</code></td>
+<td>B scope</td>
+<td>Thai sentences on separate source lines</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>line-ci-source-2026-09-30/REPORT.th.md:21</code></td>
+<td>A 12-argument function (unnamed)</td>
+<td>Thai sentences on separate source lines</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>line-p010-catalog-2026-09-30/REPORT.th.md:7</code></td>
+<td>B scope</td>
+<td>split, and <code>02-migrations-applied.txt:192</code> cited</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>line-p010-catalog-2026-09-30/REPORT.th.md:39</code></td>
+<td>A PUBLIC write grant, column ACL</td>
+<td><code>08-analysis.txt:48</code> and <code>08-analysis.txt:99</code> cited</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>line-p010-catalog-2026-09-30/REPORT.th.md:42</code></td>
+<td>A overloads</td>
+<td><code>08-analysis.txt:185</code> cited</td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>line-p010-catalog-2026-09-30/REPORT.th.md:45</code></td>
+<td>A cascade</td>
+<td><code>08-analysis.txt:237</code> cited</td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>line-p010-ci-hardening-green-2026-09-30/REPORT.th.md:11</code></td>
+<td>B validator requirement</td>
+<td>Thai sentences on separate source lines</td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>line-p010-evidence-followup-2026-09-30/REPORT.th.md:9</code></td>
+<td>A provenance fields</td>
+<td>split, and <code>07-ci-local/full/db-verify-evidence.json:14</code> cited</td>
+</tr>
+<tr>
+<td>11</td>
+<td><code>line-p010-evidence-followup-2026-09-30/REPORT.th.md:38</code></td>
+<td>A field disclosed at that time</td>
+<td>Thai sentences on separate source lines</td>
+</tr>
+<tr>
+<td>12</td>
+<td><code>line-p010-failclosed-green-2026-09-30/REPORT.en.md:48</code></td>
+<td>A migration 0170</td>
+<td><code>07-ci-local/full/ci-step-1.log:411</code> cited</td>
+</tr>
+<tr>
+<td>13</td>
+<td><code>line-p010-failclosed-green-2026-09-30/REPORT.th.md:48</code></td>
+<td>A migration 0170</td>
+<td><code>07-ci-local/full/ci-step-1.log:411</code> cited</td>
+</tr>
+<tr>
+<td>14</td>
+<td><code>line-p012-green-2026-09-30/REPORT.th.md:9</code></td>
+<td>B code behaviour</td>
+<td><code>0199_line_oa_restrict_definer_execute.sql:66</code> and <code>:111</code> cited</td>
+</tr>
+<tr>
+<td>15</td>
+<td><code>line-p012-green-2026-09-30/REPORT.th.md:10</code></td>
+<td>B test description</td>
+<td><code>line_oa_definer_execute_matrix.sql:200</code> cited</td>
+</tr>
+<tr>
+<td>16</td>
+<td><code>line-p012-green-2026-09-30/REPORT.th.md:11</code></td>
+<td>B test description</td>
+<td><code>line_oa_definer_execute_fail_closed.sql:204</code> cited</td>
+</tr>
+<tr>
+<td>17</td>
+<td><code>line-p012-green-2026-09-30/REPORT.th.md:12</code></td>
+<td>B test description</td>
+<td><code>line_outbound_claim_record.sql:429</code> cited</td>
+</tr>
+<tr>
+<td>18</td>
+<td><code>line-b12-permission-matrix.th.md:9</code></td>
+<td>B code behaviour</td>
+<td>0199 lines 66, 75 and 111 cited (TH and EN)</td>
+</tr>
+<tr>
+<td>19</td>
+<td><code>line-b12-permission-matrix.th.md:10</code></td>
+<td>B test description</td>
+<td><code>line_outbound_claim_record.sql:429</code> cited (TH and EN)</td>
+</tr>
+<tr>
+<td>20</td>
+<td><code>line-b12-permission-matrix.th.md:48</code></td>
+<td>B policy</td>
+<td>paragraph turned into one list item per caller class (TH and EN)</td>
+</tr>
+<tr>
+<td>21</td>
+<td><code>line-outbound-phase0-session-report.en.md:75</code></td>
+<td>A customer consent column and check</td>
+<td>table definition <code>00000000000002_line_oa_schema.sql:108</code>, staff column <code>0088_identity_binding_lifecycle.sql:10</code> and a re-check command at a97c3c847 (TH and EN)</td>
+</tr>
+<tr>
+<td>22</td>
+<td><code>line-outbound-phase0-session-report.th.md:25</code></td>
+<td>B idiom</td>
+<td>em dash as in the English edition</td>
+</tr>
+<tr>
+<td>23</td>
+<td><code>line-outbound-phase0-session-report.th.md:75</code></td>
+<td>A as row 21</td>
+<td>as row 21</td>
+</tr>
+<tr>
+<td>24</td>
+<td><code>line-outbound-phase0-session-report.th.md:100</code></td>
+<td>B code behaviour</td>
+<td><code>0193_line_outbound_claim_and_record.sql:235</code> cited (TH and EN)</td>
+</tr>
+<tr>
+<td>25</td>
+<td><code>line-outbound-phase0-session-report.th.md:103</code></td>
+<td>B type name</td>
+<td>type written as code (TH and EN)</td>
+</tr>
+<tr>
+<td>26</td>
+<td><code>line-outbound-phase0-session-report.th.md:110</code></td>
+<td>A cron schedule in 0193–0196</td>
+<td>re-check command at a97c3c847 (TH and EN)</td>
+</tr>
+<tr>
+<td>27</td>
+<td><code>line-outbound-phase0-session-report.th.md:159</code></td>
+<td>A a repository cron for the sender</td>
+<td>re-check command at a97c3c847; &quot;definitively&quot; removed from the English edition</td>
+</tr>
+<tr>
+<td>28</td>
+<td><code>line-p010-execute-survey.th.md:18</code></td>
+<td>A ALTER DEFAULT PRIVILEGES</td>
+<td>split as in the English edition, re-check command at a97c3c847 (TH and EN)</td>
+</tr>
+<tr>
+<td>29–35</td>
+<td><code>line-p010-execute-survey.th.md</code> lines 24, 27, 30, 31, 32, 33 and 34</td>
+<td>A callers, grants or guards per the survey search</td>
+<td>shorthand migration citations in the 18-row routine table expanded to resolvable file:line (TH and EN); cited lines checked</td>
+</tr>
+<tr>
+<td>36</td>
+<td><code>line-p010-integration-b12-followup.th.md:15</code></td>
+<td>B own action</td>
+<td>split as in the English edition</td>
+</tr>
+<tr>
+<td>37</td>
+<td><code>line-p010-integration-b12-followup.th.md:62</code></td>
+<td>A hedged scan result</td>
+<td>scanned source commit 3bdd6f3e5 added (TH and EN)</td>
+</tr>
+<tr>
+<td>38</td>
+<td><code>line-p010-integration-b12-followup.th.md:64</code></td>
+<td>A hedged scan result</td>
+<td>split as in the English edition</td>
+</tr>
+<tr>
+<td>39</td>
+<td><code>line-outbound-phase0-session-report.en.md:146</code> (certification)</td>
+<td>B &quot;passes&quot; means forwards</td>
+<td>reworded to &quot;forwards&quot;</td>
+</tr>
+<tr>
+<td>40</td>
+<td><code>repair-intelligence-phase0-push-checklist.md:61</code> (certification)</td>
+<td>B acceptance condition</td>
+<td>reworded as a condition</td>
+</tr>
+</tbody></table></div>
+<p>Thai line splits change only the Markdown source: the renderer joins paragraph lines with one space, so the rendered text of those paragraphs is unchanged (<code>05-render-check.txt</code>; for the four split-only bundles the HTML diff is the appended amendment section alone).</p>
+<h2>Evidence in this bundle</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>File</th>
+<th>What it shows</th>
+</tr></thead><tbody>
+<tr>
+<td><code>00-context.txt</code></td>
+<td>base, tool versions, pinned linter hashes (the local copies equal them, CRLF/LF aside), tracked changes</td>
+</tr>
+<tr>
+<td><code>01a-linters-before.txt</code>, <code>01b-findings-before.txt</code></td>
+<td>the pinned linters on the base tree reproduce the CI failure: 38 and 2 findings, both exit 1; each finding with marker and sentence</td>
+</tr>
+<tr>
+<td><code>02a-linters-after.txt</code>, <code>02b-allowlist-unchanged.txt</code></td>
+<td>the pinned linters on the working tree: both exit 0, allowlisted debt unchanged (15 and 1)</td>
+</tr>
+<tr>
+<td><code>03-reproduce-amendments.txt</code></td>
+<td><code>tools/amend_bundles.py</code> applied to the base bytes reproduces all 16 amended REPORT files byte-for-byte; the survey routine tables equal <code>tools/expand_survey.py</code> output</td>
+</tr>
+<tr>
+<td><code>04-reseal-check.txt</code></td>
+<td><code>SHA256SUMS.run</code> of every amended bundle is identical to the base, <code>sha256sum -c</code> succeeds for each <code>SHA256SUMS</code> and <code>SHA256SUMS.run</code>, and each <code>SHA256SUMS</code> differs from the base in its 4 REPORT lines only</td>
+</tr>
+<tr>
+<td><code>05-render-check.txt</code></td>
+<td>all 24 changed HTML files equal the repository renderer output of their Markdown</td>
+</tr>
+<tr>
+<td><code>06-workflow-config.txt</code></td>
+<td>both workflows parse; the E2E preflight is the first step and reads the same five secret names as the run step; <code>[storage].enabled</code> is true and the config diff is one line</td>
+</tr>
+<tr>
+<td><code>07-preflight-simulation.txt</code></td>
+<td>the preflight script taken from the YAML, run with placeholder values: all unset gives exit 1 and five names, all set gives exit 0, one unset names only that secret, and no value is printed (<code>07-preflight-simulation.txt:4</code> to line 6)</td>
+</tr>
+<tr>
+<td><code>08-repair-phase0-checks.txt</code></td>
+<td>Repair Phase 0 document verifier, its tests (12 of 12) and the final-gate self-test all exit 0</td>
+</tr>
+<tr>
+<td><code>09-diff.txt</code>, <code>10-credential-scan.txt</code></td>
+<td>change set against the base; credential scan with positive controls (one reported exception: the unchanged local Supabase connection string at line 189 of the workflow, identical in the base)</td>
+</tr>
+<tr>
+<td><code>11-gate-negative-controls.txt</code>, <code>gate-ci-remediation.py</code></td>
+<td>the commit gate accepts the approved change set and rejects six deliberate violations, each in a private index: an extra path, a changed <code>SHA256SUMS.run</code>, a changed raw output, a new sentence the claim linter must flag, a config change beyond the storage line, and a credential-shaped URI</td>
+</tr>
+</tbody></table></div>
+<p>The commit goes through <code>commit-ci-remediation.sh</code>, which stages only the approved paths, runs the gate on the staged blobs, and commits only on exit 0 together with a transcript in <code>docs/governance/evidence/line-ci-remediation-commit-2026-10-01/</code>.</p>
+<h2>Limits and what remains open</h2>
+<ul><li>Storage: the Supabase CLI is not installed here, so the config change is untested locally under <code>supabase start</code>. A throwaway stack with storage-api already ran <code>trust_kernel_containment</code> 16/16 (<code>line-p012-green-2026-09-30/07b-ci-suite-runner/trust_kernel_containment.tap</code>). The next CI run is the test.</li><li>Shadow E2E: this session cannot provide the environment. The five secrets are credentials and must be set by the owner in the repository settings; the stack they point to needs a deployment, which is not approved. Until then the E2E job and the final gate stay red, now with a message naming the missing secrets.</li><li><code>repair_phase0_containment</code> still needs migration 0170 from main (PRD §8 Q7), so DB Verify and edge + pgTAP stay red on that suite.</li><li>Pull request #133 has merge conflicts, so the main-branch <code>pull_request</code> workflows have not run on it; only push-triggered workflows have.</li><li>The amended bundles include reviewer-accepted evidence (for example da252d18a); each amendment needs re-review.</li></ul>
+<h2>Runner history</h2>
+<p>Three earlier runs of the runner in this round were set aside outside the repository. Run 1 called the WSL bash for the preflight simulation (exit 127), and its credential scan flagged the pre-existing local connection string. Run 2 still called the WSL bash. Both were runner defects, fixed in <code>tools/run-ci-remediation.sh</code> (explicit bash path; a narrow exception that is always reported). Run 3 passed every step but its runner carried an inaccurate comment about the cause of runs 1 and 2; the comment was corrected and the runner re-run. This bundle holds run 4, in which all 17 recorded steps exit 0.</p>
+<p>The first commit attempt through the wrapper was blocked by the gate: the negative-control script held a credential-shaped probe URI as a literal. Nothing was committed and the index was restored. The probe is now assembled at run time, the controls were re-run (<code>11-gate-negative-controls.txt</code>), and the bundle was resealed. The second attempt was also blocked by the gate, because the Thai edition of this paragraph put a negation and a file name in one sentence; the sentences were split before the third attempt.</p>
+</main>
+</body>
+</html>

@@ -1,0 +1,44 @@
+$ reseal_check
+utc_start: 2026-10-01T00:03:06Z
+line-b12-catalog-fixture-2026-09-30: no SHA256SUMS.run in this bundle
+line-b12-monolith-catalog-attempt2-2026-09-30: SHA256SUMS.run identical to a97c3c8479a5fcbff9fb134e0e661f7f0d828a8e: True
+line-ci-source-2026-09-30: SHA256SUMS.run identical to a97c3c8479a5fcbff9fb134e0e661f7f0d828a8e: True
+line-p010-catalog-2026-09-30: SHA256SUMS.run identical to a97c3c8479a5fcbff9fb134e0e661f7f0d828a8e: True
+line-p010-ci-hardening-green-2026-09-30: SHA256SUMS.run identical to a97c3c8479a5fcbff9fb134e0e661f7f0d828a8e: True
+line-p010-evidence-followup-2026-09-30: SHA256SUMS.run identical to a97c3c8479a5fcbff9fb134e0e661f7f0d828a8e: True
+line-p010-failclosed-green-2026-09-30: SHA256SUMS.run identical to a97c3c8479a5fcbff9fb134e0e661f7f0d828a8e: True
+line-p012-green-2026-09-30: SHA256SUMS.run identical to a97c3c8479a5fcbff9fb134e0e661f7f0d828a8e: True
+RESULT: PASS
+== docs/governance/evidence/line-b12-catalog-fixture-2026-09-30
+SHA256SUMS: all OK
+SHA256SUMS lines changed vs base: 4	4
+== docs/governance/evidence/line-b12-monolith-catalog-attempt2-2026-09-30
+SHA256SUMS: all OK
+SHA256SUMS.run: all OK
+SHA256SUMS lines changed vs base: 4	4
+== docs/governance/evidence/line-ci-source-2026-09-30
+SHA256SUMS: all OK
+SHA256SUMS.run: all OK
+SHA256SUMS lines changed vs base: 4	4
+== docs/governance/evidence/line-p010-catalog-2026-09-30
+SHA256SUMS: all OK
+SHA256SUMS.run: all OK
+SHA256SUMS lines changed vs base: 4	4
+== docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30
+SHA256SUMS: all OK
+SHA256SUMS.run: all OK
+SHA256SUMS lines changed vs base: 4	4
+== docs/governance/evidence/line-p010-evidence-followup-2026-09-30
+SHA256SUMS: all OK
+SHA256SUMS.run: all OK
+SHA256SUMS lines changed vs base: 4	4
+== docs/governance/evidence/line-p010-failclosed-green-2026-09-30
+SHA256SUMS: all OK
+SHA256SUMS.run: all OK
+SHA256SUMS lines changed vs base: 4	4
+== docs/governance/evidence/line-p012-green-2026-09-30
+SHA256SUMS: all OK
+SHA256SUMS.run: all OK
+SHA256SUMS lines changed vs base: 4	4
+utc_end: 2026-10-01T00:03:08Z
+exit: 0

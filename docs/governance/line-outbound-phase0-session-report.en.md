@@ -72,7 +72,7 @@ The findings were recorded as a new PRD — Thai `docs/PRD-LINE-OA.th.md` · Eng
 
 ### 2.4 📝 Spec only
 
-- **Customer-side consent** — no column exists at all, and no pre-send consent check anywhere (staff have `identity_binding.consent_at`, `0088:10`)
+- **Customer-side consent** — `line_oa_customer_identity` (`00000000000002_line_oa_schema.sql:108`) has no consent column, and no pre-send consent check exists (staff have `identity_binding.consent_at` at `0088_identity_binding_lifecycle.sql:10`; re-checked 2026-10-01 at `a97c3c847`: `git grep -il consent -- supabase/migrations supabase/functions` lists only the staff files 0088, 0105 and `line-login` plus marketing text in 0152)
 - Admin UI for message templates (today templates are seeded by migration only)
 
 ### 2.5 Correcting previously overstated records
@@ -97,17 +97,17 @@ The findings were recorded as a new PRD — Thai `docs/PRD-LINE-OA.th.md` · Eng
 - **B1 duplicate sends** — `claimPending` now calls `rpc_claim_line_outbound_batch` (`index.ts:676-687`); claims use `FOR UPDATE SKIP LOCKED` with timeout-based reclaim plus `claim_token` fencing so a stale lease holder cannot overwrite the current claimant.
 - **B2 service role** — service context is detected from the **SQL role** (`current_setting('role')`), not the JWT, so forged JWT claims fail; the human path (governance/site access) is not relaxed at all.
 - **B3 group rows** — LEFT JOIN, vertical from `line_groups` with the 0097 `monolith` fallback, NULL site in the audit row.
-- **B4 transition guard** — only a still-`pending` row can be recorded; a finished row returns `recorded=false` with no duplicate audit.
+- **B4 transition guard** — only a still-`pending` row can be recorded; a finished row returns `recorded=false` with no duplicate audit (`0193_line_outbound_claim_and_record.sql:235`).
 - **B5 / P0-6 retry** — transient (network/timeout/5xx/429/408/lookup errors) is separated from permanent (genuinely absent config, inactive template, slot mismatch, other 4xx), with exponential backoff and a 5-attempt bound.
 - **P0-5** — `X-Line-Retry-Key = outbound row id` on every push type (text/flex/image); reply is untouched because reply tokens are single-use.
-- **Two timezone defects that would have been severe** — `next_attempt_at` and `sent_at` were assigned `timezone('utc', now())` (a timestamp WITHOUT time zone) into `timestamptz` columns, so east of UTC the backoff collapsed to zero and send times were stamped ~7 hours early. Both were reproduced by the gate before fixing.
+- **Two timezone defects that would have been severe** — `next_attempt_at` and `sent_at` were assigned `timezone('utc', now())` (type `timestamp without time zone`) into `timestamptz` columns, so east of UTC the backoff collapsed to zero and send times were stamped ~7 hours early. Both were reproduced by the gate before fixing.
 
 ### 3.3 Evidence (run independently by the gate, not the builder)
 
 - **pgTAP 70/70** under the rollback wrapper `BEGIN; 0193; 0194; 0195; 0196; suite; ROLLBACK` — including regressions executed under `set local timezone='Asia/Bangkok'` for both backoff and `sent_at`
 - **vitest: 18 files / 73 tests** passing
 - **Nothing left behind on the shared stack within the scope checked** (only the A1–A4 columns were checked after the run = 0 — not a whole-database check)
-- **No cron** (`cron.schedule`) in 0193–0196 and no activation of live sending
+- **No cron** (`cron.schedule`) in 0193–0196 and no activation of live sending (re-checked 2026-10-01 at `a97c3c847`: `git grep -nF cron.schedule` over those four migrations returns nothing)
 
 ### 3.4 What is **not** proven (stated by Sol — do not overstate)
 
@@ -143,7 +143,7 @@ The findings were recorded as a new PRD — Thai `docs/PRD-LINE-OA.th.md` · Eng
 | `supabase/migrations/0195_line_outbound_timezone_safe_backoff.sql` | Timezone-safe backoff |
 | `supabase/migrations/0196_line_outbound_timezone_safe_sent_at.sql` | `sent_at := now()` plus a full sweep |
 | `supabase/tests/line_outbound_claim_record.sql` | pgTAP, 70 assertions (incl. Asia/Bangkok regressions) |
-| `supabase/functions/line-outbound-sender/index.ts` | Calls the claim RPC, classifies failures, passes the claim token, sets `X-Line-Retry-Key` |
+| `supabase/functions/line-outbound-sender/index.ts` | Calls the claim RPC, classifies failures, forwards the claim token, sets `X-Line-Retry-Key` |
 | `tests/line-oa-commerce/ts/*.unit.test.ts` (6 new files) | Wiring / classification / fencing / retry-key / CI-registration tests |
 | `tests/line-oa-commerce/concurrency/claim-race.mjs` | Two-client harness (requires an explicit ephemeral DSN) |
 | `supabase/migrations/0192_repair_phase0_consume_org_recheck.sql` | Phase 0: org/site recheck at consume + fail-fast on the divergent overload |
@@ -156,7 +156,7 @@ The findings were recorded as a new PRD — Thai `docs/PRD-LINE-OA.th.md` · Eng
 
 | # | Question | Blocks |
 |---|---|---|
-| 1 | Does the real environment have a cron invoking `line-outbound-sender`? (The repo definitively has none.) | If one exists, the defect is live and the fixes need deploying urgently |
+| 1 | Does the real environment have a cron invoking `line-outbound-sender`? (At `a97c3c847` the repo shows none: cron reaches edge functions through `fn_wf_cron_invoke_edge`, and `git grep -nF "fn_wf_cron_invoke_edge('line-outbound-sender'" -- supabase` returns nothing.) | If one exists, the defect is live and the fixes need deploying urgently |
 | 2 | Is human approval required before sending to customers? | P1 |
 | 3 | Autonomy gate + brand voice: wire it live, or formally retire it and correct `tasks.md:157`? | P0-7 |
 | 4 | Is sending to customers without a consent gate acceptable for now (PDPA)? | P0-8 / P1 |

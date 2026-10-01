@@ -45,7 +45,7 @@ The mutant is 0198 with only the residual-privilege check loop and its RAISE rem
 
 Two existing problems surfaced here; neither was changed:
 
-1. repair_phase0_containment.sql checks rpc_factory_job_record_packet with a 12-argument signature that exists only through 0170_factory_jobs_list_real_fields.sql on origin/main, a migration this branch lacks. On GitHub Actions the pgTAP step would stop there, so the LINE suites would not run, and the next three steps would be skipped. CI cannot yet serve as P0-10 closure evidence. Resolving this belongs to the branch-integration decision (PRD §8 question 7) or a separately approved fix.
+1. repair_phase0_containment.sql checks rpc_factory_job_record_packet with a 12-argument signature that exists only through 0170_factory_jobs_list_real_fields.sql on origin/main, a migration this branch lacks (`07-ci-local/full/ci-step-1.log:411`). On GitHub Actions the pgTAP step would stop there, so the LINE suites would not run, and the next three steps would be skipped. CI cannot yet serve as P0-10 closure evidence. Resolving this belongs to the branch-integration decision (PRD §8 question 7) or a separately approved fix.
 2. The "Assemble evidence" script scored the stopped suite as passing (6 ok, 0 not ok, 8 planned), because it does not compare results with the plan.
 
 ## Not established
@@ -57,3 +57,12 @@ Two existing problems surfaced here; neither was changed:
 ## Files
 
 The raw outputs are listed in each bundle's SHA256SUMS.run, and REPLAY.txt gives the exact commands. gate-p010-followup.py and commit-p010-followup.sh are the gate and wrapper used for the commit; the transcript is in docs/governance/evidence/line-p010-followup-commit-2026-09-30/. The gate allows exactly one known non-secret value: the Supabase CLI's documented local default DSN in db-verify.yml and its recorded copies.
+
+## Post-seal amendment (1 October 2026)
+
+The pinned claim linter flagged sentences in this report on the branch's first GitHub Actions run (run 36748427202). The owner approved an open amendment of the report wording. This amendment changes wording and citations only; every result, number and conclusion above is unchanged.
+
+- A `07-ci-local/full/ci-step-1.log:411` citation (the psql error for the 12-argument function) supports the statement that this branch lacks 0170
+- Raw outputs and `SHA256SUMS.run` are unchanged; `SHA256SUMS` changes only in the lines of the four REPORT files.
+- The pre-amendment REPORT hashes and the full change record are in `docs/governance/evidence/line-ci-remediation-2026-10-01/`.
+- This amendment needs independent re-review.

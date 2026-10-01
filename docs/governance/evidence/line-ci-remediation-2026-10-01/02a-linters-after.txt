@@ -1,0 +1,9 @@
+$ lint_pair /tmp/tmp.QH0EouxbYc/after
+utc_start: 2026-10-01T00:03:03Z
+allowlisted debt: 15 hits across 11 files
+lint_claims exit: 0
+checked 61 document(s): every certification carries evidence (within the allowlist).
+allowlisted debt: 1 hits across 1 files
+lint_certifications exit: 0
+utc_end: 2026-10-01T00:03:04Z
+exit: 0

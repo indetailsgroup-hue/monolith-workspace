@@ -12,7 +12,9 @@ Local ref `origin/main` ที่ `57b69513ba0a5f0624ea3a40f9b5cea0b04992fb` แ
 
 **ข้อเสนอให้เจ้าของตัดสิน:** ผู้ตัดสินใจ repo ระบุเจ้าของ manufacturing/integration ตาม PRD ส่วน 8 ข้อ 7 ให้เจ้าของนั้นกำหนดลำดับ migration/edge และทดสอบ schema รวม พร้อมตรวจ EXECUTE ที่มีผลจริงของ writer ทุก overload หลัง chain สุดท้าย รักษา containment ว่าไม่ผ่านจนกว่าจะรวมตามอนุมัติหรือแก้เทสต์อย่างมีเหตุผลในขอบเขตแยกแล้วผ่าน ห้ามลด assertion หรือใช้ LINE-only แทน CI เต็ม
 
-การอ่านทุก ref พบ invalid ref `refs/heads/codex/repair-intelligence-phase0-trust (1)` ส่วน query ที่ระบุ valid ref ทำงานได้ จึงห้ามถือว่าเจ้าของลบ ref ซ้ำแล้ว ไม่มีการลบ ref ในงานนี้
+การอ่านทุก ref พบ invalid ref `refs/heads/codex/repair-intelligence-phase0-trust (1)` ส่วน query ที่ระบุ valid ref ทำงานได้
+จึงห้ามถือว่าเจ้าของลบ ref ซ้ำแล้ว
+ไม่มีการลบ ref ในงานนี้
 
 ## B12: ขอบเขตจำกัดที่เสนอ
 
@@ -59,9 +61,12 @@ Production catalog ต้องตรวจแยกก่อน deploy เพ�
 | Owner chain ภายใน | fn_line_handle_group_event ที่ 0097:435; fn_prod_curated ที่ 0107:89,133,135, 0124:149,151 และ 0143:122 | สิทธิ์ owner และประสาน manufacturing |
 | Trigger / DB schedule | fn_welcome_on_group_bind ที่ 0136:185–186; ลงทะเบียน fn_lead_followup_sweep ที่ 0116:192 | Principal ของ trigger/cron; ตัวที่ deploy จริงยังไม่ทราบ |
 | เส้นทางใช้งานมือในเอกสาร | rpc_create_line_order; docs/dogfood/first-house-runbook.md:25–35 | มีบทบาท Field Operator ในเอกสาร การใช้งานจริงและ credential class ยังไม่ทราบ |
-| ไม่พบ executable caller ในการค้นนี้ | rpc_send_line_outbound, rpc_evaluate_identity_merge_candidate, rpc_resolve_conversation_site, rpc_sync_line_forecast, rpc_sweep_line_session_timeouts, rpc_field_assign_lead | ไม่ได้พิสูจน์ว่าไม่มี ต้องยืนยันกับเจ้าของ/ops |
+| ไม่พบ executable caller ในการค้นนี้ (source `3bdd6f3e5`) | rpc_send_line_outbound, rpc_evaluate_identity_merge_candidate, rpc_resolve_conversation_site, rpc_sync_line_forecast, rpc_sweep_line_session_timeouts, rpc_field_assign_lead | ไม่ได้พิสูจน์ว่าไม่มี ต้องยืนยันกับเจ้าของ/ops |
 
-ข้อความใน autonomyGate.ts, brand-voice.ts, templates.ts และ order-adapter.ts บางจุดเป็น comment ไม่ใช่ calls และ evidence harness ไม่ใช่ผู้เรียกที่ deploy ไม่พบชื่อ n8n, Make.com หรือ Zapier ในขอบเขตที่ค้น และไม่พบชื่อ writer ตรงตัวใน workflows ที่ค้น แต่ dynamic calls, automation ภายนอกและเครื่องมือใช้งานมือยังเป็น UNKNOWN ส่วน postgres เป็นเจ้าของฐานข้อมูล ไม่ใช่ชื่อผู้รับผิดชอบที่ยืนยันแล้ว
+ข้อความใน autonomyGate.ts, brand-voice.ts, templates.ts และ order-adapter.ts บางจุดเป็น comment ไม่ใช่ calls และ evidence harness ไม่ใช่ผู้เรียกที่ deploy
+ไม่พบชื่อ n8n, Make.com หรือ Zapier ในขอบเขตที่ค้น และไม่พบชื่อ writer ตรงตัวใน workflows ที่ค้น
+แต่ dynamic calls, automation ภายนอกและเครื่องมือใช้งานมือยังเป็น UNKNOWN
+ส่วน postgres เป็นเจ้าของฐานข้อมูล ไม่ใช่ชื่อผู้รับผิดชอบที่ยืนยันแล้ว
 
 ให้ ops จัด register แบบปิดข้อมูลลับแยก environment: ชื่อแอป/job และผู้รับผิดชอบ; สถานะใช้งาน/ปิดและเวลาใช้ล่าสุด; RPC/signature หรือ endpoint path; chain และ schedule; ประเภท authentication เท่านั้น (user JWT/service/database role); สิทธิ์ที่ธุรกิจต้องใช้และข้อเสนอคง/เลิก พร้อม config/log ที่ปิดข้อมูลลับซึ่งมีเวลาและผล ครอบคลุม hosted automation, backend, dashboard/admin/BI scripts, SQL tools, sender/sweeps และ dogfood ที่ทำด้วยมือ ห้ามส่ง token, key, authorization header, URL ที่มีรหัสผ่าน, ตัวระบุลูกค้าหรือ request body หากไม่ตอบให้คง unknown คำขอนี้ไม่อนุมัติให้เข้าระบบเหล่านั้น
 

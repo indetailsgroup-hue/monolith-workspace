@@ -15,7 +15,7 @@
 <h2>Method</h2>
 <ul><li>Callers: every tracked file under src, server, supabase/functions, packages, tools, scripts and e2e was searched by name, plus all migrations (calls inside other functions, triggers and cron jobs). Tests were counted, not treated as callers.</li><li>Intended grants: the GRANT and REVOKE statements written in the migrations.</li><li>Guards: the final definition of each routine was read. A guard means an explicit caller check in the body, such as is_governance_role, has_site_access, auth.uid or the LINE signature check.</li><li>Classes used below: FOUND (seen in the repository), INFERENCE (reasoned from the source, not executed) and UNKNOWN.</li></ul>
 <h2>Root cause (FOUND)</h2>
-<p>No migration issues ALTER DEFAULT PRIVILEGES. The catalog shows default ACLs from the platform roles postgres and supabase_admin that grant EXECUTE on new functions to anon, authenticated and service_role. The migrations then revoke EXECUTE only from PUBLIC, for example 0107_factory_group_milestones.sql line 61, and grant to authenticated or service_role. The direct default grant to anon is never removed.</p>
+<p>No migration issues ALTER DEFAULT PRIVILEGES (re-checked 2026-10-01 at <code>a97c3c847</code>: <code>git grep -niF &quot;alter default privileges&quot; -- supabase/migrations</code> returns nothing). The catalog shows default ACLs from the platform roles postgres and supabase_admin that grant EXECUTE on new functions to anon, authenticated and service_role. The migrations then revoke EXECUTE only from PUBLIC, for example 0107_factory_group_milestones.sql line 61, and grant to authenticated or service_role. The direct default grant to anon is never removed.</p>
 <h2>Findings per routine</h2>
 <div class="table-wrap"><table><thead><tr>
 <th>Routine</th>
@@ -27,48 +27,48 @@
 <tr>
 <td>fn_prod_curated</td>
 <td>23 call sites inside other DEFINER functions (0107 to 0143); no edge or frontend caller</td>
-<td>revoke from PUBLIC only (0107:61)</td>
-<td>none (0107:50-60)</td>
+<td>revoke from PUBLIC only (<code>0107_factory_group_milestones.sql:61</code>)</td>
+<td>none (<code>0107_factory_group_milestones.sql:50-60</code>)</td>
 <td>High (INFERENCE): queues a pending push into a project's customer group with caller-chosen slot text, given a project id</td>
 </tr>
 <tr>
 <td>fn_line_handle_group_event</td>
-<td>only rpc_ingest_line_webhook (0097:435)</td>
-<td>revoke from PUBLIC only (0097:285)</td>
+<td>only rpc_ingest_line_webhook (<code>0097_line_group_bot_flows.sql:435</code>)</td>
+<td>revoke from PUBLIC only (<code>0097_line_group_bot_flows.sql:285</code>)</td>
 <td>none; it trusts that the caller verified the LINE signature</td>
-<td>High (INFERENCE): a direct call skips signature verification. Binding needs a valid bind code and approval postbacks need the approve token, but join, leave and member events are not gated; a forged leave event archives a bound group whose LINE group id is known (0107:235-240)</td>
+<td>High (INFERENCE): a direct call skips signature verification. Binding needs a valid bind code and approval postbacks need the approve token, but join, leave and member events are not gated; a forged leave event archives a bound group whose LINE group id is known (<code>0107_factory_group_milestones.sql:235-240</code>)</td>
 </tr>
 <tr>
 <td>line_oa_resolve_customer_identity</td>
 <td>edge customer-design-view (index.ts:102, service client); ingest, order and approval functions</td>
-<td>revoke from PUBLIC only (00020:135)</td>
+<td>revoke from PUBLIC only (<code>00000000000020_line_oa_identity_resolution.sql:135</code>)</td>
 <td>none</td>
 <td>Medium (INFERENCE): creates an identity row for any LINE user id and returns the customer id</td>
 </tr>
 <tr>
 <td>fn_lead_followup_sweep</td>
-<td>cron job wf-lead-followup-sweep (0116:192)</td>
-<td>service_role only (0116:223-225)</td>
+<td>cron job wf-lead-followup-sweep (<code>0116_lead_followup.sql:192</code>)</td>
+<td>service_role only (<code>0116_lead_followup.sql:223-225</code>)</td>
 <td>none</td>
 <td>Medium (INFERENCE): anyone can trigger lead follow-up pushes and escalations on demand</td>
 </tr>
 <tr>
 <td>rpc_sweep_line_session_timeouts</td>
 <td>no in-repo caller outside tests</td>
-<td>revoke from PUBLIC (00061:136), then service_role only (00061:141)</td>
+<td>revoke from PUBLIC (<code>00000000000061_line_oa_session_timeout_sweep.sql:136</code>), then service_role only (<code>00000000000061_line_oa_session_timeout_sweep.sql:141</code>)</td>
 <td>none</td>
 <td>Low (INFERENCE): closes sessions already past the timeout</td>
 </tr>
 <tr>
 <td>rpc_ingest_line_webhook</td>
 <td>edge line-webhook (index.ts:201, service key)</td>
-<td>authenticated and service_role (00022:344-356)</td>
+<td>authenticated and service_role (<code>00000000000022_line_oa_ingest_webhook.sql:344-356</code>)</td>
 <td>LINE HMAC signature before any write</td>
 <td>Low (INFERENCE): forgery needs the channel secret; a rejected call still appends one audit row</td>
 </tr>
 <tr>
 <td>fn_welcome_on_group_bind</td>
-<td>trigger trg_welcome_group_bind (0136:185-186)</td>
+<td>trigger trg_welcome_group_bind (<code>0136_customer_docs.sql:185-186</code>)</td>
 <td>none; PUBLIC also holds EXECUTE</td>
 <td>trigger-only function</td>
 <td>Low (INFERENCE): PostgreSQL refuses to call a trigger function directly (not tested here)</td>
@@ -76,77 +76,77 @@
 <tr>
 <td>rpc_send_line_outbound</td>
 <td>none live (known since 26 July 2026)</td>
-<td>authenticated (00040:442)</td>
+<td>authenticated (<code>00000000000040_line_oa_send_outbound.sql:442</code>)</td>
 <td>is_governance_role, has_site_access, 42501</td>
 <td>Low (INFERENCE): the body denies callers without a site role</td>
 </tr>
 <tr>
 <td>rpc_create_line_order</td>
 <td>none in code</td>
-<td>authenticated (00050:643)</td>
+<td>authenticated (<code>00000000000050_line_oa_create_order.sql:643</code>)</td>
 <td>is_governance_role, has_site_access, 42501</td>
 <td>Low (INFERENCE)</td>
 </tr>
 <tr>
 <td>rpc_evaluate_identity_merge_candidate</td>
 <td>none in code</td>
-<td>authenticated (00021:265)</td>
+<td>authenticated (<code>00000000000021_line_oa_identity_merge_candidate.sql:265</code>)</td>
 <td>is_governance_role, 42501</td>
 <td>Low (INFERENCE)</td>
 </tr>
 <tr>
 <td>rpc_resolve_conversation_site</td>
 <td>none in code</td>
-<td>authenticated (00030:254)</td>
+<td>authenticated (<code>00000000000030_line_oa_resolve_conversation_site.sql:254</code>)</td>
 <td>is_governance_role, has_site_access, 42501</td>
 <td>Low (INFERENCE)</td>
 </tr>
 <tr>
 <td>rpc_sync_line_forecast</td>
 <td>none in code</td>
-<td>authenticated (00060:278)</td>
+<td>authenticated (<code>00000000000060_line_oa_sync_forecast.sql:278</code>)</td>
 <td>is_governance_role, has_site_access, 42501</td>
 <td>Low (INFERENCE)</td>
 </tr>
 <tr>
 <td>rpc_request_customer_acceptance</td>
 <td>field-app LeadPanel.tsx:43</td>
-<td>authenticated and service_role (0098:110-113)</td>
+<td>authenticated and service_role (<code>0098_customer_acceptance_flex.sql:110-113</code>)</td>
 <td>is_governance_role, has_site_access</td>
 <td>Low (INFERENCE)</td>
 </tr>
 <tr>
 <td>rpc_field_assign_lead</td>
 <td>none in code</td>
-<td>authenticated and service_role (0116:205-220)</td>
+<td>authenticated and service_role (<code>0116_lead_followup.sql:205-220</code>)</td>
 <td>auth.uid, is_governance_role, has_site_access</td>
 <td>Low (INFERENCE)</td>
 </tr>
 <tr>
 <td>rpc_field_close_lead</td>
 <td>field-app SaleHome.tsx:34</td>
-<td>authenticated and service_role (0116:205-220)</td>
+<td>authenticated and service_role (<code>0116_lead_followup.sql:205-220</code>)</td>
 <td>is_governance_role, has_site_access</td>
 <td>Low (INFERENCE)</td>
 </tr>
 <tr>
 <td>rpc_field_set_lead_source</td>
 <td>field-app SaleHome.tsx:42</td>
-<td>authenticated and service_role (0151:264-273)</td>
+<td>authenticated and service_role (<code>0151_turnkey_lead_source.sql:264-273</code>)</td>
 <td>is_governance_role, has_site_access</td>
 <td>Low (INFERENCE)</td>
 </tr>
 <tr>
 <td>rpc_field_send_photo_to_customer</td>
 <td>field-app PhotoSendCard.tsx:33</td>
-<td>authenticated and service_role (0134:69-74)</td>
+<td>authenticated and service_role (<code>0134_sender_image.sql:69-74</code>)</td>
 <td>is_governance_role, has_site_access</td>
 <td>Low (INFERENCE)</td>
 </tr>
 <tr>
 <td>rpc_field_shop_drawing_revision</td>
 <td>field-app DesignerToolsPanel.tsx:69</td>
-<td>authenticated and service_role (0143:478-487)</td>
+<td>authenticated and service_role (<code>0143_qms_factory_design.sql:478-487</code>)</td>
 <td>is_governance_role, has_site_access</td>
 <td>Low (INFERENCE)</td>
 </tr>

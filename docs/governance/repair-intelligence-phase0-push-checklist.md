@@ -57,8 +57,8 @@ re-hashes every manifest-listed upstream report plus the referenced builder,
 verifier, and dependency-lock files, and re-derives `evidenceRootHash`. It does **not** cryptographically verify
 the Ed25519 signature from a public key. Only the signer and verify infrastructure,
 configured on distinct HTTPS origins, can prove that the evidence key produced a valid signature;
-CI accepts only when both the evidence job succeeds and its manifest-backed
-`verified:true` report passes the final gate. Local mock-endpoint self-tests prove
+CI accepts only when both the evidence job succeeds and the final gate accepts its
+manifest-backed `verified:true` report. Local mock-endpoint self-tests prove
 fail-closed gate behavior, not possession of or signing by the real evidence key.
 
 The issuer enforces exactly the configuration boundary above: the release-key list

@@ -1,0 +1,206 @@
+CI remediation commit gate transcript (written by commit-ci-remediation.sh only after the gate exited 0)
+written_utc: 2026-10-01T00:15:37Z
+base_head: a97c3c8479a5fcbff9fb134e0e661f7f0d828a8e
+wrapper: docs/governance/evidence/line-ci-remediation-2026-10-01/commit-ci-remediation.sh sha256 603051d060e6d3b77cd060d9fc3859443f8574cb7403d6628522e106f42c1aa8
+gate: docs/governance/evidence/line-ci-remediation-2026-10-01/gate-ci-remediation.py sha256 ff949d5c82a591b72e848dcb980ece192634a142311acca93bdc92ee18a078b3
+gate_exit: 0
+gated_tree: 28b88bf6a89fa1b12da413066bd088f504cedfb0
+check: the commit tree without docs/governance/evidence/line-ci-remediation-commit-2026-10-01 must equal gated_tree (command in the wrapper header)
+staged_changes:
+  M	.github/workflows/trust-kernel-verify.yml
+  M	docs/governance/evidence/line-b12-catalog-fixture-2026-09-30/REPORT.en.html
+  M	docs/governance/evidence/line-b12-catalog-fixture-2026-09-30/REPORT.en.md
+  M	docs/governance/evidence/line-b12-catalog-fixture-2026-09-30/REPORT.th.html
+  M	docs/governance/evidence/line-b12-catalog-fixture-2026-09-30/REPORT.th.md
+  M	docs/governance/evidence/line-b12-catalog-fixture-2026-09-30/SHA256SUMS
+  M	docs/governance/evidence/line-b12-monolith-catalog-attempt2-2026-09-30/REPORT.en.html
+  M	docs/governance/evidence/line-b12-monolith-catalog-attempt2-2026-09-30/REPORT.en.md
+  M	docs/governance/evidence/line-b12-monolith-catalog-attempt2-2026-09-30/REPORT.th.html
+  M	docs/governance/evidence/line-b12-monolith-catalog-attempt2-2026-09-30/REPORT.th.md
+  M	docs/governance/evidence/line-b12-monolith-catalog-attempt2-2026-09-30/SHA256SUMS
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/.gitattributes
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/00-context.txt
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/01a-linters-before.txt
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/01b-findings-before.txt
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/02a-linters-after.txt
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/02b-allowlist-unchanged.txt
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/03-reproduce-amendments.txt
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/04-reseal-check.txt
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/05-render-check.txt
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/06-workflow-config.txt
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/07-preflight-simulation.txt
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/08-repair-phase0-checks.txt
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/09-diff.txt
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/10-credential-scan.txt
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/11-gate-negative-controls.txt
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/REPORT.en.html
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/REPORT.en.md
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/REPORT.th.html
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/REPORT.th.md
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/SHA256SUMS
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/SHA256SUMS.run
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/commit-ci-remediation.sh
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/gate-ci-remediation.py
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/tools/amend_bundles.py
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/tools/expand_survey.py
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/tools/gate-negative-controls.sh
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/tools/lint-explain.py
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/tools/render_check.py
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/tools/reseal.py
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/tools/run-ci-remediation.sh
+  A	docs/governance/evidence/line-ci-remediation-2026-10-01/tools/targets.txt
+  M	docs/governance/evidence/line-ci-source-2026-09-30/REPORT.en.html
+  M	docs/governance/evidence/line-ci-source-2026-09-30/REPORT.en.md
+  M	docs/governance/evidence/line-ci-source-2026-09-30/REPORT.th.html
+  M	docs/governance/evidence/line-ci-source-2026-09-30/REPORT.th.md
+  M	docs/governance/evidence/line-ci-source-2026-09-30/SHA256SUMS
+  M	docs/governance/evidence/line-p010-catalog-2026-09-30/REPORT.en.html
+  M	docs/governance/evidence/line-p010-catalog-2026-09-30/REPORT.en.md
+  M	docs/governance/evidence/line-p010-catalog-2026-09-30/REPORT.th.html
+  M	docs/governance/evidence/line-p010-catalog-2026-09-30/REPORT.th.md
+  M	docs/governance/evidence/line-p010-catalog-2026-09-30/SHA256SUMS
+  M	docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/REPORT.en.html
+  M	docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/REPORT.en.md
+  M	docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/REPORT.th.html
+  M	docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/REPORT.th.md
+  M	docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/SHA256SUMS
+  M	docs/governance/evidence/line-p010-evidence-followup-2026-09-30/REPORT.en.html
+  M	docs/governance/evidence/line-p010-evidence-followup-2026-09-30/REPORT.en.md
+  M	docs/governance/evidence/line-p010-evidence-followup-2026-09-30/REPORT.th.html
+  M	docs/governance/evidence/line-p010-evidence-followup-2026-09-30/REPORT.th.md
+  M	docs/governance/evidence/line-p010-evidence-followup-2026-09-30/SHA256SUMS
+  M	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/REPORT.en.html
+  M	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/REPORT.en.md
+  M	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/REPORT.th.html
+  M	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/REPORT.th.md
+  M	docs/governance/evidence/line-p010-failclosed-green-2026-09-30/SHA256SUMS
+  M	docs/governance/evidence/line-p012-green-2026-09-30/REPORT.en.html
+  M	docs/governance/evidence/line-p012-green-2026-09-30/REPORT.en.md
+  M	docs/governance/evidence/line-p012-green-2026-09-30/REPORT.th.html
+  M	docs/governance/evidence/line-p012-green-2026-09-30/REPORT.th.md
+  M	docs/governance/evidence/line-p012-green-2026-09-30/SHA256SUMS
+  M	docs/governance/line-b12-permission-matrix.en.html
+  M	docs/governance/line-b12-permission-matrix.en.md
+  M	docs/governance/line-b12-permission-matrix.th.html
+  M	docs/governance/line-b12-permission-matrix.th.md
+  M	docs/governance/line-outbound-phase0-session-report.en.html
+  M	docs/governance/line-outbound-phase0-session-report.en.md
+  M	docs/governance/line-outbound-phase0-session-report.th.html
+  M	docs/governance/line-outbound-phase0-session-report.th.md
+  M	docs/governance/line-p010-execute-survey.en.html
+  M	docs/governance/line-p010-execute-survey.en.md
+  M	docs/governance/line-p010-execute-survey.th.html
+  M	docs/governance/line-p010-execute-survey.th.md
+  M	docs/governance/line-p010-integration-b12-followup.en.html
+  M	docs/governance/line-p010-integration-b12-followup.en.md
+  M	docs/governance/line-p010-integration-b12-followup.th.html
+  M	docs/governance/line-p010-integration-b12-followup.th.md
+  M	docs/governance/repair-intelligence-phase0-push-checklist.md
+  M	supabase/config.toml
+gate_output:
+  PASS: HEAD is the base a97c3c847
+  PASS: change set is exactly the approved 90 paths (unexpected=[], missing=[])
+  PASS: listed files are modified and the bundle files are added, nothing else ({})
+  PASS: no migration, test or application source is touched
+  PASS: line-b12-catalog-fixture-2026-09-30: SHA256SUMS lists the same 10 files as the base
+  PASS: line-b12-catalog-fixture-2026-09-30: SHA256SUMS changes only REPORT lines (['REPORT.en.html', 'REPORT.en.md', 'REPORT.th.html', 'REPORT.th.md'])
+  PASS: line-b12-catalog-fixture-2026-09-30: every SHA256SUMS entry matches the staged blob ([])
+  PASS: line-b12-catalog-fixture-2026-09-30: REPORT.en.md carries exactly one amendment section
+  PASS: line-b12-catalog-fixture-2026-09-30: REPORT.th.md carries exactly one amendment section
+  PASS: line-b12-monolith-catalog-attempt2-2026-09-30: SHA256SUMS lists the same 28 files as the base
+  PASS: line-b12-monolith-catalog-attempt2-2026-09-30: SHA256SUMS changes only REPORT lines (['REPORT.en.html', 'REPORT.en.md', 'REPORT.th.html', 'REPORT.th.md'])
+  PASS: line-b12-monolith-catalog-attempt2-2026-09-30: every SHA256SUMS entry matches the staged blob ([])
+  PASS: line-b12-monolith-catalog-attempt2-2026-09-30: SHA256SUMS.run identical to the base
+  PASS: line-b12-monolith-catalog-attempt2-2026-09-30: REPORT.en.md carries exactly one amendment section
+  PASS: line-b12-monolith-catalog-attempt2-2026-09-30: REPORT.th.md carries exactly one amendment section
+  PASS: line-ci-source-2026-09-30: SHA256SUMS lists the same 22 files as the base
+  PASS: line-ci-source-2026-09-30: SHA256SUMS changes only REPORT lines (['REPORT.en.html', 'REPORT.en.md', 'REPORT.th.html', 'REPORT.th.md'])
+  PASS: line-ci-source-2026-09-30: every SHA256SUMS entry matches the staged blob ([])
+  PASS: line-ci-source-2026-09-30: SHA256SUMS.run identical to the base
+  PASS: line-ci-source-2026-09-30: REPORT.en.md carries exactly one amendment section
+  PASS: line-ci-source-2026-09-30: REPORT.th.md carries exactly one amendment section
+  PASS: line-p010-catalog-2026-09-30: SHA256SUMS lists the same 28 files as the base
+  PASS: line-p010-catalog-2026-09-30: SHA256SUMS changes only REPORT lines (['REPORT.en.html', 'REPORT.en.md', 'REPORT.th.html', 'REPORT.th.md'])
+  PASS: line-p010-catalog-2026-09-30: every SHA256SUMS entry matches the staged blob ([])
+  PASS: line-p010-catalog-2026-09-30: SHA256SUMS.run identical to the base
+  PASS: line-p010-catalog-2026-09-30: REPORT.en.md carries exactly one amendment section
+  PASS: line-p010-catalog-2026-09-30: REPORT.th.md carries exactly one amendment section
+  PASS: line-p010-ci-hardening-green-2026-09-30: SHA256SUMS lists the same 89 files as the base
+  PASS: line-p010-ci-hardening-green-2026-09-30: SHA256SUMS changes only REPORT lines (['REPORT.en.html', 'REPORT.en.md', 'REPORT.th.html', 'REPORT.th.md'])
+  PASS: line-p010-ci-hardening-green-2026-09-30: every SHA256SUMS entry matches the staged blob ([])
+  PASS: line-p010-ci-hardening-green-2026-09-30: SHA256SUMS.run identical to the base
+  PASS: line-p010-ci-hardening-green-2026-09-30: REPORT.en.md carries exactly one amendment section
+  PASS: line-p010-ci-hardening-green-2026-09-30: REPORT.th.md carries exactly one amendment section
+  PASS: line-p010-evidence-followup-2026-09-30: SHA256SUMS lists the same 93 files as the base
+  PASS: line-p010-evidence-followup-2026-09-30: SHA256SUMS changes only REPORT lines (['REPORT.en.html', 'REPORT.en.md', 'REPORT.th.html', 'REPORT.th.md'])
+  PASS: line-p010-evidence-followup-2026-09-30: every SHA256SUMS entry matches the staged blob ([])
+  PASS: line-p010-evidence-followup-2026-09-30: SHA256SUMS.run identical to the base
+  PASS: line-p010-evidence-followup-2026-09-30: REPORT.en.md carries exactly one amendment section
+  PASS: line-p010-evidence-followup-2026-09-30: REPORT.th.md carries exactly one amendment section
+  PASS: line-p010-failclosed-green-2026-09-30: SHA256SUMS lists the same 61 files as the base
+  PASS: line-p010-failclosed-green-2026-09-30: SHA256SUMS changes only REPORT lines (['REPORT.en.html', 'REPORT.en.md', 'REPORT.th.html', 'REPORT.th.md'])
+  PASS: line-p010-failclosed-green-2026-09-30: every SHA256SUMS entry matches the staged blob ([])
+  PASS: line-p010-failclosed-green-2026-09-30: SHA256SUMS.run identical to the base
+  PASS: line-p010-failclosed-green-2026-09-30: REPORT.en.md carries exactly one amendment section
+  PASS: line-p010-failclosed-green-2026-09-30: REPORT.th.md carries exactly one amendment section
+  PASS: line-p012-green-2026-09-30: SHA256SUMS lists the same 84 files as the base
+  PASS: line-p012-green-2026-09-30: SHA256SUMS changes only REPORT lines (['REPORT.en.html', 'REPORT.en.md', 'REPORT.th.html', 'REPORT.th.md'])
+  PASS: line-p012-green-2026-09-30: every SHA256SUMS entry matches the staged blob ([])
+  PASS: line-p012-green-2026-09-30: SHA256SUMS.run identical to the base
+  PASS: line-p012-green-2026-09-30: REPORT.en.md carries exactly one amendment section
+  PASS: line-p012-green-2026-09-30: REPORT.th.md carries exactly one amendment section
+  PASS: docs/governance/evidence/line-ci-remediation-2026-10-01: SHA256SUMS lists every file except itself (30)
+  PASS: docs/governance/evidence/line-ci-remediation-2026-10-01: SHA256SUMS matches the blobs ([])
+  PASS: docs/governance/evidence/line-ci-remediation-2026-10-01: 21 runner outputs unchanged since the run ([])
+  PASS: docs/governance/evidence/line-ci-remediation-2026-10-01/01a-linters-before.txt: every recorded step exits 0 (['0'])
+  PASS: docs/governance/evidence/line-ci-remediation-2026-10-01/01b-findings-before.txt: every recorded step exits 0 (['0'])
+  PASS: docs/governance/evidence/line-ci-remediation-2026-10-01/02a-linters-after.txt: every recorded step exits 0 (['0'])
+  PASS: docs/governance/evidence/line-ci-remediation-2026-10-01/02b-allowlist-unchanged.txt: every recorded step exits 0 (['0'])
+  PASS: docs/governance/evidence/line-ci-remediation-2026-10-01/03-reproduce-amendments.txt: every recorded step exits 0 (['0'])
+  PASS: docs/governance/evidence/line-ci-remediation-2026-10-01/04-reseal-check.txt: every recorded step exits 0 (['0'])
+  PASS: docs/governance/evidence/line-ci-remediation-2026-10-01/05-render-check.txt: every recorded step exits 0 (['0'])
+  PASS: docs/governance/evidence/line-ci-remediation-2026-10-01/06-workflow-config.txt: every recorded step exits 0 (['0', '0', '0'])
+  PASS: docs/governance/evidence/line-ci-remediation-2026-10-01/07-preflight-simulation.txt: every recorded step exits 0 (['0'])
+  PASS: docs/governance/evidence/line-ci-remediation-2026-10-01/08-repair-phase0-checks.txt: every recorded step exits 0 (['0', '0', '0'])
+  PASS: docs/governance/evidence/line-ci-remediation-2026-10-01/09-diff.txt: every recorded step exits 0 (['0', '0'])
+  PASS: docs/governance/evidence/line-ci-remediation-2026-10-01/10-credential-scan.txt: every recorded step exits 0 (['0'])
+  PASS: runner credential scan passed
+  PASS: tools/.lint_allowlist is unchanged
+  PASS: pinned lint_claims on the gated tree exits 0 (allowlisted debt: 15 hits across 11 files)
+  PASS: pinned lint_certifications on the gated tree exits 0 (allowlisted debt: 1 hits across 1 files)
+  PASS: docs/governance/evidence/line-b12-catalog-fixture-2026-09-30/REPORT.en.html equals the renderer output of its Markdown
+  PASS: docs/governance/evidence/line-b12-catalog-fixture-2026-09-30/REPORT.th.html equals the renderer output of its Markdown
+  PASS: docs/governance/evidence/line-b12-monolith-catalog-attempt2-2026-09-30/REPORT.en.html equals the renderer output of its Markdown
+  PASS: docs/governance/evidence/line-b12-monolith-catalog-attempt2-2026-09-30/REPORT.th.html equals the renderer output of its Markdown
+  PASS: docs/governance/evidence/line-ci-remediation-2026-10-01/REPORT.en.html equals the renderer output of its Markdown
+  PASS: docs/governance/evidence/line-ci-remediation-2026-10-01/REPORT.th.html equals the renderer output of its Markdown
+  PASS: docs/governance/evidence/line-ci-source-2026-09-30/REPORT.en.html equals the renderer output of its Markdown
+  PASS: docs/governance/evidence/line-ci-source-2026-09-30/REPORT.th.html equals the renderer output of its Markdown
+  PASS: docs/governance/evidence/line-p010-catalog-2026-09-30/REPORT.en.html equals the renderer output of its Markdown
+  PASS: docs/governance/evidence/line-p010-catalog-2026-09-30/REPORT.th.html equals the renderer output of its Markdown
+  PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/REPORT.en.html equals the renderer output of its Markdown
+  PASS: docs/governance/evidence/line-p010-ci-hardening-green-2026-09-30/REPORT.th.html equals the renderer output of its Markdown
+  PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/REPORT.en.html equals the renderer output of its Markdown
+  PASS: docs/governance/evidence/line-p010-evidence-followup-2026-09-30/REPORT.th.html equals the renderer output of its Markdown
+  PASS: docs/governance/evidence/line-p010-failclosed-green-2026-09-30/REPORT.en.html equals the renderer output of its Markdown
+  PASS: docs/governance/evidence/line-p010-failclosed-green-2026-09-30/REPORT.th.html equals the renderer output of its Markdown
+  PASS: docs/governance/evidence/line-p012-green-2026-09-30/REPORT.en.html equals the renderer output of its Markdown
+  PASS: docs/governance/evidence/line-p012-green-2026-09-30/REPORT.th.html equals the renderer output of its Markdown
+  PASS: docs/governance/line-b12-permission-matrix.en.html equals the renderer output of its Markdown
+  PASS: docs/governance/line-b12-permission-matrix.th.html equals the renderer output of its Markdown
+  PASS: docs/governance/line-outbound-phase0-session-report.en.html equals the renderer output of its Markdown
+  PASS: docs/governance/line-outbound-phase0-session-report.th.html equals the renderer output of its Markdown
+  PASS: docs/governance/line-p010-execute-survey.en.html equals the renderer output of its Markdown
+  PASS: docs/governance/line-p010-execute-survey.th.html equals the renderer output of its Markdown
+  PASS: docs/governance/line-p010-integration-b12-followup.en.html equals the renderer output of its Markdown
+  PASS: docs/governance/line-p010-integration-b12-followup.th.html equals the renderer output of its Markdown
+  PASS: supabase/config.toml differs only in [storage] enabled ([(36, 'enabled = false', 'enabled = true')])
+  PASS: trust-kernel-verify.yml: every job other than the shadow E2E job is unchanged
+  PASS: the E2E preflight is the first step
+  PASS: the E2E job's other steps are unchanged
+  PASS: the run step keeps its command and secrets and creates reports/ first
+  PASS: the preflight never echoes a secret value (indirect test only)
+  PASS: pattern scanner positive controls all detected
+  NOTE: .github/workflows/trust-kernel-verify.yml: pre-existing local-only URI credential, line identical in the base (reported, not new)
+  PASS: no new credential-shaped value in 90 Git blobs ({})
+  RESULT: GATE PASS

@@ -1,0 +1,24 @@
+$ python -
+utc_start: 2026-10-01T00:03:09Z
+trust-kernel-verify.yml and db-verify.yml parse as YAML
+e2e steps: ['Require the shadow E2E environment (names only)', 'actions/checkout@v4', 'actions/setup-node@v4', 'Install root workspaces', 'Install Playwright browsers', 'Run trust-kernel shadow E2E (JSON report)', 'Upload E2E report']
+preflight first, reports/ created before the redirect, same five secret names: ['E2E_APPROVER_B_JWT', 'E2E_BASE_URL', 'E2E_DESIGNER_A_JWT', 'E2E_SUPABASE_ANON_KEY', 'E2E_TENANT_002_JWT']
+supabase/config.toml [storage].enabled = True
+utc_end: 2026-10-01T00:03:10Z
+exit: 0
+$ git diff --numstat a97c3c8479a5fcbff9fb134e0e661f7f0d828a8e -- supabase/config.toml
+utc_start: 2026-10-01T00:03:10Z
+1	1	supabase/config.toml
+utc_end: 2026-10-01T00:03:10Z
+exit: 0
+$ git diff -U0 a97c3c8479a5fcbff9fb134e0e661f7f0d828a8e -- supabase/config.toml
+utc_start: 2026-10-01T00:03:10Z
+diff --git a/supabase/config.toml b/supabase/config.toml
+index 34dc20166..39c8b3f94 100644
+--- a/supabase/config.toml
++++ b/supabase/config.toml
+@@ -37 +37 @@ port = 54323
+-enabled = false
++enabled = true
+utc_end: 2026-10-01T00:03:10Z
+exit: 0

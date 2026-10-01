@@ -25,3 +25,12 @@ For replay use a separate checkout at the exact base, cached images, a new outpu
 ## What remains unproven
 
 No business RPC, pgTAP/Python behavior suite, independent rerun, GitHub Actions or production test was performed in this round. Owner identity alone does not certify every transitive call chain or production owner privileges. External/manual callers and API exposure remain unknown. The catalog therefore supports the pre-state of the B12 design; it does not approve 0199, settle recorder policy, resolve 0170/0191 integration, fix containment/P0-9 or close Phase A. No push, deployment, real message or cron activation occurred.
+
+## Post-seal amendment (1 October 2026)
+
+The pinned claim linter flagged sentences in this report on the branch's first GitHub Actions run (run 36748427202). The owner approved an open amendment of the report wording. This amendment changes wording and citations only; every result, number and conclusion above is unchanged.
+
+- Thai sentence boundaries are now source line breaks in REPORT.th.md (the rendered text is unchanged), in the catalog-result and scope paragraphs
+- Raw outputs and `SHA256SUMS.run` are unchanged; `SHA256SUMS` changes only in the lines of the four REPORT files.
+- The pre-amendment REPORT hashes and the full change record are in `docs/governance/evidence/line-ci-remediation-2026-10-01/`.
+- This amendment needs independent re-review.

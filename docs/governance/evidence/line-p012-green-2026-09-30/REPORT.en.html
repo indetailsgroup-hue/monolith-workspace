@@ -17,19 +17,19 @@
 </tr></thead><tbody>
 <tr>
 <td>supabase/migrations/0199_line_oa_restrict_definer_execute.sql</td>
-<td>Revokes EXECUTE on the twenty identities to the matrix and grants nothing. Stops on a missing identity or an unclassified overload (55000). Raises 42501 and rolls back if any effective right differs from the target afterwards or PUBLIC still holds EXECUTE.</td>
+<td>Revokes EXECUTE on the twenty identities to the matrix and grants nothing. Stops on a missing identity or an unclassified overload (55000, <code>0199_line_oa_restrict_definer_execute.sql:66</code>). Raises 42501 and rolls back if any effective right differs from the target afterwards or PUBLIC still holds EXECUTE (<code>0199_line_oa_restrict_definer_execute.sql:111</code>).</td>
 </tr>
 <tr>
 <td>supabase/tests/line_oa_definer_execute_matrix.sql</td>
-<td>New, 82 assertions: matrix and PUBLIC, 29 real calls refused at the function ACL, no side effects, retained RPCs still execute, and kept paths checked by their data</td>
+<td>New, 82 assertions: matrix and PUBLIC, 29 real calls refused at the function ACL, no side effects (<code>line_oa_definer_execute_matrix.sql:200</code>), retained RPCs still execute, and kept paths checked by their data</td>
 </tr>
 <tr>
 <td>supabase/tests/line_oa_definer_execute_fail_closed.sql</td>
-<td>New, 23 assertions: inherited right, other grantor, keep lost through PUBLIC, unclassified overload, normal run</td>
+<td>New, 23 assertions: inherited right, other grantor, keep lost through PUBLIC (<code>line_oa_definer_execute_fail_closed.sql:204</code>), unclassified overload, normal run</td>
 </tr>
 <tr>
 <td>supabase/tests/line_outbound_claim_record.sql</td>
-<td>Assertion 23 now expects no authenticated EXECUTE on the recorder (owner decision: service-only)</td>
+<td>Assertion 23 now expects no authenticated EXECUTE on the recorder (owner decision: service-only, <code>line_outbound_claim_record.sql:429</code>)</td>
 </tr>
 <tr>
 <td>supabase/tests/line_oa_client_write_revoke.sql</td>
@@ -122,6 +122,9 @@
 <ul><li>The ops caller register (external or manual callers, the cron principal, any staff recording) and the manufacturing owner's view on fn_prod_curated. Both are assumptions until answered.</li><li>Production: grants, grantors, owners and PostgREST exposure are unknown. The read-only production catalog check remains a separate gate.</li><li>GitHub Actions: nothing was pushed, and the containment suite would still fail there.</li><li>Functions created or recreated later still receive default EXECUTE; that policy is a separate decision.</li></ul>
 <h2>Files</h2>
 <p>The raw outputs of each run are listed in SHA256SUMS.run, and REPLAY.txt gives the exact commands. gate-p012.py and commit-p012.sh are the gate and wrapper used for the commit; the transcript is in docs/governance/evidence/line-p012-commit-2026-09-30/.</p>
+<h2>Post-seal amendment (1 October 2026)</h2>
+<p>The pinned claim linter flagged sentences in this report on the branch's first GitHub Actions run (run 36748427202). The owner approved an open amendment of the report wording. This amendment changes wording and citations only; every result, number and conclusion above is unchanged.</p>
+<ul><li>Source line citations were added to the what-changed table: 0199 lines 66 and 111, matrix suite line 200, fail-closed suite line 204 and claim-record suite line 429</li><li>Raw outputs and <code>SHA256SUMS.run</code> are unchanged; <code>SHA256SUMS</code> changes only in the lines of the four REPORT files.</li><li>The pre-amendment REPORT hashes and the full change record are in <code>docs/governance/evidence/line-ci-remediation-2026-10-01/</code>.</li><li>This amendment needs independent re-review.</li></ul>
 </main>
 </body>
 </html>

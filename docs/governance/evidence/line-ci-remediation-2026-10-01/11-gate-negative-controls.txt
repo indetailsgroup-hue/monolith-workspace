@@ -1,0 +1,32 @@
+$ bash tools/gate-negative-controls.sh   (run from the repository root against the staged-equivalent private index)
+utc: 2026-10-01T00:11:32Z head: a97c3c8479a5fcbff9fb134e0e661f7f0d828a8e
+PASS (gate accepted): control 0, the approved change set unmodified
+warning: in the working copy of 'C:/Users/thai3/AppData/Local/Temp/tmp.Ly1DUxG5Jd/extra', LF will be replaced by CRLF the next time Git touches it
+PASS (gate rejected, exit 1): control 1, an unapproved extra path
+    FAIL: change set is exactly the approved 90 paths (unexpected=['docs/governance/unapproved-extra.md'], missing=[])
+    FAIL: listed files are modified and the bundle files are added, nothing else ({'docs/governance/unapproved-extra.md': 'A'})
+warning: in the working copy of 'C:/Users/thai3/AppData/Local/Temp/tmp.Ly1DUxG5Jd/run', LF will be replaced by CRLF the next time Git touches it
+PASS (gate rejected, exit 1): control 2, an amended bundle's SHA256SUMS.run changed
+    FAIL: change set is exactly the approved 90 paths (unexpected=['docs/governance/evidence/line-p010-catalog-2026-09-30/SHA256SUMS.run'], missing=[])
+    FAIL: listed files are modified and the bundle files are added, nothing else ({'docs/governance/evidence/line-p010-catalog-2026-09-30/SHA256SUMS.run': 'M'})
+    FAIL: line-p010-catalog-2026-09-30: every SHA256SUMS entry matches the staged blob (['SHA256SUMS.run'])
+    FAIL: line-p010-catalog-2026-09-30: SHA256SUMS.run identical to the base
+warning: in the working copy of 'C:/Users/thai3/AppData/Local/Temp/tmp.Ly1DUxG5Jd/raw', LF will be replaced by CRLF the next time Git touches it
+PASS (gate rejected, exit 1): control 3, a raw output of an amended bundle changed
+    FAIL: change set is exactly the approved 90 paths (unexpected=['docs/governance/evidence/line-p010-catalog-2026-09-30/08-analysis.txt'], missing=[])
+    FAIL: listed files are modified and the bundle files are added, nothing else ({'docs/governance/evidence/line-p010-catalog-2026-09-30/08-analysis.txt': 'M'})
+    FAIL: line-p010-catalog-2026-09-30: every SHA256SUMS entry matches the staged blob (['08-analysis.txt'])
+warning: in the working copy of 'C:/Users/thai3/AppData/Local/Temp/tmp.Ly1DUxG5Jd/doc', LF will be replaced by CRLF the next time Git touches it
+PASS (gate rejected, exit 1): control 4, an unevidenced absence claim added to a governance document
+    FAIL: pinned lint_claims on the gated tree exits 0 (allowlisted debt: 15 hits across 11 files)
+    FAIL: docs/governance/line-p010-execute-survey.th.html equals the renderer output of its Markdown
+warning: in the working copy of 'C:/Users/thai3/AppData/Local/Temp/tmp.Ly1DUxG5Jd/cfg', LF will be replaced by CRLF the next time Git touches it
+PASS (gate rejected, exit 1): control 5, a config change beyond the storage line
+    FAIL: supabase/config.toml differs only in [storage] enabled ([(8, 'enabled = true', 'enabled = false'), (25, 'enabled = true', 'enabled = false'), (32, 'enabled = true', 'enabled = false')])
+warning: in the working copy of 'C:/Users/thai3/AppData/Local/Temp/tmp.Ly1DUxG5Jd/cred', LF will be replaced by CRLF the next time Git touches it
+PASS (gate rejected, exit 1): control 6, a credential-shaped URI added to a changed file
+    FAIL: docs/governance/evidence/line-ci-remediation-2026-10-01: SHA256SUMS matches the blobs (['REPORT.en.md'])
+    FAIL: docs/governance/evidence/line-ci-remediation-2026-10-01/REPORT.en.html equals the renderer output of its Markdown
+    FAIL: no new credential-shaped value in 90 Git blobs ({'docs/governance/evidence/line-ci-remediation-2026-10-01/REPORT.en.md': ['uri_password']})
+negative controls failed to be rejected: 0
+exit: 0

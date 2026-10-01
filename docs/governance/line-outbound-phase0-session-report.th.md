@@ -22,7 +22,7 @@
 
 **วงจร:** Codex สร้าง → Claude ตรวจ+commit → Sol รีวิว → ถ้า REJECT วนแก้ใหม่ทั้งรอบ
 
-ข้อค้นพบสำคัญของรอบนี้: **การรีวิวข้ามค่ายจับของจริงได้ทุกครั้ง** — จาก 7 wave ที่ส่งรีวิว Sol ปฏิเสธ 5 ครั้ง และทุกครั้งมีหลักฐาน `file:line` ที่ตรวจสอบได้ ไม่มีการปฏิเสธลอย ๆ
+ข้อค้นพบสำคัญของรอบนี้: **การรีวิวข้ามค่ายจับของจริงได้ทุกครั้ง** — จาก 7 wave ที่ส่งรีวิว Sol ปฏิเสธ 5 ครั้ง และทุกครั้งมีหลักฐาน `file:line` ที่ตรวจสอบได้ — ไม่มีการปฏิเสธลอย ๆ
 
 ---
 
@@ -72,7 +72,7 @@
 
 ### 2.4 📝 อยู่แค่ spec
 
-- **Consent ฝั่งลูกค้า** — ไม่มีช่องเก็บเลย และไม่มีด่านเช็คก่อนส่ง (พนักงานมี `identity_binding.consent_at`, `0088:10`)
+- **Consent ฝั่งลูกค้า** — ตาราง `line_oa_customer_identity` (`00000000000002_line_oa_schema.sql:108`) ไม่มีช่องเก็บ consent และไม่มีด่านเช็คก่อนส่ง (พนักงานมี `identity_binding.consent_at` ที่ `0088_identity_binding_lifecycle.sql:10`; ตรวจซ้ำ 2026-10-01 ที่ `a97c3c847`: `git grep -il consent -- supabase/migrations supabase/functions` พบเฉพาะไฟล์ฝั่งพนักงาน 0088, 0105 และ `line-login` กับข้อความ marketing ใน 0152)
 - หน้า admin จัดการ template (ตอนนี้ seed ผ่าน migration เท่านั้น)
 
 ### 2.5 การแก้บันทึกที่เคยเกินจริง
@@ -97,17 +97,17 @@
 - **B1 ส่งซ้ำ** — `claimPending` เรียก `rpc_claim_line_outbound_batch` จริง (`index.ts:676-687`); claim แบบ `FOR UPDATE SKIP LOCKED` + reclaim ตาม timeout + `claim_token` fencing กันคนถือ lease ค้างเขียนทับ
 - **B2 service role** — ตรวจ service context จาก **SQL role** (`current_setting('role')`) ไม่ใช่ JWT → ปลอม claim ใน JWT ไม่ผ่าน; ด่านของมนุษย์ (governance/site) ไม่ถูกผ่อนเลย
 - **B3 แถวกลุ่ม** — LEFT JOIN + vertical จาก `line_groups` + fallback `monolith` ตาม 0097 + audit site เป็น NULL
-- **B4 transition guard** — บันทึกได้เฉพาะแถวที่ยัง `pending`; แถวจบแล้ว → `recorded=false` ไม่มี audit ซ้ำ
+- **B4 transition guard** — บันทึกได้เฉพาะแถวที่ยัง `pending`; แถวจบแล้ว → `recorded=false` ไม่มี audit ซ้ำ (`0193_line_outbound_claim_and_record.sql:235`)
 - **B5/P0-6 retry** — แยก transient (network/timeout/5xx/429/408/ลูกอัป lookup error) กับ permanent (config ที่ไม่มีจริง/template ปิด/slot ไม่ตรง/4xx อื่น) + exponential backoff + เพดาน 5 ครั้ง
 - **P0-5** — `X-Line-Retry-Key = outbound row id` บน push ทุกชนิด (text/flex/image); reply ไม่ใส่ (reply token ใช้ครั้งเดียวอยู่แล้ว)
-- **บั๊ก timezone 2 จุดที่ถ้าไม่เจอจะร้าย** — `next_attempt_at` และ `sent_at` เคยรับค่า `timezone('utc', now())` (timestamp ไม่มี tz) ใส่คอลัมน์ `timestamptz` → ในไทย backoff กลายเป็นศูนย์ และเวลาส่งเพี้ยน ~7 ชั่วโมง (ผมรีโปรดิวซ์เองยืนยันก่อนแก้)
+- **บั๊ก timezone 2 จุดที่ถ้าไม่เจอจะร้าย** — `next_attempt_at` และ `sent_at` เคยรับค่า `timezone('utc', now())` (ชนิด `timestamp without time zone`) ใส่คอลัมน์ `timestamptz` → ในไทย backoff กลายเป็นศูนย์ และเวลาส่งเพี้ยน ~7 ชั่วโมง (ผมรีโปรดิวซ์เองยืนยันก่อนแก้)
 
 ### 3.3 หลักฐาน (gate รันเองแยกจาก builder)
 
 - **pgTAP 70/70** ผ่าน ใน rollback wrapper `BEGIN; 0193; 0194; 0195; 0196; suite; ROLLBACK` — รวมเทสต์ regression ที่รันใต้ `set local timezone='Asia/Bangkok'` ทั้ง backoff และ `sent_at`
 - **vitest 18 ไฟล์ / 73 เทสต์** ผ่าน
 - **ไม่พบสิ่งค้างบน stack ที่แชร์ในขอบเขตที่ตรวจ** (ตรวจเฉพาะคอลัมน์ A1–A4 หลังรัน = 0 — ไม่ใช่การตรวจทั้งฐานข้อมูล)
-- **ไม่มี cron** (`cron.schedule`) ใน 0193–0196 และไม่มีการ activate การส่งจริง
+- **ไม่มี cron** (`cron.schedule`) ใน 0193–0196 และไม่มีการ activate การส่งจริง (ตรวจซ้ำ 2026-10-01 ที่ `a97c3c847`: `git grep -nF cron.schedule` บน migration 4 ไฟล์นั้นไม่พบผล)
 
 ### 3.4 สิ่งที่ยัง **ไม่ได้** พิสูจน์ (Sol ระบุเอง — ห้ามพูดเกิน)
 
@@ -156,7 +156,7 @@
 
 | # | คำถาม | บล็อกอะไร |
 |---|---|---|
-| 1 | Environment จริงมี cron เรียก `line-outbound-sender` ไหม (ในเรโปไม่มีแน่นอน) | ถ้ามีอยู่ = บั๊กเดินอยู่จริง ต้องรีบ deploy ของที่แก้แล้ว |
+| 1 | Environment จริงมี cron เรียก `line-outbound-sender` ไหม (ในเรโป ณ `a97c3c847` ไม่พบ: cron เรียก edge function ผ่าน `fn_wf_cron_invoke_edge` และ `git grep -nF "fn_wf_cron_invoke_edge('line-outbound-sender'" -- supabase` ไม่พบผล) | ถ้ามีอยู่ = บั๊กเดินอยู่จริง ต้องรีบ deploy ของที่แก้แล้ว |
 | 2 | ต้องมี human-approval ก่อนส่งหาลูกค้าจริงไหม | P1 |
 | 3 | Autonomy gate + brand-voice: wire ให้ live หรือเลิกอย่างเป็นทางการ + แก้ `tasks.md:157` | P0-7 |
 | 4 | ส่งลูกค้าโดยไม่มี consent gate รับได้ชั่วคราวไหม (PDPA) | P0-8 / P1 |

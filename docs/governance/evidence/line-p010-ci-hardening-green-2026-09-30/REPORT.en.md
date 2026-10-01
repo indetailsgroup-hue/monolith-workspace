@@ -42,3 +42,12 @@ The wrapper and transcript expose the checked tree; they are execution records, 
 ## Remaining work
 
 Independent review, resolution of the separate containment dependency, and approved push followed by actual CI remain outstanding. P0-9, B12/0199 and production catalog review remain separate. No push, deploy, shared/production access, cron activation or real messages occurred. This temporary stack does not prove production grants.
+
+## Post-seal amendment (1 October 2026)
+
+The pinned claim linter flagged sentences in this report on the branch's first GitHub Actions run (run 36748427202). The owner approved an open amendment of the report wording. This amendment changes wording and citations only; every result, number and conclusion above is unchanged.
+
+- Thai sentence boundaries are now source line breaks in REPORT.th.md (the rendered text is unchanged), in the pgTAP result paragraph
+- Raw outputs and `SHA256SUMS.run` are unchanged; `SHA256SUMS` changes only in the lines of the four REPORT files.
+- The pre-amendment REPORT hashes and the full change record are in `docs/governance/evidence/line-ci-remediation-2026-10-01/`.
+- This amendment needs independent re-review.

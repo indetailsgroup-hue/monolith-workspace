@@ -6,8 +6,8 @@
 
 - Recorder: `rpc_record_line_send_result` is service-only (owner decision). B12-15 authenticated is DENY.
 - Build: the owner approved building the whole matrix in one step before the ops caller register and the manufacturing sign-off arrived. The SERVICE-row authenticated denials and the `fn_prod_curated` service_role denial are therefore implemented on assumption, and deployment stays blocked until those answers exist.
-- Implementation: `supabase/migrations/0199_line_oa_restrict_definer_execute.sql` revokes EXECUTE only and grants nothing. It stops (55000) on a missing identity or an unclassified overload, and it raises 42501 and rolls back if any effective right differs from the target afterwards or PUBLIC still holds EXECUTE.
-- Tests: `supabase/tests/line_oa_definer_execute_matrix.sql` (82 assertions) and `supabase/tests/line_oa_definer_execute_fail_closed.sql` (23). Two existing tests changed with the policy. The original suite's recorder check now expects no authenticated EXECUTE, and the P0-10 suite reaches `fn_prod_curated` through `rpc_field_create_appointment` instead of calling it as service_role.
+- Implementation: `supabase/migrations/0199_line_oa_restrict_definer_execute.sql` revokes EXECUTE only and grants nothing. It stops (55000) on a missing identity or an unclassified overload (`0199_line_oa_restrict_definer_execute.sql:66`, `0199_line_oa_restrict_definer_execute.sql:75`), and it raises 42501 and rolls back if any effective right differs from the target afterwards or PUBLIC still holds EXECUTE (`0199_line_oa_restrict_definer_execute.sql:111`).
+- Tests: `supabase/tests/line_oa_definer_execute_matrix.sql` (82 assertions) and `supabase/tests/line_oa_definer_execute_fail_closed.sql` (23). Two existing tests changed with the policy. The original suite's recorder check now expects no authenticated EXECUTE (`line_outbound_claim_record.sql:429`), and the P0-10 suite reaches `fn_prod_curated` through `rpc_field_create_appointment` instead of calling it as service_role.
 - Evidence: `evidence/line-p012-red-a-2026-09-30/`, `evidence/line-p012-red-b-2026-09-30/` and `evidence/line-p012-green-2026-09-30/`. These are local runs, awaiting independent review; they are not CI or production results.
 
 ## Alternatives and recommendation
@@ -45,7 +45,10 @@ PUBLIC target: no EXECUTE on all twenty identities; the historical catalog shows
 
 ## Caller classes and unresolved decisions
 
-INTERNAL: remove direct role access only after proving owner call chains and the installed trigger still work; fn_prod_curated needs manufacturing coordination. SERVICE: preserve service entry points; confirm deployed cron principal without activating cron. FIELD: preserve authenticated business calls and test both authorized and cross-site denial. CALLER-UNKNOWN: retain authenticated/service access pending inventory; absence of a code call does not justify further revocation. The dogfood runbook explicitly names rpc_create_line_order.
+- INTERNAL: remove direct role access only after proving owner call chains and the installed trigger still work; fn_prod_curated needs manufacturing coordination.
+- SERVICE: preserve service entry points; confirm deployed cron principal without activating cron.
+- FIELD: preserve authenticated business calls and test both authorized and cross-site denial.
+- CALLER-UNKNOWN: retain authenticated/service access pending inventory; absence of a code call does not justify further revocation — the dogfood runbook explicitly names rpc_create_line_order.
 
 SENDER: claim remains service-only. The recorder currently permits authenticated execution and checks governance/site access in 0197:122–129. Recommend service-only recording if ops and the owner confirm that no user-driven recording workflow is required. Otherwise retain the guarded user path and test it explicitly. Do not silently choose either branch.
 
