@@ -33,7 +33,7 @@
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
-    "@types/node": "^20.10.0",
+    "@types/node": "^26.5.1",
     "@types/pdfkit": "^0.17.4",
     "@types/uuid": "^10.0.0",
     "@types/yauzl": "^2.10.3",
