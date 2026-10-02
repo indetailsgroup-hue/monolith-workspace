@@ -69,10 +69,14 @@ if not recheck:
 else:
     ancestor = subprocess.run(['git', 'merge-base', '--is-ancestor', bundle_head, 'HEAD']).returncode == 0
     require(ancestor, f'recheck: bundle head {bundle_head[:9]} is an ancestor of HEAD {head[:9]}')
-    sums = [line.split('  ', 1) for line in read('SHA256SUMS').splitlines() if line]
-    require(all(hashlib.sha256((out / name).read_bytes()).hexdigest() == digest for digest, name in sums),
+    # sha256sum lines: "<digest>  <name>" (text) or "<digest> *<name>" (binary, Git Bash).
+    def sum_lines(name):
+        return [re.fullmatch(r'([0-9a-f]{64}) [ *](.+)', line).groups() for line in read(name).splitlines() if line]
+
+    sums = sum_lines('SHA256SUMS')
+    require(sums and all(hashlib.sha256((out / name).read_bytes()).hexdigest() == digest for digest, name in sums),
             f'recheck: all {len(sums)} SHA256SUMS entries match')
-    sources = [line.split('  ', 1) for line in read('source-SHA256SUMS').splitlines() if line]
+    sources = sum_lines('source-SHA256SUMS')
     mismatched = [name for digest, name in sources
                   if hashlib.sha256(subprocess.run(['git', '-c', 'core.longpaths=true', 'show', f'{bundle_head}:{name}'],
                                                    capture_output=True, check=True).stdout).hexdigest() != digest]
