@@ -10,6 +10,17 @@
 - เทสต์: `supabase/tests/line_oa_definer_execute_matrix.sql` (82 assertion) และ `supabase/tests/line_oa_definer_execute_fail_closed.sql` (27 assertion; 23 ที่ a97c3c847) รอบ 2 (2 ตุลาคม 2026) ทำให้ assertion 54 เรียกแบบ anon ด้วยค่าจริงและเทียบ fingerprint ของตารางภายใน probe เพิ่ม case F (identity หาย, 55000) และให้ assertion 41 กับ 43 ของ suite เดิมตรวจข้อความ ACL ของฟังก์ชัน เทสต์เดิมเปลี่ยนตามนโยบาย 2 จุด คือ suite เดิมตรวจว่า authenticated ไม่มี EXECUTE บน recorder แล้ว (`line_outbound_claim_record.sql:429`) และ suite ของ P0-10 เรียก `fn_prod_curated` ผ่าน `rpc_field_create_appointment` แทนการเรียกตรงด้วย service_role
 - หลักฐาน: `evidence/line-p012-red-a-2026-09-30/`, `evidence/line-p012-red-b-2026-09-30/` และ `evidence/line-p012-green-2026-09-30/` และรอบ 2 ใน `evidence/line-p012b-red-a-2026-10-02/`, `evidence/line-p012b-red-mutants-2026-10-02/` และ `evidence/line-p012b-green-2026-10-02/` เป็นผลรันในเครื่องที่รอผู้ตรวจอิสระ ไม่ใช่ผล production
 
+## มติของเจ้าของและรายการที่เพิ่ม (3 ตุลาคม 2026)
+
+- `rpc_line_inbound_retry_sweep(integer)` (P0-9, migration 0200 บน branch `claude/line-p009-ingest-retry`) เข้า matrix นี้เป็น B12-21 กลุ่ม SERVICE คือ anon DENY, authenticated DENY, service_role KEEP และ PUBLIC ไม่มี EXECUTE (`0200_line_inbound_handler_retry.sql:536`)
+- 0199 ไม่ได้บังคับ B12-21 แต่ 0200 grant EXECUTE ให้ service_role โดยตรง (`0200_line_inbound_handler_retry.sql:547`) และปิดท้ายด้วยการตรวจแบบ fail-closed ที่ raise 42501 เมื่อสิทธิ์ที่มีผลจริงต่างจากเป้าหมาย (`0200_line_inbound_handler_retry.sql:594`)
+- เทสต์: assertion 35-36 ของ `supabase/tests/line_inbound_handler_retry.sql` ตรวจสิทธิ์ และ 42-53 ตรวจกรณี fail-closed ส่วน suite ของ 0199 ยังครอบคลุม 20 identity เดิม assertion 82 และ 27 ข้อกับหลักฐานที่อ้างถึงจึงยังใช้ได้
+- หลักฐาน: `evidence/line-p009-r3-green-2026-10-02/` (assertion 35 ได้ f/f/t) และ `evidence/line-p009-r3-mutants-2026-10-02/` เป็นการรันในเครื่องที่ 1902a8eea รอการรีวิวข้ามค่าย ไม่ใช่ผลจาก production
+
+| ID | public identity | Current A/U/S | Target anon | Target authenticated | Target service_role | Class |
+| --- | --- | --- | --- | --- | --- | --- |
+| B12-21 | `rpc_line_inbound_retry_sweep(integer)` | f/f/t (ในเครื่อง, 1902a8eea) | DENY | DENY | KEEP | SERVICE |
+
 ## ทางเลือกและข้อเสนอ
 
 คงสิทธิ์เดิมลดผลกระทบแต่ B12 ยังเปิด ถอนทั้งหมดเสี่ยงทำ ingress, sender และ field-app พัง แนะนำถอนราย identity โดยคงผู้เรียกธุรกิจที่อนุมัติและเส้นทาง owner ไว้ การไม่มีหลักฐาน caller ไม่ใช่หลักฐานว่าไม่ได้ใช้

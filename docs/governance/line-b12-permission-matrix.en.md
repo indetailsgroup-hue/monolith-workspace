@@ -10,6 +10,17 @@
 - Tests: `supabase/tests/line_oa_definer_execute_matrix.sql` (82 assertions) and `supabase/tests/line_oa_definer_execute_fail_closed.sql` (27; 23 at a97c3c847). Round 2 (2 October 2026) made assertion 54 run realistic anon calls that fingerprint the tables inside each probe, added case F (missing identity, 55000), and made the original suite's assertions 41 and 43 require the function-ACL message. Two existing tests changed with the policy. The original suite's recorder check now expects no authenticated EXECUTE (`line_outbound_claim_record.sql:429`), and the P0-10 suite reaches `fn_prod_curated` through `rpc_field_create_appointment` instead of calling it as service_role.
 - Evidence: `evidence/line-p012-red-a-2026-09-30/`, `evidence/line-p012-red-b-2026-09-30/` and `evidence/line-p012-green-2026-09-30/`; round 2 in `evidence/line-p012b-red-a-2026-10-02/`, `evidence/line-p012b-red-mutants-2026-10-02/` and `evidence/line-p012b-green-2026-10-02/`. These are local runs, awaiting independent review; they are not production results.
 
+## Owner decision and addition (3 October 2026)
+
+- `rpc_line_inbound_retry_sweep(integer)` (P0-9, migration 0200 on branch `claude/line-p009-ingest-retry`) joins this matrix as B12-21 in class SERVICE: anon DENY, authenticated DENY, service_role KEEP, and PUBLIC holds no EXECUTE (`0200_line_inbound_handler_retry.sql:536`).
+- 0199 does not enforce B12-21: 0200 grants EXECUTE to service_role explicitly (`0200_line_inbound_handler_retry.sql:547`) and ends with a fail-closed check that raises 42501 when an effective right differs from the target (`0200_line_inbound_handler_retry.sql:594`).
+- Tests: `supabase/tests/line_inbound_handler_retry.sql` assertions 35-36 check the rights and 42-53 the fail-closed cases; the 0199 suites keep their twenty identities, so their 82 and 27 assertions and the evidence that cites them stay valid.
+- Evidence: `evidence/line-p009-r3-green-2026-10-02/` (assertion 35 gives f/f/t) and `evidence/line-p009-r3-mutants-2026-10-02/`, local runs at 1902a8eea awaiting cross-vendor review, not production results.
+
+| ID | public identity | Current A/U/S | Target anon | Target authenticated | Target service_role | Class |
+| --- | --- | --- | --- | --- | --- | --- |
+| B12-21 | `rpc_line_inbound_retry_sweep(integer)` | f/f/t (local, 1902a8eea) | DENY | DENY | KEEP | SERVICE |
+
 ## Alternatives and recommendation
 
 Keeping existing rights avoids disruption but leaves B12 open. Blanket revocation risks breaking signed ingress, sender and field-app paths. Recommend selective denial by exact identity, preserving approved business callers and owner chains. Missing caller evidence is not evidence of non-use.
