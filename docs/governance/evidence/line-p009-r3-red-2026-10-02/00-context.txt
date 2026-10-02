@@ -1,0 +1,32 @@
+evidence_bundle: docs/governance/evidence/line-p009-r3-red-2026-10-02
+mode: red
+started_utc: 2026-10-02T01:00:08Z
+branch: claude/line-p009-ingest-retry
+head_sha: 1902a8eea3ddf43b372653926c1fdcf4c4908160
+uncommitted_changes_in_code_under_test: [] (empty = clean)
+db_image: public.ecr.aws/supabase/postgres:17.6.1.158 id=sha256:99b1729aeb0bac314445024fc149fbd39306170b61dd50800ccf180327ab3459
+auth_image: public.ecr.aws/supabase/gotrue:v2.195.0 id=sha256:362659ca70eaa75ba05bbaf963caa84c1c5afe5e8fbf0777e17b830dd5f0f60a
+storage_image: public.ecr.aws/supabase/storage-api:v1.66.4 id=sha256:ead6d49b9873d65a030c6c44b46676f4276b234becd6d7819c254351b5400d95
+network: line-p009-net · containers: line-p009-db (127.0.0.1:55448), line-p009-auth, line-p009-storage (all throwaway; removed at the end)
+dsn: postgresql://postgres@127.0.0.1:55448/postgres (password generated per run, passed via PGPASSWORD, never written)
+node: v22.21.1
+python: Python 3.14.2 · pytest 8.4.2 · hypothesis 6.155.5 · psycopg 3.3.4
+psql_client: psql (PostgreSQL) 18.1
+docker: 29.8.0
+db_ready_utc: 2026-10-02T01:00:20Z
+cron_launch_active_jobs: off
+db_server: PostgreSQL 17.6 on x86_64-pc-linux-gnu, compiled by gcc (GCC) 15.2.0, 64-bit
+service_bootstrap: ok (01b-service-bootstrap.sql)
+auth_schema_ready: t · storage_schema_ready: t
+services_ready_utc: 2026-10-02T01:00:24Z
+migrations_applied_ok: 194 · skipped: 1 · failed: 0
+p009_pgtap_exit=0
+suite_loop_exit=1
+inbound_retry_race_exit=0
+inbound_retry_race_required_exit=1
+claim_race_exit=0
+ci_harness_tests_exit=0
+pytest_exit=0
+result: COMPLETED (see exit codes above)
+verification_exit=0
+finished_utc: 2026-10-02T01:01:29Z

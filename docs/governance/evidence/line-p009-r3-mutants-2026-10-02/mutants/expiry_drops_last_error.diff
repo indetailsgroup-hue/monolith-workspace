@@ -1,0 +1,11 @@
+--- 0200_line_inbound_handler_retry.sql
++++ expiry_drops_last_error.sql
+@@ -437,7 +437,7 @@
+     if not v_ingested and v_row.created_at < now() - interval '10 minutes' then
+       update public.line_oa_inbound_retry
+          set status = 'dead_letter', next_attempt_at = null,
+-             last_error = 'expired: queued for more than 10 minutes; last error: ' || coalesce(v_row.last_error, 'none')
++             last_error = 'expired: queued for more than 10 minutes'
+        where id = v_row.id;
+ 
+       insert into public.line_oa_audit_log (

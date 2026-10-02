@@ -1,0 +1,9 @@
+BEGIN
+CREATE EXTENSION
+1..8
+ok 1 - broad installation-media policies are removed
+ok 2 - authenticated cannot invoke legacy field photo submission
+ok 3 - service role cannot substitute for a human evidence action
+ok 4 - legacy capture ingest is not a direct authenticated authority
+ok 5 - service role cannot substitute for legacy capture ingest either
+ok 6 - service role cannot invoke the legacy factory state-transition authority

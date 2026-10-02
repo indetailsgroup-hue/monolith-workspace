@@ -1,0 +1,137 @@
+create or replace function public.rpc_line_inbound_retry_sweep(
+  p_limit integer default 20,
+  out claimed integer,
+  out succeeded integer,
+  out rescheduled integer,
+  out dead_lettered integer
+)
+returns record
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_actor   text;
+  v_row     public.line_oa_inbound_retry%rowtype;
+  v_result  text;
+  v_attempt integer;
+  v_ingested boolean;
+begin
+  if p_limit is null or p_limit < 1 or p_limit > 100 then
+    raise exception 'p_limit must be between 1 and 100' using errcode = 'invalid_parameter_value';
+  end if;
+
+  claimed       := 0;
+  succeeded     := 0;
+  rescheduled   := 0;
+  dead_lettered := 0;
+  v_actor := public.resolve_actor();
+
+  for v_row in
+    select * from public.line_oa_inbound_retry q
+     where q.status = 'pending' and q.next_attempt_at <= now()
+     order by q.next_attempt_at, q.id
+     limit p_limit
+     for update skip locked
+  loop
+    claimed := claimed + 1;
+    v_ingested := exists (select 1 from public.line_oa_inbound_messages m
+                          where m.webhook_event_id = v_row.webhook_event_id);
+
+    -- A stale row is never replayed: staff may already have re-sent the
+    -- command, so running it now could repeat a customer-visible action. An
+    -- event another delivery already ingested is closed below instead.
+    if not v_ingested and v_row.created_at < now() - interval '10 minutes' then
+      update public.line_oa_inbound_retry
+         set status = 'dead_letter', next_attempt_at = null,
+             last_error = 'expired: queued for more than 10 minutes; last error: ' || coalesce(v_row.last_error, 'none')
+       where id = v_row.id;
+
+      insert into public.line_oa_audit_log (
+        event_type, vertical_context, site_code, entity_ref, performed_by
+      )
+      values (
+        'group_event_dead_letter', v_row.vertical_context, null,
+        format('webhook_event_id:%s|line_group_id:%s|attempt:%s|reason:expired',
+               v_row.webhook_event_id, v_row.line_group_id, v_row.attempt_count),
+        v_actor
+      );
+      dead_lettered := dead_lettered + 1;
+      continue;
+    end if;
+
+    -- One savepoint per row: whatever this row raises, its work (including the
+    -- handler's side effects) is rolled back and only this row fails. If
+    -- another delivery ingested the event first, the row is closed.
+    begin
+      if v_ingested then
+        v_result := 'already_ingested';
+      else
+        v_result := public.fn_line_handle_group_event(v_row.payload, v_row.vertical_context, v_actor);
+
+        if v_result not like 'handler_error:%'
+           and v_result not in ('plain_ignored', 'plain_unbound_ignored', 'plain_archived_ignored',
+                                'members_ignored_unbound', 'ignored_event_type', 'issue_empty_ignored') then
+          -- Same success state as a first-time ingest (0097), with a
+          -- timezone-safe received_at (as 0195/0196).
+          insert into public.line_oa_inbound_messages (
+            conversation_id, webhook_event_id, payload, received_at, source_type, line_group_id
+          )
+          values (null, v_row.webhook_event_id, v_row.payload, now(), 'group', v_row.line_group_id);
+
+          insert into public.line_oa_audit_log (
+            event_type, vertical_context, site_code, entity_ref, performed_by
+          )
+          values (
+            'group_event', v_row.vertical_context, null,
+            format('webhook_event_id:%s|line_group_id:%s|result:%s', v_row.webhook_event_id, v_row.line_group_id, v_result),
+            v_actor
+          );
+        end if;
+      end if;
+    exception
+      when unique_violation then
+        v_result := 'already_ingested';
+      when others then
+        v_result := 'sweep_error:' || sqlstate || ' ' || sqlerrm;
+    end;
+
+    if v_result like 'handler_error:%' or v_result like 'sweep_error:%' then
+      v_attempt := v_row.attempt_count + 1;
+      if v_attempt >= 5 then
+        update public.line_oa_inbound_retry
+           set status = 'dead_letter', attempt_count = least(v_attempt, 5),
+               next_attempt_at = null, last_error = left(v_result, 500)
+         where id = v_row.id;
+
+        insert into public.line_oa_audit_log (
+          event_type, vertical_context, site_code, entity_ref, performed_by
+        )
+        values (
+          'group_event_dead_letter', v_row.vertical_context, null,
+          format('webhook_event_id:%s|line_group_id:%s|attempt:%s|reason:retry_bound',
+                 v_row.webhook_event_id, v_row.line_group_id, least(v_attempt, 5)),
+          v_actor
+        );
+        dead_lettered := dead_lettered + 1;
+      else
+        -- Backoff as 0196: 1 s * 2^(attempt - 1), capped at five minutes.
+        update public.line_oa_inbound_retry
+           set attempt_count = v_attempt,
+               next_attempt_at = now() + make_interval(secs => least(300.0, power(2.0, v_attempt - 1))),
+               last_error = left(v_result, 500)
+         where id = v_row.id;
+        rescheduled := rescheduled + 1;
+      end if;
+    else
+      -- The inbound row keeps the payload; clear the retry copy and the old
+      -- error text, which can quote input values (PDPA v1).
+      update public.line_oa_inbound_retry
+         set status = 'succeeded', next_attempt_at = null,
+             last_result = v_result, last_error = null, payload = '{}'::jsonb
+       where id = v_row.id;
+      succeeded := succeeded + 1;
+    end if;
+  end loop;
+end;
+$$;

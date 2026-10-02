@@ -1,0 +1,10 @@
+--- 0200_line_inbound_handler_retry.sql
++++ exit_after_queue.sql
+@@ -251,6 +251,7 @@
+             format('webhook_event_id:%s|line_group_id:%s|attempt:1', v_webhook_event_id, v_group_id),
+             v_actor
+           );
++          exit;
+         elsif v_group_result in ('plain_ignored', 'plain_unbound_ignored', 'plain_archived_ignored',
+                               'members_ignored_unbound', 'ignored_event_type', 'issue_empty_ignored') then
+           events_skipped := events_skipped + 1;

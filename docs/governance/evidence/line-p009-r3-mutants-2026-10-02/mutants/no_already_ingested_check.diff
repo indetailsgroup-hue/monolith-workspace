@@ -1,0 +1,11 @@
+--- 0200_line_inbound_handler_retry.sql
++++ no_already_ingested_check.sql
+@@ -457,7 +457,7 @@
+     -- handler's side effects) is rolled back and only this row fails. If
+     -- another delivery ingested the event first, the row is closed.
+     begin
+-      if v_ingested then
++      if false then
+         v_result := 'already_ingested';
+       else
+         v_result := public.fn_line_handle_group_event(v_row.payload, v_row.vertical_context, v_actor);

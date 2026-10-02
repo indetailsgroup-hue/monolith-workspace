@@ -1,0 +1,18 @@
+scope: exactly the values listed below, nothing else
+captured_utc: 2026-10-02T01:02:31Z
+fn_rpc_line_inbound_retry_sweep|1
+tbl_line_oa_inbound_retry|true
+rows_line_oa_inbound_retry|0
+rows_line_oa_inbound_messages|0
+rows_line_oa_outbound_messages|0
+rows_line_oa_audit_log|0
+rows_line_oa_channels|0
+rows_line_oa_conversations|0
+rows_line_oa_customer_identity|0
+rows_line_groups|0
+rows_vault_secrets|0
+user_triggers_public|19
+roles_p009|0
+cron_jobs|12
+cron_jobs_inbound_retry|0
+cron_job_runs|0

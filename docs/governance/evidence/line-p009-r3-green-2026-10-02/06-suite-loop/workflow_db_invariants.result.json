@@ -1,0 +1,23 @@
+{
+  "suite": "workflow_db_invariants",
+  "stdout": "docs/governance/evidence/line-p009-r3-green-2026-10-02/06-suite-loop/workflow_db_invariants.tap",
+  "stderr": "docs/governance/evidence/line-p009-r3-green-2026-10-02/06-suite-loop/workflow_db_invariants.stderr",
+  "tapSha256": "f292e044a8b4066092429d8f693b9cf3b52f8c2f782d87e6f6c5d98a9257d558",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "runId": "p009-green",
+  "origin": "local",
+  "checkedAt": "2026-10-02T01:02:31.883Z",
+  "pass": true,
+  "exitCode": 0,
+  "plan": 11,
+  "planLines": 1,
+  "results": 11,
+  "ok": 11,
+  "notOk": 0,
+  "skip": 0,
+  "todo": 0,
+  "bailOut": false,
+  "sqlErrorLines": 0,
+  "finishDiagnostics": [],
+  "failures": []
+}

@@ -1,0 +1,11 @@
+--- 0200_line_inbound_handler_retry.sql
++++ uncapped_attempt.sql
+@@ -493,7 +493,7 @@
+       v_attempt := v_row.attempt_count + 1;
+       if v_attempt >= 5 then
+         update public.line_oa_inbound_retry
+-           set status = 'dead_letter', attempt_count = least(v_attempt, 5),
++           set status = 'dead_letter', attempt_count = v_attempt,
+                next_attempt_at = null, last_error = left(v_result, 500)
+          where id = v_row.id;
+ 

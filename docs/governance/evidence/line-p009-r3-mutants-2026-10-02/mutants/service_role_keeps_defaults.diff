@@ -1,0 +1,20 @@
+--- 0200_line_inbound_handler_retry.sql
++++ service_role_keeps_defaults.sql
+@@ -73,7 +73,7 @@
+ declare
+   r text;
+ begin
+-  foreach r in array array['anon', 'authenticated', 'service_role'] loop
++  foreach r in array array['anon', 'authenticated'] loop
+     if exists (select 1 from pg_roles where rolname = r) then
+       execute format('revoke all on public.line_oa_inbound_retry from %I', r);
+     end if;
+@@ -590,7 +590,7 @@
+     v_problems := v_problems || 'public:execute rpc_line_inbound_retry_sweep'::text;
+   end if;
+ 
+-  if cardinality(v_problems) > 0 then
++  if false then
+     raise exception 'P0-9: privileges differ from target: %', array_to_string(v_problems, ', ')
+       using errcode = 'insufficient_privilege';
+   end if;

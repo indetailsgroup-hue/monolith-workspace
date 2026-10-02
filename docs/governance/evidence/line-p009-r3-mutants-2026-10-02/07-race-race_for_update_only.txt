@@ -1,0 +1,14 @@
+CLEANUP inbound-retry-race: verified 0 retry rows
+file:///C:/Users/thai3/determined-williams%20(2)/MONOLITH%20Repair%20Intelligence/.worktrees/line-p009-ingest-retry/tests/line-oa-commerce/concurrency/inbound-retry-race.mjs:58
+        reject(new Error(`${name} failed (exit ${code}): ${stderr.trim()}`));
+               ^
+
+Error: client B failed (exit 1): ERROR:  canceling statement due to lock timeout
+CONTEXT:  while locking tuple (1,2) in relation "line_oa_inbound_retry"
+PL/pgSQL function rpc_line_inbound_retry_sweep(integer) line 19 at FOR over SELECT rows
+    at ChildProcess.<anonymous> (file:///C:/Users/thai3/determined-williams%20(2)/MONOLITH%20Repair%20Intelligence/.worktrees/line-p009-ingest-retry/tests/line-oa-commerce/concurrency/inbound-retry-race.mjs:58:16)
+    at ChildProcess.emit (node:events:519:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+
+Node.js v22.21.1

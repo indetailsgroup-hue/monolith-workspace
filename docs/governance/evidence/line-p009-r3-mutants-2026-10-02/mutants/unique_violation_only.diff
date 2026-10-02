@@ -1,0 +1,11 @@
+--- 0200_line_inbound_handler_retry.sql
++++ unique_violation_only.sql
+@@ -485,8 +485,6 @@
+     exception
+       when unique_violation then
+         v_result := 'already_ingested';
+-      when others then
+-        v_result := 'sweep_error:' || sqlstate || ' ' || sqlerrm;
+     end;
+ 
+     if v_result like 'handler_error:%' or v_result like 'sweep_error:%' then

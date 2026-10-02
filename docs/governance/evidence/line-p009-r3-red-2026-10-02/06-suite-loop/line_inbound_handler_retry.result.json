@@ -1,0 +1,34 @@
+{
+  "suite": "line_inbound_handler_retry",
+  "stdout": "docs/governance/evidence/line-p009-r3-red-2026-10-02/06-suite-loop/line_inbound_handler_retry.tap",
+  "stderr": "docs/governance/evidence/line-p009-r3-red-2026-10-02/06-suite-loop/line_inbound_handler_retry.stderr",
+  "tapSha256": "68dc2ea8331e18ee62c7a4492594f68959d64de29e3c74c4d6f3a4b0ac3b243c",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "runId": "p009-red",
+  "origin": "local",
+  "checkedAt": "2026-10-02T01:00:57.313Z",
+  "pass": false,
+  "exitCode": 0,
+  "plan": 53,
+  "planLines": 1,
+  "results": 53,
+  "ok": 5,
+  "notOk": 48,
+  "skip": 0,
+  "todo": 0,
+  "bailOut": false,
+  "sqlErrorLines": 0,
+  "finishDiagnostics": [
+    "# Looks like you failed 48 tests of 53"
+  ],
+  "failures": [
+    {
+      "code": "failed-result",
+      "detail": "48 not ok result(s)"
+    },
+    {
+      "code": "finish-diagnostic",
+      "detail": "# Looks like you failed 48 tests of 53"
+    }
+  ]
+}
