@@ -20,14 +20,24 @@
 --         its payload copy cleared;
 --       - already ingested by another delivery -> closed as already_ingested
 --         without keeping any handler side effect;
---       - failure -> attempt + 1, backoff 1 s * 2^(attempt - 1) capped at
---         300 s (as 0196); attempt 5 -> dead_letter + group_event_dead_letter
---         audit, payload kept for human handling.
+--       - failure (handler_error, or any other error the row raises) -> that
+--         row's work is rolled back, attempt + 1, backoff 1 s * 2^(attempt - 1)
+--         capped at 300 s (as 0196); attempt 5 -> dead_letter +
+--         group_event_dead_letter audit (reason retry_bound), payload kept for
+--         human handling; the rest of the batch still commits;
+--       - queued for more than 10 minutes -> dead_letter (reason expired)
+--         without running the handler, so a stale command (for example a
+--         '#ปัญหา' that staff already re-sent) is never replayed late.
+--   * Privileges are granted explicitly (service_role: SELECT on the table,
+--     EXECUTE on the sweep) and verified at the end: if any role's effective
+--     privilege differs from the target, the migration raises 42501 and rolls
+--     back (fail closed, as 0198/0199).
 --
 -- Not changed: the 1:1 path, the handler, the rpc_ingest_line_webhook
 -- signature and its 0199 EXECUTE matrix. No cron is added: nothing schedules
 -- the sweep, so activating retries is a separate owner decision (as B6).
--- Not covered: production verification.
+-- Not covered: query_canceled (statement_timeout) still aborts a whole sweep
+-- call; retention of dead-letter payloads; production verification.
 
 create table if not exists public.line_oa_inbound_retry (
   id               uuid primary key default gen_random_uuid(),
@@ -54,20 +64,19 @@ alter table public.line_oa_inbound_retry enable row level security;
 
 -- Only the DEFINER RPCs below write this table. Platform default privileges
 -- grant ALL to the client roles, so remove them (0005 role-exists pattern);
--- service_role keeps SELECT so operators can read dead letters.
+-- service_role gets SELECT only, so operators can read dead letters.
 revoke all on public.line_oa_inbound_retry from public;
 do $$
 declare
   r text;
 begin
-  foreach r in array array['anon', 'authenticated'] loop
+  foreach r in array array['anon', 'authenticated', 'service_role'] loop
     if exists (select 1 from pg_roles where rolname = r) then
       execute format('revoke all on public.line_oa_inbound_retry from %I', r);
     end if;
   end loop;
   if exists (select 1 from pg_roles where rolname = 'service_role') then
-    revoke insert, update, delete, truncate, references, trigger
-      on public.line_oa_inbound_retry from service_role;
+    grant select on public.line_oa_inbound_retry to service_role;
   end if;
 end;
 $$;
@@ -416,8 +425,30 @@ begin
   loop
     claimed := claimed + 1;
 
-    -- One savepoint per row: if another delivery ingested the event first, the
-    -- handler's side effects are rolled back and the row is closed.
+    -- A stale row is never replayed: staff may already have re-sent the
+    -- command, so running it now could repeat a customer-visible action.
+    if v_row.created_at < now() - interval '10 minutes' then
+      update public.line_oa_inbound_retry
+         set status = 'dead_letter', next_attempt_at = null,
+             last_error = 'expired: queued for more than 10 minutes'
+       where id = v_row.id;
+
+      insert into public.line_oa_audit_log (
+        event_type, vertical_context, site_code, entity_ref, performed_by
+      )
+      values (
+        'group_event_dead_letter', v_row.vertical_context, null,
+        format('webhook_event_id:%s|line_group_id:%s|attempt:%s|reason:expired',
+               v_row.webhook_event_id, v_row.line_group_id, v_row.attempt_count),
+        v_actor
+      );
+      dead_lettered := dead_lettered + 1;
+      continue;
+    end if;
+
+    -- One savepoint per row: whatever this row raises, its work (including the
+    -- handler's side effects) is rolled back and only this row fails. If
+    -- another delivery ingested the event first, the row is closed.
     begin
       if exists (select 1 from public.line_oa_inbound_messages m
                  where m.webhook_event_id = v_row.webhook_event_id) then
@@ -428,11 +459,12 @@ begin
         if v_result not like 'handler_error:%'
            and v_result not in ('plain_ignored', 'plain_unbound_ignored', 'plain_archived_ignored',
                                 'members_ignored_unbound', 'ignored_event_type', 'issue_empty_ignored') then
-          -- Same success state as a first-time ingest (0097).
+          -- Same success state as a first-time ingest (0097), with a
+          -- timezone-safe received_at (as 0195/0196).
           insert into public.line_oa_inbound_messages (
             conversation_id, webhook_event_id, payload, received_at, source_type, line_group_id
           )
-          values (null, v_row.webhook_event_id, v_row.payload, timezone('utc', now()), 'group', v_row.line_group_id);
+          values (null, v_row.webhook_event_id, v_row.payload, now(), 'group', v_row.line_group_id);
 
           insert into public.line_oa_audit_log (
             event_type, vertical_context, site_code, entity_ref, performed_by
@@ -447,9 +479,11 @@ begin
     exception
       when unique_violation then
         v_result := 'already_ingested';
+      when others then
+        v_result := 'sweep_error:' || sqlstate || ' ' || sqlerrm;
     end;
 
-    if v_result like 'handler_error:%' then
+    if v_result like 'handler_error:%' or v_result like 'sweep_error:%' then
       v_attempt := v_row.attempt_count + 1;
       if v_attempt >= 5 then
         update public.line_oa_inbound_retry
@@ -462,7 +496,8 @@ begin
         )
         values (
           'group_event_dead_letter', v_row.vertical_context, null,
-          format('webhook_event_id:%s|line_group_id:%s|attempt:%s', v_row.webhook_event_id, v_row.line_group_id, v_attempt),
+          format('webhook_event_id:%s|line_group_id:%s|attempt:%s|reason:retry_bound',
+                 v_row.webhook_event_id, v_row.line_group_id, v_attempt),
           v_actor
         );
         dead_lettered := dead_lettered + 1;
@@ -476,10 +511,11 @@ begin
         rescheduled := rescheduled + 1;
       end if;
     else
-      -- The inbound row keeps the payload; clear the retry copy (PDPA v1).
+      -- The inbound row keeps the payload; clear the retry copy and the old
+      -- error text, which can quote input values (PDPA v1).
       update public.line_oa_inbound_retry
          set status = 'succeeded', next_attempt_at = null,
-             last_result = v_result, payload = '{}'::jsonb
+             last_result = v_result, last_error = null, payload = '{}'::jsonb
        where id = v_row.id;
       succeeded := succeeded + 1;
     end if;
@@ -501,5 +537,54 @@ begin
       execute format('revoke execute on function public.rpc_line_inbound_retry_sweep(integer) from %I', r);
     end if;
   end loop;
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    grant execute on function public.rpc_line_inbound_retry_sweep(integer) to service_role;
+  end if;
+end;
+$$;
+
+-- Fail closed (as 0198/0199), and last in this file: if any role's effective
+-- privilege on the new objects differs from the target, in either direction
+-- (for example one inherited through role membership or granted by another
+-- grantor), raise 42501 so the whole migration rolls back.
+--   line_oa_inbound_retry: anon/authenticated nothing; service_role SELECT only.
+--   rpc_line_inbound_retry_sweep: EXECUTE for service_role only; none for PUBLIC.
+do $$
+declare
+  v_table    constant regclass := 'public.line_oa_inbound_retry'::regclass;
+  v_sweep    constant regprocedure := 'public.rpc_line_inbound_retry_sweep(integer)'::regprocedure;
+  v_privs    text[] := array['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'];
+  v_problems text[] := '{}';
+  r text;
+  p text;
+begin
+  if current_setting('server_version_num')::int >= 170000 then
+    v_privs := v_privs || 'MAINTAIN'::text;
+  end if;
+
+  foreach r in array array['anon', 'authenticated', 'service_role'] loop
+    continue when not exists (select 1 from pg_roles where rolname = r);
+    foreach p in array v_privs loop
+      if has_table_privilege(r, v_table, p) <> (r = 'service_role' and p = 'SELECT') then
+        v_problems := v_problems || format('%s:%s line_oa_inbound_retry', r, lower(p));
+      end if;
+    end loop;
+    if has_any_column_privilege(r, v_table, 'INSERT') or has_any_column_privilege(r, v_table, 'UPDATE') then
+      v_problems := v_problems || format('%s:column write line_oa_inbound_retry', r);
+    end if;
+    if has_function_privilege(r, v_sweep, 'EXECUTE') <> (r = 'service_role') then
+      v_problems := v_problems || format('%s:execute rpc_line_inbound_retry_sweep', r);
+    end if;
+  end loop;
+
+  if exists (select 1 from pg_proc pr, aclexplode(coalesce(pr.proacl, acldefault('f', pr.proowner))) a
+              where pr.oid = v_sweep and a.grantee = 0 and a.privilege_type = 'EXECUTE') then
+    v_problems := v_problems || 'public:execute rpc_line_inbound_retry_sweep'::text;
+  end if;
+
+  if cardinality(v_problems) > 0 then
+    raise exception 'P0-9: privileges differ from target: %', array_to_string(v_problems, ', ')
+      using errcode = 'insufficient_privilege';
+  end if;
 end;
 $$;

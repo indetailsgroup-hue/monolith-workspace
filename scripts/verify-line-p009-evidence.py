@@ -1,20 +1,22 @@
 """Verify one P0-9 evidence bundle written by scripts/run-line-p009-evidence.sh.
 
-usage: verify-line-p009-evidence.py <out> <red|green> <p009_exit> <loop_exit>
-         <inbound_race_exit> <claim_race_exit> <ci_tests_exit> <py_exit>
+usage: verify-line-p009-evidence.py <out> <red|green|mutants>
+Exit codes are read from the name=value lines of <out>/00-context.txt.
 Generated credentials arrive only through P009_SCAN_* environment variables.
 """
 from pathlib import Path
 import json
 import os
 import re
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 
 out = Path(sys.argv[1])
 mode = sys.argv[2]
-p009_exit, loop_exit, inbound_exit, claim_exit, ci_exit, py_exit = sys.argv[3:9]
-CONTROLS = {7, 33, 34, 35}
+PLAN = 48
+RED_PASSING = {7, 39, 40, 41, 48}
+KNOWN_SKIPS = ('public.resolve_actor() is not installed', 'public.record_input_sync(')
 
 
 def require(value, message):
@@ -22,6 +24,25 @@ def require(value, message):
         raise AssertionError(message)
     print('PASS:', message)
 
+
+def read(name):
+    return (out / name).read_text(encoding='utf-8')
+
+
+context = read('00-context.txt')
+codes = dict(re.findall(r'^([a-z0-9_]+)=(-?\d+)$', context, re.M))
+
+
+def code(name):
+    if name not in codes:
+        raise AssertionError(f'exit code {name} not recorded')
+    return codes[name]
+
+
+# --- provenance and credentials -------------------------------------------------
+head = subprocess.run(['git', 'rev-parse', 'HEAD'], capture_output=True, text=True, check=True).stdout.strip()
+require(f'head_sha: {head}' in context, f'bundle was produced at the current HEAD {head[:9]}')
+require('uncommitted_changes_in_code_under_test: [] (empty = clean)' in context, 'code under test was clean')
 
 secrets = [os.environ[k].encode() for k in ('P009_SCAN_PW', 'P009_SCAN_JWT', 'P009_SCAN_ANON', 'P009_SCAN_SERVICE')]
 require(all(len(s) > 20 for s in secrets), 'generated credential inputs supplied')
@@ -36,93 +57,149 @@ files = [p for p in out.rglob('*') if p.is_file()]
 found = [str(p.relative_to(out)) for p in files if hits(p.read_bytes())]
 require(not found, f'no generated credential bytes in {len(files)} captured files (findings={found!r})')
 
-migrations = (out / '02-migrations-applied.txt').read_text(encoding='utf-8').splitlines()
+migrations = read('02-migrations-applied.txt').splitlines()
 skipped = [line for line in migrations if line.startswith('skip ')]
 require(not any(line.startswith('FAIL') for line in migrations), 'every applied migration succeeded')
-if mode == 'red':
-    require(len(skipped) == 1 and skipped[0].endswith('0200_line_inbound_handler_retry.sql (RED: schema before P0-9)'),
-            'RED skipped exactly 0200')
-else:
+if mode == 'green':
     require(not skipped and migrations[-1].endswith('0200_line_inbound_handler_retry.sql'),
             'GREEN applied the whole chain ending at 0200')
-
-require(p009_exit == '0', 'P0-9 suite psql exit 0 (failures are reported in TAP, not by psql)')
-tap = (out / '05-p009-pgtap.tap').read_text(encoding='utf-8')
-results = [(state, int(n)) for state, n in re.findall(r'^(not ok|ok) (\d+)(?:\s|$)', tap, re.M)]
-require(re.search(r'^1\.\.35$', tap, re.M) and [n for _, n in results] == list(range(1, 36)),
-        'TAP plan 1..35 with 35 results in order')
-failed = {n for state, n in results if state == 'not ok'}
-if mode == 'red':
-    require(failed == set(range(1, 36)) - CONTROLS,
-            f'RED: every assertion fails except controls {sorted(CONTROLS)} (failed={sorted(failed)})')
-    first = tap.split('not ok 1 - ', 1)[1].split('\nnot ok 2 - ', 1)[0]
-    require('"events_processed": 1' in first,
-            'RED assertion 1 reproduces B8: the failed handler was counted as processed')
 else:
-    require(not failed, 'GREEN: all 35 assertions pass')
+    require(len(skipped) == 1 and '0200_line_inbound_handler_retry.sql' in skipped[0],
+            f'{mode.upper()} skipped exactly 0200')
 
-loop_dir = out / '06-suite-loop'
-verdicts = {}
-for res in sorted(loop_dir.glob('*.result.json')):
-    data = json.loads(res.read_text(encoding='utf-8'))
-    verdicts[data['suite']] = data['pass']
-require(len(verdicts) == 15, f'fifteen suite verdicts recorded ({len(verdicts)})')
-loop_failed = sorted(s for s, ok in verdicts.items() if not ok)
-expected_failed = ['line_inbound_handler_retry', 'repair_phase0_containment'] if mode == 'red' else ['repair_phase0_containment']
-require(loop_failed == expected_failed,
-        f'suite loop fails exactly {expected_failed} (known 0170 dependency; failed={loop_failed})')
-require(loop_exit == '1', 'suite loop exit 1 agrees with the recorded failures')
 
-inbound = (out / '07a-inbound-retry-race.txt').read_text(encoding='utf-8')
-require(inbound_exit == '0', 'inbound retry race exit 0')
-if mode == 'red':
-    require('SKIP inbound-retry-race: requires pre-applied migration 0200' in inbound,
-            'RED: inbound race skips because 0200 is absent')
-else:
-    require('PASS inbound-retry-race: client_a=10 client_b=10 claimed=20 final=succeeded:members_ignored_unbound:20' in inbound
-            and 'CLEANUP inbound-retry-race: verified 0 retry rows' in inbound,
-            'GREEN: two concurrent sweeps claim 20 rows once each and clean up')
-claim = (out / '07b-claim-race.txt').read_text(encoding='utf-8')
-require(claim_exit == '0' and 'overlap=0 claimed=20' in claim, 'outbound claim race unchanged: overlap 0')
-
-ci = (out / '07c-ci-harness-tests.txt').read_text(encoding='utf-8')
-require(ci_exit == '0' and re.search(r'^# fail 0$', ci, re.M), 'CI harness node tests pass')
-
-root = ET.parse(out / '08-pytest-junit.xml').getroot()
-cases = root.findall('.//testcase')
-py_failed = [c.get('name') for c in cases if c.find('failure') is not None or c.find('error') is not None]
-py_skipped = [c for c in cases if c.find('skipped') is not None]
-require(not py_failed and py_exit == '0', f'Python: no failure or error ({len(cases)} cases)')
-KNOWN_SKIPS = ('public.resolve_actor() is not installed', 'public.record_input_sync(')
-require(all(any(k in (c.find('skipped').get('message') or '') for k in KNOWN_SKIPS) for c in py_skipped),
-        f'Python: every skip ({len(py_skipped)}) is a known pre-existing probe gap {KNOWN_SKIPS}')
-print(f'Python counts: {len(cases) - len(py_skipped)} passed, {len(py_skipped)} skipped, 0 failed')
+# --- TAP helpers ----------------------------------------------------------------
+def tap_results(name):
+    tap = read(name)
+    results = [(state, int(n)) for state, n in re.findall(r'^(not ok|ok) (\d+)(?:\s|$)', tap, re.M)]
+    complete = bool(re.search(rf'^1\.\.{PLAN}$', tap, re.M)) and [n for _, n in results] == list(range(1, PLAN + 1))
+    return tap, complete, {n for state, n in results if state == 'not ok'}
 
 
 def outcomes(path):
     tree = ET.parse(path).getroot()
-    return {(c.get('classname'), c.get('name')): 'skipped' if c.find('skipped') is not None else 'passed'
-            for c in tree.findall('.//testcase')}
+    result = {}
+    for c in tree.findall('.//testcase'):
+        if c.find('failure') is not None or c.find('error') is not None:
+            state = 'failed'
+        elif c.find('skipped') is not None:
+            state = 'skipped'
+        else:
+            state = 'passed'
+        result[(c.get('classname'), c.get('name'))] = state
+    return result
 
 
-compare = os.environ.get('P009_COMPARE_RED')
-if mode == 'green' and compare:
-    red = outcomes(Path(compare) / '08-pytest-junit.xml')
-    require(red == outcomes(out / '08-pytest-junit.xml'),
-            f'Python: every test has the same outcome as the RED bundle {Path(compare).name} (no regression)')
+if mode in ('red', 'green'):
+    require(code('p009_pgtap_exit') == '0', 'P0-9 suite psql exit 0 (failures are reported in TAP, not by psql)')
+    tap, complete, failed = tap_results('05-p009-pgtap.tap')
+    require(complete, f'TAP plan 1..{PLAN} with {PLAN} results in order')
+    if mode == 'red':
+        require(failed == set(range(1, PLAN + 1)) - RED_PASSING,
+                f'RED: every assertion fails except {sorted(RED_PASSING)} (failed={sorted(failed)})')
+        first = tap.split('not ok 1 - ', 1)[1].split('\nnot ok 2 - ', 1)[0]
+        require('"events_processed": 1' in first,
+                'RED assertion 1 reproduces B8: the failed handler was counted as processed')
+    else:
+        require(not failed, f'GREEN: all {PLAN} assertions pass')
 
-clean = lambda name: '\n'.join(l for l in (out / name).read_text(encoding='utf-8').splitlines()
-                               if not l.startswith('captured_utc:'))
-require(clean('04-precheck.txt') == clean('04b-postcheck.txt'),
-        'listed pre/post counters match excluding capture timestamp')
-post = dict(line.split('|', 1) for line in clean('04b-postcheck.txt').splitlines()[1:] if '|' in line)
+    verdicts = {}
+    for res in sorted((out / '06-suite-loop').glob('*.result.json')):
+        data = json.loads(res.read_text(encoding='utf-8'))
+        verdicts[data['suite']] = data['pass']
+    require(len(verdicts) == 15, f'fifteen suite verdicts recorded ({len(verdicts)})')
+    loop_failed = sorted(s for s, ok in verdicts.items() if not ok)
+    expected_failed = (['line_inbound_handler_retry', 'repair_phase0_containment'] if mode == 'red'
+                       else ['repair_phase0_containment'])
+    require(loop_failed == expected_failed,
+            f'suite loop fails exactly {expected_failed} (known 0170 dependency; failed={loop_failed})')
+    require(code('suite_loop_exit') == '1', 'suite loop exit 1 agrees with the recorded failures')
+
+    race = read('07a-inbound-retry-race.txt')
+    race_required = read('07a-inbound-retry-race-required.txt')
+    if mode == 'red':
+        require(code('inbound_retry_race_exit') == '0'
+                and 'SKIP inbound-retry-race: requires pre-applied migration 0200' in race,
+                'RED: the inbound race skips by default because 0200 is absent')
+        require(code('inbound_retry_race_required_exit') != '0'
+                and 'migration 0200 is required (LINE_RACE_REQUIRE=1) but absent' in race_required,
+                'RED: with LINE_RACE_REQUIRE=1 (as in CI) the missing sweep fails the race')
+    else:
+        for label, text, name in (('default', race, 'inbound_retry_race_exit'),
+                                  ('required', race_required, 'inbound_retry_race_required_exit')):
+            require(code(name) == '0'
+                    and 'PASS inbound-retry-race: client_a=10 client_b=10 final=succeeded:members_ignored_unbound:20 overlap=proven' in text
+                    and 'CLEANUP inbound-retry-race: verified 0 retry rows' in text,
+                    f'GREEN ({label}): B swept 10 other rows while A held its 10 locks, without waiting; cleanup verified')
+    claim = read('07b-claim-race.txt')
+    require(code('claim_race_exit') == '0' and 'overlap=0 claimed=20' in claim, 'outbound claim race unchanged: overlap 0')
+
+    ci = read('07c-ci-harness-tests.txt')
+    require(code('ci_harness_tests_exit') == '0' and re.search(r'^# fail 0$', ci, re.M), 'CI harness node tests pass')
+
+    py = outcomes(out / '08-pytest-junit.xml')
+    py_failed = [k for k, v in py.items() if v == 'failed']
+    require(not py_failed and code('pytest_exit') == '0', f'Python: no failure or error ({len(py)} cases)')
+    root = ET.parse(out / '08-pytest-junit.xml').getroot()
+    skips = [c.find('skipped').get('message') or '' for c in root.findall('.//testcase') if c.find('skipped') is not None]
+    require(all(any(k in m for k in KNOWN_SKIPS) for m in skips),
+            f'Python: every skip ({len(skips)}) is a known pre-existing probe gap {KNOWN_SKIPS}')
+    print(f'Python counts: {sum(v == "passed" for v in py.values())} passed, {len(skips)} skipped, 0 failed')
+    if mode == 'green':
+        compare = re.search(r'^compare_red: (.+)$', context, re.M)
+        require(compare is not None, 'GREEN names the RED bundle to compare with')
+        red = outcomes(Path(compare.group(1)) / '08-pytest-junit.xml')
+        require(red == py, f'Python: every test has the same outcome as {Path(compare.group(1)).name} (no regression)')
+
+if mode == 'mutants':
+    require(code('mutants_generator_exit') == '0', 'mutant generator succeeded')
+    manifest = json.loads(read('mutants/mutants.json'))
+    require(len(manifest['suite']) == 9 and len(manifest['race']) == 3, 'nine suite mutants and three race mutants')
+    require(code('suite_real_exit') == '0', 'control: suite psql exit 0 with the real 0200')
+    _, complete, failed = tap_results('06-suite-real.tap')
+    require(complete and not failed, f'control: the real 0200 passes all {PLAN} assertions')
+    for m in manifest['suite']:
+        name, killers = m['name'], set(m['killers'])
+        _, complete, failed = tap_results(f'06-suite-{name}.tap')
+        require(code(f'suite_{name}_exit') == '0' and complete, f'{name}: suite ran to completion')
+        require(killers <= failed,
+                f'{name} ({m["meaning"]}) is killed by {sorted(killers)} (all failing: {sorted(failed)})')
+    require(code('apply_real_0200_exit') == '0', 'real 0200 committed for the race section')
+    for m in manifest['race']:
+        name = m['name']
+        text = read(f'07-race-{name}.txt')
+        require(code(f'apply_{name}_exit') == '0', f'{name}: sweep mutant applied')
+        if m['expect'] == 'fail':
+            require(code(f'race_{name}_exit') != '0' and 'lock timeout' in text,
+                    f'{name}: the race fails with a lock timeout (client B would have waited for A)')
+        else:
+            require(code(f'race_{name}_exit') == '0' and 'PASS inbound-retry-race' in text,
+                    f'{name}: the earlier harness (0a355e29b) still passes this mutant — the weakness fixed here')
+    real = read('07-race-real.txt')
+    require(code('apply_real_sweep_exit') == '0' and code('race_real_exit') == '0' and 'overlap=proven' in real,
+            'control: the real sweep passes the race with proven overlap')
+
+# --- pre/post state, cron, teardown --------------------------------------------
+def counters(name):
+    lines = [l for l in read(name).splitlines() if '|' in l]
+    return dict(l.split('|', 1) for l in lines)
+
+
+pre, post = counters('04-precheck.txt'), counters('04b-postcheck.txt')
+schema_keys = {'fn_rpc_line_inbound_retry_sweep', 'tbl_line_oa_inbound_retry', 'rows_line_oa_inbound_retry'}
+require(len(pre) == 16 and pre.keys() == post.keys(), 'sixteen pre/post counters captured')
+if mode == 'mutants':
+    require({k: v for k, v in pre.items() if k not in schema_keys} == {k: v for k, v in post.items() if k not in schema_keys},
+            'pre/post counters match except the 0200 objects committed for the race section')
+else:
+    require(pre == post, 'pre/post counters match')
 require(post.get('cron_jobs_inbound_retry') == '0' and post.get('cron_job_runs') == '0',
         'no cron job schedules the sweep and no cron job ran')
-if mode == 'green':
+if mode != 'red':
     require(post.get('fn_rpc_line_inbound_retry_sweep') == '1' and post.get('rows_line_oa_inbound_retry') == '0',
-            'GREEN: sweep present, retry table empty after the run')
+            'sweep present and retry table empty after the run')
 
-teardown = (out / '09-teardown.txt').read_text(encoding='utf-8')
+teardown = read('09-teardown.txt')
 require('containers_present_after_removal: []' in teardown and 'network_present_after_removal: []' in teardown,
         'owned containers and network removed')
 print(f'RESULT: P0-9 {mode.upper()} stage verified; Phase A remains EVIDENCE_INCOMPLETE; independent review pending')

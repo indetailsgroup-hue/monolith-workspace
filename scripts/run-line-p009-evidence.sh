@@ -1,16 +1,26 @@
 #!/usr/bin/env bash
 # P0-9 isolated evidence runner, adapted from scripts/run-line-p011-evidence.sh.
-#   P009_MODE=red   apply every migration except 0200 (the schema before P0-9)
-#   P009_MODE=green apply every migration including 0200
-#   STEP1_OUT       a new output directory (never overwritten)
+#   P009_MODE=red     apply every migration except 0200 (the schema before P0-9)
+#   P009_MODE=green   apply every migration including 0200; P009_COMPARE_RED
+#                     must name the RED bundle (Python outcomes are compared)
+#   P009_MODE=mutants apply every migration except 0200, then run the P0-9
+#                     suite against the real 0200 and each suite mutant (each
+#                     inside a rolled-back transaction), and the two-client race
+#                     against the real sweep and each race mutant
+#   STEP1_OUT         a new output directory (never overwritten)
 # Builds a throwaway stack (postgres + gotrue + storage-api from cached images)
-# on its own docker network, runs the P0-9 suite, the fifteen-suite loop, both
-# two-client races, the CI harness tests and every Python property suite, then
-# removes the stack. Never touches the shared stack. cron.launch_active_jobs=off.
+# on its own docker network, runs the checks of the mode, then removes the
+# stack. Never touches the shared stack. cron.launch_active_jobs=off. Exit codes
+# are recorded as name=value lines in 00-context.txt and checked by
+# scripts/verify-line-p009-evidence.py.
 set -u
 set -o pipefail
-MODE="${P009_MODE:?set P009_MODE=red or green}"
-[[ "$MODE" = red || "$MODE" = green ]] || exit 2
+MODE="${P009_MODE:?set P009_MODE=red, green or mutants}"
+[[ "$MODE" = red || "$MODE" = green || "$MODE" = mutants ]] || exit 2
+if [ "$MODE" = green ]; then
+  : "${P009_COMPARE_RED:?GREEN needs P009_COMPARE_RED=<RED bundle> for the Python comparison}"
+  [ -f "$P009_COMPARE_RED/08-pytest-junit.xml" ] || { echo "P009_COMPARE_RED has no 08-pytest-junit.xml"; exit 2; }
+fi
 
 OUT="${STEP1_OUT:?set a new output directory}"
 [ ! -e "$OUT" ] || { echo "Refusing to overwrite evidence"; exit 2; }
@@ -28,6 +38,10 @@ else PSQL="/c/Program Files/PostgreSQL/18/bin/psql.exe"; fi
 if [ -n "${PYTHON_BIN:-}" ]; then PY="$PYTHON_BIN"
 elif command -v py >/dev/null 2>&1; then PY="py"
 else PY="python3"; fi
+MIGRATION=supabase/migrations/0200_line_inbound_handler_retry.sql
+# psql.exe and node.exe on Git Bash need C:/ style absolute paths (pwd -W).
+ROOT_NATIVE="$(pwd -W 2>/dev/null || pwd)"
+SUITE=supabase/tests/line_inbound_handler_retry.sql
 
 PW="$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
 JWT_SECRET="$(od -An -N24 -tx1 /dev/urandom | tr -d ' \n')"
@@ -40,29 +54,41 @@ DSN="postgresql://postgres@127.0.0.1:${PORT}/postgres"
 ADMIN_DSN="postgresql://supabase_admin@127.0.0.1:${PORT}/postgres"
 export PYTHONDONTWRITEBYTECODE=1
 export HYPOTHESIS_STORAGE_DIRECTORY="${TMPDIR:-/tmp}/line-p009-hypothesis"
+export LINE_CLAIM_RACE_DSN="$DSN" LINE_CLAIM_RACE_EPHEMERAL=1 PSQL_BIN="$PSQL"
 
 mkdir -p "$OUT"
 printf "* -text\n" > "$OUT/.gitattributes"
 cp docs/governance/evidence/line-phase-a-step1-attempt3-2026-09-30/01b-service-bootstrap.sql "$OUT/01b-service-bootstrap.sql"
-cp scripts/run-line-p009-evidence.sh scripts/verify-line-p009-evidence.py "$OUT/"
-sha256sum supabase/migrations/*.sql supabase/tests/*.sql tests/line-oa-commerce/concurrency/*.mjs \
-  scripts/line-ci-tap.mjs scripts/run-line-db-suites.sh scripts/run-line-p009-evidence.sh \
-  scripts/verify-line-p009-evidence.py > "$OUT/source-SHA256SUMS"
+cp scripts/run-line-p009-evidence.sh scripts/verify-line-p009-evidence.py scripts/line-p009-mutants.py "$OUT/"
+# Hashes of the committed blobs at HEAD (not of the working-tree copies, which
+# may carry CRLF line endings on Windows).
+git ls-files -- supabase/migrations supabase/tests tests/line-oa-commerce/concurrency scripts/line-ci-tap.mjs \
+    scripts/run-line-db-suites.sh scripts/run-line-p009-evidence.sh scripts/verify-line-p009-evidence.py \
+    scripts/line-p009-mutants.py | LC_ALL=C sort | while IFS= read -r f; do
+  printf '%s  %s\n' "$(git show "HEAD:$f" | sha256sum | cut -d' ' -f1)" "$f"
+done > "$OUT/source-SHA256SUMS"
 CTX="$OUT/00-context.txt"
 utc() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 q() { "$PSQL" "$DSN" -X -tA -F'|' -c "$1" 2>&1; }
 scrub() { sed -e "s/$PW/[REDACTED]/g" -e "s/$JWT_SECRET/[REDACTED]/g" -e "s/$ANON_KEY/[REDACTED]/g" -e "s/$SERVICE_KEY/[REDACTED]/g"; }
+xml_count() { echo "case when to_regclass('$1') is null then 'absent' else (xpath('/row/c/text()', query_to_xml('select count(*) as c from $1 ${2:-}', false, true, '')))[1]::text end"; }
 
 CHECK_SQL="select 'fn_rpc_line_inbound_retry_sweep', count(*)::text from pg_proc where proname='rpc_line_inbound_retry_sweep'
 union all select 'tbl_line_oa_inbound_retry', (to_regclass('public.line_oa_inbound_retry') is not null)::text
-union all select 'rows_line_oa_inbound_retry', case when to_regclass('public.line_oa_inbound_retry') is null then 'absent' else (xpath('/row/c/text()', query_to_xml('select count(*) as c from public.line_oa_inbound_retry', false, true, '')))[1]::text end
+union all select 'rows_line_oa_inbound_retry', $(xml_count public.line_oa_inbound_retry)
 union all select 'rows_line_oa_inbound_messages', count(*)::text from public.line_oa_inbound_messages
 union all select 'rows_line_oa_outbound_messages', count(*)::text from public.line_oa_outbound_messages
 union all select 'rows_line_oa_audit_log', count(*)::text from public.line_oa_audit_log
+union all select 'rows_line_oa_channels', count(*)::text from public.line_oa_channels
+union all select 'rows_line_oa_conversations', count(*)::text from public.line_oa_conversations
+union all select 'rows_line_oa_customer_identity', count(*)::text from public.line_oa_customer_identity
 union all select 'rows_line_groups', count(*)::text from public.line_groups
-union all select 'cron_jobs', case when to_regclass('cron.job') is null then 'pg_cron absent' else (xpath('/row/c/text()', query_to_xml('select count(*) as c from cron.job', false, true, '')))[1]::text end
-union all select 'cron_jobs_inbound_retry', case when to_regclass('cron.job') is null then 'pg_cron absent' else (xpath('/row/c/text()', query_to_xml('select count(*) as c from cron.job where command ilike ''%inbound_retry%''', false, true, '')))[1]::text end
-union all select 'cron_job_runs', case when to_regclass('cron.job_run_details') is null then 'absent' else (xpath('/row/c/text()', query_to_xml('select count(*) as c from cron.job_run_details', false, true, '')))[1]::text end;"
+union all select 'rows_vault_secrets', $(xml_count vault.secrets)
+union all select 'user_triggers_public', count(*)::text from pg_trigger t join pg_class c on c.oid = t.tgrelid join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and not t.tgisinternal
+union all select 'roles_p009', count(*)::text from pg_roles where rolname like 'p009%'
+union all select 'cron_jobs', $(xml_count cron.job)
+union all select 'cron_jobs_inbound_retry', $(xml_count cron.job "where command ilike ''%inbound_retry%''")
+union all select 'cron_job_runs', $(xml_count cron.job_run_details);"
 
 image_line() { echo "$1 id=$(docker image inspect --format '{{.Id}}' "$1" 2>&1)"; }
 
@@ -73,6 +99,7 @@ image_line() { echo "$1 id=$(docker image inspect --format '{{.Id}}' "$1" 2>&1)"
   echo "branch: $(git rev-parse --abbrev-ref HEAD)"
   echo "head_sha: $(git rev-parse HEAD)"
   echo "uncommitted_changes_in_code_under_test: [$(git status --porcelain -- supabase tests scripts .github | grep -v desktop.ini)] (empty = clean)"
+  [ "$MODE" != green ] || echo "compare_red: $P009_COMPARE_RED"
   echo "db_image: $(image_line "$DB_IMAGE")"
   echo "auth_image: $(image_line "$AUTH_IMAGE")"
   echo "storage_image: $(image_line "$STORAGE_IMAGE")"
@@ -102,6 +129,7 @@ finish() { # $1 = exit code
 fail() { # $1 = code, $2 = reason
   echo "result: STOPPED — $2" >> "$CTX"; save_logs; cleanup; finish "$1"
 }
+record() { echo "$1=$2" >> "$CTX"; }
 
 [ -z "$(docker ps -a --filter name=^line-p009- --format '{{.Names}}')" ] || { echo "P0-9 containers already exist; refusing cleanup"; exit 2; }
 [ -z "$(docker network ls --filter name=^line-p009-net$ --format '{{.Name}}')" ] || exit 2
@@ -160,10 +188,9 @@ MIG="$OUT/02-migrations-applied.txt"
 mig_failed=0
 for f in $(ls supabase/migrations/*.sql | LC_ALL=C sort); do
   sum=$(sha256sum "$f" | cut -d' ' -f1)
-  case "$f" in
-    *0200_line_inbound_handler_retry.sql)
-      if [ "$MODE" = red ]; then echo "skip $sum  $f (RED: schema before P0-9)" >> "$MIG"; continue; fi ;;
-  esac
+  if [ "$f" = "$MIGRATION" ] && [ "$MODE" != green ]; then
+    echo "skip $sum  $f ($MODE: schema before P0-9)" >> "$MIG"; continue
+  fi
   if out=$("$PSQL" "$DSN" -X -q -1 -v ON_ERROR_STOP=1 -f "$f" 2>&1); then
     echo "ok  $sum  $f" >> "$MIG"
   else
@@ -179,30 +206,59 @@ echo "migrations_applied_ok: $(grep -c '^ok ' "$MIG") · skipped: $(grep -c '^sk
 
 { echo "scope: exactly the values listed below, nothing else"; echo "captured_utc: $(utc)"; q "$CHECK_SQL"; } > "$OUT/04-precheck.txt"
 
-"$PSQL" "$DSN" -X -tA -v ON_ERROR_STOP=1 -c "begin;" -f supabase/tests/line_inbound_handler_retry.sql > "$OUT/05-p009-pgtap.tap" 2> "$OUT/05-p009-pgtap.stderr"
-p009_exit=$?
-echo "p009_pgtap_exit=$p009_exit" >> "$CTX"
+if [ "$MODE" = mutants ]; then
+  MUT="$OUT/mutants"
+  "$PY" scripts/line-p009-mutants.py "$MIGRATION" "$MUT" "$OUT/old-harness-0a355e29b.mjs" > "$OUT/05-mutants-generated.txt" 2>&1
+  record mutants_generator_exit $?
+  MUT_NATIVE="$(cd "$MUT" && (pwd -W 2>/dev/null || pwd))"
+  git show 0a355e29b:tests/line-oa-commerce/concurrency/inbound-retry-race.mjs > "$OUT/old-harness-0a355e29b.mjs"
+  # Control: the real 0200 applied inside the suite's own transaction.
+  "$PSQL" "$DSN" -X -tA -v ON_ERROR_STOP=1 -v "p009_migration=$ROOT_NATIVE/$MIGRATION" -c "begin;" -f "$MIGRATION" -f "$SUITE" \
+    > "$OUT/06-suite-real.tap" 2> "$OUT/06-suite-real.stderr"
+  record suite_real_exit $?
+  for m in $(node -e 'for (const m of require(process.argv[1]).suite) console.log(m.name)' "$MUT_NATIVE/mutants.json"); do
+    "$PSQL" "$DSN" -X -tA -v ON_ERROR_STOP=1 -v "p009_migration=$MUT_NATIVE/$m.sql" -c "begin;" -f "$MUT/$m.sql" -f "$SUITE" \
+      > "$OUT/06-suite-$m.tap" 2> "$OUT/06-suite-$m.stderr"
+    record "suite_${m}_exit" $?
+  done
+  # Races need committed state: the real 0200, then each sweep mutant, then the
+  # real sweep again as the closing control.
+  "$PSQL" "$DSN" -X -q -1 -v ON_ERROR_STOP=1 -f "$MIGRATION" > "$OUT/07-apply-real-0200.txt" 2>&1
+  record apply_real_0200_exit $?
+  for m in $(node -e 'for (const m of require(process.argv[1]).race) console.log(m.name)' "$MUT_NATIVE/mutants.json"); do
+    "$PSQL" "$DSN" -X -q -1 -v ON_ERROR_STOP=1 -f "$MUT/$m.sql" > "$OUT/07-apply-$m.txt" 2>&1
+    record "apply_${m}_exit" $?
+    harness=tests/line-oa-commerce/concurrency/inbound-retry-race.mjs
+    case "$m" in *old_harness) harness="$OUT/old-harness-0a355e29b.mjs" ;; esac
+    node "$harness" > "$OUT/07-race-$m.txt" 2>&1
+    record "race_${m}_exit" $?
+  done
+  "$PSQL" "$DSN" -X -q -1 -v ON_ERROR_STOP=1 -f "$MUT/real-sweep.sql" > "$OUT/07-apply-real-sweep.txt" 2>&1
+  record apply_real_sweep_exit $?
+  LINE_RACE_REQUIRE=1 node tests/line-oa-commerce/concurrency/inbound-retry-race.mjs > "$OUT/07-race-real.txt" 2>&1
+  record race_real_exit $?
+else
+  "$PSQL" "$DSN" -X -tA -v ON_ERROR_STOP=1 -c "begin;" -f "$SUITE" > "$OUT/05-p009-pgtap.tap" 2> "$OUT/05-p009-pgtap.stderr"
+  record p009_pgtap_exit $?
 
-LINE_DB_TEST_DSN="$DSN" LINE_DB_TAP_DIR="$OUT/06-suite-loop" PSQL_BIN="$PSQL" LINE_DB_RUN_ID="p009-$MODE" \
-  bash scripts/run-line-db-suites.sh > "$OUT/06-suite-loop.txt" 2>&1
-loop_exit=$?
-echo "suite_loop_exit=$loop_exit" >> "$CTX"
+  LINE_DB_TEST_DSN="$DSN" LINE_DB_TAP_DIR="$OUT/06-suite-loop" LINE_DB_RUN_ID="p009-$MODE" \
+    bash scripts/run-line-db-suites.sh > "$OUT/06-suite-loop.txt" 2>&1
+  record suite_loop_exit $?
 
-LINE_CLAIM_RACE_DSN="$DSN" LINE_CLAIM_RACE_EPHEMERAL=1 PSQL_BIN="$PSQL" node tests/line-oa-commerce/concurrency/inbound-retry-race.mjs > "$OUT/07a-inbound-retry-race.txt" 2>&1
-inbound_race_exit=$?
-echo "inbound_retry_race_exit=$inbound_race_exit" >> "$CTX"
-LINE_CLAIM_RACE_DSN="$DSN" LINE_CLAIM_RACE_EPHEMERAL=1 PSQL_BIN="$PSQL" node tests/line-oa-commerce/concurrency/claim-race.mjs > "$OUT/07b-claim-race.txt" 2>&1
-claim_race_exit=$?
-echo "claim_race_exit=$claim_race_exit" >> "$CTX"
+  node tests/line-oa-commerce/concurrency/inbound-retry-race.mjs > "$OUT/07a-inbound-retry-race.txt" 2>&1
+  record inbound_retry_race_exit $?
+  LINE_RACE_REQUIRE=1 node tests/line-oa-commerce/concurrency/inbound-retry-race.mjs > "$OUT/07a-inbound-retry-race-required.txt" 2>&1
+  record inbound_retry_race_required_exit $?
+  node tests/line-oa-commerce/concurrency/claim-race.mjs > "$OUT/07b-claim-race.txt" 2>&1
+  record claim_race_exit $?
 
-node --test tests/line-oa-commerce/ci/tap-evidence.test.mjs tests/line-oa-commerce/ci/source-evidence.test.mjs > "$OUT/07c-ci-harness-tests.txt" 2>&1
-ci_tests_exit=$?
-echo "ci_harness_tests_exit=$ci_tests_exit" >> "$CTX"
+  node --test tests/line-oa-commerce/ci/tap-evidence.test.mjs tests/line-oa-commerce/ci/source-evidence.test.mjs > "$OUT/07c-ci-harness-tests.txt" 2>&1
+  record ci_harness_tests_exit $?
 
-LINE_OA_TEST_DATABASE_URL="$DSN" "$PY" -m pytest -c tests/line-oa-commerce/py/pytest.ini --rootdir tests/line-oa-commerce/py \
-  -p no:cacheprovider -rA --junitxml="$OUT/08-pytest-junit.xml" tests/line-oa-commerce/py > "$OUT/08-pytest-output.txt" 2>&1
-py_exit=$?
-echo "pytest_exit=$py_exit" >> "$CTX"
+  LINE_OA_TEST_DATABASE_URL="$DSN" "$PY" -m pytest -c tests/line-oa-commerce/py/pytest.ini --rootdir tests/line-oa-commerce/py \
+    -p no:cacheprovider -rA --junitxml="$OUT/08-pytest-junit.xml" tests/line-oa-commerce/py > "$OUT/08-pytest-output.txt" 2>&1
+  record pytest_exit $?
+fi
 
 { echo "scope: exactly the values listed below, nothing else"; echo "captured_utc: $(utc)"; q "$CHECK_SQL"; } > "$OUT/04b-postcheck.txt"
 
@@ -211,7 +267,7 @@ save_logs
 cleanup
 # Credential gate scans every captured artifact using in-memory generated values.
 export P009_SCAN_PW="$PW" P009_SCAN_JWT="$JWT_SECRET" P009_SCAN_ANON="$ANON_KEY" P009_SCAN_SERVICE="$SERVICE_KEY"
-"$PY" scripts/verify-line-p009-evidence.py "$OUT" "$MODE" "$p009_exit" "$loop_exit" "$inbound_race_exit" "$claim_race_exit" "$ci_tests_exit" "$py_exit" > "$OUT/10-verification.txt" 2>&1
+"$PY" scripts/verify-line-p009-evidence.py "$OUT" "$MODE" > "$OUT/10-verification.txt" 2>&1
 verify_exit=$?
 echo "verification_exit=$verify_exit" >> "$CTX"
 finish "$verify_exit"

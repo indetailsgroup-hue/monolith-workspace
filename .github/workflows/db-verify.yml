@@ -84,6 +84,8 @@ jobs:
         env:
           LINE_CLAIM_RACE_DSN: ${{ steps.db.outputs.DB_URL }}
           LINE_CLAIM_RACE_EPHEMERAL: "1"
+          # 0200 is part of this chain, so a missing sweep must fail, not skip.
+          LINE_RACE_REQUIRE: "1"
         run: node tests/line-oa-commerce/concurrency/inbound-retry-race.mjs
 
       - name: Confirm migration chain reaches 0192
