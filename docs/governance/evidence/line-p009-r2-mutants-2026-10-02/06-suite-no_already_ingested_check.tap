@@ -1,0 +1,233 @@
+BEGIN
+CREATE TABLE
+CREATE INDEX
+ALTER TABLE
+REVOKE
+DO
+CREATE FUNCTION
+COMMENT
+CREATE FUNCTION
+COMMENT
+REVOKE
+DO
+DO
+# migration under test: C:/Users/thai3/determined-williams (2)/MONOLITH Repair Intelligence/.worktrees/line-p009-ingest-retry/docs/governance/evidence/line-p009-r2-mutants-2026-10-02/mutants/no_already_ingested_check.sql
+CREATE EXTENSION
+1..48
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+17881388-f544-425b-8673-51e2452c75ed
+INSERT 0 1
+CREATE SEQUENCE
+1
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE TRIGGER
+CREATE TRIGGER
+CREATE TABLE
+C-P009-G1
+INSERT 0 1
+ok 1 - a handler failure is not counted as processed (nor as duplicate or skipped)
+ok 2 - a failed event leaves no inbound row, so a LINE redelivery is not swallowed by dedupe
+ok 3 - a failed event writes no group_event success audit
+ok 4 - the failed event enters the internal retry queue: pending, attempt 1, due after 1 s
+ok 5 - the retry row keeps the handler error
+ok 6 - queueing the failed event writes exactly one group_event_retry_queued audit entry
+ok 7 - control: the failed handler left no partial side effect (no bind prompt queued)
+off
+INSERT 0 1
+INSERT 0 1
+ok 8 - a redelivery of a queued event is a duplicate: the handler does not run and the queued row is unchanged
+C-P009-G1
+1
+INSERT 0 1
+ok 9 - the sweep (as service_role) claims the due row and reschedules it after another failure
+ok 10 - a second failure leaves the row pending at attempt 2 with a 2 s backoff and the new error
+ok 11 - a failed retry writes no inbound row and no handler side effect
+INSERT 0 1
+ok 12 - a sweep claims nothing while the only pending row is not yet due
+off
+1
+INSERT 0 1
+ok 13 - the sweep succeeds once the handler stops failing
+ok 14 - the retry row is succeeded with the handler result and no next attempt
+ok 15 - the successful retry writes the group inbound row with the full event payload
+ok 16 - the successful retry runs the handler side effect exactly once (one bind prompt)
+ok 17 - the successful retry writes exactly one group_event audit entry in the ingest format
+ok 18 - the payload copy in the retry row is cleared after success (the inbound row keeps it)
+ok 19 - the earlier handler error is cleared after success
+INSERT 0 1
+ok 20 - a redelivery after the successful retry is a duplicate with no second side effect
+C-P009-G2
+INSERT 0 1
+CREATE TABLE
+1
+INSERT 0 1
+UPDATE 1
+1
+INSERT 0 1
+UPDATE 1
+1
+INSERT 0 1
+UPDATE 1
+1
+INSERT 0 1
+UPDATE 1
+ok 21 - attempts 2-4 back off 2 s, 4 s, 8 s and attempt 5 is dead-lettered
+ok 22 - dead-lettering writes exactly one group_event_dead_letter audit entry (reason retry_bound) and keeps the last error
+ok 23 - a dead-lettered row keeps its payload for human handling
+0
+INSERT 0 1
+ok 24 - a dead-lettered row is never claimed again
+ok 25 - a dead-lettered event was never counted as processed and left no inbound row or side effect
+off
+INSERT 0 1
+INSERT 0 1
+ok 26 - a skip-list result on retry stores no inbound row or audit and clears the payload
+C-P009-G4
+INSERT 0 1
+INSERT 0 1
+off
+1
+INSERT 0 1
+INSERT 0 1
+not ok 27 - a queued event that another delivery already ingested is closed without running the handler
+# Failed test 27: "a queued event that another delivery already ingested is closed without running the handler"
+#         have: {"state": "succeeded|1|null|already_ingested", "sweep": {"ok": true, "value": {"claimed": 1, "succeeded": 1, "rescheduled": 0, "dead_lettered": 0}}, "payload": "{}", "prompts": 0, "handler_runs": 1}
+#         want: {"state": "succeeded|1|null|already_ingested", "sweep": {"ok": true, "value": {"claimed": 1, "succeeded": 1, "rescheduled": 0, "dead_lettered": 0}}, "payload": "{}", "prompts": 0, "handler_runs": 0}
+C-P009-G5
+INSERT 0 1
+off
+p009-evt-join-5
+1
+INSERT 0 1
+
+ok 28 - a concurrent inbound insert during a retry rolls back the handler side effect and closes the row
+INSERT 0 1
+ok 29 - an ignored plain chat is skipped as before and never queued
+C-P009-G7
+INSERT 0 1
+off
+ok 30 - in a two-event delivery the failed event is queued and the following event is still processed
+C-P009-G9
+INSERT 0 1
+off
+1
+1
+INSERT 0 1
+INSERT 0 1
+ok 31 - a row older than 10 minutes is dead-lettered as expired without running the handler
+all
+INSERT 0 1
+INSERT 0 1
+off
+1
+1
+p009-evt-join-11
+INSERT 0 1
+
+ok 32 - an uncaught error fails only its own row (rescheduled, side effect rolled back) and the batch still commits
+C-P009-G12
+INSERT 0 1
+off
+1
+INSERT 0 1
+Asia/Bangkok
+INSERT 0 1
+UTC
+ok 33 - a retry swept in an Asia/Bangkok session stores received_at = now(), not a shifted wall time
+all
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+off
+1
+1
+1
+INSERT 0 1
+ok 34 - sweep(2) claims exactly the two earliest due rows
+INSERT 0 1
+INSERT 0 1
+ok 35 - only service_role can EXECUTE the sweep; anon is refused at the function ACL
+ok 36 - PUBLIC holds no EXECUTE on the sweep
+ok 37 - the sweep rejects a batch limit outside 1..100
+ok 38 - the retry table has RLS on; no role can write, maintain or alter it; only service_role reads
+ok 39 - control: rpc_ingest_line_webhook keeps the 0199 service-only EXECUTE
+ok 40 - control: fn_line_handle_group_event stays internal (0199)
+ok 41 - control: no cron job schedules the retry sweep (activation is a separate decision)
+CREATE FUNCTION
+SAVEPOINT
+CREATE ROLE
+GRANT ROLE
+DO
+SAVEPOINT
+CREATE TABLE
+CREATE INDEX
+ALTER TABLE
+REVOKE
+DO
+CREATE FUNCTION
+COMMENT
+CREATE FUNCTION
+COMMENT
+REVOKE
+DO
+ROLLBACK
+ROLLBACK
+RELEASE
+ok 42 - case A precondition: anon holds EXECUTE on the sweep only through role membership
+ok 43 - case A: the migration raises 42501 "P0-9: privileges differ from target" naming anon:execute
+ok 44 - case A: after the error the function ACLs, the table ACL and memberships are exactly as before
+SAVEPOINT
+CREATE ROLE
+GRANT ROLE
+DO
+SAVEPOINT
+CREATE TABLE
+CREATE INDEX
+ALTER TABLE
+REVOKE
+DO
+CREATE FUNCTION
+COMMENT
+CREATE FUNCTION
+COMMENT
+REVOKE
+DO
+ROLLBACK
+ROLLBACK
+RELEASE
+ok 45 - case B precondition: authenticated holds INSERT on the retry table only through role membership
+ok 46 - case B: the migration raises 42501 naming authenticated:insert line_oa_inbound_retry
+ok 47 - case B: after the error the function ACLs, the table ACL and memberships are exactly as before
+SAVEPOINT
+SAVEPOINT
+CREATE TABLE
+CREATE INDEX
+ALTER TABLE
+REVOKE
+DO
+CREATE FUNCTION
+COMMENT
+CREATE FUNCTION
+COMMENT
+REVOKE
+DO
+DO
+ROLLBACK
+RELEASE
+ok 48 - case C: with no leaked privilege the migration re-runs to completion (SQLSTATE 00000)
+# Looks like you failed 1 test of 48
+ROLLBACK

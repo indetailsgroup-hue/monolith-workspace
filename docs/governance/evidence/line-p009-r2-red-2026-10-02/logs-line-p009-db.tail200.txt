@@ -1,0 +1,200 @@
+172.26.0.1 2026-10-02 00:40:21.502 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:21.502 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:21.524 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:21.524 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:21.524 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:21.546 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:21.546 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:21.546 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:21.553 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:21.553 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:21.553 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:21.576 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:21.576 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:21.576 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:21.586 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:21.586 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:21.586 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:21.594 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to resolve conversation to the given site_code
+172.26.0.1 2026-10-02 00:40:21.594 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_resolve_conversation_site(uuid,text,text) line 40 at RAISE
+172.26.0.1 2026-10-02 00:40:21.594 UTC [683] postgres@postgres STATEMENT:  select resolved from public.rpc_resolve_conversation_site($1, $2, $3)
+172.26.0.1 2026-10-02 00:40:21.605 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to resolve conversation to the given site_code
+172.26.0.1 2026-10-02 00:40:21.605 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_resolve_conversation_site(uuid,text,text) line 40 at RAISE
+172.26.0.1 2026-10-02 00:40:21.605 UTC [683] postgres@postgres STATEMENT:  select resolved from public.rpc_resolve_conversation_site($1, $2, $3)
+172.26.0.1 2026-10-02 00:40:21.614 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to resolve conversation to the given site_code
+172.26.0.1 2026-10-02 00:40:21.614 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_resolve_conversation_site(uuid,text,text) line 40 at RAISE
+172.26.0.1 2026-10-02 00:40:21.614 UTC [683] postgres@postgres STATEMENT:  select resolved from public.rpc_resolve_conversation_site($1, $2, $3)
+172.26.0.1 2026-10-02 00:40:21.622 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to resolve conversation to the given site_code
+172.26.0.1 2026-10-02 00:40:21.622 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_resolve_conversation_site(uuid,text,text) line 40 at RAISE
+172.26.0.1 2026-10-02 00:40:21.622 UTC [683] postgres@postgres STATEMENT:  select resolved from public.rpc_resolve_conversation_site($1, $2, $3)
+172.26.0.1 2026-10-02 00:40:21.630 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to resolve conversation to the given site_code
+172.26.0.1 2026-10-02 00:40:21.630 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_resolve_conversation_site(uuid,text,text) line 40 at RAISE
+172.26.0.1 2026-10-02 00:40:21.630 UTC [683] postgres@postgres STATEMENT:  select resolved from public.rpc_resolve_conversation_site($1, $2, $3)
+172.26.0.1 2026-10-02 00:40:21.638 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:21.638 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:21.638 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:21.646 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:21.646 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:21.646 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:21.654 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to resolve conversation to the given site_code
+172.26.0.1 2026-10-02 00:40:21.654 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_resolve_conversation_site(uuid,text,text) line 40 at RAISE
+172.26.0.1 2026-10-02 00:40:21.654 UTC [683] postgres@postgres STATEMENT:  select resolved from public.rpc_resolve_conversation_site($1, $2, $3)
+172.26.0.1 2026-10-02 00:40:21.661 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to resolve conversation to the given site_code
+172.26.0.1 2026-10-02 00:40:21.661 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_resolve_conversation_site(uuid,text,text) line 40 at RAISE
+172.26.0.1 2026-10-02 00:40:21.661 UTC [683] postgres@postgres STATEMENT:  select resolved from public.rpc_resolve_conversation_site($1, $2, $3)
+172.26.0.1 2026-10-02 00:40:21.670 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to resolve conversation to the given site_code
+172.26.0.1 2026-10-02 00:40:21.670 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_resolve_conversation_site(uuid,text,text) line 40 at RAISE
+172.26.0.1 2026-10-02 00:40:21.670 UTC [683] postgres@postgres STATEMENT:  select resolved from public.rpc_resolve_conversation_site($1, $2, $3)
+172.26.0.1 2026-10-02 00:40:21.678 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to resolve conversation to the given site_code
+172.26.0.1 2026-10-02 00:40:21.678 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_resolve_conversation_site(uuid,text,text) line 40 at RAISE
+172.26.0.1 2026-10-02 00:40:21.678 UTC [683] postgres@postgres STATEMENT:  select resolved from public.rpc_resolve_conversation_site($1, $2, $3)
+172.26.0.1 2026-10-02 00:40:21.686 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:21.686 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:21.686 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:21.694 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:21.694 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:21.694 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:21.702 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:21.702 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:21.702 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:21.710 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:21.710 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:21.710 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:21.718 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:21.718 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:21.718 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:21.730 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to create an order for this conversation
+172.26.0.1 2026-10-02 00:40:21.730 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_create_line_order(uuid,jsonb,text,text) line 76 at RAISE
+172.26.0.1 2026-10-02 00:40:21.730 UTC [683] postgres@postgres STATEMENT:  select created from public.rpc_create_line_order($1, $2::jsonb, $3, $4)
+172.26.0.1 2026-10-02 00:40:21.741 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to create an order for this conversation
+172.26.0.1 2026-10-02 00:40:21.741 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_create_line_order(uuid,jsonb,text,text) line 76 at RAISE
+172.26.0.1 2026-10-02 00:40:21.741 UTC [683] postgres@postgres STATEMENT:  select created from public.rpc_create_line_order($1, $2::jsonb, $3, $4)
+172.26.0.1 2026-10-02 00:40:21.748 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to create an order for this conversation
+172.26.0.1 2026-10-02 00:40:21.748 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_create_line_order(uuid,jsonb,text,text) line 76 at RAISE
+172.26.0.1 2026-10-02 00:40:21.748 UTC [683] postgres@postgres STATEMENT:  select created from public.rpc_create_line_order($1, $2::jsonb, $3, $4)
+172.26.0.1 2026-10-02 00:40:21.757 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to create an order for this conversation
+172.26.0.1 2026-10-02 00:40:21.757 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_create_line_order(uuid,jsonb,text,text) line 76 at RAISE
+172.26.0.1 2026-10-02 00:40:21.757 UTC [683] postgres@postgres STATEMENT:  select created from public.rpc_create_line_order($1, $2::jsonb, $3, $4)
+172.26.0.1 2026-10-02 00:40:21.764 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to create an order for this conversation
+172.26.0.1 2026-10-02 00:40:21.764 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_create_line_order(uuid,jsonb,text,text) line 76 at RAISE
+172.26.0.1 2026-10-02 00:40:21.764 UTC [683] postgres@postgres STATEMENT:  select created from public.rpc_create_line_order($1, $2::jsonb, $3, $4)
+172.26.0.1 2026-10-02 00:40:21.775 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to create an order for this conversation
+172.26.0.1 2026-10-02 00:40:21.775 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_create_line_order(uuid,jsonb,text,text) line 76 at RAISE
+172.26.0.1 2026-10-02 00:40:21.775 UTC [683] postgres@postgres STATEMENT:  select created from public.rpc_create_line_order($1, $2::jsonb, $3, $4)
+172.26.0.1 2026-10-02 00:40:21.785 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to resolve conversation to the given site_code
+172.26.0.1 2026-10-02 00:40:21.785 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_resolve_conversation_site(uuid,text,text) line 40 at RAISE
+172.26.0.1 2026-10-02 00:40:21.785 UTC [683] postgres@postgres STATEMENT:  select resolved from public.rpc_resolve_conversation_site($1, $2, $3)
+172.26.0.1 2026-10-02 00:40:21.819 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to resolve conversation to the given site_code
+172.26.0.1 2026-10-02 00:40:21.819 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_resolve_conversation_site(uuid,text,text) line 40 at RAISE
+172.26.0.1 2026-10-02 00:40:21.819 UTC [683] postgres@postgres STATEMENT:  select resolved from public.rpc_resolve_conversation_site($1, $2, $3)
+172.26.0.1 2026-10-02 00:40:21.847 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to resolve conversation to the given site_code
+172.26.0.1 2026-10-02 00:40:21.847 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_resolve_conversation_site(uuid,text,text) line 40 at RAISE
+172.26.0.1 2026-10-02 00:40:21.847 UTC [683] postgres@postgres STATEMENT:  select resolved from public.rpc_resolve_conversation_site($1, $2, $3)
+172.26.0.1 2026-10-02 00:40:21.855 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:21.855 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:21.855 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:21.863 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:21.863 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:21.863 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:21.872 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:21.872 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:21.872 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:21.879 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:21.879 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:21.879 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:21.900 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:21.900 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:21.900 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:21.911 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:21.911 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:21.911 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:21.920 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:21.920 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:21.920 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:21.929 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to resolve conversation to the given site_code
+172.26.0.1 2026-10-02 00:40:21.929 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_resolve_conversation_site(uuid,text,text) line 40 at RAISE
+172.26.0.1 2026-10-02 00:40:21.929 UTC [683] postgres@postgres STATEMENT:  select resolved from public.rpc_resolve_conversation_site($1, $2, $3)
+172.26.0.1 2026-10-02 00:40:21.937 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to resolve conversation to the given site_code
+172.26.0.1 2026-10-02 00:40:21.937 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_resolve_conversation_site(uuid,text,text) line 40 at RAISE
+172.26.0.1 2026-10-02 00:40:21.937 UTC [683] postgres@postgres STATEMENT:  select resolved from public.rpc_resolve_conversation_site($1, $2, $3)
+172.26.0.1 2026-10-02 00:40:21.945 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to resolve conversation to the given site_code
+172.26.0.1 2026-10-02 00:40:21.945 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_resolve_conversation_site(uuid,text,text) line 40 at RAISE
+172.26.0.1 2026-10-02 00:40:21.945 UTC [683] postgres@postgres STATEMENT:  select resolved from public.rpc_resolve_conversation_site($1, $2, $3)
+172.26.0.1 2026-10-02 00:40:21.953 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to resolve conversation to the given site_code
+172.26.0.1 2026-10-02 00:40:21.953 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_resolve_conversation_site(uuid,text,text) line 40 at RAISE
+172.26.0.1 2026-10-02 00:40:21.953 UTC [683] postgres@postgres STATEMENT:  select resolved from public.rpc_resolve_conversation_site($1, $2, $3)
+172.26.0.1 2026-10-02 00:40:21.960 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to resolve conversation to the given site_code
+172.26.0.1 2026-10-02 00:40:21.960 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_resolve_conversation_site(uuid,text,text) line 40 at RAISE
+172.26.0.1 2026-10-02 00:40:21.960 UTC [683] postgres@postgres STATEMENT:  select resolved from public.rpc_resolve_conversation_site($1, $2, $3)
+172.26.0.1 2026-10-02 00:40:21.968 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:21.968 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:21.968 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:21.976 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:21.976 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:21.976 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:21.997 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:21.997 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:21.997 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:22.023 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to resolve conversation to the given site_code
+172.26.0.1 2026-10-02 00:40:22.023 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_resolve_conversation_site(uuid,text,text) line 40 at RAISE
+172.26.0.1 2026-10-02 00:40:22.023 UTC [683] postgres@postgres STATEMENT:  select resolved from public.rpc_resolve_conversation_site($1, $2, $3)
+172.26.0.1 2026-10-02 00:40:22.050 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to resolve conversation to the given site_code
+172.26.0.1 2026-10-02 00:40:22.050 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_resolve_conversation_site(uuid,text,text) line 40 at RAISE
+172.26.0.1 2026-10-02 00:40:22.050 UTC [683] postgres@postgres STATEMENT:  select resolved from public.rpc_resolve_conversation_site($1, $2, $3)
+172.26.0.1 2026-10-02 00:40:22.071 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:22.071 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:22.071 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:22.118 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:22.118 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:22.118 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:22.138 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:22.138 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:22.138 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:22.147 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:22.147 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:22.147 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:22.155 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to resolve conversation to the given site_code
+172.26.0.1 2026-10-02 00:40:22.155 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_resolve_conversation_site(uuid,text,text) line 40 at RAISE
+172.26.0.1 2026-10-02 00:40:22.155 UTC [683] postgres@postgres STATEMENT:  select resolved from public.rpc_resolve_conversation_site($1, $2, $3)
+172.26.0.1 2026-10-02 00:40:22.164 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to resolve conversation to the given site_code
+172.26.0.1 2026-10-02 00:40:22.164 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_resolve_conversation_site(uuid,text,text) line 40 at RAISE
+172.26.0.1 2026-10-02 00:40:22.164 UTC [683] postgres@postgres STATEMENT:  select resolved from public.rpc_resolve_conversation_site($1, $2, $3)
+172.26.0.1 2026-10-02 00:40:22.173 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to resolve conversation to the given site_code
+172.26.0.1 2026-10-02 00:40:22.173 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_resolve_conversation_site(uuid,text,text) line 40 at RAISE
+172.26.0.1 2026-10-02 00:40:22.173 UTC [683] postgres@postgres STATEMENT:  select resolved from public.rpc_resolve_conversation_site($1, $2, $3)
+172.26.0.1 2026-10-02 00:40:22.181 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:22.181 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:22.181 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:22.189 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:22.189 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:22.189 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:22.197 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:22.197 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:22.197 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:22.206 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to compose an outbound message for this conversation
+172.26.0.1 2026-10-02 00:40:22.206 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) line 85 at RAISE
+172.26.0.1 2026-10-02 00:40:22.206 UTC [683] postgres@postgres STATEMENT:  select staged from public.rpc_send_line_outbound($1, $2, $3::jsonb)
+172.26.0.1 2026-10-02 00:40:22.215 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to create an order for this conversation
+172.26.0.1 2026-10-02 00:40:22.215 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_create_line_order(uuid,jsonb,text,text) line 76 at RAISE
+172.26.0.1 2026-10-02 00:40:22.215 UTC [683] postgres@postgres STATEMENT:  select created from public.rpc_create_line_order($1, $2::jsonb, $3, $4)
+172.26.0.1 2026-10-02 00:40:22.222 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to create an order for this conversation
+172.26.0.1 2026-10-02 00:40:22.222 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_create_line_order(uuid,jsonb,text,text) line 76 at RAISE
+172.26.0.1 2026-10-02 00:40:22.222 UTC [683] postgres@postgres STATEMENT:  select created from public.rpc_create_line_order($1, $2::jsonb, $3, $4)
+172.26.0.1 2026-10-02 00:40:22.230 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to resolve conversation to the given site_code
+172.26.0.1 2026-10-02 00:40:22.230 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_resolve_conversation_site(uuid,text,text) line 40 at RAISE
+172.26.0.1 2026-10-02 00:40:22.230 UTC [683] postgres@postgres STATEMENT:  select resolved from public.rpc_resolve_conversation_site($1, $2, $3)
+172.26.0.1 2026-10-02 00:40:22.238 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to resolve conversation to the given site_code
+172.26.0.1 2026-10-02 00:40:22.238 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_resolve_conversation_site(uuid,text,text) line 40 at RAISE
+172.26.0.1 2026-10-02 00:40:22.238 UTC [683] postgres@postgres STATEMENT:  select resolved from public.rpc_resolve_conversation_site($1, $2, $3)
+172.26.0.1 2026-10-02 00:40:22.246 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to create an order for this conversation
+172.26.0.1 2026-10-02 00:40:22.246 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_create_line_order(uuid,jsonb,text,text) line 76 at RAISE
+172.26.0.1 2026-10-02 00:40:22.246 UTC [683] postgres@postgres STATEMENT:  select created from public.rpc_create_line_order($1, $2::jsonb, $3, $4)
+172.26.0.1 2026-10-02 00:40:22.254 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to create an order for this conversation
+172.26.0.1 2026-10-02 00:40:22.254 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_create_line_order(uuid,jsonb,text,text) line 76 at RAISE
+172.26.0.1 2026-10-02 00:40:22.254 UTC [683] postgres@postgres STATEMENT:  select created from public.rpc_create_line_order($1, $2::jsonb, $3, $4)
+172.26.0.1 2026-10-02 00:40:22.262 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to resolve conversation to the given site_code
+172.26.0.1 2026-10-02 00:40:22.262 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_resolve_conversation_site(uuid,text,text) line 40 at RAISE
+172.26.0.1 2026-10-02 00:40:22.262 UTC [683] postgres@postgres STATEMENT:  select resolved from public.rpc_resolve_conversation_site($1, $2, $3)
+172.26.0.1 2026-10-02 00:40:22.269 UTC [683] postgres@postgres ERROR:  line_oa: permission denied to resolve conversation to the given site_code
+172.26.0.1 2026-10-02 00:40:22.269 UTC [683] postgres@postgres CONTEXT:  PL/pgSQL function rpc_resolve_conversation_site(uuid,text,text) line 40 at RAISE
+172.26.0.1 2026-10-02 00:40:22.269 UTC [683] postgres@postgres STATEMENT:  select resolved from public.rpc_resolve_conversation_site($1, $2, $3)

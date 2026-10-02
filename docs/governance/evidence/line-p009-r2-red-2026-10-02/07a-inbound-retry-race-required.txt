@@ -1,0 +1,10 @@
+file:///C:/Users/thai3/determined-williams%20(2)/MONOLITH%20Repair%20Intelligence/.worktrees/line-p009-ingest-retry/tests/line-oa-commerce/concurrency/inbound-retry-race.mjs:111
+      throw new Error("inbound-retry-race: migration 0200 is required (LINE_RACE_REQUIRE=1) but absent");
+            ^
+
+Error: inbound-retry-race: migration 0200 is required (LINE_RACE_REQUIRE=1) but absent
+    at main (file:///C:/Users/thai3/determined-williams%20(2)/MONOLITH%20Repair%20Intelligence/.worktrees/line-p009-ingest-retry/tests/line-oa-commerce/concurrency/inbound-retry-race.mjs:111:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///C:/Users/thai3/determined-williams%20(2)/MONOLITH%20Repair%20Intelligence/.worktrees/line-p009-ingest-retry/tests/line-oa-commerce/concurrency/inbound-retry-race.mjs:256:1
+
+Node.js v22.21.1

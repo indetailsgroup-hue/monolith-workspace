@@ -1,0 +1,46 @@
+BEGIN
+CREATE EXTENSION
+1..21
+ok 1 - organization table exists
+ok 2 - every site has an organization
+ok 3 - action context pins organization
+ok 4 - membership organization grants exist
+ok 5 - organization RLS enabled
+INSERT 0 3
+INSERT 0 2
+INSERT 0 3
+INSERT 0 3
+INSERT 0 3
+INSERT 0 3
+INSERT 0 4
+INSERT 0 3
+ok 6 - no non-SELECT client policy on organization tables
+ok 7 - no organization table uses a using(true) policy
+SET
+RESET
+ok 8 - RLS: a tenant-001 member cannot read tenant-002 organizations
+SET
+RESET
+ok 9 - RLS: organization-A membership cannot read organization-B sites in the same tenant
+ok 10 - organization-A membership cannot create an action context for an organization-B site
+ok 11 - service role cannot create human authority
+ok 12 - valid grant creates an action context pinned to the site organization
+UPDATE 1
+ok 13 - changing membership version invalidates an unconsumed context
+ok 14 - an action context still consumes while its organization and site remain ACTIVE
+UPDATE 1
+ok 15 - site deactivation revokes an already-minted action context at consume time
+UPDATE 1
+ok 16 - a site row with a tenant-mismatched organization foreign key is rejected
+INSERT 0 1
+SET
+RESET
+ok 17 - RLS: organization-A membership cannot read an organization-B content-revocation row
+SET
+RESET
+ok 18 - RLS: organization-B membership still reads its own content-revocation row (not deny-all)
+ok 19 - content_unblock_grant SELECT policy is scoped by the organization/site helper
+UPDATE 1
+ok 20 - an INACTIVE organization authorizes no new action context
+ok 21 - organization deactivation revokes an already-minted action context at consume time
+ROLLBACK

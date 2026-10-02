@@ -1,0 +1,42 @@
+BEGIN
+CREATE EXTENSION
+1..27
+INSERT 0 3
+INSERT 0 2
+INSERT 0 3
+INSERT 0 3
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 4
+INSERT 0 3
+ok 1 - machine_profile_attestation RLS enabled
+ok 2 - warning_exception_grant RLS enabled
+ok 3 - warning_catalogue RLS enabled
+ok 4 - machine_profile_attestation: no client write policy
+ok 5 - warning_exception_grant: no client write policy
+ok 6 - every CAP_* catalogue code is exception_eligible=false
+ok 7 - duplicate approver is rejected by CHECK
+ok 8 - expires_at <= issued_at is rejected by CHECK
+ok 9 - a CAP_* code can never be marked exception_eligible
+ok 10 - attestation signed with a non-PROFILE_ATTESTATION key purpose is rejected
+ok 11 - grant signed with a non-WARNING_EXCEPTION key purpose is rejected
+ok 12 - cross-tenant profile rejected
+ok 13 - current in-scope attestation is accepted
+ok 14 - expired attestation rejected
+ok 15 - revoked attestation rejected
+ok 16 - unknown attestation rejected
+ok 17 - tenant 002 attestation coexists and is accepted
+ok 18 - valid, eligible, in-window grant is accepted
+ok 19 - a CAP_* grant can never except a hard blocker
+ok 20 - an expired grant is rejected
+ok 21 - a candidate-hash mismatch is rejected
+ok 22 - a cross-tenant grant is rejected
+ok 23 - an unknown grant is rejected
+ok 24 - GRANT_WARNING_EXCEPTION action context is admitted by the widened CHECK
+ok 25 - GRANT_WARNING_EXCEPTION with a null candidate hash is rejected by the shape CHECK
+ok 26 - tenant 002 attestation coexists without source changes
+SET
+RESET
+ok 27 - RLS: same-tenant membership without the organization grant cannot read an org-X site
+ROLLBACK
