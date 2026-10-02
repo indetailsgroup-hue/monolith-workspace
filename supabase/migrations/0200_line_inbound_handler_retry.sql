@@ -8,7 +8,8 @@
 --
 -- Change:
 --   * line_oa_inbound_retry: our own retry state for failed group events.
---   * rpc_ingest_line_webhook (body from 0097; only the group branch changes):
+--   * rpc_ingest_line_webhook (body from 0097; only the group branch changes,
+--     including a timezone-safe received_at for group rows):
 --       - handler_error -> a pending retry row (attempt 1, due after 1 s) and a
 --         group_event_retry_queued audit entry; no inbound row, no
 --         group_event audit, not counted in any events_* counter;
@@ -25,9 +26,11 @@
 --         capped at 300 s (as 0196); attempt 5 -> dead_letter +
 --         group_event_dead_letter audit (reason retry_bound), payload kept for
 --         human handling; the rest of the batch still commits;
---       - queued for more than 10 minutes -> dead_letter (reason expired)
---         without running the handler, so a stale command (for example a
---         '#ปัญหา' that staff already re-sent) is never replayed late.
+--       - queued for more than 10 minutes and not ingested by another
+--         delivery -> dead_letter (reason expired, last error kept) without
+--         running the handler, so a stale command (for example a '#ปัญหา'
+--         that staff already re-sent) is never replayed late. Ordering
+--         within the window is not enforced (see PRD P0-9 open items).
 --   * Privileges are granted explicitly (service_role: SELECT on the table,
 --     EXECUTE on the sweep) and verified at the end: if any role's effective
 --     privilege differs from the target, the migration raises 42501 and rolls
@@ -255,7 +258,7 @@ begin
           insert into public.line_oa_inbound_messages (
             conversation_id, webhook_event_id, payload, received_at, source_type, line_group_id
           )
-          values (null, v_webhook_event_id, v_event, timezone('utc', now()), 'group', v_group_id);
+          values (null, v_webhook_event_id, v_event, now(), 'group', v_group_id);
 
           insert into public.line_oa_audit_log (
             event_type, vertical_context, site_code, entity_ref, performed_by
@@ -405,6 +408,7 @@ declare
   v_row     public.line_oa_inbound_retry%rowtype;
   v_result  text;
   v_attempt integer;
+  v_ingested boolean;
 begin
   if p_limit is null or p_limit < 1 or p_limit > 100 then
     raise exception 'p_limit must be between 1 and 100' using errcode = 'invalid_parameter_value';
@@ -424,13 +428,16 @@ begin
      for update skip locked
   loop
     claimed := claimed + 1;
+    v_ingested := exists (select 1 from public.line_oa_inbound_messages m
+                          where m.webhook_event_id = v_row.webhook_event_id);
 
     -- A stale row is never replayed: staff may already have re-sent the
-    -- command, so running it now could repeat a customer-visible action.
-    if v_row.created_at < now() - interval '10 minutes' then
+    -- command, so running it now could repeat a customer-visible action. An
+    -- event another delivery already ingested is closed below instead.
+    if not v_ingested and v_row.created_at < now() - interval '10 minutes' then
       update public.line_oa_inbound_retry
          set status = 'dead_letter', next_attempt_at = null,
-             last_error = 'expired: queued for more than 10 minutes'
+             last_error = 'expired: queued for more than 10 minutes; last error: ' || coalesce(v_row.last_error, 'none')
        where id = v_row.id;
 
       insert into public.line_oa_audit_log (
@@ -450,8 +457,7 @@ begin
     -- handler's side effects) is rolled back and only this row fails. If
     -- another delivery ingested the event first, the row is closed.
     begin
-      if exists (select 1 from public.line_oa_inbound_messages m
-                 where m.webhook_event_id = v_row.webhook_event_id) then
+      if v_ingested then
         v_result := 'already_ingested';
       else
         v_result := public.fn_line_handle_group_event(v_row.payload, v_row.vertical_context, v_actor);
@@ -487,7 +493,7 @@ begin
       v_attempt := v_row.attempt_count + 1;
       if v_attempt >= 5 then
         update public.line_oa_inbound_retry
-           set status = 'dead_letter', attempt_count = v_attempt,
+           set status = 'dead_letter', attempt_count = least(v_attempt, 5),
                next_attempt_at = null, last_error = left(v_result, 500)
          where id = v_row.id;
 
@@ -497,7 +503,7 @@ begin
         values (
           'group_event_dead_letter', v_row.vertical_context, null,
           format('webhook_event_id:%s|line_group_id:%s|attempt:%s|reason:retry_bound',
-                 v_row.webhook_event_id, v_row.line_group_id, v_attempt),
+                 v_row.webhook_event_id, v_row.line_group_id, least(v_attempt, 5)),
           v_actor
         );
         dead_lettered := dead_lettered + 1;
@@ -569,9 +575,11 @@ begin
         v_problems := v_problems || format('%s:%s line_oa_inbound_retry', r, lower(p));
       end if;
     end loop;
-    if has_any_column_privilege(r, v_table, 'INSERT') or has_any_column_privilege(r, v_table, 'UPDATE') then
-      v_problems := v_problems || format('%s:column write line_oa_inbound_retry', r);
-    end if;
+    foreach p in array array['SELECT', 'INSERT', 'UPDATE', 'REFERENCES'] loop
+      if has_any_column_privilege(r, v_table, p) and not (r = 'service_role' and p = 'SELECT') then
+        v_problems := v_problems || format('%s:column %s line_oa_inbound_retry', r, lower(p));
+      end if;
+    end loop;
     if has_function_privilege(r, v_sweep, 'EXECUTE') <> (r = 'service_role') then
       v_problems := v_problems || format('%s:execute rpc_line_inbound_retry_sweep', r);
     end if;

@@ -52,7 +52,7 @@ ANON_KEY="$(mkjwt anon)"
 SERVICE_KEY="$(mkjwt service_role)"
 DSN="postgresql://postgres@127.0.0.1:${PORT}/postgres"
 ADMIN_DSN="postgresql://supabase_admin@127.0.0.1:${PORT}/postgres"
-export PYTHONDONTWRITEBYTECODE=1
+export PYTHONDONTWRITEBYTECODE=1 PYTHONUTF8=1
 export HYPOTHESIS_STORAGE_DIRECTORY="${TMPDIR:-/tmp}/line-p009-hypothesis"
 export LINE_CLAIM_RACE_DSN="$DSN" LINE_CLAIM_RACE_EPHEMERAL=1 PSQL_BIN="$PSQL"
 

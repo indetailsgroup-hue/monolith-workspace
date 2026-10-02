@@ -1,10 +1,18 @@
 """Verify one P0-9 evidence bundle written by scripts/run-line-p009-evidence.sh.
 
-usage: verify-line-p009-evidence.py <out> <red|green|mutants>
+usage: verify-line-p009-evidence.py <out> <red|green|mutants> [--recheck]
 Exit codes are read from the name=value lines of <out>/00-context.txt.
 Generated credentials arrive only through P009_SCAN_* environment variables.
+
+The runner calls it once, at the commit that produced the bundle, with the
+generated credentials (10-verification.txt records that run). --recheck lets a
+reviewer repeat every other check later: the bundle head_sha must be an
+ancestor of HEAD, SHA256SUMS must hold, and source-SHA256SUMS must match the
+blobs at head_sha; the credential scan is skipped because the per-run
+credentials no longer exist.
 """
 from pathlib import Path
+import hashlib
 import json
 import os
 import re
@@ -14,7 +22,10 @@ import xml.etree.ElementTree as ET
 
 out = Path(sys.argv[1])
 mode = sys.argv[2]
-PLAN = 48
+recheck = '--recheck' in sys.argv[3:]
+PLAN = 53
+PY_CASES = 106
+SUITE_MUTANTS = 14
 RED_PASSING = {7, 39, 40, 41, 48}
 KNOWN_SKIPS = ('public.resolve_actor() is not installed', 'public.record_input_sync(')
 
@@ -41,21 +52,32 @@ def code(name):
 
 # --- provenance and credentials -------------------------------------------------
 head = subprocess.run(['git', 'rev-parse', 'HEAD'], capture_output=True, text=True, check=True).stdout.strip()
-require(f'head_sha: {head}' in context, f'bundle was produced at the current HEAD {head[:9]}')
+bundle_head = re.search(r'^head_sha: ([0-9a-f]{40})$', context, re.M).group(1)
 require('uncommitted_changes_in_code_under_test: [] (empty = clean)' in context, 'code under test was clean')
+if not recheck:
+    require(bundle_head == head, f'bundle was produced at the current HEAD {head[:9]}')
+    secrets = [os.environ[k].encode() for k in ('P009_SCAN_PW', 'P009_SCAN_JWT', 'P009_SCAN_ANON', 'P009_SCAN_SERVICE')]
+    require(all(len(s) > 20 for s in secrets), 'generated credential inputs supplied')
 
-secrets = [os.environ[k].encode() for k in ('P009_SCAN_PW', 'P009_SCAN_JWT', 'P009_SCAN_ANON', 'P009_SCAN_SERVICE')]
-require(all(len(s) > 20 for s in secrets), 'generated credential inputs supplied')
+    def hits(data):
+        return any(s in data for s in secrets)
 
-
-def hits(data):
-    return any(s in data for s in secrets)
-
-
-require(hits(b'control=' + secrets[0]), 'credential scanner positive control detects a generated credential')
-files = [p for p in out.rglob('*') if p.is_file()]
-found = [str(p.relative_to(out)) for p in files if hits(p.read_bytes())]
-require(not found, f'no generated credential bytes in {len(files)} captured files (findings={found!r})')
+    require(hits(b'control=' + secrets[0]), 'credential scanner positive control detects a generated credential')
+    files = [p for p in out.rglob('*') if p.is_file()]
+    found = [str(p.relative_to(out)) for p in files if hits(p.read_bytes())]
+    require(not found, f'no generated credential bytes in {len(files)} captured files (findings={found!r})')
+else:
+    ancestor = subprocess.run(['git', 'merge-base', '--is-ancestor', bundle_head, 'HEAD']).returncode == 0
+    require(ancestor, f'recheck: bundle head {bundle_head[:9]} is an ancestor of HEAD {head[:9]}')
+    sums = [line.split('  ', 1) for line in read('SHA256SUMS').splitlines() if line]
+    require(all(hashlib.sha256((out / name).read_bytes()).hexdigest() == digest for digest, name in sums),
+            f'recheck: all {len(sums)} SHA256SUMS entries match')
+    sources = [line.split('  ', 1) for line in read('source-SHA256SUMS').splitlines() if line]
+    mismatched = [name for digest, name in sources
+                  if hashlib.sha256(subprocess.run(['git', '-c', 'core.longpaths=true', 'show', f'{bundle_head}:{name}'],
+                                                   capture_output=True, check=True).stdout).hexdigest() != digest]
+    require(not mismatched, f'recheck: all {len(sources)} source hashes match the blobs at {bundle_head[:9]} ({mismatched})')
+    print('SKIP: credential scan (the per-run generated credentials no longer exist; recorded in 10-verification.txt)')
 
 migrations = read('02-migrations-applied.txt').splitlines()
 skipped = [line for line in migrations if line.startswith('skip ')]
@@ -139,7 +161,8 @@ if mode in ('red', 'green'):
 
     py = outcomes(out / '08-pytest-junit.xml')
     py_failed = [k for k, v in py.items() if v == 'failed']
-    require(not py_failed and code('pytest_exit') == '0', f'Python: no failure or error ({len(py)} cases)')
+    require(len(py) == PY_CASES and not py_failed and code('pytest_exit') == '0',
+            f'Python: all {PY_CASES} cases ran with no failure or error ({len(py)} cases)')
     root = ET.parse(out / '08-pytest-junit.xml').getroot()
     skips = [c.find('skipped').get('message') or '' for c in root.findall('.//testcase') if c.find('skipped') is not None]
     require(all(any(k in m for k in KNOWN_SKIPS) for m in skips),
@@ -148,13 +171,16 @@ if mode in ('red', 'green'):
     if mode == 'green':
         compare = re.search(r'^compare_red: (.+)$', context, re.M)
         require(compare is not None, 'GREEN names the RED bundle to compare with')
+        red_context = (Path(compare.group(1)) / '00-context.txt').read_text(encoding='utf-8')
+        require('verification_exit=0' in red_context, 'the RED bundle compared with was itself verified')
         red = outcomes(Path(compare.group(1)) / '08-pytest-junit.xml')
         require(red == py, f'Python: every test has the same outcome as {Path(compare.group(1)).name} (no regression)')
 
 if mode == 'mutants':
     require(code('mutants_generator_exit') == '0', 'mutant generator succeeded')
     manifest = json.loads(read('mutants/mutants.json'))
-    require(len(manifest['suite']) == 9 and len(manifest['race']) == 3, 'nine suite mutants and three race mutants')
+    require(len(manifest['suite']) == SUITE_MUTANTS and len(manifest['race']) == 3,
+            f'{SUITE_MUTANTS} suite mutants and three race mutants')
     require(code('suite_real_exit') == '0', 'control: suite psql exit 0 with the real 0200')
     _, complete, failed = tap_results('06-suite-real.tap')
     require(complete and not failed, f'control: the real 0200 passes all {PLAN} assertions')
@@ -174,7 +200,7 @@ if mode == 'mutants':
                     f'{name}: the race fails with a lock timeout (client B would have waited for A)')
         else:
             require(code(f'race_{name}_exit') == '0' and 'PASS inbound-retry-race' in text,
-                    f'{name}: the earlier harness (0a355e29b) still passes this mutant — the weakness fixed here')
+                    f'{name}: the earlier harness (0a355e29b) still passes this mutant - the weakness fixed here')
     real = read('07-race-real.txt')
     require(code('apply_real_sweep_exit') == '0' and code('race_real_exit') == '0' and 'overlap=proven' in real,
             'control: the real sweep passes the race with proven overlap')

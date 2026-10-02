@@ -15,7 +15,10 @@
 -- Before 0200 (RED) every assertion fails except the regression controls 7,
 -- 39, 40 and 41 and case C (48), which \ir's the migration file itself. After
 -- 0200 (GREEN) every assertion passes. Assertions 8, 27, 30 and 34 hold for
--- the first 0200 too; mutant runs show what each of them catches. Failures are injected by a test-only trigger created
+-- the first 0200 too; mutant runs show what each of them catches.
+-- 49-53 were added in round 3 (expiry after another delivery, re-queue at
+-- the bound, first-delivery timestamp, column-level read in the fail-closed
+-- check). Failures are injected by a test-only trigger created
 -- inside this transaction:
 --   p009.fault = <line group id> | 'all'  -> outbound inserts for that group
 --               raise, so the handler returns 'handler_error:...';
@@ -24,8 +27,9 @@
 --   p009.raise_event = <event id> -> its inbound insert raises 40P01, an error
 --               the handler never sees.
 -- The trigger also advances the sequence p009_calls on every outbound insert
--- attempt; sequences ignore rollback, so it counts handler runs that were
--- rolled back. All data is synthetic and rolled back; no HTTP call and no LINE
+-- attempt; sequences ignore rollback, so it also counts attempts that were
+-- rolled back. It is reported as outbound_insert_attempts and stands for
+-- handler runs only for the join events it is used with, which always insert. All data is synthetic and rolled back; no HTTP call and no LINE
 -- delivery happens. now() is fixed for the whole transaction, so backoff
 -- deadlines are exact. This file always issues the final ROLLBACK.
 
@@ -37,7 +41,7 @@
 \echo '# migration under test:' :p009_migration
 
 create extension if not exists pgtap;
-select plan(48);
+select plan(53);
 
 -- ---------------------------------------------------------------------------
 -- Helpers. Every call that may touch an object 0200 creates goes through an
@@ -291,10 +295,10 @@ insert into p009_ctx select 'ingest-1-redelivery', pg_temp.p009_ingest(pg_temp.p
 select is(
   jsonb_build_object('result', (select v from p009_ctx where k = 'ingest-1-redelivery'),
                      'state', pg_temp.p009_state('p009-evt-join-1'),
-                     'handler_runs', pg_temp.p009_calls() - (select v::bigint from p009_ctx where k = 'calls-before-redelivery'),
+                     'outbound_insert_attempts', pg_temp.p009_calls() - (select v::bigint from p009_ctx where k = 'calls-before-redelivery'),
                      'prompts', pg_temp.p009_bind_prompts('C-P009-G1')),
   jsonb_build_object('result', pg_temp.p009_ingest_expect(0, 1, 0), 'state', 'pending|1|00:00:01|',
-                     'handler_runs', 0, 'prompts', 0),
+                     'outbound_insert_attempts', 0, 'prompts', 0),
   'a redelivery of a queued event is a duplicate: the handler does not run and the queued row is unchanged'
 );
 
@@ -496,11 +500,11 @@ select is(
   jsonb_build_object('sweep', (select v from p009_ctx where k = 'sweep-4'),
                      'state', pg_temp.p009_state('p009-evt-join-4'),
                      'payload', pg_temp.p009_col('p009-evt-join-4', 'payload'),
-                     'handler_runs', pg_temp.p009_calls() - (select v::bigint from p009_ctx where k = 'calls-before-sweep-4'),
+                     'outbound_insert_attempts', pg_temp.p009_calls() - (select v::bigint from p009_ctx where k = 'calls-before-sweep-4'),
                      'prompts', pg_temp.p009_bind_prompts('C-P009-G4')),
   jsonb_build_object('sweep', pg_temp.p009_sweep_expect(1, 1, 0, 0),
                      'state', 'succeeded|1|null|already_ingested', 'payload', '{}',
-                     'handler_runs', 0, 'prompts', 0),
+                     'outbound_insert_attempts', 0, 'prompts', 0),
   'a queued event that another delivery already ingested is closed without running the handler'
 );
 
@@ -577,12 +581,12 @@ select is(
                      'audit', pg_temp.p009_q($q$select count(*)::text from public.line_oa_audit_log
                                                  where event_type = 'group_event_dead_letter'
                                                    and entity_ref = 'webhook_event_id:p009-evt-join-9|line_group_id:C-P009-G9|attempt:1|reason:expired'$q$),
-                     'handler_runs', pg_temp.p009_calls() - (select v::bigint from p009_ctx where k = 'calls-before-sweep-9'),
+                     'outbound_insert_attempts', pg_temp.p009_calls() - (select v::bigint from p009_ctx where k = 'calls-before-sweep-9'),
                      'prompts', pg_temp.p009_bind_prompts('C-P009-G9')),
   jsonb_build_object('sweep', pg_temp.p009_sweep_expect(1, 0, 0, 1),
                      'state', 'dead_letter|1|null|',
-                     'error', 'expired: queued for more than 10 minutes',
-                     'audit', '1', 'handler_runs', 0, 'prompts', 0),
+                     'error', 'expired: queued for more than 10 minutes; last error: handler_error:p009 injected handler fault',
+                     'audit', '1', 'outbound_insert_attempts', 0, 'prompts', 0),
   'a row older than 10 minutes is dead-lettered as expired without running the handler'
 );
 
@@ -775,7 +779,7 @@ select ok(:'case_a_sqlstate' = '42501'
           and :'case_a_message' like '%anon:execute rpc_line_inbound_retry_sweep%',
   'case A: the migration raises 42501 "P0-9: privileges differ from target" naming anon:execute');
 select is(:'case_a_after'::text, :'case_a_before'::text,
-  'case A: after the error the function ACLs, the table ACL and memberships are exactly as before');
+  'case A: once the failed migration is rolled back to its savepoint, ACLs and memberships are as before (checks the rollback, not the migration)');
 
 -- Case B (45-47): authenticated inherits INSERT on the retry table.
 savepoint p009_case_b;
@@ -815,10 +819,18 @@ select ok(:'case_b_sqlstate' = '42501'
           and :'case_b_message' like '%authenticated:insert line_oa_inbound_retry%',
   'case B: the migration raises 42501 naming authenticated:insert line_oa_inbound_retry');
 select is(:'case_b_after'::text, :'case_b_before'::text,
-  'case B: after the error the function ACLs, the table ACL and memberships are exactly as before');
+  'case B: once the failed migration is rolled back to its savepoint, ACLs and memberships are as before (checks the rollback, not the migration)');
 
--- Case C (48): nothing leaks, so re-running the migration completes.
+-- Case C (48): nothing leaks, so re-running the migration completes. A
+-- sentinel comment proves the file really ran: the migration replaces it.
 savepoint p009_case_c;
+do $$
+begin
+  if to_regprocedure('public.rpc_line_inbound_retry_sweep(integer)') is not null then
+    comment on function public.rpc_line_inbound_retry_sweep(integer) is 'p009-sentinel';
+  end if;
+end;
+$$;
 savepoint p009_case_c_migration;
 \set ON_ERROR_STOP off
 \ir :p009_migration
@@ -828,11 +840,120 @@ savepoint p009_case_c_migration;
   rollback to savepoint p009_case_c_migration;
 \endif
 \set ON_ERROR_STOP on
+select coalesce(obj_description(to_regprocedure('public.rpc_line_inbound_retry_sweep(integer)'), 'pg_proc'), '<none>')
+         as case_c_comment \gset
 rollback to savepoint p009_case_c;
 release savepoint p009_case_c;
 
-select is(:'case_c_sqlstate'::text, '00000'::text,
-  'case C: with no leaked privilege the migration re-runs to completion (SQLSTATE 00000)');
+select ok(:'case_c_sqlstate' = '00000' and :'case_c_comment' like 'P0-9 (0200)%',
+  'case C: with no leaked privilege the migration re-runs to completion (SQLSTATE 00000, its own comment replaced the sentinel)');
+
+-- ---------------------------------------------------------------------------
+-- 49-51: expiry after another delivery, a re-queued row at the bound, and the
+-- first-delivery timestamp.
+-- ---------------------------------------------------------------------------
+-- Park the row 34 left pending, so the sweeps below see only their own rows.
+select pg_temp.p009_q($q$with u as (update public.line_oa_inbound_retry set next_attempt_at = now() + interval '1 hour'
+                                     where webhook_event_id = 'p009-evt-join-14' and status = 'pending' returning 1)
+                       select count(*)::text from u$q$);
+
+-- 49: an expired row whose event another delivery already ingested is closed
+-- as already_ingested, not dead-lettered (its payload must not invite a
+-- manual replay).
+select set_config('p009.fault', 'C-P009-G16', true);
+insert into p009_ctx select 'ingest-16', pg_temp.p009_ingest(pg_temp.p009_join_body('p009-evt-join-16', 'C-P009-G16'));
+select set_config('p009.fault', 'off', true);
+insert into public.line_oa_inbound_messages (conversation_id, webhook_event_id, payload, source_type, line_group_id)
+values (null, 'p009-evt-join-16', '{}'::jsonb, 'group', 'C-P009-G16')
+on conflict (webhook_event_id) do nothing;
+select pg_temp.p009_q($q$with u as (update public.line_oa_inbound_retry set created_at = now() - interval '11 minutes'
+                                     where webhook_event_id = 'p009-evt-join-16' returning 1) select count(*)::text from u$q$);
+select pg_temp.p009_due('p009-evt-join-16');
+insert into p009_ctx select 'sweep-16', pg_temp.p009_sweep();
+
+select is(
+  jsonb_build_object('sweep', (select v from p009_ctx where k = 'sweep-16'),
+                     'state', pg_temp.p009_state('p009-evt-join-16')),
+  jsonb_build_object('sweep', pg_temp.p009_sweep_expect(1, 1, 0, 0),
+                     'state', 'succeeded|1|null|already_ingested'),
+  'an expired row whose event was already ingested is closed as already_ingested, not dead-lettered'
+);
+
+-- 50: a row re-queued by hand at attempt 5 that fails again is dead-lettered at
+-- 5 (no CHECK violation outside the per-row block), and the batch commits.
+select set_config('p009.fault', 'all', true);
+insert into p009_ctx select 'ingest-17', pg_temp.p009_ingest(pg_temp.p009_join_body('p009-evt-join-17', 'C-P009-G17'));
+insert into p009_ctx select 'ingest-18', pg_temp.p009_ingest(pg_temp.p009_join_body('p009-evt-join-18', 'C-P009-G18'));
+select pg_temp.p009_q($q$with u as (update public.line_oa_inbound_retry set attempt_count = 5
+                                     where webhook_event_id = 'p009-evt-join-17' returning 1) select count(*)::text from u$q$);
+select pg_temp.p009_due('p009-evt-join-17', interval '2 seconds');
+select pg_temp.p009_due('p009-evt-join-18');
+select set_config('p009.fault', 'C-P009-G17', true);
+insert into p009_ctx select 'sweep-17-18', pg_temp.p009_sweep();
+select set_config('p009.fault', 'off', true);
+
+select is(
+  jsonb_build_object('sweep', (select v from p009_ctx where k = 'sweep-17-18'),
+                     'requeued', pg_temp.p009_state('p009-evt-join-17'),
+                     'healthy', pg_temp.p009_state('p009-evt-join-18')),
+  jsonb_build_object('sweep', pg_temp.p009_sweep_expect(2, 1, 0, 1),
+                     'requeued', 'dead_letter|5|null|',
+                     'healthy', 'succeeded|1|null|join_prompted'),
+  'a re-queued row at attempt 5 that fails again is dead-lettered at 5 and the batch still commits'
+);
+
+-- 51: a first delivery in an Asia/Bangkok session also stores received_at = now().
+insert into p009_ctx select 'tz-before-19', to_jsonb(current_setting('timezone'));
+select set_config('timezone', 'Asia/Bangkok', true);
+insert into p009_ctx select 'ingest-19', pg_temp.p009_ingest(pg_temp.p009_join_body('p009-evt-join-19', 'C-P009-G19'));
+select set_config('timezone', (select v #>> '{}' from p009_ctx where k = 'tz-before-19'), true);
+
+select is(
+  jsonb_build_object('result', (select v from p009_ctx where k = 'ingest-19'),
+                     'received_at_is_now', (select received_at = now() from public.line_oa_inbound_messages
+                                             where webhook_event_id = 'p009-evt-join-19')),
+  jsonb_build_object('result', pg_temp.p009_ingest_expect(1, 0, 0), 'received_at_is_now', true),
+  'a first group delivery in an Asia/Bangkok session stores received_at = now(), not a shifted wall time'
+);
+
+-- ---------------------------------------------------------------------------
+-- Case D (52-53): anon inherits a column-level SELECT on the payload, which a
+-- table-level check alone would miss.
+-- ---------------------------------------------------------------------------
+savepoint p009_case_d;
+create role p009_fc_reader nologin;
+grant p009_fc_reader to anon with inherit true;
+do $$
+begin
+  if to_regclass('public.line_oa_inbound_retry') is not null then
+    grant select (payload) on public.line_oa_inbound_retry to p009_fc_reader;
+  end if;
+end;
+$$;
+select coalesce(has_column_privilege('anon', to_regclass('public.line_oa_inbound_retry'), 'payload', 'SELECT'), false)
+         as case_d_pre \gset
+
+savepoint p009_case_d_migration;
+\set ON_ERROR_STOP off
+\ir :p009_migration
+\set case_d_error :ERROR
+\set case_d_sqlstate :SQLSTATE
+\if :case_d_error
+  \set case_d_message :LAST_ERROR_MESSAGE
+  rollback to savepoint p009_case_d_migration;
+\else
+  \set case_d_message ''
+\endif
+\set ON_ERROR_STOP on
+rollback to savepoint p009_case_d;
+release savepoint p009_case_d;
+
+select ok(:'case_d_pre'::boolean,
+  'case D precondition: anon can read the payload column only through role membership');
+select ok(:'case_d_sqlstate' = '42501'
+          and :'case_d_message' like 'P0-9: privileges differ from target%'
+          and :'case_d_message' like '%anon:column select line_oa_inbound_retry%',
+  'case D: the migration raises 42501 naming anon:column select line_oa_inbound_retry');
 
 select * from finish();
 rollback;

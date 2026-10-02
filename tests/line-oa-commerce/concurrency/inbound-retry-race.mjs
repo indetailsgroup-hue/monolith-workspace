@@ -170,8 +170,13 @@ async function main() {
       select 'T2:' || extract(epoch from clock_timestamp());
       commit;`);
 
+    // Poll for A's hold point, but stop as soon as A finishes: if A failed
+    // before holding, its own error is the one to report.
+    let aSettled = false;
+    let aError = null;
+    clientA.then(() => { aSettled = true; }, (error) => { aSettled = true; aError = error; });
     let aHolding = false;
-    for (let i = 0; i < 300 && !aHolding; i += 1) {
+    for (let i = 0; i < 300 && !aHolding && !aSettled; i += 1) {
       aHolding = (await sql(`
         select count(*) from pg_locks
         where locktype = 'advisory' and classid = 0 and objid = ${lockKey} and objsubid = 1 and granted;
@@ -179,8 +184,10 @@ async function main() {
       if (!aHolding) await sleep(50);
     }
     if (!aHolding) {
-      await clientA.catch(() => {});
-      throw new Error("client A never reached its hold point (advisory lock not seen within 15 s)");
+      if (aError) throw aError;
+      throw new Error(aSettled
+        ? "client A finished without reaching its hold point"
+        : "client A never reached its hold point within 300 polls");
     }
 
     const clientB = runClient("client B", `
