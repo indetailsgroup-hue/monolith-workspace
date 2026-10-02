@@ -1,0 +1,183 @@
+BEGIN
+CREATE EXTENSION
+1..35
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+40875af5-f9f6-4d06-b763-5e6f600d530d
+INSERT 0 1
+CREATE FUNCTION
+CREATE TRIGGER
+CREATE TRIGGER
+CREATE TABLE
+on
+INSERT 0 1
+not ok 1 - a handler failure is not counted as processed (nor as duplicate or skipped)
+# Failed test 1: "a handler failure is not counted as processed (nor as duplicate or skipped)"
+#         have: {"ok": true, "value": {"reason": "accepted", "accepted": true, "events_skipped": 0, "events_duplicate": 0, "events_processed": 1}}
+#         want: {"ok": true, "value": {"reason": "accepted", "accepted": true, "events_skipped": 0, "events_duplicate": 0, "events_processed": 0}}
+not ok 2 - a failed event leaves no inbound row, so a LINE redelivery is not swallowed by dedupe
+# Failed test 2: "a failed event leaves no inbound row, so a LINE redelivery is not swallowed by dedupe"
+not ok 3 - a failed event writes no group_event success audit
+# Failed test 3: "a failed event writes no group_event success audit"
+not ok 4 - the failed event enters the internal retry queue: pending, attempt 1, due after 1 s
+# Failed test 4: "the failed event enters the internal retry queue: pending, attempt 1, due after 1 s"
+#         have: error 42P01: relation "public.line_oa_inbound_retry" does not exist
+#         want: pending|1|00:00:01|
+not ok 5 - the retry row keeps the handler error
+# Failed test 5: "the retry row keeps the handler error"
+#         have: error 42P01: relation "public.line_oa_inbound_retry" does not exist
+#         want: true
+not ok 6 - queueing the failed event writes exactly one group_event_retry_queued audit entry
+# Failed test 6: "queueing the failed event writes exactly one group_event_retry_queued audit entry"
+#         have: 0
+#         want: 1
+ok 7 - control: the failed handler left no partial side effect (no bind prompt queued)
+INSERT 0 1
+not ok 8 - a redelivery of a queued event is a duplicate and leaves the queued row unchanged
+# Failed test 8: "a redelivery of a queued event is a duplicate and leaves the queued row unchanged"
+#         have: {"state": "error 42P01: relation \"public.line_oa_inbound_retry\" does not exist", "result": {"ok": true, "value": {"reason": "accepted", "accepted": true, "events_skipped": 0, "events_duplicate": 1, "events_processed": 0}}}
+#         want: {"state": "pending|1|00:00:01|", "result": {"ok": true, "value": {"reason": "accepted", "accepted": true, "events_skipped": 0, "events_duplicate": 1, "events_processed": 0}}}
+error 42P01: relation "public.line_oa_inbound_retry" does not exist
+INSERT 0 1
+not ok 9 - the sweep (as service_role) claims the due row and reschedules it after another failure
+# Failed test 9: "the sweep (as service_role) claims the due row and reschedules it after another failure"
+#         have: {"ok": false, "error": "function public.rpc_line_inbound_retry_sweep(integer) does not exist", "sqlstate": "42883"}
+#         want: {"ok": true, "value": {"claimed": 1, "succeeded": 0, "rescheduled": 1, "dead_lettered": 0}}
+not ok 10 - a second failure leaves the row pending at attempt 2 with a 2 s backoff
+# Failed test 10: "a second failure leaves the row pending at attempt 2 with a 2 s backoff"
+#         have: error 42P01: relation "public.line_oa_inbound_retry" does not exist
+#         want: pending|2|00:00:02|
+not ok 11 - a failed retry writes no inbound row and no handler side effect
+# Failed test 11: "a failed retry writes no inbound row and no handler side effect"
+INSERT 0 1
+not ok 12 - a sweep claims nothing while the only pending row is not yet due
+# Failed test 12: "a sweep claims nothing while the only pending row is not yet due"
+#         have: {"ok": false, "error": "function public.rpc_line_inbound_retry_sweep(integer) does not exist", "sqlstate": "42883"}
+#         want: {"ok": true, "value": {"claimed": 0, "succeeded": 0, "rescheduled": 0, "dead_lettered": 0}}
+off
+error 42P01: relation "public.line_oa_inbound_retry" does not exist
+INSERT 0 1
+not ok 13 - the sweep succeeds once the handler stops failing
+# Failed test 13: "the sweep succeeds once the handler stops failing"
+#         have: {"ok": false, "error": "function public.rpc_line_inbound_retry_sweep(integer) does not exist", "sqlstate": "42883"}
+#         want: {"ok": true, "value": {"claimed": 1, "succeeded": 1, "rescheduled": 0, "dead_lettered": 0}}
+not ok 14 - the retry row is succeeded with the handler result and no next attempt
+# Failed test 14: "the retry row is succeeded with the handler result and no next attempt"
+#         have: error 42P01: relation "public.line_oa_inbound_retry" does not exist
+#         want: succeeded|2|null|join_prompted
+not ok 15 - the successful retry writes the group inbound row with the full event payload
+# Failed test 15: "the successful retry writes the group inbound row with the full event payload"
+not ok 16 - the successful retry runs the handler side effect exactly once (one bind prompt)
+# Failed test 16: "the successful retry runs the handler side effect exactly once (one bind prompt)"
+#         have: 0
+#         want: 1
+not ok 17 - the successful retry writes exactly one group_event audit entry in the ingest format
+# Failed test 17: "the successful retry writes exactly one group_event audit entry in the ingest format"
+#         have: 0
+#         want: 1
+not ok 18 - the payload copy in the retry row is cleared after success (the inbound row keeps it)
+# Failed test 18: "the payload copy in the retry row is cleared after success (the inbound row keeps it)"
+#         have: error 42P01: relation "public.line_oa_inbound_retry" does not exist
+#         want: {}
+INSERT 0 1
+not ok 19 - a redelivery after the successful retry is a duplicate with no second side effect
+# Failed test 19: "a redelivery after the successful retry is a duplicate with no second side effect"
+on
+INSERT 0 1
+CREATE TABLE
+error 42P01: relation "public.line_oa_inbound_retry" does not exist
+INSERT 0 1
+UPDATE 1
+error 42P01: relation "public.line_oa_inbound_retry" does not exist
+INSERT 0 1
+UPDATE 1
+error 42P01: relation "public.line_oa_inbound_retry" does not exist
+INSERT 0 1
+UPDATE 1
+error 42P01: relation "public.line_oa_inbound_retry" does not exist
+INSERT 0 1
+UPDATE 1
+not ok 20 - attempts 2-4 back off 2 s, 4 s, 8 s and attempt 5 is dead-lettered
+# Failed test 20: "attempts 2-4 back off 2 s, 4 s, 8 s and attempt 5 is dead-lettered"
+#         have: 2=x/x error 42P01: relation "public.line_oa_inbound_retry" does not exist; 3=x/x error 42P01: relation "public.line_oa_inbound_retry" does not exist; 4=x/x error 42P01: relation "public.line_oa_inbound_retry" does not exist; 5=x/x error 42P01: relation "public.line_oa_inbound_retry" does not exist
+#         want: 2=1/0 pending|2|00:00:02|; 3=1/0 pending|3|00:00:04|; 4=1/0 pending|4|00:00:08|; 5=0/1 dead_letter|5|null|
+not ok 21 - dead-lettering writes exactly one group_event_dead_letter audit entry
+# Failed test 21: "dead-lettering writes exactly one group_event_dead_letter audit entry"
+#         have: 0
+#         want: 1
+not ok 22 - a dead-lettered row keeps its payload for human handling
+# Failed test 22: "a dead-lettered row keeps its payload for human handling"
+#         have: error 42P01: relation "public.line_oa_inbound_retry" does not exist
+#         want: C-P009-G2
+error 42P01: relation "public.line_oa_inbound_retry" does not exist
+INSERT 0 1
+not ok 23 - a dead-lettered row is never claimed again
+# Failed test 23: "a dead-lettered row is never claimed again"
+#         have: {"state": "error 42P01: relation \"public.line_oa_inbound_retry\" does not exist", "sweep": {"ok": false, "error": "function public.rpc_line_inbound_retry_sweep(integer) does not exist", "sqlstate": "42883"}}
+#         want: {"state": "dead_letter|5|null|", "sweep": {"ok": true, "value": {"claimed": 0, "succeeded": 0, "rescheduled": 0, "dead_lettered": 0}}}
+not ok 24 - a dead-lettered event was never counted as processed and left no inbound row or side effect
+# Failed test 24: "a dead-lettered event was never counted as processed and left no inbound row or side effect"
+off
+INSERT 0 1
+INSERT 0 1
+not ok 25 - a skip-list result on retry stores no inbound row or audit and clears the payload
+# Failed test 25: "a skip-list result on retry stores no inbound row or audit and clears the payload"
+#         have: {"audit": false, "state": "error 42P01: relation \"public.line_oa_inbound_retry\" does not exist", "sweep": {"ok": false, "error": "function public.rpc_line_inbound_retry_sweep(integer) does not exist", "sqlstate": "42883"}, "inbound": false, "payload": "error 42P01: relation \"public.line_oa_inbound_retry\" does not exist"}
+#         want: {"audit": false, "state": "succeeded|1|null|plain_unbound_ignored", "sweep": {"ok": true, "value": {"claimed": 1, "succeeded": 1, "rescheduled": 0, "dead_lettered": 0}}, "inbound": false, "payload": "{}"}
+on
+INSERT 0 1
+INSERT 0 0
+off
+error 42P01: relation "public.line_oa_inbound_retry" does not exist
+INSERT 0 1
+not ok 26 - a queued event that another delivery already ingested is closed without running the handler
+# Failed test 26: "a queued event that another delivery already ingested is closed without running the handler"
+#         have: {"state": "error 42P01: relation \"public.line_oa_inbound_retry\" does not exist", "sweep": {"ok": false, "error": "function public.rpc_line_inbound_retry_sweep(integer) does not exist", "sqlstate": "42883"}, "prompts": 0}
+#         want: {"state": "succeeded|1|null|already_ingested", "sweep": {"ok": true, "value": {"claimed": 1, "succeeded": 1, "rescheduled": 0, "dead_lettered": 0}}, "prompts": 0}
+on
+INSERT 0 1
+off
+p009-evt-join-5
+error 42P01: relation "public.line_oa_inbound_retry" does not exist
+INSERT 0 1
+
+not ok 27 - a concurrent inbound insert during a retry rolls back the handler side effect and closes the row
+# Failed test 27: "a concurrent inbound insert during a retry rolls back the handler side effect and closes the row"
+#         have: {"state": "error 42P01: relation \"public.line_oa_inbound_retry\" does not exist", "sweep": {"ok": false, "error": "function public.rpc_line_inbound_retry_sweep(integer) does not exist", "sqlstate": "42883"}, "prompts": 0}
+#         want: {"state": "succeeded|1|null|already_ingested", "sweep": {"ok": true, "value": {"claimed": 1, "succeeded": 1, "rescheduled": 0, "dead_lettered": 0}}, "prompts": 0}
+INSERT 0 1
+not ok 28 - an ignored plain chat is skipped as before and never queued
+# Failed test 28: "an ignored plain chat is skipped as before and never queued"
+#         have: {"queued": "error 42P01: relation \"public.line_oa_inbound_retry\" does not exist", "result": {"ok": true, "value": {"reason": "accepted", "accepted": true, "events_skipped": 1, "events_duplicate": 0, "events_processed": 0}}}
+#         want: {"queued": "0", "result": {"ok": true, "value": {"reason": "accepted", "accepted": true, "events_skipped": 1, "events_duplicate": 0, "events_processed": 0}}}
+INSERT 0 1
+INSERT 0 1
+not ok 29 - only service_role can EXECUTE the sweep; anon is refused at the function ACL
+# Failed test 29: "only service_role can EXECUTE the sweep; anon is refused at the function ACL"
+#         have: <missing> 42883 function public.rpc_line_inbound_retry_sweep(integer) does not exist
+#         want: f/f/t 42501 permission denied for function rpc_line_inbound_retry_sweep
+not ok 30 - PUBLIC holds no EXECUTE on the sweep
+# Failed test 30: "PUBLIC holds no EXECUTE on the sweep"
+not ok 31 - the sweep rejects a batch limit outside 1..100
+# Failed test 31: "the sweep rejects a batch limit outside 1..100"
+#         have: ["42883", "42883"]
+#         want: ["22023", "22023"]
+not ok 32 - the retry table has RLS on, no client or service_role writes, and only service_role reads
+# Failed test 32: "the retry table has RLS on, no client or service_role writes, and only service_role reads"
+#         have: <missing>
+#         want: anon:fffff|authenticated:fffff|service_role:fffft rls=true
+ok 33 - control: rpc_ingest_line_webhook keeps the 0199 service-only EXECUTE
+ok 34 - control: fn_line_handle_group_event stays internal (0199)
+ok 35 - control: no cron job schedules the retry sweep (activation is a separate decision)
+# Looks like you failed 31 tests of 35
+ROLLBACK

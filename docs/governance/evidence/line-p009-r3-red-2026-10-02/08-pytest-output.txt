@@ -1,0 +1,154 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.2, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\thai3\determined-williams (2)\MONOLITH Repair Intelligence\.worktrees\line-p009-ingest-retry\tests\line-oa-commerce\py
+configfile: pytest.ini
+plugins: anyio-4.12.0, hypothesis-6.155.5
+collected 106 items
+
+tests\line-oa-commerce\py\test_access_control_config_smoke.py .......... [  9%]
+.......................................                                  [ 46%]
+tests\line-oa-commerce\py\test_ai_action_audit_property.py .             [ 47%]
+tests\line-oa-commerce\py\test_audit_completeness_property.py s          [ 48%]
+tests\line-oa-commerce\py\test_audit_immutability_property.py .          [ 49%]
+tests\line-oa-commerce\py\test_audit_query_scoping_property.py .         [ 50%]
+tests\line-oa-commerce\py\test_channel_resolution_unit.py ......         [ 55%]
+tests\line-oa-commerce\py\test_conversation_routing_property.py s        [ 56%]
+tests\line-oa-commerce\py\test_customer_identity_row_shape_unit.py ..    [ 58%]
+tests\line-oa-commerce\py\test_failure_handling_property.py .            [ 59%]
+tests\line-oa-commerce\py\test_forecast_selection_property.py s          [ 60%]
+tests\line-oa-commerce\py\test_forecasting_invocation_integration.py ... [ 63%]
+.s                                                                       [ 65%]
+tests\line-oa-commerce\py\test_harness_smoke.py ......                   [ 70%]
+tests\line-oa-commerce\py\test_idempotent_processing_property.py .       [ 71%]
+tests\line-oa-commerce\py\test_identity_binding_uniqueness_property.py . [ 72%]
+                                                                         [ 72%]
+tests\line-oa-commerce\py\test_identity_merge_below_threshold_property.py s [ 73%]
+                                                                         [ 73%]
+tests\line-oa-commerce\py\test_lifecycle_site_gating_property.py s       [ 74%]
+tests\line-oa-commerce\py\test_match_confidence_range_property.py s      [ 75%]
+tests\line-oa-commerce\py\test_merge_evaluation_audit_property.py s      [ 76%]
+tests\line-oa-commerce\py\test_no_auto_merge_guardrail_property.py s     [ 77%]
+tests\line-oa-commerce\py\test_order_stamping_property.py s              [ 78%]
+tests\line-oa-commerce\py\test_outbound_status_recording_property.py .   [ 79%]
+tests\line-oa-commerce\py\test_reply_push_fallback_property.py .         [ 80%]
+tests\line-oa-commerce\py\test_rls_read_scoping_property.py .            [ 81%]
+tests\line-oa-commerce\py\test_schema_structure_smoke.py .............   [ 93%]
+tests\line-oa-commerce\py\test_secret_non_exposure_property.py .         [ 94%]
+tests\line-oa-commerce\py\test_session_timeout_sweep_property.py s       [ 95%]
+tests\line-oa-commerce\py\test_signature_verification_property.py .      [ 96%]
+tests\line-oa-commerce\py\test_site_resolution_property.py s             [ 97%]
+tests\line-oa-commerce\py\test_strict_consistency_property.py .          [ 98%]
+tests\line-oa-commerce\py\test_unauthorized_mutation_denial_property.py . [ 99%]
+                                                                         [ 99%]
+tests\line-oa-commerce\py\test_verified_ingestion_receipt_property.py s  [100%]
+
+=================================== PASSES ====================================
+- generated xml file: C:\Users\thai3\determined-williams (2)\MONOLITH Repair Intelligence\.worktrees\line-p009-ingest-retry\docs\governance\evidence\line-p009-r3-red-2026-10-02\08-pytest-junit.xml -
+=========================== short test summary info ===========================
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_rls_enabled_on_every_table[line_oa_channels]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_rls_enabled_on_every_table[line_oa_conversations]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_rls_enabled_on_every_table[line_oa_inbound_messages]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_rls_enabled_on_every_table[line_oa_outbound_messages]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_rls_enabled_on_every_table[line_oa_customer_identity]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_rls_enabled_on_every_table[line_oa_message_templates]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_rls_enabled_on_every_table[line_oa_orders]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_rls_enabled_on_every_table[line_oa_audit_log]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_select_policy_is_gated_to_authenticated[line_oa_channels]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_select_policy_is_gated_to_authenticated[line_oa_conversations]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_select_policy_is_gated_to_authenticated[line_oa_inbound_messages]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_select_policy_is_gated_to_authenticated[line_oa_outbound_messages]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_select_policy_is_gated_to_authenticated[line_oa_customer_identity]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_select_policy_is_gated_to_authenticated[line_oa_message_templates]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_select_policy_is_gated_to_authenticated[line_oa_orders]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_select_policy_is_gated_to_authenticated[line_oa_audit_log]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_site_scoped_select_policy_reuses_c12_helpers[line_oa_conversations]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_site_scoped_select_policy_reuses_c12_helpers[line_oa_inbound_messages]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_site_scoped_select_policy_reuses_c12_helpers[line_oa_outbound_messages]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_site_scoped_select_policy_reuses_c12_helpers[line_oa_customer_identity]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_site_scoped_select_policy_reuses_c12_helpers[line_oa_orders]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_site_scoped_select_policy_reuses_c12_helpers[line_oa_audit_log]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_governance_only_select_policy_reuses_c12_helper[line_oa_channels]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_open_read_select_policy_present[line_oa_message_templates]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_client_write_policies[line_oa_channels]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_client_write_policies[line_oa_conversations]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_client_write_policies[line_oa_inbound_messages]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_client_write_policies[line_oa_outbound_messages]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_client_write_policies[line_oa_customer_identity]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_client_write_policies[line_oa_message_templates]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_client_write_policies[line_oa_orders]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_client_write_policies[line_oa_audit_log]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_policy_targets_client_roles[line_oa_channels]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_policy_targets_client_roles[line_oa_conversations]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_policy_targets_client_roles[line_oa_inbound_messages]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_policy_targets_client_roles[line_oa_outbound_messages]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_policy_targets_client_roles[line_oa_customer_identity]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_policy_targets_client_roles[line_oa_message_templates]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_policy_targets_client_roles[line_oa_orders]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_no_policy_targets_client_roles[line_oa_audit_log]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_clients_hold_no_write_grants[line_oa_channels]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_clients_hold_no_write_grants[line_oa_conversations]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_clients_hold_no_write_grants[line_oa_inbound_messages]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_clients_hold_no_write_grants[line_oa_outbound_messages]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_clients_hold_no_write_grants[line_oa_customer_identity]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_clients_hold_no_write_grants[line_oa_message_templates]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_clients_hold_no_write_grants[line_oa_orders]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_clients_hold_no_write_grants[line_oa_audit_log]
+PASSED tests\line-oa-commerce\py\test_access_control_config_smoke.py::test_channels_store_vault_references_only
+PASSED tests\line-oa-commerce\py\test_ai_action_audit_property.py::test_ai_action_audit
+PASSED tests\line-oa-commerce\py\test_audit_immutability_property.py::test_audit_log_immutable
+PASSED tests\line-oa-commerce\py\test_audit_query_scoping_property.py::test_audit_query_filtered_and_permission_bounded
+PASSED tests\line-oa-commerce\py\test_channel_resolution_unit.py::test_resolve_active_channel_returns_vertical_and_token_ref
+PASSED tests\line-oa-commerce\py\test_channel_resolution_unit.py::test_resolve_active_channel_never_returns_the_secret_ref
+PASSED tests\line-oa-commerce\py\test_channel_resolution_unit.py::test_resolve_unknown_channel_is_rejected_without_secret_leak
+PASSED tests\line-oa-commerce\py\test_channel_resolution_unit.py::test_resolve_inactive_channel_is_rejected_without_secret_leak
+PASSED tests\line-oa-commerce\py\test_channel_resolution_unit.py::test_verify_signature_rejects_unknown_channel_before_using_secret
+PASSED tests\line-oa-commerce\py\test_channel_resolution_unit.py::test_verify_signature_rejects_inactive_channel_before_using_secret
+PASSED tests\line-oa-commerce\py\test_customer_identity_row_shape_unit.py::test_customer_identity_row_shape_includes_required_fields_and_defaults
+PASSED tests\line-oa-commerce\py\test_customer_identity_row_shape_unit.py::test_customer_identity_row_shape_persists_distinct_vertical_context
+PASSED tests\line-oa-commerce\py\test_failure_handling_property.py::test_failure_handling
+PASSED tests\line-oa-commerce\py\test_forecasting_invocation_integration.py::test_sync_invokes_pipeline_with_line_source_and_appends
+PASSED tests\line-oa-commerce\py\test_forecasting_invocation_integration.py::test_every_invocation_uses_line_source
+PASSED tests\line-oa-commerce\py\test_forecasting_invocation_integration.py::test_failure_recorded_through_pipeline_preserves_last_good_sync
+PASSED tests\line-oa-commerce\py\test_forecasting_invocation_integration.py::test_unresolved_orders_excluded_until_resolved
+PASSED tests\line-oa-commerce\py\test_harness_smoke.py::test_property_tag_is_canonical
+PASSED tests\line-oa-commerce\py\test_harness_smoke.py::test_property_decorator_stamps_tag
+PASSED tests\line-oa-commerce\py\test_harness_smoke.py::test_default_profile_runs_at_least_100
+PASSED tests\line-oa-commerce\py\test_harness_smoke.py::test_line_api_mock_is_deterministic
+PASSED tests\line-oa-commerce\py\test_harness_smoke.py::test_record_input_sync_spy
+PASSED tests\line-oa-commerce\py\test_harness_smoke.py::test_hypothesis_runs
+PASSED tests\line-oa-commerce\py\test_idempotent_processing_property.py::test_idempotent_processing
+PASSED tests\line-oa-commerce\py\test_identity_binding_uniqueness_property.py::test_identity_binding_uniqueness
+PASSED tests\line-oa-commerce\py\test_outbound_status_recording_property.py::test_outbound_status_recording
+PASSED tests\line-oa-commerce\py\test_reply_push_fallback_property.py::test_reply_push_fallback
+PASSED tests\line-oa-commerce\py\test_rls_read_scoping_property.py::test_rls_read_scoping
+PASSED tests\line-oa-commerce\py\test_schema_structure_smoke.py::test_all_eight_line_oa_tables_exist
+PASSED tests\line-oa-commerce\py\test_schema_structure_smoke.py::test_enum_exists_with_documented_values[line_oa_conversation_status-labels0]
+PASSED tests\line-oa-commerce\py\test_schema_structure_smoke.py::test_enum_exists_with_documented_values[line_oa_send_type-labels1]
+PASSED tests\line-oa-commerce\py\test_schema_structure_smoke.py::test_enum_exists_with_documented_values[line_oa_outbound_status-labels2]
+PASSED tests\line-oa-commerce\py\test_schema_structure_smoke.py::test_conversations_partial_unique_index_exists
+PASSED tests\line-oa-commerce\py\test_schema_structure_smoke.py::test_unique_constraint_exists[line_oa_inbound_messages_webhook_event_id_uniq-columns0]
+PASSED tests\line-oa-commerce\py\test_schema_structure_smoke.py::test_unique_constraint_exists[line_oa_customer_identity_user_vertical_uniq-columns1]
+PASSED tests\line-oa-commerce\py\test_schema_structure_smoke.py::test_unique_constraint_exists[line_oa_orders_webhook_event_id_uniq-columns2]
+PASSED tests\line-oa-commerce\py\test_schema_structure_smoke.py::test_unique_constraint_exists[line_oa_message_templates_key_vertical_uniq-columns3]
+PASSED tests\line-oa-commerce\py\test_schema_structure_smoke.py::test_check_constraint_exists[line_oa_customer_identity_match_confidence_range_chk-match_confidence]
+PASSED tests\line-oa-commerce\py\test_schema_structure_smoke.py::test_check_constraint_exists[line_oa_orders_origin_channel_id_chk-origin_channel_id]
+PASSED tests\line-oa-commerce\py\test_schema_structure_smoke.py::test_match_confidence_check_covers_full_range
+PASSED tests\line-oa-commerce\py\test_schema_structure_smoke.py::test_channels_store_vault_references
+PASSED tests\line-oa-commerce\py\test_secret_non_exposure_property.py::test_secret_non_exposure
+PASSED tests\line-oa-commerce\py\test_signature_verification_property.py::test_signature_verification
+PASSED tests\line-oa-commerce\py\test_strict_consistency_property.py::test_strict_consistency_on_persistence_failure
+PASSED tests\line-oa-commerce\py\test_unauthorized_mutation_denial_property.py::test_unauthorized_mutation_denial
+SKIPPED [1] tests\line-oa-commerce\py\test_audit_completeness_property.py:537: required routine public.resolve_actor() is not installed; skipping audit-completeness property test.
+SKIPPED [1] tests\line-oa-commerce\py\test_conversation_routing_property.py:255: public.resolve_actor() is not installed; skipping conversation-routing property test.
+SKIPPED [1] tests\line-oa-commerce\py\test_forecast_selection_property.py:279: required routine public.resolve_actor() is not installed; skipping forecasting-selection property test.
+SKIPPED [1] tests\line-oa-commerce\py\test_forecasting_invocation_integration.py:392: required routine public.record_input_sync(text,public.sync_source,public.sync_status,integer,jsonb) is not installed; skipping live forecasting-invocation integration test.
+SKIPPED [1] tests\line-oa-commerce\py\test_identity_merge_below_threshold_property.py:226: required routine public.resolve_actor() is not installed; skipping below-threshold no-link property test.
+SKIPPED [1] tests\line-oa-commerce\py\test_lifecycle_site_gating_property.py:333: required routine public.resolve_actor() is not installed; skipping lifecycle site-gating property test.
+SKIPPED [1] tests\line-oa-commerce\py\test_match_confidence_range_property.py:217: required routine public.resolve_actor() is not installed; skipping match-confidence-range property test.
+SKIPPED [1] tests\line-oa-commerce\py\test_merge_evaluation_audit_property.py:245: required routine public.resolve_actor() is not installed; skipping merge-evaluation audit property test.
+SKIPPED [1] tests\line-oa-commerce\py\test_no_auto_merge_guardrail_property.py:236: required routine public.resolve_actor() is not installed; skipping no-auto-merge guardrail property test.
+SKIPPED [1] tests\line-oa-commerce\py\test_order_stamping_property.py:356: required routine public.resolve_actor() is not installed; skipping order-stamping property test.
+SKIPPED [1] tests\line-oa-commerce\py\test_session_timeout_sweep_property.py:197: public.resolve_actor() is not installed; skipping session-timeout-sweep property test.
+SKIPPED [1] tests\line-oa-commerce\py\test_site_resolution_property.py:234: required routine public.resolve_actor() is not installed; skipping site-resolution property test.
+SKIPPED [1] tests\line-oa-commerce\py\test_verified_ingestion_receipt_property.py:242: required routine public.resolve_actor() is not installed; skipping verified-ingestion receipt property test.
+======================= 93 passed, 13 skipped in 20.32s =======================

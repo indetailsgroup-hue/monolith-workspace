@@ -1,0 +1,10 @@
+--- rpc_line_inbound_retry_sweep (real)
++++ race_no_claim_lock.sql
+@@ -32,7 +32,6 @@
+      where q.status = 'pending' and q.next_attempt_at <= now()
+      order by q.next_attempt_at, q.id
+      limit p_limit
+-     for update skip locked
+   loop
+     claimed := claimed + 1;
+     v_ingested := exists (select 1 from public.line_oa_inbound_messages m

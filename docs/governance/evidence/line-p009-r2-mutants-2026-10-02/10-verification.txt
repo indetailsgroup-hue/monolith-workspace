@@ -1,0 +1,43 @@
+PASS: bundle was produced at the current HEAD fb9bfd967
+PASS: code under test was clean
+PASS: generated credential inputs supplied
+PASS: credential scanner positive control detects a generated credential
+PASS: no generated credential bytes in 74 captured files (findings=[])
+PASS: every applied migration succeeded
+PASS: MUTANTS skipped exactly 0200
+PASS: mutant generator succeeded
+PASS: nine suite mutants and three race mutants
+PASS: control: suite psql exit 0 with the real 0200
+PASS: control: the real 0200 passes all 48 assertions
+PASS: no_retry_dedupe: suite ran to completion
+PASS: no_retry_dedupe (a redelivery of a queued event re-runs the handler) is killed by [8] (all failing: [8, 9, 10, 11, 13, 14])
+PASS: exit_after_queue: suite ran to completion
+PASS: exit_after_queue (events after a failed one in the same delivery are dropped) is killed by [30] (all failing: [30])
+PASS: no_expiry: suite ran to completion
+PASS: no_expiry (a stale row is replayed late) is killed by [31] (all failing: [31])
+PASS: unique_violation_only: suite ran to completion
+PASS: unique_violation_only (an uncaught error aborts the whole batch) is killed by [32] (all failing: [32, 33])
+PASS: no_already_ingested_check: suite ran to completion
+PASS: no_already_ingested_check (the handler re-runs for an event another delivery already ingested) is killed by [27] (all failing: [27])
+PASS: utc_wall_time: suite ran to completion
+PASS: utc_wall_time (received_at is shifted in a non-UTC session) is killed by [33] (all failing: [33])
+PASS: keep_last_error: suite ran to completion
+PASS: keep_last_error (the old error text survives success) is killed by [19] (all failing: [19])
+PASS: no_fail_closed_check: suite ran to completion
+PASS: no_fail_closed_check (a privilege leaked through role membership is accepted) is killed by [43, 46] (all failing: [43, 46, 47])
+PASS: service_role_keeps_defaults: suite ran to completion
+PASS: service_role_keeps_defaults (service_role keeps its default table privileges (fail-closed check also removed)) is killed by [38] (all failing: [38, 43, 46])
+PASS: real 0200 committed for the race section
+PASS: race_for_update_only: sweep mutant applied
+PASS: race_for_update_only: the race fails with a lock timeout (client B would have waited for A)
+PASS: race_no_claim_lock: sweep mutant applied
+PASS: race_no_claim_lock: the race fails with a lock timeout (client B would have waited for A)
+PASS: race_for_update_only_old_harness: sweep mutant applied
+PASS: race_for_update_only_old_harness: the earlier harness (0a355e29b) still passes this mutant — the weakness fixed here
+PASS: control: the real sweep passes the race with proven overlap
+PASS: sixteen pre/post counters captured
+PASS: pre/post counters match except the 0200 objects committed for the race section
+PASS: no cron job schedules the sweep and no cron job ran
+PASS: sweep present and retry table empty after the run
+PASS: owned containers and network removed
+RESULT: P0-9 MUTANTS stage verified; Phase A remains EVIDENCE_INCOMPLETE; independent review pending

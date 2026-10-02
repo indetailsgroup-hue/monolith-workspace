@@ -1,0 +1,10 @@
+--- rpc_line_inbound_retry_sweep (real)
++++ race_no_claim_lock.sql
+@@ -31,7 +31,6 @@
+      where q.status = 'pending' and q.next_attempt_at <= now()
+      order by q.next_attempt_at, q.id
+      limit p_limit
+-     for update skip locked
+   loop
+     claimed := claimed + 1;
+ 

@@ -1,0 +1,23 @@
+{
+  "suite": "line_oa_definer_execute_fail_closed",
+  "stdout": "docs/governance/evidence/line-p009-r2-red-2026-10-02/06-suite-loop/line_oa_definer_execute_fail_closed.tap",
+  "stderr": "docs/governance/evidence/line-p009-r2-red-2026-10-02/06-suite-loop/line_oa_definer_execute_fail_closed.stderr",
+  "tapSha256": "6393071814a0c33d879292e829b4665d539af61f2cf1c13a74217bc729eb5add",
+  "stderrSha256": "b304cd13a0b3b3a38d4b4ef5e5fe81ae4cde387fa3edb2b9c79b589c5251e70b",
+  "runId": "p009-red",
+  "origin": "local",
+  "checkedAt": "2026-10-02T00:39:57.025Z",
+  "pass": true,
+  "exitCode": 0,
+  "plan": 27,
+  "planLines": 1,
+  "results": 27,
+  "ok": 27,
+  "notOk": 0,
+  "skip": 0,
+  "todo": 0,
+  "bailOut": false,
+  "sqlErrorLines": 0,
+  "finishDiagnostics": [],
+  "failures": []
+}

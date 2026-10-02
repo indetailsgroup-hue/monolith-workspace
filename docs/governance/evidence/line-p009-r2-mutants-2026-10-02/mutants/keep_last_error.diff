@@ -1,0 +1,11 @@
+--- 0200_line_inbound_handler_retry.sql
++++ keep_last_error.sql
+@@ -515,7 +515,7 @@
+       -- error text, which can quote input values (PDPA v1).
+       update public.line_oa_inbound_retry
+          set status = 'succeeded', next_attempt_at = null,
+-             last_result = v_result, last_error = null, payload = '{}'::jsonb
++             last_result = v_result, payload = '{}'::jsonb
+        where id = v_row.id;
+       succeeded := succeeded + 1;
+     end if;

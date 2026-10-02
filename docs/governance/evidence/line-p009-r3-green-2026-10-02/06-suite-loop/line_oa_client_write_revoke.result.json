@@ -1,0 +1,23 @@
+{
+  "suite": "line_oa_client_write_revoke",
+  "stdout": "docs/governance/evidence/line-p009-r3-green-2026-10-02/06-suite-loop/line_oa_client_write_revoke.tap",
+  "stderr": "docs/governance/evidence/line-p009-r3-green-2026-10-02/06-suite-loop/line_oa_client_write_revoke.stderr",
+  "tapSha256": "127ff6991de84c2e7dd1ba6b642325ea90f961787c5fd9bf0fcbc34336776764",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "runId": "p009-green",
+  "origin": "local",
+  "checkedAt": "2026-10-02T01:02:34.741Z",
+  "pass": true,
+  "exitCode": 0,
+  "plan": 133,
+  "planLines": 1,
+  "results": 133,
+  "ok": 133,
+  "notOk": 0,
+  "skip": 0,
+  "todo": 0,
+  "bailOut": false,
+  "sqlErrorLines": 0,
+  "finishDiagnostics": [],
+  "failures": []
+}

@@ -49,14 +49,14 @@ const EXPECTED_ERRORS = [
   'CONTEXT:  PL/pgSQL function inline_code_block line 36 at RAISE',
 ];
 
-test('suite list is the fourteen db-verify suites with the five LINE suites last', () => {
+test('suite list is the fifteen db-verify suites with the six LINE suites last', () => {
   assert.deepEqual([...SUITES], [
     'workflow_db_invariants', 'trust_kernel_tenancy', 'trust_kernel_governance',
     'trust_kernel_release', 'trust_kernel_bundles', 'trust_kernel_containment',
     'trust_kernel_safety', 'repair_phase0_organization', 'repair_phase0_containment',
     'line_outbound_claim_record', 'line_oa_client_write_revoke',
     'line_oa_client_write_revoke_fail_closed', 'line_oa_definer_execute_matrix',
-    'line_oa_definer_execute_fail_closed',
+    'line_oa_definer_execute_fail_closed', 'line_inbound_handler_retry',
   ]);
   assert.deepEqual([...LINE_SUITES], SUITES.slice(9));
 });
@@ -189,7 +189,7 @@ const evidence = (suite, text = fullTap(3), exitCode = 0) => ({
 const allPassing = () => SUITES.map((suite) => evidence(suite));
 const entry = (summary, suite) => summary.pgtap.suites.find((s) => s.suite === suite);
 
-test('summary passes only when all fourteen suites have passing evidence', () => {
+test('summary passes only when all fifteen suites have passing evidence', () => {
   const s = summarize(allPassing(), {});
   assert.equal(s.pass, true);
   assert.equal(s.fullPass, true);
@@ -574,13 +574,13 @@ test('CLI assemble writes the artifact even when suites fail or are missing', (t
   assert.equal(summary.fullPass, false);
   assert.equal(summary.linePass, false);
   assert.equal(summary.origin, 'local');
-  assert.equal(summary.missingSuites.length, 12);
+  assert.equal(summary.missingSuites.length, 13);
   assert.equal(entry(summary, 'repair_phase0_containment').exitCode, 3);
   assert.equal(entry(summary, 'repair_phase0_containment').pass, false);
   assert.equal(entry(summary, 'line_outbound_claim_record').pass, true);
 });
 
-test('CLI assemble passes only with fourteen fresh passing results', (t) => {
+test('CLI assemble passes only with fifteen fresh passing results', (t) => {
   const dir = sandbox(t);
   for (const suite of SUITES) assert.equal(checkSuite(dir, suite, fullTap(3), 0).status, 0);
 

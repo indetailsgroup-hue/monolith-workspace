@@ -1,0 +1,11 @@
+--- 0200_line_inbound_handler_retry.sql
++++ utc_wall_time.sql
+@@ -464,7 +464,7 @@
+           insert into public.line_oa_inbound_messages (
+             conversation_id, webhook_event_id, payload, received_at, source_type, line_group_id
+           )
+-          values (null, v_row.webhook_event_id, v_row.payload, now(), 'group', v_row.line_group_id);
++          values (null, v_row.webhook_event_id, v_row.payload, timezone('utc', now()), 'group', v_row.line_group_id);
+ 
+           insert into public.line_oa_audit_log (
+             event_type, vertical_context, site_code, entity_ref, performed_by

@@ -1,0 +1,26 @@
+PASS: code under test was clean
+PASS: bundle was produced at the current HEAD 1902a8eea
+PASS: generated credential inputs supplied
+PASS: credential scanner positive control detects a generated credential
+PASS: no generated credential bytes in 71 captured files (findings=[])
+PASS: every applied migration succeeded
+PASS: RED skipped exactly 0200
+PASS: P0-9 suite psql exit 0 (failures are reported in TAP, not by psql)
+PASS: TAP plan 1..53 with 53 results in order
+PASS: RED: every assertion fails except [7, 39, 40, 41, 48] (failed=[1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 42, 43, 44, 45, 46, 47, 49, 50, 51, 52, 53])
+PASS: RED assertion 1 reproduces B8: the failed handler was counted as processed
+PASS: fifteen suite verdicts recorded (15)
+PASS: suite loop fails exactly ['line_inbound_handler_retry', 'repair_phase0_containment'] (known 0170 dependency; failed=['line_inbound_handler_retry', 'repair_phase0_containment'])
+PASS: suite loop exit 1 agrees with the recorded failures
+PASS: RED: the inbound race skips by default because 0200 is absent
+PASS: RED: with LINE_RACE_REQUIRE=1 (as in CI) the missing sweep fails the race
+PASS: outbound claim race unchanged: overlap 0
+PASS: CI harness node tests pass
+PASS: Python: all 106 cases ran with no failure or error (106 cases)
+PASS: Python: every skip (13) is a known pre-existing probe gap ('public.resolve_actor() is not installed', 'public.record_input_sync(')
+Python counts: 93 passed, 13 skipped, 0 failed
+PASS: sixteen pre/post counters captured
+PASS: pre/post counters match
+PASS: no cron job schedules the sweep and no cron job ran
+PASS: owned containers and network removed
+RESULT: P0-9 RED stage verified; Phase A remains EVIDENCE_INCOMPLETE; independent review pending

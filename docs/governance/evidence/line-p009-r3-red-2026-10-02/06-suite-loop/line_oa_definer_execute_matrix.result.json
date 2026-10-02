@@ -1,0 +1,23 @@
+{
+  "suite": "line_oa_definer_execute_matrix",
+  "stdout": "docs/governance/evidence/line-p009-r3-red-2026-10-02/06-suite-loop/line_oa_definer_execute_matrix.tap",
+  "stderr": "docs/governance/evidence/line-p009-r3-red-2026-10-02/06-suite-loop/line_oa_definer_execute_matrix.stderr",
+  "tapSha256": "e566fda77610e634bd70d6d3dda334209c961ffc3dd537ab85556d8cf79415a6",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "runId": "p009-red",
+  "origin": "local",
+  "checkedAt": "2026-10-02T01:00:56.584Z",
+  "pass": true,
+  "exitCode": 0,
+  "plan": 82,
+  "planLines": 1,
+  "results": 82,
+  "ok": 82,
+  "notOk": 0,
+  "skip": 0,
+  "todo": 0,
+  "bailOut": false,
+  "sqlErrorLines": 0,
+  "finishDiagnostics": [],
+  "failures": []
+}

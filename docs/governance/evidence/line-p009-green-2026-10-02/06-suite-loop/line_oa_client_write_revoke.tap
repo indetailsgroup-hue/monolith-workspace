@@ -1,0 +1,163 @@
+BEGIN
+CREATE EXTENSION
+1..133
+CREATE TABLE
+INSERT 0 3
+CREATE TABLE
+INSERT 0 8
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+175b82cf-1229-48ef-8ea9-2cb10468a755
+INSERT 0 1
+INSERT 0 2
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+CREATE TABLE
+INSERT 0 32
+ok 1 - scope guard: 8 target tables, 3 roles and 32 write statements exist (no vacuous pass)
+ok 2 - anon, authenticated and service_role keep USAGE on schema public, so denials are not schema-level
+ok 3 - PUBLIC holds no INSERT/UPDATE/DELETE/TRUNCATE grant on the eight tables
+ok 4 - each table owner (the SECURITY DEFINER owner) keeps INSERT/UPDATE/DELETE/TRUNCATE
+ok 5 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_channels
+ok 6 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_conversations
+ok 7 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_inbound_messages
+ok 8 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_outbound_messages
+ok 9 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_customer_identity
+ok 10 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_message_templates
+ok 11 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_orders
+ok 12 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_audit_log
+ok 13 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_channels
+ok 14 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_conversations
+ok 15 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_inbound_messages
+ok 16 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_outbound_messages
+ok 17 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_customer_identity
+ok 18 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_message_templates
+ok 19 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_orders
+ok 20 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_audit_log
+ok 21 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_channels
+ok 22 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_conversations
+ok 23 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_inbound_messages
+ok 24 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_outbound_messages
+ok 25 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_customer_identity
+ok 26 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_message_templates
+ok 27 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_orders
+ok 28 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_audit_log
+ok 29 - anon INSERT on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 30 - anon UPDATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 31 - anon DELETE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 32 - anon TRUNCATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 33 - anon INSERT on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 34 - anon UPDATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 35 - anon DELETE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 36 - anon TRUNCATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 37 - anon INSERT on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 38 - anon UPDATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 39 - anon DELETE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 40 - anon TRUNCATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 41 - anon INSERT on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 42 - anon UPDATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 43 - anon DELETE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 44 - anon TRUNCATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 45 - anon INSERT on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 46 - anon UPDATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 47 - anon DELETE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 48 - anon TRUNCATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 49 - anon INSERT on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 50 - anon UPDATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 51 - anon DELETE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 52 - anon TRUNCATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 53 - anon INSERT on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 54 - anon UPDATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 55 - anon DELETE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 56 - anon TRUNCATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 57 - anon INSERT on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 58 - anon UPDATE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 59 - anon DELETE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 60 - anon TRUNCATE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 61 - authenticated INSERT on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 62 - authenticated UPDATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 63 - authenticated DELETE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 64 - authenticated TRUNCATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 65 - authenticated INSERT on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 66 - authenticated UPDATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 67 - authenticated DELETE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 68 - authenticated TRUNCATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 69 - authenticated INSERT on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 70 - authenticated UPDATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 71 - authenticated DELETE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 72 - authenticated TRUNCATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 73 - authenticated INSERT on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 74 - authenticated UPDATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 75 - authenticated DELETE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 76 - authenticated TRUNCATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 77 - authenticated INSERT on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 78 - authenticated UPDATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 79 - authenticated DELETE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 80 - authenticated TRUNCATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 81 - authenticated INSERT on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 82 - authenticated UPDATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 83 - authenticated DELETE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 84 - authenticated TRUNCATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 85 - authenticated INSERT on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 86 - authenticated UPDATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 87 - authenticated DELETE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 88 - authenticated TRUNCATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 89 - authenticated INSERT on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 90 - authenticated UPDATE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 91 - authenticated DELETE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 92 - authenticated TRUNCATE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 93 - service_role INSERT on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 94 - service_role UPDATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 95 - service_role DELETE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 96 - service_role TRUNCATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 97 - service_role INSERT on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 98 - service_role UPDATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 99 - service_role DELETE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 100 - service_role TRUNCATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 101 - service_role INSERT on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 102 - service_role UPDATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 103 - service_role DELETE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 104 - service_role TRUNCATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 105 - service_role INSERT on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 106 - service_role UPDATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 107 - service_role DELETE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 108 - service_role TRUNCATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 109 - service_role INSERT on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 110 - service_role UPDATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 111 - service_role DELETE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 112 - service_role TRUNCATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 113 - service_role INSERT on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 114 - service_role UPDATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 115 - service_role DELETE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 116 - service_role TRUNCATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 117 - service_role INSERT on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 118 - service_role UPDATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 119 - service_role DELETE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 120 - service_role TRUNCATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 121 - service_role INSERT on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 122 - service_role UPDATE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 123 - service_role DELETE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 124 - service_role TRUNCATE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 125 - service_role can still SELECT line_oa_channels (sender reads channel_access_token_ref)
+ok 126 - service_role can still SELECT line_oa_conversations (sender reads line_user_id, vertical_context)
+ok 127 - service_role can still SELECT line_oa_message_templates (sender reads body)
+CREATE TABLE
+INSERT 0 1
+ok 128 - rpc_ingest_line_webhook as service_role accepts a signed synthetic event and processes it
+ok 129 - ingress wrote the conversation, inbound message, customer identity and audit receipt through the DEFINER path
+INSERT 0 1
+ok 130 - binding a customer group as service_role fires fn_welcome_on_group_bind, which queues tpl_welcome_pack for that group
+INSERT 0 1
+INSERT 0 1
+ok 131 - fn_prod_curated queues exactly one pending push for the bound group through the rpc_field_create_appointment owner chain
+INSERT 0 1
+ok 132 - rpc_claim_line_outbound_batch as service_role claims the curated row and stamps a claim token
+INSERT 0 1
+ok 133 - rpc_record_line_send_result as service_role records the claimed row as sent
+ROLLBACK

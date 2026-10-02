@@ -1,0 +1,15 @@
+BEGIN
+CREATE EXTENSION
+1..11
+ok 1 - Property 42: atr_phase_tier_cap rejects L2 (check_violation)
+ok 2 - REG-1 (Property 32): r02_bound requires risk_class=high
+ok 3 - Property 22: no client write policy on work_item (only SELECT)
+ok 4 - work_item RLS enabled
+ok 5 - audit log INSERT allowed (append)
+ok 6 - audit log UPDATE rejected (append-only trigger)
+ok 7 - audit log DELETE rejected (append-only trigger)
+ok 8 - work_item insert (setup)
+ok 9 - approval_request insert (setup)
+ok 10 - first approval_decision with webhook_event_id (allowed)
+ok 11 - idempotency: duplicate webhook_event_id rejected (unique_violation)
+ROLLBACK

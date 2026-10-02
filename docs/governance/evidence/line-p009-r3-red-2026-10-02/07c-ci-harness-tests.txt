@@ -1,0 +1,286 @@
+TAP version 13
+# Subtest: manifest is deterministic, sorted and limited to allowlisted sources
+ok 1 - manifest is deterministic, sorted and limited to allowlisted sources
+  ---
+  duration_ms: 462.9075
+  type: 'test'
+  ...
+# Subtest: detached HEAD is recorded as ref HEAD
+ok 2 - detached HEAD is recorded as ref HEAD
+  ---
+  duration_ms: 362.7044
+  type: 'test'
+  ...
+# Subtest: CRLF and LF sources hash to the same row
+ok 3 - CRLF and LF sources hash to the same row
+  ---
+  duration_ms: 368.8933
+  type: 'test'
+  ...
+# Subtest: relevant source changes alter the digest and unrelated changes do not
+ok 4 - relevant source changes alter the digest and unrelated changes do not
+  ---
+  duration_ms: 534.6013
+  type: 'test'
+  ...
+# Subtest: untracked required files are included for local smoke runs
+ok 5 - untracked required files are included for local smoke runs
+  ---
+  duration_ms: 417.5101
+  type: 'test'
+  ...
+# Subtest: missing required file fails
+ok 6 - missing required file fails
+  ---
+  duration_ms: 274.581
+  type: 'test'
+  ...
+# Subtest: missing migration or test SQL fails
+ok 7 - missing migration or test SQL fails
+  ---
+  duration_ms: 698.8335
+  type: 'test'
+  ...
+# Subtest: paths outside the allowlist or root are never read
+ok 8 - paths outside the allowlist or root are never read
+  ---
+  duration_ms: 214.1363
+  type: 'test'
+  ...
+# Subtest: symlinked sources are rejected
+ok 9 - symlinked sources are rejected
+  ---
+  duration_ms: 305.8786
+  type: 'test'
+  ...
+# Subtest: CLI writes the manifest, prints only digest and count, and exports the digest
+ok 10 - CLI writes the manifest, prints only digest and count, and exports the digest
+  ---
+  duration_ms: 560.2041
+  type: 'test'
+  ...
+# Subtest: CLI works without GITHUB_ENV
+ok 11 - CLI works without GITHUB_ENV
+  ---
+  duration_ms: 471.885
+  type: 'test'
+  ...
+# Subtest: CLI failure exits nonzero and exports no digest
+ok 12 - CLI failure exits nonzero and exports no digest
+  ---
+  duration_ms: 512.4453
+  type: 'test'
+  ...
+# Subtest: CLI rejects output and GITHUB_ENV collisions without touching files
+ok 13 - CLI rejects output and GITHUB_ENV collisions without touching files
+  ---
+  duration_ms: 945.6396
+  type: 'test'
+  ...
+# Subtest: suite list is the fifteen db-verify suites with the six LINE suites last
+ok 14 - suite list is the fifteen db-verify suites with the six LINE suites last
+  ---
+  duration_ms: 0.993
+  type: 'test'
+  ...
+# Subtest: plan 8 with 6 ok and psql exit 3 fails (the stopped containment suite)
+ok 15 - plan 8 with 6 ok and psql exit 3 fails (the stopped containment suite)
+  ---
+  duration_ms: 1.4001
+  type: 'test'
+  ...
+# Subtest: plan 8 with 6 ok fails even when psql exits 0
+ok 16 - plan 8 with 6 ok fails even when psql exits 0
+  ---
+  duration_ms: 0.224
+  type: 'test'
+  ...
+# Subtest: fail-closed suite: 13 of 13 with psql noise and exit 0 passes
+ok 17 - fail-closed suite: 13 of 13 with psql noise and exit 0 passes
+  ---
+  duration_ms: 0.3953
+  type: 'test'
+  ...
+# Subtest: expected SQL errors are noise, not results, whether stderr is separate or merged
+ok 18 - expected SQL errors are noise, not results, whether stderr is separate or merged
+  ---
+  duration_ms: 0.3399
+  type: 'test'
+  ...
+# Subtest: a nonzero or unrecorded psql exit fails even with a complete TAP
+ok 19 - a nonzero or unrecorded psql exit fails even with a complete TAP
+  ---
+  duration_ms: 0.3776
+  type: 'test'
+  ...
+# Subtest: exactly one valid nonzero plan is required
+ok 20 - exactly one valid nonzero plan is required
+  ---
+  duration_ms: 0.1171
+  type: 'test'
+  ...
+# Subtest: the plan may come first or last, not in the middle
+ok 21 - the plan may come first or last, not in the middle
+  ---
+  duration_ms: 0.0748
+  type: 'test'
+  ...
+# Subtest: plan-like text in comments, data rows and descriptions is not a plan
+ok 22 - plan-like text in comments, data rows and descriptions is not a plan
+  ---
+  duration_ms: 0.27
+  type: 'test'
+  ...
+# Subtest: result numbers must be unique, sequential and inside the plan
+ok 23 - result numbers must be unique, sequential and inside the plan
+  ---
+  duration_ms: 0.3834
+  type: 'test'
+  ...
+# Subtest: not ok, bail out, SKIP and TODO never count as a pass
+ok 24 - not ok, bail out, SKIP and TODO never count as a pass
+  ---
+  duration_ms: 0.1672
+  type: 'test'
+  ...
+# Subtest: pgTAP finish diagnostics fail, and a silent finish does not excuse a missing plan or results
+ok 25 - pgTAP finish diagnostics fail, and a silent finish does not excuse a missing plan or results
+  ---
+  duration_ms: 0.1047
+  type: 'test'
+  ...
+# Subtest: summary passes only when all fifteen suites have passing evidence
+ok 26 - summary passes only when all fifteen suites have passing evidence
+  ---
+  duration_ms: 1.3792
+  type: 'test'
+  ...
+# Subtest: a suite without result JSON is missing evidence and fails the summary
+ok 27 - a suite without result JSON is missing evidence and fails the summary
+  ---
+  duration_ms: 0.6343
+  type: 'test'
+  ...
+# Subtest: linePass can be true while fullPass is false, and the top-level pass follows fullPass
+ok 28 - linePass can be true while fullPass is false, and the top-level pass follows fullPass
+  ---
+  duration_ms: 0.2037
+  type: 'test'
+  ...
+# Subtest: summary does not trust a pass flag that the recorded facts contradict
+ok 29 - summary does not trust a pass flag that the recorded facts contradict
+  ---
+  duration_ms: 0.2772
+  type: 'test'
+  ...
+# Subtest: summary rejects evidence filed under the wrong suite, twice, or for an unknown suite
+ok 30 - summary rejects evidence filed under the wrong suite, twice, or for an unknown suite
+  ---
+  duration_ms: 0.5618
+  type: 'test'
+  ...
+# Subtest: summary rejects a stderr path named for another suite or recorded without a hash
+ok 31 - summary rejects a stderr path named for another suite or recorded without a hash
+  ---
+  duration_ms: 0.5425
+  type: 'test'
+  ...
+# Subtest: verdict scope: a full pgTAP pass is pgtap-only and never a workflow verdict
+ok 32 - verdict scope: a full pgTAP pass is pgtap-only and never a workflow verdict
+  ---
+  duration_ms: 0.3122
+  type: 'test'
+  ...
+# Subtest: verdict scope: LINE suites can pass while the full pgTAP verdict fails, and the workflow stays unevaluated
+ok 33 - verdict scope: LINE suites can pass while the full pgTAP verdict fails, and the workflow stays unevaluated
+  ---
+  duration_ms: 0.2124
+  type: 'test'
+  ...
+# Subtest: metadata: a local run is labelled local and does not claim an Ubuntu runner
+ok 34 - metadata: a local run is labelled local and does not claim an Ubuntu runner
+  ---
+  duration_ms: 0.4919
+  type: 'test'
+  ...
+# Subtest: metadata: github-actions is reported only when GITHUB_ACTIONS=true
+ok 35 - metadata: github-actions is reported only when GITHUB_ACTIONS=true
+  ---
+  duration_ms: 0.1127
+  type: 'test'
+  ...
+# Subtest: metadata: the tested source digest comes from LINE_DB_EVIDENCE_SOURCE_SHA256
+ok 36 - metadata: the tested source digest comes from LINE_DB_EVIDENCE_SOURCE_SHA256
+  ---
+  duration_ms: 0.081
+  type: 'test'
+  ...
+# Subtest: provenance: complete metadata is reported complete and the digest reaches the summary
+ok 37 - provenance: complete metadata is reported complete and the digest reaches the summary
+  ---
+  duration_ms: 0.3101
+  type: 'test'
+  ...
+# Subtest: provenance: missing metadata is reported, and does not fail a passing TAP run
+ok 38 - provenance: missing metadata is reported, and does not fail a passing TAP run
+  ---
+  duration_ms: 0.4121
+  type: 'test'
+  ...
+# Subtest: provenance: invalid values count as missing
+ok 39 - provenance: invalid values count as missing
+  ---
+  duration_ms: 0.299
+  type: 'test'
+  ...
+# Subtest: CLI check writes the result file and exits 1 for failing evidence
+ok 40 - CLI check writes the result file and exits 1 for failing evidence
+  ---
+  duration_ms: 333.3651
+  type: 'test'
+  ...
+# Subtest: CLI check refuses a missing stderr file and a stderr file named for another suite
+ok 41 - CLI check refuses a missing stderr file and a stderr file named for another suite
+  ---
+  duration_ms: 206.9325
+  type: 'test'
+  ...
+# Subtest: CLI check accepts an empty stderr and a stderr that holds the expected SQL error
+ok 42 - CLI check accepts an empty stderr and a stderr that holds the expected SQL error
+  ---
+  duration_ms: 985.6317
+  type: 'test'
+  ...
+# Subtest: CLI assemble writes the artifact even when suites fail or are missing
+ok 43 - CLI assemble writes the artifact even when suites fail or are missing
+  ---
+  duration_ms: 192.5892
+  type: 'test'
+  ...
+# Subtest: CLI assemble passes only with fifteen fresh passing results
+ok 44 - CLI assemble passes only with fifteen fresh passing results
+  ---
+  duration_ms: 1105.9259
+  type: 'test'
+  ...
+# Subtest: CLI assemble re-reads each stderr file: deleted, replaced or misnamed stderr fails even when every TAP passes
+ok 45 - CLI assemble re-reads each stderr file: deleted, replaced or misnamed stderr fails even when every TAP passes
+  ---
+  duration_ms: 1572.3054
+  type: 'test'
+  ...
+# Subtest: CLI assemble reports provenance separately from the pgTAP verdict
+ok 46 - CLI assemble reports provenance separately from the pgTAP verdict
+  ---
+  duration_ms: 1182.0807
+  type: 'test'
+  ...
+1..46
+# tests 46
+# suites 0
+# pass 46
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6198.7869

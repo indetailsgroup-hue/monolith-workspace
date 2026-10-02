@@ -1,0 +1,98 @@
+BEGIN
+CREATE EXTENSION
+1..68
+INSERT 0 3
+INSERT 0 2
+INSERT 0 3
+INSERT 0 4
+INSERT 0 3
+INSERT 0 3
+INSERT 0 4
+INSERT 0 3
+INSERT 0 2
+INSERT 0 2
+INSERT 0 4
+INSERT 0 4
+INSERT 0 4
+ok 1 - release_content_revocation RLS enabled
+ok 2 - release_content_revocation exposes no client write policy
+ok 3 - authenticated cannot INSERT into release_content_revocation (writes go through the RPC only)
+ok 4 - authenticated may SELECT release_content_revocation (RLS still filters rows)
+ok 5 - authenticated cannot TRUNCATE the deny log (inherited default privilege stripped)
+ok 6 - authenticated cannot UPDATE the deny log
+ok 7 - authenticated cannot DELETE the deny log
+ok 8 - service_role can execute fn_content_is_blocked
+ok 9 - authenticated cannot execute fn_content_is_blocked directly
+ok 10 - authenticated can execute rpc_trust_safety_block_content
+ok 11 - anon cannot execute rpc_trust_safety_block_content
+ok 12 - minting a SAFETY_BLOCK context without SAFETY_REVOKER is denied at mint time
+ok 13 - fn_content_is_blocked is FALSE before any block
+ok 14 - blocking content that was only OPERATIONAL-revoked (never SAFETY) is rejected
+ok 15 - deny-only: a successful block adds NO release_revision row (positive-authority count unchanged)
+ok 16 - deny-only: a successful block does NOT mutate the target release_revision status
+ok 17 - the appended event is a BLOCK
+ok 18 - the first block in the tenant carries sequence 1
+ok 19 - the block records the acting SAFETY_REVOKER as actor
+ok 20 - the block records the reason detail
+ok 21 - fn_content_is_blocked is TRUE for the blocked (tenant, site, content_hash)
+ok 22 - fn_content_is_blocked stays FALSE for a different, unblocked content_hash
+ok 23 - a BLOCK in tenant A leaves the identical content_hash UNBLOCKED in tenant B
+ok 24 - a BLOCK in (tenant_a, site_a) leaves the identical content_hash UNBLOCKED in the same tenant's site_a2
+ok 25 - a SAFETY_BLOCK authorized for site_a2 cannot block a revision SAFETY-revoked only in site_a (provenance site predicate is load-bearing)
+ok 26 - the second block in the tenant carries the next monotonic sequence (2)
+ok 27 - a content_hash that does not match the context-authorized revision is rejected (resource_id binding)
+INSERT 0 2
+ok 28 - latest-event-wins: a higher-sequence UNBLOCK after a BLOCK leaves the content NOT blocked (not naive exists-BLOCK)
+INSERT 0 1
+INSERT 0 1
+INSERT 0 3
+INSERT 0 3
+INSERT 0 3
+ok 29 - precondition: h_blk is BLOCKED in (tenant_a, site_a) before the commit-gate tests
+ok 30 - commit_release raises SAFETY_CONTENT_REVOKED for a BLOCKED content_hash
+ok 31 - a denied commit creates NO release_revision for the attempt (no ACTIVE release)
+ok 32 - a denied commit does not materialize the allocated revision id
+ok 33 - a clean (never-blocked) content_hash commits and returns the allocated revision id
+ok 34 - the clean commit records an ACTIVE release_revision (guard does not over-block)
+ok 35 - cross-tenant: a BLOCK in (tenant_a, site_a) does NOT reject a commit of the same content_hash in tenant_b
+ok 36 - cross-tenant: the tenant_b commit of h_blk records an ACTIVE release_revision (block is tenant/site-scoped)
+INSERT 0 5
+INSERT 0 5
+INSERT 0 6
+INSERT 0 5
+INSERT 0 5
+ok 37 - content_unblock_grant RLS enabled
+ok 38 - content_unblock_grant exposes no client write policy
+ok 39 - authenticated cannot INSERT into content_unblock_grant (writes go through the RPC only)
+ok 40 - authenticated may SELECT content_unblock_grant (RLS still filters rows)
+ok 41 - authenticated cannot TRUNCATE content_unblock_grant (inherited default privilege stripped)
+ok 42 - authenticated cannot UPDATE content_unblock_grant
+ok 43 - authenticated cannot DELETE content_unblock_grant
+ok 44 - authenticated can execute rpc_trust_safety_unblock_content
+ok 45 - anon cannot execute rpc_trust_safety_unblock_content
+ok 46 - minting a SAFETY_UNBLOCK context with only SAFETY_REVOKER (no eligible role) is denied at mint time
+ok 47 - round-trip precondition: h_blk is BLOCKED in (tenant_a, site_a) before the un-block
+ok 48 - after the two-person un-block, fn_content_is_blocked is FALSE for h_blk
+ok 49 - the grant records both distinct approvers (u_ra + u_qa)
+ok 50 - the grant records two DISTINCT eligible non-SAFETY roles
+ok 51 - the grant records the justification
+ok 52 - the grant unblock_sequence equals the appended UNBLOCK event sequence
+ok 53 - the latest content-revocation event for h_blk is now UNBLOCK
+ok 54 - the UNBLOCK event records the initiating approver (actor_a) also recorded on the grant
+ok 55 - deny-only: the un-block adds NO release_revision row (positive-authority count unchanged)
+ok 56 - deny-only: the un-block does not mutate the SAFETY-revoked source revision
+ok 57 - round-trip: after un-block, committing h_blk succeeds and returns the allocated revision id
+ok 58 - round-trip: the post-unblock commit records an ACTIVE release_revision (block -> reject -> unblock -> allow)
+ok 59 - reassignment precondition: h_blk2 is BLOCKED in (tenant_a, site_a)
+ok 60 - reassignment: the two-person un-block clears h_blk2
+ok 61 - reassignment: eligible {ADMIN,QA_EVIDENCE} + {ADMIN} yields the distinct pair {ADMIN, QA_EVIDENCE}
+ok 62 - un-block with only one approver context (same context twice) is rejected
+ok 63 - un-block by two contexts from the SAME user is rejected (two distinct people required)
+ok 64 - un-block by two distinct users sharing only ONE eligible role is rejected (two distinct roles required)
+ok 65 - un-block with an empty/whitespace justification is rejected
+ok 66 - un-blocking content that is not currently blocked is rejected
+ok 67 - un-block where the two contexts reference different revisions is rejected
+SET
+RESET
+ok 68 - RLS: same-tenant membership without the organization grant cannot read an org-X site
+ROLLBACK

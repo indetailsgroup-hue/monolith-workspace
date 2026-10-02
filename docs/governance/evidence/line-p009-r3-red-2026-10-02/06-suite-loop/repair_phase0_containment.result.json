@@ -1,0 +1,32 @@
+{
+  "suite": "repair_phase0_containment",
+  "stdout": "docs/governance/evidence/line-p009-r3-red-2026-10-02/06-suite-loop/repair_phase0_containment.tap",
+  "stderr": "docs/governance/evidence/line-p009-r3-red-2026-10-02/06-suite-loop/repair_phase0_containment.stderr",
+  "tapSha256": "2b1939be30e725aac0a276b3156a8130aaa4d3e451e14b6ba641916ed5a63454",
+  "stderrSha256": "189329e92c9e190a4bbccdb2166e487ccd19e82c28149f5ab09d09cb24e1e4fb",
+  "runId": "p009-red",
+  "origin": "local",
+  "checkedAt": "2026-10-02T01:00:55.219Z",
+  "pass": false,
+  "exitCode": 3,
+  "plan": 8,
+  "planLines": 1,
+  "results": 6,
+  "ok": 6,
+  "notOk": 0,
+  "skip": 0,
+  "todo": 0,
+  "bailOut": false,
+  "sqlErrorLines": 0,
+  "finishDiagnostics": [],
+  "failures": [
+    {
+      "code": "incomplete-results",
+      "detail": "planned 8, found 6 result(s); missing: 7, 8"
+    },
+    {
+      "code": "nonzero-exit",
+      "detail": "psql exited with 3"
+    }
+  ]
+}

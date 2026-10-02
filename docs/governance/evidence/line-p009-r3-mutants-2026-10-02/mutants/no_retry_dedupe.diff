@@ -1,0 +1,13 @@
+--- 0200_line_inbound_handler_retry.sql
++++ no_retry_dedupe.sql
+@@ -222,9 +222,7 @@
+       end if;
+       -- P0-9 (0200): an event already queued for retry is owned by the queue.
+       if exists (select 1 from public.line_oa_inbound_messages m
+-                 where m.webhook_event_id = v_webhook_event_id)
+-         or exists (select 1 from public.line_oa_inbound_retry q
+-                    where q.webhook_event_id = v_webhook_event_id) then
++                 where m.webhook_event_id = v_webhook_event_id) then
+         events_duplicate := events_duplicate + 1;
+         continue;
+       end if;

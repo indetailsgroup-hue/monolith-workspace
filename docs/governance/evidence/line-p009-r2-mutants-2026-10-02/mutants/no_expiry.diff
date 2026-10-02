@@ -1,0 +1,11 @@
+--- 0200_line_inbound_handler_retry.sql
++++ no_expiry.sql
+@@ -427,7 +427,7 @@
+ 
+     -- A stale row is never replayed: staff may already have re-sent the
+     -- command, so running it now could repeat a customer-visible action.
+-    if v_row.created_at < now() - interval '10 minutes' then
++    if false then
+       update public.line_oa_inbound_retry
+          set status = 'dead_letter', next_attempt_at = null,
+              last_error = 'expired: queued for more than 10 minutes'

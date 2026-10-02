@@ -1,0 +1,127 @@
+BEGIN
+CREATE EXTENSION
+1..82
+CREATE TABLE
+INSERT 0 20
+CREATE TABLE
+INSERT 0 3
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+ok 1 - all twenty exact identities of the matrix exist
+ok 2 - no unclassified overload exists for any of the twenty names
+ok 3 - anon, authenticated and service_role keep USAGE on schema public, so denials are not schema-level
+ok 4 - B12-01 fn_lead_followup_sweep() effective EXECUTE anon/authenticated/service_role is f/f/t
+ok 5 - B12-02 fn_line_handle_group_event(jsonb,text,text) effective EXECUTE anon/authenticated/service_role is f/f/f
+ok 6 - B12-03 fn_prod_curated(uuid,text,jsonb) effective EXECUTE anon/authenticated/service_role is f/f/f
+ok 7 - B12-04 fn_welcome_on_group_bind() effective EXECUTE anon/authenticated/service_role is f/f/f
+ok 8 - B12-05 line_oa_resolve_customer_identity(text,text) effective EXECUTE anon/authenticated/service_role is f/f/t
+ok 9 - B12-06 rpc_claim_line_outbound_batch(integer,integer) effective EXECUTE anon/authenticated/service_role is f/f/t
+ok 10 - B12-07 rpc_create_line_order(uuid,jsonb,text,text) effective EXECUTE anon/authenticated/service_role is f/t/t
+ok 11 - B12-08 rpc_evaluate_identity_merge_candidate(text,text,uuid,jsonb,numeric) effective EXECUTE anon/authenticated/service_role is f/t/t
+ok 12 - B12-09 rpc_field_assign_lead(uuid,uuid) effective EXECUTE anon/authenticated/service_role is f/t/t
+ok 13 - B12-10 rpc_field_close_lead(uuid,text,text) effective EXECUTE anon/authenticated/service_role is f/t/t
+ok 14 - B12-11 rpc_field_send_photo_to_customer(uuid,uuid,text) effective EXECUTE anon/authenticated/service_role is f/t/t
+ok 15 - B12-12 rpc_field_set_lead_source(uuid,text) effective EXECUTE anon/authenticated/service_role is f/t/t
+ok 16 - B12-13 rpc_field_shop_drawing_revision(uuid,text,text,boolean,boolean) effective EXECUTE anon/authenticated/service_role is f/t/t
+ok 17 - B12-14 rpc_ingest_line_webhook(text,text,text) effective EXECUTE anon/authenticated/service_role is f/f/t
+ok 18 - B12-15 rpc_record_line_send_result(uuid,text,text,text,uuid) effective EXECUTE anon/authenticated/service_role is f/f/t
+ok 19 - B12-16 rpc_request_customer_acceptance(uuid,text) effective EXECUTE anon/authenticated/service_role is f/t/t
+ok 20 - B12-17 rpc_resolve_conversation_site(uuid,text,text) effective EXECUTE anon/authenticated/service_role is f/t/t
+ok 21 - B12-18 rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) effective EXECUTE anon/authenticated/service_role is f/t/t
+ok 22 - B12-19 rpc_sweep_line_session_timeouts() effective EXECUTE anon/authenticated/service_role is f/f/t
+ok 23 - B12-20 rpc_sync_line_forecast(text,text,text) effective EXECUTE anon/authenticated/service_role is f/t/t
+ok 24 - PUBLIC holds EXECUTE on none of the twenty identities
+1cc57565-4335-4d6b-87fa-89a9e1b5ac4b
+INSERT 0 1
+INSERT 0 2
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+CREATE TABLE
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ok 25 - B12-01 fn_lead_followup_sweep() is refused to anon at the function privilege (42501 permission denied for function)
+ok 26 - B12-01 fn_lead_followup_sweep() is refused to authenticated at the function privilege (42501 permission denied for function)
+ok 27 - B12-02 fn_line_handle_group_event(jsonb,text,text) is refused to anon at the function privilege (42501 permission denied for function)
+ok 28 - B12-02 fn_line_handle_group_event(jsonb,text,text) is refused to authenticated at the function privilege (42501 permission denied for function)
+ok 29 - B12-02 fn_line_handle_group_event(jsonb,text,text) is refused to service_role at the function privilege (42501 permission denied for function)
+ok 30 - B12-03 fn_prod_curated(uuid,text,jsonb) is refused to anon at the function privilege (42501 permission denied for function)
+ok 31 - B12-03 fn_prod_curated(uuid,text,jsonb) is refused to authenticated at the function privilege (42501 permission denied for function)
+ok 32 - B12-03 fn_prod_curated(uuid,text,jsonb) is refused to service_role at the function privilege (42501 permission denied for function)
+ok 33 - B12-05 line_oa_resolve_customer_identity(text,text) is refused to anon at the function privilege (42501 permission denied for function)
+ok 34 - B12-05 line_oa_resolve_customer_identity(text,text) is refused to authenticated at the function privilege (42501 permission denied for function)
+ok 35 - B12-06 rpc_claim_line_outbound_batch(integer,integer) is refused to anon at the function privilege (42501 permission denied for function)
+ok 36 - B12-06 rpc_claim_line_outbound_batch(integer,integer) is refused to authenticated at the function privilege (42501 permission denied for function)
+ok 37 - B12-07 rpc_create_line_order(uuid,jsonb,text,text) is refused to anon at the function privilege (42501 permission denied for function)
+ok 38 - B12-08 rpc_evaluate_identity_merge_candidate(text,text,uuid,jsonb,numeric) is refused to anon at the function privilege (42501 permission denied for function)
+ok 39 - B12-09 rpc_field_assign_lead(uuid,uuid) is refused to anon at the function privilege (42501 permission denied for function)
+ok 40 - B12-10 rpc_field_close_lead(uuid,text,text) is refused to anon at the function privilege (42501 permission denied for function)
+ok 41 - B12-11 rpc_field_send_photo_to_customer(uuid,uuid,text) is refused to anon at the function privilege (42501 permission denied for function)
+ok 42 - B12-12 rpc_field_set_lead_source(uuid,text) is refused to anon at the function privilege (42501 permission denied for function)
+ok 43 - B12-13 rpc_field_shop_drawing_revision(uuid,text,text,boolean,boolean) is refused to anon at the function privilege (42501 permission denied for function)
+ok 44 - B12-14 rpc_ingest_line_webhook(text,text,text) is refused to anon at the function privilege (42501 permission denied for function)
+ok 45 - B12-14 rpc_ingest_line_webhook(text,text,text) is refused to authenticated at the function privilege (42501 permission denied for function)
+ok 46 - B12-15 rpc_record_line_send_result(uuid,text,text,text,uuid) is refused to anon at the function privilege (42501 permission denied for function)
+ok 47 - B12-15 rpc_record_line_send_result(uuid,text,text,text,uuid) is refused to authenticated at the function privilege (42501 permission denied for function)
+ok 48 - B12-16 rpc_request_customer_acceptance(uuid,text) is refused to anon at the function privilege (42501 permission denied for function)
+ok 49 - B12-17 rpc_resolve_conversation_site(uuid,text,text) is refused to anon at the function privilege (42501 permission denied for function)
+ok 50 - B12-18 rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) is refused to anon at the function privilege (42501 permission denied for function)
+ok 51 - B12-19 rpc_sweep_line_session_timeouts() is refused to anon at the function privilege (42501 permission denied for function)
+ok 52 - B12-19 rpc_sweep_line_session_timeouts() is refused to authenticated at the function privilege (42501 permission denied for function)
+ok 53 - B12-20 rpc_sync_line_forecast(text,text,text) is refused to anon at the function privilege (42501 permission denied for function)
+ok 54 - realistic anon calls to fn_prod_curated, line_oa_resolve_customer_identity, rpc_ingest_line_webhook and fn_line_handle_group_event are refused at the ACL and write nothing (fingerprint checked inside each probe)
+ok 55 - B12-07 rpc_create_line_order(uuid,jsonb,text,text) still executes for authenticated (body reached, no function-ACL or schema denial)
+ok 56 - B12-08 rpc_evaluate_identity_merge_candidate(text,text,uuid,jsonb,numeric) still executes for authenticated (body reached, no function-ACL or schema denial)
+ok 57 - B12-09 rpc_field_assign_lead(uuid,uuid) still executes for authenticated (body reached, no function-ACL or schema denial)
+ok 58 - B12-17 rpc_resolve_conversation_site(uuid,text,text) still executes for authenticated (body reached, no function-ACL or schema denial)
+ok 59 - B12-18 rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) still executes for authenticated (body reached, no function-ACL or schema denial)
+ok 60 - B12-20 rpc_sync_line_forecast(text,text,text) still executes for authenticated (body reached, no function-ACL or schema denial)
+INSERT 0 1
+ok 61 - signed 1:1 ingress as service_role still writes the inbound message and customer identity
+INSERT 0 1
+ok 62 - a signed group join through ingress still reaches fn_line_handle_group_event, which queues the bind prompt
+INSERT 0 1
+ok 63 - line_oa_resolve_customer_identity as service_role still creates the identity
+INSERT 0 1
+ok 64 - binding a customer group as service_role still fires fn_welcome_on_group_bind (tpl_welcome_pack queued)
+SAVEPOINT
+DROP TRIGGER
+CREATE TRIGGER
+ROLLBACK
+RELEASE
+ok 65 - the migration owner can drop and recreate trg_welcome_group_bind on fn_welcome_on_group_bind
+INSERT 0 1
+ok 66 - rpc_field_create_appointment as a site user still queues tpl_appointment through fn_prod_curated
+INSERT 0 1
+ok 67 - rpc_factory_report_station as a governance user still queues tpl_prod_started through fn_prod_curated
+INSERT 0 1
+ok 68 - fn_lead_followup_sweep still runs as service_role
+INSERT 0 1
+ok 69 - fn_lead_followup_sweep still runs as the migration owner (the assumed cron principal; cron.job not inspected)
+INSERT 0 1
+ok 70 - rpc_sweep_line_session_timeouts still runs as service_role
+INSERT 0 1
+INSERT 0 1
+ok 71 - rpc_claim_line_outbound_batch as service_role still claims the queued appointment row
+INSERT 0 1
+ok 72 - rpc_record_line_send_result as service_role still records the claimed row as sent
+INSERT 0 1
+ok 73 - rpc_field_close_lead as a site user still closes the lead
+ok 74 - rpc_field_close_lead for another site is refused by its own guard
+INSERT 0 1
+ok 75 - rpc_field_set_lead_source as a site user still sets the lead source
+ok 76 - rpc_field_set_lead_source for another site is refused by its own guard
+INSERT 0 1
+ok 77 - rpc_field_send_photo_to_customer as a site user still queues the photo
+ok 78 - rpc_field_send_photo_to_customer for another site is refused by its own guard
+ok 79 - rpc_field_shop_drawing_revision as a site user still passes its guard (stops at the bible-code validation)
+ok 80 - rpc_field_shop_drawing_revision for another site is refused by its own guard
+INSERT 0 1
+ok 81 - rpc_request_customer_acceptance as a governance user still creates the approval and queues the card
+ok 82 - rpc_request_customer_acceptance for another site is refused by its own guard
+ROLLBACK

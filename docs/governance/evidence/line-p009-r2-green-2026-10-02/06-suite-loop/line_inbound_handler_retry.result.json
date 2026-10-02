@@ -1,0 +1,23 @@
+{
+  "suite": "line_inbound_handler_retry",
+  "stdout": "docs/governance/evidence/line-p009-r2-green-2026-10-02/06-suite-loop/line_inbound_handler_retry.tap",
+  "stderr": "docs/governance/evidence/line-p009-r2-green-2026-10-02/06-suite-loop/line_inbound_handler_retry.stderr",
+  "tapSha256": "216eb929c237f6317d3be612d8b1627c08099bd4dc401738f4b2b52bfaae6ab7",
+  "stderrSha256": "760f0427248fb9a6d6f8a90dd362b177014b0a43fbe577749474e15bea68ac37",
+  "runId": "p009-green",
+  "origin": "local",
+  "checkedAt": "2026-10-02T00:41:29.557Z",
+  "pass": true,
+  "exitCode": 0,
+  "plan": 48,
+  "planLines": 1,
+  "results": 48,
+  "ok": 48,
+  "notOk": 0,
+  "skip": 0,
+  "todo": 0,
+  "bailOut": false,
+  "sqlErrorLines": 0,
+  "finishDiagnostics": [],
+  "failures": []
+}

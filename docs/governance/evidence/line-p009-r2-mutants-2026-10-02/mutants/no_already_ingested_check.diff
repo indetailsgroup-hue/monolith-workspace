@@ -1,0 +1,12 @@
+--- 0200_line_inbound_handler_retry.sql
++++ no_already_ingested_check.sql
+@@ -450,8 +450,7 @@
+     -- handler's side effects) is rolled back and only this row fails. If
+     -- another delivery ingested the event first, the row is closed.
+     begin
+-      if exists (select 1 from public.line_oa_inbound_messages m
+-                 where m.webhook_event_id = v_row.webhook_event_id) then
++      if false then
+         v_result := 'already_ingested';
+       else
+         v_result := public.fn_line_handle_group_event(v_row.payload, v_row.vertical_context, v_actor);

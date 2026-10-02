@@ -1,0 +1,1313 @@
+== workflow_db_invariants
+BEGIN
+CREATE EXTENSION
+1..11
+ok 1 - Property 42: atr_phase_tier_cap rejects L2 (check_violation)
+ok 2 - REG-1 (Property 32): r02_bound requires risk_class=high
+ok 3 - Property 22: no client write policy on work_item (only SELECT)
+ok 4 - work_item RLS enabled
+ok 5 - audit log INSERT allowed (append)
+ok 6 - audit log UPDATE rejected (append-only trigger)
+ok 7 - audit log DELETE rejected (append-only trigger)
+ok 8 - work_item insert (setup)
+ok 9 - approval_request insert (setup)
+ok 10 - first approval_decision with webhook_event_id (allowed)
+ok 11 - idempotency: duplicate webhook_event_id rejected (unique_violation)
+ROLLBACK
+workflow_db_invariants: pass (plan 11, ok 11, not ok 0, psql exit 0)
+== trust_kernel_tenancy
+BEGIN
+CREATE EXTENSION
+1..29
+INSERT 0 4
+INSERT 0 2
+INSERT 0 3
+INSERT 0 3
+INSERT 0 4
+INSERT 0 4
+INSERT 0 4
+INSERT 0 4
+ok 1 - tenant 002 coexists without source changes
+ok 2 - tenant 001 approver remains tenant scoped
+ok 3 - monolith_tenant RLS enabled
+ok 4 - monolith_site RLS enabled
+ok 5 - monolith_membership RLS enabled
+ok 6 - monolith_membership_role RLS enabled
+ok 7 - monolith_membership_site RLS enabled
+ok 8 - verified_action_context RLS enabled
+ok 9 - monolith_tenant: no client write policy
+ok 10 - monolith_site: no client write policy
+ok 11 - monolith_membership: no client write policy
+ok 12 - monolith_membership_role: no client write policy
+ok 13 - monolith_membership_site: no client write policy
+ok 14 - verified_action_context: no client write policy
+ok 15 - no trust-kernel table uses a using(true) product-data policy
+ok 16 - service role cannot create human action context
+ok 17 - FREEZE context persisted with derived actor
+ok 18 - RELEASE context persisted with derived actor
+ok 19 - action context expires ~5 minutes after issuance
+ok 20 - first consume of a valid RELEASE context succeeds
+ok 21 - nonce is one-time
+ok 22 - consume rejects an action that does not match the context
+UPDATE 1
+ok 23 - expired context is rejected
+ok 24 - cross-tenant action context creation is denied
+SET
+RESET
+ok 25 - RLS: a tenant-001 member cannot read tenant-002 sites
+SET
+RESET
+ok 26 - RLS: same-tenant membership without the organization grant cannot read an org-X site
+ok 27 - FREEZE with a candidate hash is rejected (shape rule)
+ok 28 - RELEASE without candidate/authorization hashes is rejected (shape rule)
+UPDATE 1
+ok 29 - a revoked membership invalidates its unconsumed context
+ROLLBACK
+trust_kernel_tenancy: pass (plan 29, ok 29, not ok 0, psql exit 0)
+== trust_kernel_governance
+BEGIN
+CREATE EXTENSION
+1..27
+INSERT 0 3
+INSERT 0 2
+INSERT 0 3
+INSERT 0 3
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 4
+INSERT 0 3
+ok 1 - machine_profile_attestation RLS enabled
+ok 2 - warning_exception_grant RLS enabled
+ok 3 - warning_catalogue RLS enabled
+ok 4 - machine_profile_attestation: no client write policy
+ok 5 - warning_exception_grant: no client write policy
+ok 6 - every CAP_* catalogue code is exception_eligible=false
+ok 7 - duplicate approver is rejected by CHECK
+ok 8 - expires_at <= issued_at is rejected by CHECK
+ok 9 - a CAP_* code can never be marked exception_eligible
+ok 10 - attestation signed with a non-PROFILE_ATTESTATION key purpose is rejected
+ok 11 - grant signed with a non-WARNING_EXCEPTION key purpose is rejected
+ok 12 - cross-tenant profile rejected
+ok 13 - current in-scope attestation is accepted
+ok 14 - expired attestation rejected
+ok 15 - revoked attestation rejected
+ok 16 - unknown attestation rejected
+ok 17 - tenant 002 attestation coexists and is accepted
+ok 18 - valid, eligible, in-window grant is accepted
+ok 19 - a CAP_* grant can never except a hard blocker
+ok 20 - an expired grant is rejected
+ok 21 - a candidate-hash mismatch is rejected
+ok 22 - a cross-tenant grant is rejected
+ok 23 - an unknown grant is rejected
+ok 24 - GRANT_WARNING_EXCEPTION action context is admitted by the widened CHECK
+ok 25 - GRANT_WARNING_EXCEPTION with a null candidate hash is rejected by the shape CHECK
+ok 26 - tenant 002 attestation coexists without source changes
+SET
+RESET
+ok 27 - RLS: same-tenant membership without the organization grant cannot read an org-X site
+ROLLBACK
+trust_kernel_governance: pass (plan 27, ok 27, not ok 0, psql exit 0)
+== trust_kernel_release
+BEGIN
+CREATE EXTENSION
+1..59
+INSERT 0 7
+INSERT 0 2
+INSERT 0 3
+INSERT 0 3
+INSERT 0 7
+INSERT 0 8
+INSERT 0 7
+INSERT 0 7
+INSERT 0 2
+INSERT 0 4
+ok 1 - release_working_revision RLS enabled
+ok 2 - release_candidate RLS enabled
+ok 3 - release_attempt RLS enabled
+ok 4 - release_approval RLS enabled
+ok 5 - release_revision RLS enabled
+ok 6 - release_artifact RLS enabled
+ok 7 - release_event RLS enabled
+ok 8 - release_outbox RLS enabled
+ok 9 - no release table exposes a client write policy
+ok 10 - no release table uses a using(true) product-data policy
+ok 11 - freeze flips DRAFT -> FROZEN
+ok 12 - freeze records the freezer identity
+ok 13 - freeze creates exactly one release candidate
+ok 14 - re-freezing a FROZEN revision loses the CAS
+ok 15 - freezer cannot approve own release
+ok 16 - same idempotency request returns same attempt
+ok 17 - same key with changed request rejects
+ok 18 - begin_release quarantines the artifact
+ok 19 - commit uses the revision id allocated at begin
+ok 20 - commit records an ACTIVE release revision
+ok 21 - commit moves the artifact to MATERIALIZING
+ok 22 - commit appends a ledger event
+ok 23 - commit appends an outbox row
+ok 24 - a committed ACTIVE revision needs an AVAILABLE artifact to be consumable
+ok 25 - VOID is rejected for a release revision
+ok 26 - artifact locator is the internal tenant/site/revision/content path
+ok 27 - a URL-shaped object locator is rejected
+ok 28 - mark_artifact_available reaches AVAILABLE
+ok 29 - availability publishes the attempt
+ok 30 - an ACTIVE revision with an AVAILABLE artifact is consumable
+ok 31 - availability is append-only; the second transition loses the CAS
+UPDATE 1
+ok 32 - a revoked membership blocks commit
+ok 33 - a failed commit creates no release revision
+ok 34 - the first commit for a candidate wins the CAS
+ok 35 - the second commit for the same candidate loses the CAS
+ok 36 - exactly one ACTIVE revision exists for the contended candidate
+ok 37 - void_artifact cancels an attempt that never committed
+ok 38 - the cancelled attempt is VOID
+ok 39 - the quarantined artifact is VOID
+ok 40 - a voided attempt has no release revision
+ok 41 - an attempt with a release revision cannot be voided
+ok 42 - revoke rejects an unknown reason class
+ok 43 - a safety revoker revokes an ACTIVE release with a valid reason class
+ok 44 - the release revision is REVOKED
+ok 45 - revoke stores the reason class on the REVOKED row
+ok 46 - the RELEASE_REVOKED event payload carries the reason class
+ok 47 - a revoked release revision is not consumable
+ok 48 - revocation is append-only; a second revoke loses the CAS
+ok 49 - authenticated cannot execute rpc_trust_commit_release
+ok 50 - the worker (service_role) can execute rpc_trust_commit_release
+ok 51 - tenant 002 attestation coexists without source changes
+ok 52 - tenant 002 holds no tenant-001 release rows
+INSERT 0 1
+ok 53 - commit leaves the attempt PENDING until the artifact is marked available
+ok 54 - commit leaves the artifact MATERIALIZING before mark-available
+ok 55 - voiding an attempt whose release revision already exists is denied even while the attempt is still PENDING
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ok 56 - freeze: a site-A context cannot freeze a working revision that belongs to site B
+ok 57 - begin: a site-A context cannot begin a release for a candidate that belongs to site B
+ok 58 - revoke: a site-A context cannot revoke a release revision that belongs to site B
+SET
+RESET
+ok 59 - RLS: same-tenant membership without the organization grant cannot read an org-X site
+ROLLBACK
+trust_kernel_release: pass (plan 59, ok 59, not ok 0, psql exit 0)
+== trust_kernel_bundles
+BEGIN
+CREATE EXTENSION
+1..27
+INSERT 0 1
+INSERT 0 2
+INSERT 0 3
+INSERT 0 3
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 2
+INSERT 0 2
+INSERT 0 2
+INSERT 0 2
+INSERT 0 1
+INSERT 0 2
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ok 1 - trust_authority_key RLS enabled
+ok 2 - trust_key_revocation RLS enabled
+ok 3 - trust_profile_attestation_revocation RLS enabled
+ok 4 - trust_warning_grant_revocation RLS enabled
+ok 5 - trust_bundle_publication RLS enabled
+ok 6 - no bundle table exposes a client write policy
+ok 7 - no bundle table uses a using(true) product-data policy
+ok 8 - the trust-bundle signing key can never be stored as a trusted (downstream) key
+ok 9 - a downstream-purpose trusted key is accepted
+ok 10 - first TRUST bundle for the scope takes sequence 1
+ok 11 - the next TRUST bundle takes sequence 2 (monotonic)
+ok 12 - RELEASE_STATUS has an INDEPENDENT sequence starting at 1
+ok 13 - a duplicate (tenant,bundleType,sequence) is rejected by the unique index
+ok 14 - commit publishes the allocated bundle
+ok 15 - re-committing the same canonical hash is idempotent
+ok 16 - a published sequence is immutable: a different canonical hash conflicts
+ok 17 - the status snapshot contains the REVOKED revision id
+ok 18 - the status snapshot excludes the ACTIVE revision
+ok 19 - revokedReleaseRevisionIds is a JSON array
+ok 20 - tenant 001 status snapshot excludes tenant 002 revoked revisions
+ok 21 - the TRUST snapshot carries the key revocation with its explicit mode
+ok 22 - a profile-attestation revocation stores id + effectiveAt + reason
+ok 23 - a warning-grant revocation stores id + effectiveAt + reason
+ok 24 - an authenticated user cannot allocate a bundle sequence
+ok 25 - an authenticated user cannot commit a bundle publication
+ok 26 - tenant 002 RELEASE_STATUS sequence is independent and starts at 1
+SET
+RESET
+ok 27 - RLS: same-tenant membership without the organization grant cannot read an org-X site
+ROLLBACK
+trust_kernel_bundles: pass (plan 27, ok 27, not ok 0, psql exit 0)
+== trust_kernel_containment
+BEGIN
+CREATE EXTENSION
+1..16
+ok 1 - isolated workload role monolith_p2_workload exists
+ok 2 - the workload role is NOLOGIN (assumed out of band, never a human login)
+ok 3 - authenticated cannot SELECT release_artifact.object_locator (raw locator contained)
+ok 4 - anon cannot SELECT release_artifact.object_locator
+ok 5 - authenticated CAN still SELECT release_artifact.status (projection reference retained)
+ok 6 - authenticated CAN still SELECT release_artifact.content_hash (hash reference retained)
+ok 7 - authenticated cannot SELECT factory_jobs.packet_storage_path (legacy raw locator contained)
+ok 8 - factory-packets read policy targets ONLY the isolated workload role
+ok 9 - the workload read policy is scoped to the factory-packets bucket (tenant-pathed)
+ok 10 - authenticated cannot execute legacy rpc_factory_job_record_packet (no client P2 publish)
+ok 11 - authenticated cannot execute legacy rpc_factory_job_packet_info (no raw locator readout)
+ok 12 - authenticated cannot execute legacy rpc_factory_job_transition (no dual mutable authority)
+ok 13 - authenticated CAN execute rpc_trust_release_status (the client projection)
+ok 14 - anon cannot execute rpc_trust_release_status
+ok 15 - rpc_trust_release_status NEVER references object_locator — the projection cannot leak a raw locator
+ok 16 - rpc_trust_release_status executes and returns no row for an unknown release (no error path)
+ROLLBACK
+trust_kernel_containment: pass (plan 16, ok 16, not ok 0, psql exit 0)
+== trust_kernel_safety
+BEGIN
+CREATE EXTENSION
+1..68
+INSERT 0 3
+INSERT 0 2
+INSERT 0 3
+INSERT 0 4
+INSERT 0 3
+INSERT 0 3
+INSERT 0 4
+INSERT 0 3
+INSERT 0 2
+INSERT 0 2
+INSERT 0 4
+INSERT 0 4
+INSERT 0 4
+ok 1 - release_content_revocation RLS enabled
+ok 2 - release_content_revocation exposes no client write policy
+ok 3 - authenticated cannot INSERT into release_content_revocation (writes go through the RPC only)
+ok 4 - authenticated may SELECT release_content_revocation (RLS still filters rows)
+ok 5 - authenticated cannot TRUNCATE the deny log (inherited default privilege stripped)
+ok 6 - authenticated cannot UPDATE the deny log
+ok 7 - authenticated cannot DELETE the deny log
+ok 8 - service_role can execute fn_content_is_blocked
+ok 9 - authenticated cannot execute fn_content_is_blocked directly
+ok 10 - authenticated can execute rpc_trust_safety_block_content
+ok 11 - anon cannot execute rpc_trust_safety_block_content
+ok 12 - minting a SAFETY_BLOCK context without SAFETY_REVOKER is denied at mint time
+ok 13 - fn_content_is_blocked is FALSE before any block
+ok 14 - blocking content that was only OPERATIONAL-revoked (never SAFETY) is rejected
+ok 15 - deny-only: a successful block adds NO release_revision row (positive-authority count unchanged)
+ok 16 - deny-only: a successful block does NOT mutate the target release_revision status
+ok 17 - the appended event is a BLOCK
+ok 18 - the first block in the tenant carries sequence 1
+ok 19 - the block records the acting SAFETY_REVOKER as actor
+ok 20 - the block records the reason detail
+ok 21 - fn_content_is_blocked is TRUE for the blocked (tenant, site, content_hash)
+ok 22 - fn_content_is_blocked stays FALSE for a different, unblocked content_hash
+ok 23 - a BLOCK in tenant A leaves the identical content_hash UNBLOCKED in tenant B
+ok 24 - a BLOCK in (tenant_a, site_a) leaves the identical content_hash UNBLOCKED in the same tenant's site_a2
+ok 25 - a SAFETY_BLOCK authorized for site_a2 cannot block a revision SAFETY-revoked only in site_a (provenance site predicate is load-bearing)
+ok 26 - the second block in the tenant carries the next monotonic sequence (2)
+ok 27 - a content_hash that does not match the context-authorized revision is rejected (resource_id binding)
+INSERT 0 2
+ok 28 - latest-event-wins: a higher-sequence UNBLOCK after a BLOCK leaves the content NOT blocked (not naive exists-BLOCK)
+INSERT 0 1
+INSERT 0 1
+INSERT 0 3
+INSERT 0 3
+INSERT 0 3
+ok 29 - precondition: h_blk is BLOCKED in (tenant_a, site_a) before the commit-gate tests
+ok 30 - commit_release raises SAFETY_CONTENT_REVOKED for a BLOCKED content_hash
+ok 31 - a denied commit creates NO release_revision for the attempt (no ACTIVE release)
+ok 32 - a denied commit does not materialize the allocated revision id
+ok 33 - a clean (never-blocked) content_hash commits and returns the allocated revision id
+ok 34 - the clean commit records an ACTIVE release_revision (guard does not over-block)
+ok 35 - cross-tenant: a BLOCK in (tenant_a, site_a) does NOT reject a commit of the same content_hash in tenant_b
+ok 36 - cross-tenant: the tenant_b commit of h_blk records an ACTIVE release_revision (block is tenant/site-scoped)
+INSERT 0 5
+INSERT 0 5
+INSERT 0 6
+INSERT 0 5
+INSERT 0 5
+ok 37 - content_unblock_grant RLS enabled
+ok 38 - content_unblock_grant exposes no client write policy
+ok 39 - authenticated cannot INSERT into content_unblock_grant (writes go through the RPC only)
+ok 40 - authenticated may SELECT content_unblock_grant (RLS still filters rows)
+ok 41 - authenticated cannot TRUNCATE content_unblock_grant (inherited default privilege stripped)
+ok 42 - authenticated cannot UPDATE content_unblock_grant
+ok 43 - authenticated cannot DELETE content_unblock_grant
+ok 44 - authenticated can execute rpc_trust_safety_unblock_content
+ok 45 - anon cannot execute rpc_trust_safety_unblock_content
+ok 46 - minting a SAFETY_UNBLOCK context with only SAFETY_REVOKER (no eligible role) is denied at mint time
+ok 47 - round-trip precondition: h_blk is BLOCKED in (tenant_a, site_a) before the un-block
+ok 48 - after the two-person un-block, fn_content_is_blocked is FALSE for h_blk
+ok 49 - the grant records both distinct approvers (u_ra + u_qa)
+ok 50 - the grant records two DISTINCT eligible non-SAFETY roles
+ok 51 - the grant records the justification
+ok 52 - the grant unblock_sequence equals the appended UNBLOCK event sequence
+ok 53 - the latest content-revocation event for h_blk is now UNBLOCK
+ok 54 - the UNBLOCK event records the initiating approver (actor_a) also recorded on the grant
+ok 55 - deny-only: the un-block adds NO release_revision row (positive-authority count unchanged)
+ok 56 - deny-only: the un-block does not mutate the SAFETY-revoked source revision
+ok 57 - round-trip: after un-block, committing h_blk succeeds and returns the allocated revision id
+ok 58 - round-trip: the post-unblock commit records an ACTIVE release_revision (block -> reject -> unblock -> allow)
+ok 59 - reassignment precondition: h_blk2 is BLOCKED in (tenant_a, site_a)
+ok 60 - reassignment: the two-person un-block clears h_blk2
+ok 61 - reassignment: eligible {ADMIN,QA_EVIDENCE} + {ADMIN} yields the distinct pair {ADMIN, QA_EVIDENCE}
+ok 62 - un-block with only one approver context (same context twice) is rejected
+ok 63 - un-block by two contexts from the SAME user is rejected (two distinct people required)
+ok 64 - un-block by two distinct users sharing only ONE eligible role is rejected (two distinct roles required)
+ok 65 - un-block with an empty/whitespace justification is rejected
+ok 66 - un-blocking content that is not currently blocked is rejected
+ok 67 - un-block where the two contexts reference different revisions is rejected
+SET
+RESET
+ok 68 - RLS: same-tenant membership without the organization grant cannot read an org-X site
+ROLLBACK
+trust_kernel_safety: pass (plan 68, ok 68, not ok 0, psql exit 0)
+== repair_phase0_organization
+BEGIN
+CREATE EXTENSION
+1..21
+ok 1 - organization table exists
+ok 2 - every site has an organization
+ok 3 - action context pins organization
+ok 4 - membership organization grants exist
+ok 5 - organization RLS enabled
+INSERT 0 3
+INSERT 0 2
+INSERT 0 3
+INSERT 0 3
+INSERT 0 3
+INSERT 0 3
+INSERT 0 4
+INSERT 0 3
+ok 6 - no non-SELECT client policy on organization tables
+ok 7 - no organization table uses a using(true) policy
+SET
+RESET
+ok 8 - RLS: a tenant-001 member cannot read tenant-002 organizations
+SET
+RESET
+ok 9 - RLS: organization-A membership cannot read organization-B sites in the same tenant
+ok 10 - organization-A membership cannot create an action context for an organization-B site
+ok 11 - service role cannot create human authority
+ok 12 - valid grant creates an action context pinned to the site organization
+UPDATE 1
+ok 13 - changing membership version invalidates an unconsumed context
+ok 14 - an action context still consumes while its organization and site remain ACTIVE
+UPDATE 1
+ok 15 - site deactivation revokes an already-minted action context at consume time
+UPDATE 1
+ok 16 - a site row with a tenant-mismatched organization foreign key is rejected
+INSERT 0 1
+SET
+RESET
+ok 17 - RLS: organization-A membership cannot read an organization-B content-revocation row
+SET
+RESET
+ok 18 - RLS: organization-B membership still reads its own content-revocation row (not deny-all)
+ok 19 - content_unblock_grant SELECT policy is scoped by the organization/site helper
+UPDATE 1
+ok 20 - an INACTIVE organization authorizes no new action context
+ok 21 - organization deactivation revokes an already-minted action context at consume time
+ROLLBACK
+repair_phase0_organization: pass (plan 21, ok 21, not ok 0, psql exit 0)
+== repair_phase0_containment
+BEGIN
+CREATE EXTENSION
+1..8
+ok 1 - broad installation-media policies are removed
+ok 2 - authenticated cannot invoke legacy field photo submission
+ok 3 - service role cannot substitute for a human evidence action
+ok 4 - legacy capture ingest is not a direct authenticated authority
+ok 5 - service role cannot substitute for legacy capture ingest either
+ok 6 - service role cannot invoke the legacy factory state-transition authority
+repair_phase0_containment: FAIL (plan 8, ok 6, not ok 0, psql exit 3)
+  repair_phase0_containment: incomplete-results: planned 8, found 6 result(s); missing: 7, 8
+  repair_phase0_containment: nonzero-exit: psql exited with 3
+== line_outbound_claim_record
+BEGIN
+CREATE EXTENSION
+1..107
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE TABLE
+ok 1 - outbound messages have nullable claimed_at
+ok 2 - outbound messages have nullable claimed_by
+ok 3 - outbound messages have attempt_count
+ok 4 - claimed_at is nullable
+ok 5 - claimed_by is nullable
+ok 6 - attempt_count is NOT NULL
+ok 7 - attempt_count defaults to zero
+ok 8 - outbound messages have nullable next_attempt_at
+ok 9 - next_attempt_at is nullable
+ok 10 - next_attempt_at defaults to NULL
+ok 11 - outbound messages have nullable claim_token
+ok 12 - claim_token is nullable
+ok 13 - claim_token defaults to NULL
+ok 14 - claim RPC has the required (int, int) signature
+ok 15 - claim RPC is SECURITY DEFINER
+ok 16 - only claim timeout has a default
+ok 17 - service_role can execute claim RPC
+ok 18 - authenticated cannot execute claim RPC
+ok 19 - anon cannot execute claim RPC
+ok 20 - PUBLIC cannot execute claim RPC
+ok 21 - record-result RPC remains SECURITY DEFINER
+ok 22 - service_role can execute record-result RPC
+ok 23 - authenticated no longer executes record-result: recording is service-only (owner decision, 0199)
+ok 24 - anon and PUBLIC cannot execute record-result RPC
+INSERT 0 1
+ok 25 - claim RPC rejects NULL and non-positive batch limits
+INSERT 0 1
+ok 26 - claim RPC rejects NULL and non-positive lease timeouts
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ok 27 - first service claim returns the pending row exactly once
+ok 28 - claim result returns every column the sender needs
+ok 29 - claim stamps claimed_at and resolve_actor() as claimed_by
+INSERT 0 1
+ok 30 - second claim in the same session returns zero while the first claim is live
+INSERT 0 1
+ok 31 - an expired claim is reclaimable and receives fresh claim ownership
+INSERT 0 2
+INSERT 0 1
+ok 32 - sent and failed rows are never claimed
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ok 33 - group outbound rows participate in the atomic claim RPC
+INSERT 0 1
+ok 34 - service role with absent JWT claims records a group send successfully
+ok 35 - successful recording sends once and clears both claim fields
+ok 36 - group result audit uses line_groups vertical, NULL site, and system sender actor
+INSERT 0 1
+ok 37 - already-sent row returns recorded=false
+ok 38 - duplicate result cannot flip status or write a second audit row
+INSERT 0 1
+INSERT 0 1
+ok 39 - service context records an unbound-group prompt row
+ok 40 - unbound group audit uses the 0097 monolith fallback and NULL site
+INSERT 0 1
+INSERT 0 1
+ok 41 - authenticated user without governance role or site access is denied at the function ACL (0199)
+ok 42 - denied user call changes no state and writes no audit
+INSERT 0 2
+INSERT 0 1
+ok 43 - authenticated caller cannot forge service_role through request JWT claims (denied at the function ACL, 0199)
+INSERT 0 1
+ok 44 - NULL result status is rejected without state or audit change
+INSERT 0 1
+INSERT 0 1
+ok 45 - retry fixture is claimed before its first delivery attempt
+INSERT 0 1
+ok 46 - first transient failure is recorded but returned to pending
+ok 47 - transient failure increments attempt_count, clears claim, and stores error detail
+ok 48 - first transient failure writes one result audit
+INSERT 0 4
+ok 49 - fifth failure is recorded as terminal failed
+ok 50 - terminal failure keeps attempt_count=5, no sent timestamp, and the last scrubbed error
+ok 51 - each of five recorded failures writes exactly one audit row
+INSERT 0 1
+ok 52 - terminal failed row rejects failed-to-sent flip without state or audit change
+INSERT 0 1
+INSERT 0 1
+ok 53 - claim excludes pending rows whose next_attempt_at is in the future
+INSERT 0 1
+ok 54 - claim includes pending rows once next_attempt_at is due
+INSERT 0 1
+INSERT 0 1
+ok 55 - explicit transient failure returns to pending below the five-attempt bound
+ok 56 - first transient failure schedules the notification-style one-second backoff
+INSERT 0 1
+ok 57 - a transiently failed row cannot be reclaimed before its backoff is due
+t
+INSERT 0 1
+INSERT 0 1
+ok 58 - second transient failure doubles backoff to two seconds
+INSERT 0 1
+INSERT 0 1
+ok 59 - permanent failure is terminal immediately regardless of remaining attempts
+ok 60 - permanent failure has no retry due-time and writes exactly one audit
+INSERT 0 1
+INSERT 0 1
+ok 61 - unsupported failure class is rejected without state or audit change
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ok 62 - reclaim replaces the stale claim token and returns the fresh stored token
+INSERT 0 1
+ok 63 - stale claim token returns recorded=false
+ok 64 - stale claim token changes no state and writes no audit
+INSERT 0 1
+ok 65 - matching claim token records the result and clears claim ownership
+INSERT 0 1
+INSERT 0 1
+ok 66 - null-token legacy call still works when the row has no claim token
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ok 67 - a non-null stale token cannot replay after a transient result clears the fence
+SET
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ok 68 - non-UTC session cannot immediately reclaim a just-failed transient row
+t
+INSERT 0 1
+ok 69 - non-UTC session can reclaim the transient row after backoff elapses
+INSERT 0 1
+INSERT 0 1
+ok 70 - non-UTC successful send stamps sent_at within five seconds of now()
+CREATE FUNCTION
+ok 71 - P0-11 whitespace U+0009
+ok 72 - P0-11 whitespace U+000A
+ok 73 - P0-11 whitespace U+000B
+ok 74 - P0-11 whitespace U+000C
+ok 75 - P0-11 whitespace U+000D
+ok 76 - P0-11 whitespace U+001C
+ok 77 - P0-11 whitespace U+001D
+ok 78 - P0-11 whitespace U+001E
+ok 79 - P0-11 whitespace U+001F
+ok 80 - P0-11 whitespace U+0020
+ok 81 - P0-11 whitespace U+0085
+ok 82 - P0-11 whitespace U+00A0
+ok 83 - P0-11 whitespace U+1680
+ok 84 - P0-11 whitespace U+2000
+ok 85 - P0-11 whitespace U+2001
+ok 86 - P0-11 whitespace U+2002
+ok 87 - P0-11 whitespace U+2003
+ok 88 - P0-11 whitespace U+2004
+ok 89 - P0-11 whitespace U+2005
+ok 90 - P0-11 whitespace U+2006
+ok 91 - P0-11 whitespace U+2007
+ok 92 - P0-11 whitespace U+2008
+ok 93 - P0-11 whitespace U+2009
+ok 94 - P0-11 whitespace U+200A
+ok 95 - P0-11 whitespace U+2028
+ok 96 - P0-11 whitespace U+2029
+ok 97 - P0-11 whitespace U+202F
+ok 98 - P0-11 whitespace U+205F
+ok 99 - P0-11 whitespace U+3000
+ok 100 - P0-11 null
+ok 101 - P0-11 empty
+ok 102 - P0-11 all whitespace
+ok 103 - P0-11 trim edges
+ok 104 - P0-11 internal whitespace
+ok 105 - P0-11 zero width space
+ok 106 - P0-11 BOM
+ok 107 - P0-11 token scrub
+ROLLBACK
+line_outbound_claim_record: pass (plan 107, ok 107, not ok 0, psql exit 0)
+== line_oa_client_write_revoke
+BEGIN
+CREATE EXTENSION
+1..133
+CREATE TABLE
+INSERT 0 3
+CREATE TABLE
+INSERT 0 8
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+76af193d-5627-4861-9260-65552b2393ba
+INSERT 0 1
+INSERT 0 2
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+CREATE TABLE
+INSERT 0 32
+ok 1 - scope guard: 8 target tables, 3 roles and 32 write statements exist (no vacuous pass)
+ok 2 - anon, authenticated and service_role keep USAGE on schema public, so denials are not schema-level
+ok 3 - PUBLIC holds no INSERT/UPDATE/DELETE/TRUNCATE grant on the eight tables
+ok 4 - each table owner (the SECURITY DEFINER owner) keeps INSERT/UPDATE/DELETE/TRUNCATE
+ok 5 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_channels
+ok 6 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_conversations
+ok 7 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_inbound_messages
+ok 8 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_outbound_messages
+ok 9 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_customer_identity
+ok 10 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_message_templates
+ok 11 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_orders
+ok 12 - anon holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_audit_log
+ok 13 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_channels
+ok 14 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_conversations
+ok 15 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_inbound_messages
+ok 16 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_outbound_messages
+ok 17 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_customer_identity
+ok 18 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_message_templates
+ok 19 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_orders
+ok 20 - authenticated holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_audit_log
+ok 21 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_channels
+ok 22 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_conversations
+ok 23 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_inbound_messages
+ok 24 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_outbound_messages
+ok 25 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_customer_identity
+ok 26 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_message_templates
+ok 27 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_orders
+ok 28 - service_role holds no effective INSERT/UPDATE/DELETE/TRUNCATE (table or column) on line_oa_audit_log
+ok 29 - anon INSERT on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 30 - anon UPDATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 31 - anon DELETE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 32 - anon TRUNCATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 33 - anon INSERT on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 34 - anon UPDATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 35 - anon DELETE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 36 - anon TRUNCATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 37 - anon INSERT on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 38 - anon UPDATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 39 - anon DELETE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 40 - anon TRUNCATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 41 - anon INSERT on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 42 - anon UPDATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 43 - anon DELETE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 44 - anon TRUNCATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 45 - anon INSERT on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 46 - anon UPDATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 47 - anon DELETE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 48 - anon TRUNCATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 49 - anon INSERT on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 50 - anon UPDATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 51 - anon DELETE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 52 - anon TRUNCATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 53 - anon INSERT on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 54 - anon UPDATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 55 - anon DELETE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 56 - anon TRUNCATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 57 - anon INSERT on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 58 - anon UPDATE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 59 - anon DELETE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 60 - anon TRUNCATE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 61 - authenticated INSERT on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 62 - authenticated UPDATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 63 - authenticated DELETE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 64 - authenticated TRUNCATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 65 - authenticated INSERT on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 66 - authenticated UPDATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 67 - authenticated DELETE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 68 - authenticated TRUNCATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 69 - authenticated INSERT on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 70 - authenticated UPDATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 71 - authenticated DELETE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 72 - authenticated TRUNCATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 73 - authenticated INSERT on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 74 - authenticated UPDATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 75 - authenticated DELETE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 76 - authenticated TRUNCATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 77 - authenticated INSERT on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 78 - authenticated UPDATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 79 - authenticated DELETE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 80 - authenticated TRUNCATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 81 - authenticated INSERT on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 82 - authenticated UPDATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 83 - authenticated DELETE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 84 - authenticated TRUNCATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 85 - authenticated INSERT on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 86 - authenticated UPDATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 87 - authenticated DELETE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 88 - authenticated TRUNCATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 89 - authenticated INSERT on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 90 - authenticated UPDATE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 91 - authenticated DELETE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 92 - authenticated TRUNCATE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 93 - service_role INSERT on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 94 - service_role UPDATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 95 - service_role DELETE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 96 - service_role TRUNCATE on line_oa_channels is refused by the table privilege (42501 permission denied for table)
+ok 97 - service_role INSERT on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 98 - service_role UPDATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 99 - service_role DELETE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 100 - service_role TRUNCATE on line_oa_conversations is refused by the table privilege (42501 permission denied for table)
+ok 101 - service_role INSERT on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 102 - service_role UPDATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 103 - service_role DELETE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 104 - service_role TRUNCATE on line_oa_inbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 105 - service_role INSERT on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 106 - service_role UPDATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 107 - service_role DELETE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 108 - service_role TRUNCATE on line_oa_outbound_messages is refused by the table privilege (42501 permission denied for table)
+ok 109 - service_role INSERT on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 110 - service_role UPDATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 111 - service_role DELETE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 112 - service_role TRUNCATE on line_oa_customer_identity is refused by the table privilege (42501 permission denied for table)
+ok 113 - service_role INSERT on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 114 - service_role UPDATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 115 - service_role DELETE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 116 - service_role TRUNCATE on line_oa_message_templates is refused by the table privilege (42501 permission denied for table)
+ok 117 - service_role INSERT on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 118 - service_role UPDATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 119 - service_role DELETE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 120 - service_role TRUNCATE on line_oa_orders is refused by the table privilege (42501 permission denied for table)
+ok 121 - service_role INSERT on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 122 - service_role UPDATE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 123 - service_role DELETE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 124 - service_role TRUNCATE on line_oa_audit_log is refused by the table privilege (42501 permission denied for table)
+ok 125 - service_role can still SELECT line_oa_channels (sender reads channel_access_token_ref)
+ok 126 - service_role can still SELECT line_oa_conversations (sender reads line_user_id, vertical_context)
+ok 127 - service_role can still SELECT line_oa_message_templates (sender reads body)
+CREATE TABLE
+INSERT 0 1
+ok 128 - rpc_ingest_line_webhook as service_role accepts a signed synthetic event and processes it
+ok 129 - ingress wrote the conversation, inbound message, customer identity and audit receipt through the DEFINER path
+INSERT 0 1
+ok 130 - binding a customer group as service_role fires fn_welcome_on_group_bind, which queues tpl_welcome_pack for that group
+INSERT 0 1
+INSERT 0 1
+ok 131 - fn_prod_curated queues exactly one pending push for the bound group through the rpc_field_create_appointment owner chain
+INSERT 0 1
+ok 132 - rpc_claim_line_outbound_batch as service_role claims the curated row and stamps a claim token
+INSERT 0 1
+ok 133 - rpc_record_line_send_result as service_role records the claimed row as sent
+ROLLBACK
+line_oa_client_write_revoke: pass (plan 133, ok 133, not ok 0, psql exit 0)
+== line_oa_client_write_revoke_fail_closed
+BEGIN
+# migration under test: C:/Users/thai3/determined-williams (2)/MONOLITH Repair Intelligence/.worktrees/line-p009-ingest-retry/supabase/migrations/0198_line_oa_revoke_client_write_grants.sql
+CREATE EXTENSION
+1..28
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+ok 1 - scope guard: 8 tables and anon exist, and anon starts without write privilege (0198 applied)
+SAVEPOINT
+CREATE ROLE
+GRANT
+GRANT ROLE
+GRANT
+SAVEPOINT
+ROLLBACK
+ROLLBACK
+RELEASE
+ok 2 - case A precondition: anon has INSERT on line_oa_orders only through role membership, and a direct INSERT on line_oa_channels
+ok 3 - case A: the migration raises SQLSTATE 42501 when an inherited write privilege survives
+ok 4 - case A: the error message starts with "P0-10: write privileges remain after revoke" and names anon:line_oa_orders
+ok 5 - case A: after the error every table ACL, column ACL and membership is exactly as before
+ok 6 - case A: the direct INSERT that 0198 revoked on line_oa_channels is back after the error
+SAVEPOINT
+CREATE ROLE
+GRANT ROLE
+GRANT
+GRANT
+SET
+GRANT
+RESET
+GRANT
+SAVEPOINT
+ROLLBACK
+ROLLBACK
+RELEASE
+ok 7 - case B precondition: anon has a direct column UPDATE on line_oa_message_templates.body from another grantor, and a direct INSERT on line_oa_channels
+ok 8 - case B: the migration raises SQLSTATE 42501 when a column-level UPDATE survives
+ok 9 - case B: the error message starts with "P0-10: write privileges remain after revoke" and names anon:line_oa_message_templates
+ok 10 - case B: after the error every table ACL, column ACL and membership is exactly as before
+ok 11 - case B: the direct INSERT that 0198 revoked on line_oa_channels is back after the error
+SAVEPOINT
+GRANT
+GRANT
+SAVEPOINT
+DO
+ROLLBACK
+RELEASE
+ok 12 - case C: with no surviving privilege the migration completes without error
+ok 13 - case C: the direct INSERT and the owner-granted column UPDATE are revoked and anon holds no write privilege
+SAVEPOINT
+CREATE ROLE
+GRANT
+GRANT ROLE
+GRANT
+SAVEPOINT
+ROLLBACK
+ROLLBACK
+RELEASE
+ok 14 - case D precondition: authenticated has only DELETE on line_oa_orders, only through an INHERIT membership, and a direct INSERT on line_oa_channels
+ok 15 - case D: the migration raises SQLSTATE 42501 when an inherited DELETE survives
+ok 16 - case D: the error message names exactly authenticated:line_oa_orders
+ok 17 - case D: after the error every table ACL, column ACL and membership is exactly as before
+ok 18 - case D: the direct INSERT that 0198 revoked on line_oa_channels is back after the error
+SAVEPOINT
+CREATE ROLE
+GRANT
+GRANT ROLE
+GRANT
+SAVEPOINT
+ROLLBACK
+ROLLBACK
+RELEASE
+ok 19 - case E precondition: service_role has only TRUNCATE on line_oa_orders, only through an INHERIT membership, and a direct INSERT on line_oa_channels
+ok 20 - case E: the migration raises SQLSTATE 42501 when an inherited TRUNCATE survives
+ok 21 - case E: the error message names exactly service_role:line_oa_orders
+ok 22 - case E: after the error every table ACL, column ACL and membership is exactly as before
+ok 23 - case E: the direct INSERT that 0198 revoked on line_oa_channels is back after the error
+SAVEPOINT
+CREATE ROLE
+GRANT ROLE
+GRANT
+GRANT
+SET
+GRANT
+RESET
+GRANT
+SAVEPOINT
+ROLLBACK
+ROLLBACK
+RELEASE
+ok 24 - case F precondition: anon has only a column INSERT on line_oa_message_templates.body from another grantor, and a direct INSERT on line_oa_channels
+ok 25 - case F: the migration raises SQLSTATE 42501 when a column-level INSERT survives
+ok 26 - case F: the error message names exactly anon:line_oa_message_templates
+ok 27 - case F: after the error every table ACL, column ACL and membership is exactly as before
+ok 28 - case F: the direct INSERT that 0198 revoked on line_oa_channels is back after the error
+ROLLBACK
+line_oa_client_write_revoke_fail_closed: pass (plan 28, ok 28, not ok 0, psql exit 0)
+== line_oa_definer_execute_matrix
+BEGIN
+CREATE EXTENSION
+1..82
+CREATE TABLE
+INSERT 0 20
+CREATE TABLE
+INSERT 0 3
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+ok 1 - all twenty exact identities of the matrix exist
+ok 2 - no unclassified overload exists for any of the twenty names
+ok 3 - anon, authenticated and service_role keep USAGE on schema public, so denials are not schema-level
+ok 4 - B12-01 fn_lead_followup_sweep() effective EXECUTE anon/authenticated/service_role is f/f/t
+ok 5 - B12-02 fn_line_handle_group_event(jsonb,text,text) effective EXECUTE anon/authenticated/service_role is f/f/f
+ok 6 - B12-03 fn_prod_curated(uuid,text,jsonb) effective EXECUTE anon/authenticated/service_role is f/f/f
+ok 7 - B12-04 fn_welcome_on_group_bind() effective EXECUTE anon/authenticated/service_role is f/f/f
+ok 8 - B12-05 line_oa_resolve_customer_identity(text,text) effective EXECUTE anon/authenticated/service_role is f/f/t
+ok 9 - B12-06 rpc_claim_line_outbound_batch(integer,integer) effective EXECUTE anon/authenticated/service_role is f/f/t
+ok 10 - B12-07 rpc_create_line_order(uuid,jsonb,text,text) effective EXECUTE anon/authenticated/service_role is f/t/t
+ok 11 - B12-08 rpc_evaluate_identity_merge_candidate(text,text,uuid,jsonb,numeric) effective EXECUTE anon/authenticated/service_role is f/t/t
+ok 12 - B12-09 rpc_field_assign_lead(uuid,uuid) effective EXECUTE anon/authenticated/service_role is f/t/t
+ok 13 - B12-10 rpc_field_close_lead(uuid,text,text) effective EXECUTE anon/authenticated/service_role is f/t/t
+ok 14 - B12-11 rpc_field_send_photo_to_customer(uuid,uuid,text) effective EXECUTE anon/authenticated/service_role is f/t/t
+ok 15 - B12-12 rpc_field_set_lead_source(uuid,text) effective EXECUTE anon/authenticated/service_role is f/t/t
+ok 16 - B12-13 rpc_field_shop_drawing_revision(uuid,text,text,boolean,boolean) effective EXECUTE anon/authenticated/service_role is f/t/t
+ok 17 - B12-14 rpc_ingest_line_webhook(text,text,text) effective EXECUTE anon/authenticated/service_role is f/f/t
+ok 18 - B12-15 rpc_record_line_send_result(uuid,text,text,text,uuid) effective EXECUTE anon/authenticated/service_role is f/f/t
+ok 19 - B12-16 rpc_request_customer_acceptance(uuid,text) effective EXECUTE anon/authenticated/service_role is f/t/t
+ok 20 - B12-17 rpc_resolve_conversation_site(uuid,text,text) effective EXECUTE anon/authenticated/service_role is f/t/t
+ok 21 - B12-18 rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) effective EXECUTE anon/authenticated/service_role is f/t/t
+ok 22 - B12-19 rpc_sweep_line_session_timeouts() effective EXECUTE anon/authenticated/service_role is f/f/t
+ok 23 - B12-20 rpc_sync_line_forecast(text,text,text) effective EXECUTE anon/authenticated/service_role is f/t/t
+ok 24 - PUBLIC holds EXECUTE on none of the twenty identities
+2d0c43a7-6256-4752-884d-31d0ff67da20
+INSERT 0 1
+INSERT 0 2
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+CREATE TABLE
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+ok 25 - B12-01 fn_lead_followup_sweep() is refused to anon at the function privilege (42501 permission denied for function)
+ok 26 - B12-01 fn_lead_followup_sweep() is refused to authenticated at the function privilege (42501 permission denied for function)
+ok 27 - B12-02 fn_line_handle_group_event(jsonb,text,text) is refused to anon at the function privilege (42501 permission denied for function)
+ok 28 - B12-02 fn_line_handle_group_event(jsonb,text,text) is refused to authenticated at the function privilege (42501 permission denied for function)
+ok 29 - B12-02 fn_line_handle_group_event(jsonb,text,text) is refused to service_role at the function privilege (42501 permission denied for function)
+ok 30 - B12-03 fn_prod_curated(uuid,text,jsonb) is refused to anon at the function privilege (42501 permission denied for function)
+ok 31 - B12-03 fn_prod_curated(uuid,text,jsonb) is refused to authenticated at the function privilege (42501 permission denied for function)
+ok 32 - B12-03 fn_prod_curated(uuid,text,jsonb) is refused to service_role at the function privilege (42501 permission denied for function)
+ok 33 - B12-05 line_oa_resolve_customer_identity(text,text) is refused to anon at the function privilege (42501 permission denied for function)
+ok 34 - B12-05 line_oa_resolve_customer_identity(text,text) is refused to authenticated at the function privilege (42501 permission denied for function)
+ok 35 - B12-06 rpc_claim_line_outbound_batch(integer,integer) is refused to anon at the function privilege (42501 permission denied for function)
+ok 36 - B12-06 rpc_claim_line_outbound_batch(integer,integer) is refused to authenticated at the function privilege (42501 permission denied for function)
+ok 37 - B12-07 rpc_create_line_order(uuid,jsonb,text,text) is refused to anon at the function privilege (42501 permission denied for function)
+ok 38 - B12-08 rpc_evaluate_identity_merge_candidate(text,text,uuid,jsonb,numeric) is refused to anon at the function privilege (42501 permission denied for function)
+ok 39 - B12-09 rpc_field_assign_lead(uuid,uuid) is refused to anon at the function privilege (42501 permission denied for function)
+ok 40 - B12-10 rpc_field_close_lead(uuid,text,text) is refused to anon at the function privilege (42501 permission denied for function)
+ok 41 - B12-11 rpc_field_send_photo_to_customer(uuid,uuid,text) is refused to anon at the function privilege (42501 permission denied for function)
+ok 42 - B12-12 rpc_field_set_lead_source(uuid,text) is refused to anon at the function privilege (42501 permission denied for function)
+ok 43 - B12-13 rpc_field_shop_drawing_revision(uuid,text,text,boolean,boolean) is refused to anon at the function privilege (42501 permission denied for function)
+ok 44 - B12-14 rpc_ingest_line_webhook(text,text,text) is refused to anon at the function privilege (42501 permission denied for function)
+ok 45 - B12-14 rpc_ingest_line_webhook(text,text,text) is refused to authenticated at the function privilege (42501 permission denied for function)
+ok 46 - B12-15 rpc_record_line_send_result(uuid,text,text,text,uuid) is refused to anon at the function privilege (42501 permission denied for function)
+ok 47 - B12-15 rpc_record_line_send_result(uuid,text,text,text,uuid) is refused to authenticated at the function privilege (42501 permission denied for function)
+ok 48 - B12-16 rpc_request_customer_acceptance(uuid,text) is refused to anon at the function privilege (42501 permission denied for function)
+ok 49 - B12-17 rpc_resolve_conversation_site(uuid,text,text) is refused to anon at the function privilege (42501 permission denied for function)
+ok 50 - B12-18 rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) is refused to anon at the function privilege (42501 permission denied for function)
+ok 51 - B12-19 rpc_sweep_line_session_timeouts() is refused to anon at the function privilege (42501 permission denied for function)
+ok 52 - B12-19 rpc_sweep_line_session_timeouts() is refused to authenticated at the function privilege (42501 permission denied for function)
+ok 53 - B12-20 rpc_sync_line_forecast(text,text,text) is refused to anon at the function privilege (42501 permission denied for function)
+ok 54 - realistic anon calls to fn_prod_curated, line_oa_resolve_customer_identity, rpc_ingest_line_webhook and fn_line_handle_group_event are refused at the ACL and write nothing (fingerprint checked inside each probe)
+ok 55 - B12-07 rpc_create_line_order(uuid,jsonb,text,text) still executes for authenticated (body reached, no function-ACL or schema denial)
+ok 56 - B12-08 rpc_evaluate_identity_merge_candidate(text,text,uuid,jsonb,numeric) still executes for authenticated (body reached, no function-ACL or schema denial)
+ok 57 - B12-09 rpc_field_assign_lead(uuid,uuid) still executes for authenticated (body reached, no function-ACL or schema denial)
+ok 58 - B12-17 rpc_resolve_conversation_site(uuid,text,text) still executes for authenticated (body reached, no function-ACL or schema denial)
+ok 59 - B12-18 rpc_send_line_outbound(uuid,text,jsonb,text,boolean,boolean,boolean) still executes for authenticated (body reached, no function-ACL or schema denial)
+ok 60 - B12-20 rpc_sync_line_forecast(text,text,text) still executes for authenticated (body reached, no function-ACL or schema denial)
+INSERT 0 1
+ok 61 - signed 1:1 ingress as service_role still writes the inbound message and customer identity
+INSERT 0 1
+ok 62 - a signed group join through ingress still reaches fn_line_handle_group_event, which queues the bind prompt
+INSERT 0 1
+ok 63 - line_oa_resolve_customer_identity as service_role still creates the identity
+INSERT 0 1
+ok 64 - binding a customer group as service_role still fires fn_welcome_on_group_bind (tpl_welcome_pack queued)
+SAVEPOINT
+DROP TRIGGER
+CREATE TRIGGER
+ROLLBACK
+RELEASE
+ok 65 - the migration owner can drop and recreate trg_welcome_group_bind on fn_welcome_on_group_bind
+INSERT 0 1
+ok 66 - rpc_field_create_appointment as a site user still queues tpl_appointment through fn_prod_curated
+INSERT 0 1
+ok 67 - rpc_factory_report_station as a governance user still queues tpl_prod_started through fn_prod_curated
+INSERT 0 1
+ok 68 - fn_lead_followup_sweep still runs as service_role
+INSERT 0 1
+ok 69 - fn_lead_followup_sweep still runs as the migration owner (the assumed cron principal; cron.job not inspected)
+INSERT 0 1
+ok 70 - rpc_sweep_line_session_timeouts still runs as service_role
+INSERT 0 1
+INSERT 0 1
+ok 71 - rpc_claim_line_outbound_batch as service_role still claims the queued appointment row
+INSERT 0 1
+ok 72 - rpc_record_line_send_result as service_role still records the claimed row as sent
+INSERT 0 1
+ok 73 - rpc_field_close_lead as a site user still closes the lead
+ok 74 - rpc_field_close_lead for another site is refused by its own guard
+INSERT 0 1
+ok 75 - rpc_field_set_lead_source as a site user still sets the lead source
+ok 76 - rpc_field_set_lead_source for another site is refused by its own guard
+INSERT 0 1
+ok 77 - rpc_field_send_photo_to_customer as a site user still queues the photo
+ok 78 - rpc_field_send_photo_to_customer for another site is refused by its own guard
+ok 79 - rpc_field_shop_drawing_revision as a site user still passes its guard (stops at the bible-code validation)
+ok 80 - rpc_field_shop_drawing_revision for another site is refused by its own guard
+INSERT 0 1
+ok 81 - rpc_request_customer_acceptance as a governance user still creates the approval and queues the card
+ok 82 - rpc_request_customer_acceptance for another site is refused by its own guard
+ROLLBACK
+line_oa_definer_execute_matrix: pass (plan 82, ok 82, not ok 0, psql exit 0)
+== line_oa_definer_execute_fail_closed
+BEGIN
+# migration under test: C:/Users/thai3/determined-williams (2)/MONOLITH Repair Intelligence/.worktrees/line-p009-ingest-retry/supabase/migrations/0199_line_oa_restrict_definer_execute.sql
+CREATE EXTENSION
+1..27
+CREATE TABLE
+INSERT 0 20
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+ok 1 - scope guard: the twenty identities exist and already match the matrix (0199 applied)
+SAVEPOINT
+CREATE ROLE
+GRANT
+GRANT ROLE
+GRANT
+SAVEPOINT
+ROLLBACK
+ROLLBACK
+RELEASE
+ok 2 - case A precondition: anon can execute fn_prod_curated only through role membership, and holds a direct EXECUTE on rpc_sync_line_forecast
+ok 3 - case A: the migration raises SQLSTATE 42501 when an inherited EXECUTE survives
+ok 4 - case A: the message starts with "B12: EXECUTE matrix not met after revoke" and names anon:fn_prod_curated
+ok 5 - case A: after the error and the case savepoint rollback, every function ACL and membership equals the pre-state
+ok 6 - case A: after the savepoint rollback the direct anon EXECUTE on rpc_sync_line_forecast is present again
+SAVEPOINT
+CREATE ROLE
+GRANT ROLE
+GRANT
+GRANT
+SET
+GRANT
+RESET
+GRANT
+SAVEPOINT
+ROLLBACK
+ROLLBACK
+RELEASE
+ok 7 - case B precondition: authenticated holds EXECUTE on fn_line_handle_group_event from another grantor, and anon a direct EXECUTE on rpc_sync_line_forecast
+ok 8 - case B: the migration raises SQLSTATE 42501 when another grantor's EXECUTE survives
+ok 9 - case B: the message starts with "B12: EXECUTE matrix not met after revoke" and names authenticated:fn_line_handle_group_event
+ok 10 - case B: after the error and the case savepoint rollback, every function ACL and membership equals the pre-state
+ok 11 - case B: after the savepoint rollback the direct anon EXECUTE on rpc_sync_line_forecast is present again
+SAVEPOINT
+REVOKE
+GRANT
+GRANT
+SAVEPOINT
+ROLLBACK
+ROLLBACK
+RELEASE
+ok 12 - case C precondition: authenticated can execute rpc_create_line_order only through PUBLIC, and anon holds a direct EXECUTE on rpc_sync_line_forecast
+ok 13 - case C: the migration raises SQLSTATE 42501 when a kept right would be lost
+ok 14 - case C: the message names authenticated:rpc_create_line_order want t, and nothing is granted in its place
+ok 15 - case C: after the error and the case savepoint rollback, every function ACL and membership equals the pre-state
+ok 16 - case C: after the savepoint rollback the direct anon EXECUTE on rpc_sync_line_forecast is present again
+SAVEPOINT
+CREATE FUNCTION
+GRANT
+SAVEPOINT
+ROLLBACK
+ROLLBACK
+RELEASE
+ok 17 - case D precondition: an extra overload fn_prod_curated(text) exists, and anon holds a direct EXECUTE on rpc_sync_line_forecast
+ok 18 - case D: the migration raises SQLSTATE 55000 for an unclassified overload
+ok 19 - case D: the message starts with "B12: unclassified overload" and names fn_prod_curated(text)
+ok 20 - case D: after the error and the case savepoint rollback, every function ACL and membership equals the pre-state
+ok 21 - case D: after the savepoint rollback the direct anon EXECUTE on rpc_sync_line_forecast is present
+SAVEPOINT
+ALTER FUNCTION
+SAVEPOINT
+ROLLBACK
+ROLLBACK
+RELEASE
+ok 22 - case F precondition: rpc_sync_line_forecast(text,text,text) is renamed away, so one matrix identity is missing
+ok 23 - case F: the migration raises SQLSTATE 55000 for a missing matrix identity
+ok 24 - case F: the message starts with "B12: matrix identity missing" and names rpc_sync_line_forecast(text,text,text)
+ok 25 - case F: after the error and the case savepoint rollback, every function ACL and membership equals the pre-state
+SAVEPOINT
+GRANT
+GRANT
+SAVEPOINT
+DO
+ROLLBACK
+RELEASE
+ok 26 - case E: with nothing blocking, the migration completes without error
+ok 27 - case E: the direct anon EXECUTE and the PUBLIC EXECUTE are revoked and every identity matches the matrix
+ROLLBACK
+line_oa_definer_execute_fail_closed: pass (plan 27, ok 27, not ok 0, psql exit 0)
+== line_inbound_handler_retry
+BEGIN
+# migration under test: ../migrations/0200_line_inbound_handler_retry.sql
+CREATE EXTENSION
+1..48
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+034f6900-31d4-490c-9991-0acf4e460fac
+INSERT 0 1
+CREATE SEQUENCE
+1
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE TRIGGER
+CREATE TRIGGER
+CREATE TABLE
+C-P009-G1
+INSERT 0 1
+ok 1 - a handler failure is not counted as processed (nor as duplicate or skipped)
+ok 2 - a failed event leaves no inbound row, so a LINE redelivery is not swallowed by dedupe
+ok 3 - a failed event writes no group_event success audit
+ok 4 - the failed event enters the internal retry queue: pending, attempt 1, due after 1 s
+ok 5 - the retry row keeps the handler error
+ok 6 - queueing the failed event writes exactly one group_event_retry_queued audit entry
+ok 7 - control: the failed handler left no partial side effect (no bind prompt queued)
+off
+INSERT 0 1
+INSERT 0 1
+ok 8 - a redelivery of a queued event is a duplicate: the handler does not run and the queued row is unchanged
+C-P009-G1
+1
+INSERT 0 1
+ok 9 - the sweep (as service_role) claims the due row and reschedules it after another failure
+ok 10 - a second failure leaves the row pending at attempt 2 with a 2 s backoff and the new error
+ok 11 - a failed retry writes no inbound row and no handler side effect
+INSERT 0 1
+ok 12 - a sweep claims nothing while the only pending row is not yet due
+off
+1
+INSERT 0 1
+ok 13 - the sweep succeeds once the handler stops failing
+ok 14 - the retry row is succeeded with the handler result and no next attempt
+ok 15 - the successful retry writes the group inbound row with the full event payload
+ok 16 - the successful retry runs the handler side effect exactly once (one bind prompt)
+ok 17 - the successful retry writes exactly one group_event audit entry in the ingest format
+ok 18 - the payload copy in the retry row is cleared after success (the inbound row keeps it)
+ok 19 - the earlier handler error is cleared after success
+INSERT 0 1
+ok 20 - a redelivery after the successful retry is a duplicate with no second side effect
+C-P009-G2
+INSERT 0 1
+CREATE TABLE
+1
+INSERT 0 1
+UPDATE 1
+1
+INSERT 0 1
+UPDATE 1
+1
+INSERT 0 1
+UPDATE 1
+1
+INSERT 0 1
+UPDATE 1
+ok 21 - attempts 2-4 back off 2 s, 4 s, 8 s and attempt 5 is dead-lettered
+ok 22 - dead-lettering writes exactly one group_event_dead_letter audit entry (reason retry_bound) and keeps the last error
+ok 23 - a dead-lettered row keeps its payload for human handling
+0
+INSERT 0 1
+ok 24 - a dead-lettered row is never claimed again
+ok 25 - a dead-lettered event was never counted as processed and left no inbound row or side effect
+off
+INSERT 0 1
+INSERT 0 1
+ok 26 - a skip-list result on retry stores no inbound row or audit and clears the payload
+C-P009-G4
+INSERT 0 1
+INSERT 0 1
+off
+1
+INSERT 0 1
+INSERT 0 1
+ok 27 - a queued event that another delivery already ingested is closed without running the handler
+C-P009-G5
+INSERT 0 1
+off
+p009-evt-join-5
+1
+INSERT 0 1
+
+ok 28 - a concurrent inbound insert during a retry rolls back the handler side effect and closes the row
+INSERT 0 1
+ok 29 - an ignored plain chat is skipped as before and never queued
+C-P009-G7
+INSERT 0 1
+off
+ok 30 - in a two-event delivery the failed event is queued and the following event is still processed
+C-P009-G9
+INSERT 0 1
+off
+1
+1
+INSERT 0 1
+INSERT 0 1
+ok 31 - a row older than 10 minutes is dead-lettered as expired without running the handler
+all
+INSERT 0 1
+INSERT 0 1
+off
+1
+1
+p009-evt-join-11
+INSERT 0 1
+
+ok 32 - an uncaught error fails only its own row (rescheduled, side effect rolled back) and the batch still commits
+C-P009-G12
+INSERT 0 1
+off
+1
+INSERT 0 1
+Asia/Bangkok
+INSERT 0 1
+UTC
+ok 33 - a retry swept in an Asia/Bangkok session stores received_at = now(), not a shifted wall time
+all
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+off
+1
+1
+1
+INSERT 0 1
+ok 34 - sweep(2) claims exactly the two earliest due rows
+INSERT 0 1
+INSERT 0 1
+ok 35 - only service_role can EXECUTE the sweep; anon is refused at the function ACL
+ok 36 - PUBLIC holds no EXECUTE on the sweep
+ok 37 - the sweep rejects a batch limit outside 1..100
+ok 38 - the retry table has RLS on; no role can write, maintain or alter it; only service_role reads
+ok 39 - control: rpc_ingest_line_webhook keeps the 0199 service-only EXECUTE
+ok 40 - control: fn_line_handle_group_event stays internal (0199)
+ok 41 - control: no cron job schedules the retry sweep (activation is a separate decision)
+CREATE FUNCTION
+SAVEPOINT
+CREATE ROLE
+GRANT ROLE
+DO
+SAVEPOINT
+CREATE TABLE
+CREATE INDEX
+ALTER TABLE
+REVOKE
+DO
+CREATE FUNCTION
+COMMENT
+CREATE FUNCTION
+COMMENT
+REVOKE
+DO
+ROLLBACK
+ROLLBACK
+RELEASE
+ok 42 - case A precondition: anon holds EXECUTE on the sweep only through role membership
+ok 43 - case A: the migration raises 42501 "P0-9: privileges differ from target" naming anon:execute
+ok 44 - case A: after the error the function ACLs, the table ACL and memberships are exactly as before
+SAVEPOINT
+CREATE ROLE
+GRANT ROLE
+DO
+SAVEPOINT
+CREATE TABLE
+CREATE INDEX
+ALTER TABLE
+REVOKE
+DO
+CREATE FUNCTION
+COMMENT
+CREATE FUNCTION
+COMMENT
+REVOKE
+DO
+ROLLBACK
+ROLLBACK
+RELEASE
+ok 45 - case B precondition: authenticated holds INSERT on the retry table only through role membership
+ok 46 - case B: the migration raises 42501 naming authenticated:insert line_oa_inbound_retry
+ok 47 - case B: after the error the function ACLs, the table ACL and memberships are exactly as before
+SAVEPOINT
+SAVEPOINT
+CREATE TABLE
+CREATE INDEX
+ALTER TABLE
+REVOKE
+DO
+CREATE FUNCTION
+COMMENT
+CREATE FUNCTION
+COMMENT
+REVOKE
+DO
+DO
+ROLLBACK
+RELEASE
+ok 48 - case C: with no leaked privilege the migration re-runs to completion (SQLSTATE 00000)
+ROLLBACK
+line_inbound_handler_retry: pass (plan 48, ok 48, not ok 0, psql exit 0)
+FAILED: 1 of 15 suites: repair_phase0_containment

@@ -1,0 +1,11 @@
+--- 0200_line_inbound_handler_retry.sql
++++ no_column_read_check.sql
+@@ -575,7 +575,7 @@
+         v_problems := v_problems || format('%s:%s line_oa_inbound_retry', r, lower(p));
+       end if;
+     end loop;
+-    foreach p in array array['SELECT', 'INSERT', 'UPDATE', 'REFERENCES'] loop
++    foreach p in array array['INSERT', 'UPDATE'] loop
+       if has_any_column_privilege(r, v_table, p) and not (r = 'service_role' and p = 'SELECT') then
+         v_problems := v_problems || format('%s:column %s line_oa_inbound_retry', r, lower(p));
+       end if;

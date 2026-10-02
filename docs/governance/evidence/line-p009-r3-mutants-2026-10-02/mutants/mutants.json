@@ -1,0 +1,121 @@
+{
+  "suite": [
+    {
+      "name": "no_retry_dedupe",
+      "killers": [
+        8
+      ],
+      "meaning": "a redelivery of a queued event re-runs the handler"
+    },
+    {
+      "name": "exit_after_queue",
+      "killers": [
+        30
+      ],
+      "meaning": "events after a failed one in the same delivery are dropped"
+    },
+    {
+      "name": "no_expiry",
+      "killers": [
+        31
+      ],
+      "meaning": "a stale row is replayed late"
+    },
+    {
+      "name": "expiry_before_ingested_check",
+      "killers": [
+        49
+      ],
+      "meaning": "an expired row is dead-lettered although another delivery ingested its event"
+    },
+    {
+      "name": "expiry_drops_last_error",
+      "killers": [
+        31
+      ],
+      "meaning": "expiry overwrites the error that queued the row"
+    },
+    {
+      "name": "unique_violation_only",
+      "killers": [
+        32
+      ],
+      "meaning": "an uncaught error aborts the whole batch"
+    },
+    {
+      "name": "no_already_ingested_check",
+      "killers": [
+        27
+      ],
+      "meaning": "the handler re-runs for an event another delivery already ingested"
+    },
+    {
+      "name": "uncapped_attempt",
+      "killers": [
+        50
+      ],
+      "meaning": "a re-queued row at the bound breaks the CHECK and aborts the batch"
+    },
+    {
+      "name": "ingest_utc_wall_time",
+      "killers": [
+        51
+      ],
+      "meaning": "a first group delivery stores a shifted received_at in a non-UTC session"
+    },
+    {
+      "name": "utc_wall_time",
+      "killers": [
+        33
+      ],
+      "meaning": "received_at is shifted in a non-UTC session"
+    },
+    {
+      "name": "keep_last_error",
+      "killers": [
+        19
+      ],
+      "meaning": "the old error text survives success"
+    },
+    {
+      "name": "no_fail_closed_check",
+      "killers": [
+        43,
+        46,
+        53
+      ],
+      "meaning": "a privilege leaked through role membership is accepted"
+    },
+    {
+      "name": "service_role_keeps_defaults",
+      "killers": [
+        38
+      ],
+      "meaning": "service_role keeps its default table privileges (fail-closed check also removed)"
+    },
+    {
+      "name": "no_column_read_check",
+      "killers": [
+        53
+      ],
+      "meaning": "a column-level read leaked through role membership is accepted"
+    }
+  ],
+  "race": [
+    {
+      "name": "race_for_update_only",
+      "harness": "new",
+      "expect": "fail"
+    },
+    {
+      "name": "race_no_claim_lock",
+      "harness": "new",
+      "expect": "fail"
+    },
+    {
+      "name": "race_for_update_only_old_harness",
+      "harness": "docs/governance/evidence/line-p009-r3-mutants-2026-10-02/old-harness-0a355e29b.mjs",
+      "expect": "pass"
+    }
+  ]
+}
